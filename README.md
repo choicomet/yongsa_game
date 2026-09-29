@@ -1,2 +1,2 @@
 # yongsa_game
-생성형ai 수업프로젝트
+uiux 팀 프로젝트
