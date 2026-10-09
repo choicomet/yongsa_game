@@ -7,6 +7,7 @@
 - `current_sprites_sheet.png`: 지금 게임에 들어 있는 그림 전부 (4배 확대, 이름과 크기 표시)
 - `current_sprites/`: 지금 그림 원본 PNG (실제 크기). 이 파일을 고쳐서 돌려주면 제일 쉽습니다.
 - `screenshots/`: 실제 게임 화면
+- `GAME_SPEC.md`: 지금 게임 전체 명세 요약 (이야기, 맵, 전투, 대장간, 수치)
 
 ---
 
