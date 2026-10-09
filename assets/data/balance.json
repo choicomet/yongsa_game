@@ -1,0 +1,98 @@
+{
+  "tileSize": 32,
+
+  "hero": {
+    "baseMaxHp": 100,
+    "maxHpAfterBosses": [250, 450, 700],
+    "moveSpeedTiles": 4.0,
+    "invulnAfterHit": 0.6,
+    "knockbackTiles": 0.5,
+    "campRegenFractionPerSec": 0.08
+  },
+
+  "attack": {
+    "basicMultiplier": 1.0,
+    "basicCooldown": 0.4,
+    "basicRangeTiles": 1.7,
+    "basicArcDegrees": 140,
+    "spinMultiplier": 1.5,
+    "spinCooldown": 6.0,
+    "spinRadiusTiles": 2.2,
+    "dashMultiplier": 2.0,
+    "dashCooldown": 8.0,
+    "dashDistanceTiles": 3.5,
+    "dashTime": 0.2,
+    "damageSpreadMin": 0.9,
+    "damageSpreadMax": 1.1
+  },
+
+  "absorb": {
+    "attackBonusPerAwakenedWeapon": 0.10
+  },
+
+  "weapons": [
+    { "id": "holy_sealed", "name": "봉인된 성검", "baseAttack": 10, "perLevel": 0, "craftCost": 0, "enhanceable": false, "holy": true },
+    { "id": "blackiron", "name": "흑철검", "ore": "BLACKIRON", "baseAttack": 22, "perLevel": 3, "craftCost": 8, "enhanceable": true,
+      "awakenedName": "심연의 흑철검", "abilityName": "갱도의 울림", "abilityDesc": "기본 공격 범위가 30% 넓어진다" },
+    { "id": "bloodmoon", "name": "혈월검", "ore": "BLOODMOON", "baseAttack": 55, "perLevel": 5, "craftCost": 8, "enhanceable": true,
+      "awakenedName": "만월의 혈월검", "abilityName": "혈월의 갈증", "abilityDesc": "몬스터를 쓰러뜨리면 체력을 5% 회복한다" },
+    { "id": "skyfall", "name": "천공검", "ore": "SKY", "baseAttack": 110, "perLevel": 8, "craftCost": 8, "enhanceable": true,
+      "awakenedName": "뇌명의 천공검", "abilityName": "천공 낙뢰", "abilityDesc": "회전 베기의 쿨타임이 2초 줄어든다" },
+    { "id": "holy_awakened", "name": "깨어난 성검", "baseAttack": 200, "perLevel": 0, "craftCost": 0, "enhanceable": false, "holy": true }
+  ],
+
+  "enhance": {
+    "maxLevel": 10,
+    "successBasePercent": 95,
+    "successStepPercent": 7,
+    "bands": [
+      { "fromLevel": 0, "toLevel": 2, "cost": 1, "destroyShare": 0,  "downShare": 0,  "keepShare": 100 },
+      { "fromLevel": 3, "toLevel": 5, "cost": 2, "destroyShare": 0,  "downShare": 50, "keepShare": 50 },
+      { "fromLevel": 6, "toLevel": 9, "cost": 3, "destroyShare": 15, "downShare": 45, "keepShare": 40 }
+    ],
+    "destroyRefundRatio": 0.5,
+    "dismantleRefund": 3,
+    "hammerSeconds": 0.6,
+    "awakenSeconds": 1.5
+  },
+
+  "mining": {
+    "hitsToBreak": 3,
+    "orePerVeinMin": 1,
+    "orePerVeinMax": 2,
+    "veinsMin": 6,
+    "veinsMax": 10,
+    "veinsMinCleared": 8,
+    "veinsMaxCleared": 12,
+    "firstOreRoomGuarantee": 8
+  },
+
+  "monster": {
+    "detectTiles": 7.0,
+    "attackReachTiles": 1.0,
+    "telegraphSeconds": 0.5,
+    "attackCooldown": 1.1,
+    "knockbackTiles": 0.5,
+    "bossSlamTelegraph": 1.0,
+    "bossSlamRadiusTiles": 2.6,
+    "bossSlamMultiplier": 1.5,
+    "bossSlamCooldown": 4.5
+  },
+
+  "dungeons": [
+    { "id": "LEFT", "name": "무너진 갱도", "ore": "BLACKIRON", "recommended": "봉인된 성검 → 흑철검",
+      "mob":  { "name": "갱도 박쥐", "hp": 40, "attack": 8, "speedTiles": 2.6, "sprite": "bat" },
+      "boss": { "name": "갱도를 삼킨 골렘", "hp": 500, "attack": 15, "speedTiles": 1.6, "sprite": "golem" },
+      "mobsPerRoom": 3, "bossOreReward": 5 },
+    { "id": "RIGHT", "name": "저주받은 성채", "ore": "BLOODMOON", "recommended": "흑철검 +6 이상",
+      "mob":  { "name": "저주받은 해골병", "hp": 130, "attack": 22, "speedTiles": 2.3, "sprite": "skeleton" },
+      "boss": { "name": "혈월의 기사", "hp": 1500, "attack": 35, "speedTiles": 1.9, "sprite": "knight" },
+      "mobsPerRoom": 4, "bossOreReward": 5 },
+    { "id": "TOP", "name": "마왕의 탑", "ore": "SKY", "recommended": "혈월검 +6 이상",
+      "mob":  { "name": "탑의 마족병", "hp": 280, "attack": 40, "speedTiles": 2.5, "sprite": "imp" },
+      "boss": { "name": "탑의 수문장", "hp": 4000, "attack": 60, "speedTiles": 1.8, "sprite": "warden" },
+      "mobsPerRoom": 5, "bossOreReward": 5 }
+  ],
+
+  "finalBoss": { "name": "마왕", "hp": 6000, "attack": 100, "speedTiles": 2.0, "sprite": "demonlord" }
+}

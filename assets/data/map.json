@@ -1,0 +1,63 @@
+{
+  "cellW": 26,
+  "cellH": 20,
+  "minCellX": -5,
+  "maxCellX": 5,
+  "minCellY": 0,
+  "maxCellY": 6,
+  "sizes": {
+    "CAMP":  [20, 14],
+    "MOB":   [16, 12],
+    "ORE":   [14, 10],
+    "BOSS":  [20, 15],
+    "FINAL": [22, 16]
+  },
+  "rooms": [
+    { "id": "CAMP", "type": "CAMP", "cx": 0, "cy": 0 },
+
+    { "id": "L1", "type": "MOB",  "dungeon": "LEFT", "cx": -1, "cy": 0 },
+    { "id": "L2", "type": "ORE",  "dungeon": "LEFT", "cx": -2, "cy": 0 },
+    { "id": "L3", "type": "MOB",  "dungeon": "LEFT", "cx": -3, "cy": 0 },
+    { "id": "L4", "type": "MOB",  "dungeon": "LEFT", "cx": -3, "cy": 1 },
+    { "id": "L5", "type": "BOSS", "dungeon": "LEFT", "cx": -4, "cy": 1 },
+
+    { "id": "R1", "type": "MOB",  "dungeon": "RIGHT", "cx": 1, "cy": 0 },
+    { "id": "R2", "type": "ORE",  "dungeon": "RIGHT", "cx": 2, "cy": 0 },
+    { "id": "R3", "type": "MOB",  "dungeon": "RIGHT", "cx": 3, "cy": 0 },
+    { "id": "R4", "type": "ORE",  "dungeon": "RIGHT", "cx": 3, "cy": 1 },
+    { "id": "R5", "type": "MOB",  "dungeon": "RIGHT", "cx": 4, "cy": 0 },
+    { "id": "R6", "type": "BOSS", "dungeon": "RIGHT", "cx": 5, "cy": 0 },
+
+    { "id": "T1", "type": "MOB",  "dungeon": "TOP", "cx": 0, "cy": 1 },
+    { "id": "T2", "type": "ORE",  "dungeon": "TOP", "cx": 0, "cy": 2 },
+    { "id": "T3", "type": "MOB",  "dungeon": "TOP", "cx": 0, "cy": 3 },
+    { "id": "T4", "type": "MOB",  "dungeon": "TOP", "cx": -1, "cy": 3 },
+    { "id": "T5", "type": "ORE",  "dungeon": "TOP", "cx": 1, "cy": 3 },
+    { "id": "T6", "type": "MOB",  "dungeon": "TOP", "cx": 0, "cy": 4 },
+    { "id": "T7", "type": "BOSS", "dungeon": "TOP", "cx": 0, "cy": 5 },
+    { "id": "F",  "type": "FINAL","dungeon": "TOP", "cx": 0, "cy": 6 }
+  ],
+  "links": [
+    { "a": "CAMP", "b": "L1", "gate": "LEFT" },
+    { "a": "L1", "b": "L2" },
+    { "a": "L2", "b": "L3" },
+    { "a": "L3", "b": "L4" },
+    { "a": "L4", "b": "L5" },
+
+    { "a": "CAMP", "b": "R1", "gate": "RIGHT" },
+    { "a": "R1", "b": "R2" },
+    { "a": "R2", "b": "R3" },
+    { "a": "R3", "b": "R4" },
+    { "a": "R3", "b": "R5" },
+    { "a": "R5", "b": "R6" },
+
+    { "a": "CAMP", "b": "T1", "gate": "TOP" },
+    { "a": "T1", "b": "T2" },
+    { "a": "T2", "b": "T3" },
+    { "a": "T3", "b": "T4" },
+    { "a": "T3", "b": "T5" },
+    { "a": "T3", "b": "T6" },
+    { "a": "T6", "b": "T7" },
+    { "a": "T7", "b": "F", "gate": "FINAL" }
+  ]
+}
