@@ -103,6 +103,7 @@ public class SaveManager {
         j.setElementType(GameState.class, "clearedRooms", String.class);
         j.setElementType(GameState.class, "defeatedBosses", String.class);
         j.setElementType(GameState.class, "shortcuts", String.class);
+        j.setElementType(GameState.class, "visitedRooms", String.class);
         j.setElementType(GameState.class, "mineRooms", MineRoomState.class);
         j.setElementType(MineRoomState.class, "veins", VeinState.class);
         return j;
@@ -126,7 +127,7 @@ public class SaveManager {
             throw new InvalidSaveException("지원하지 않는 저장 버전입니다 (" + version + ")", true);
         }
         for (String f : new String[]{"minerals", "weapons", "equipped", "clearedRooms", "defeatedBosses",
-                "shortcuts", "miningCycle", "mineRooms", "enhanceSeed", "enhanceUses", "veinSeed", "veinUses"}) {
+                "shortcuts", "miningCycle", "mineRooms", "dungeonSeed", "enhanceSeed", "enhanceUses", "veinSeed", "veinUses"}) {
             if (!root.has(f)) throw new InvalidSaveException("필수 항목 없음: " + f, false);
         }
         GameState s;
@@ -163,6 +164,7 @@ public class SaveManager {
             }
         }
         if (s.equipped == null) s.equipped = "";
+        if (s.visitedRooms == null) s.visitedRooms = new java.util.ArrayList<>();
         if (s.weapons.isEmpty() && !s.equipped.isEmpty()) fail("장착 무기 오류");
         if (!s.weapons.isEmpty() && s.weapon(s.equipped) == null) fail("장착 무기 오류");
         for (String boss : s.defeatedBosses) {

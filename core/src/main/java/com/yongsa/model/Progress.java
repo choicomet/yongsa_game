@@ -91,24 +91,32 @@ public final class Progress {
 
     // ---- 다음 할 일 ----
 
-    /** 화면 왼쪽 위에 표시할 현재 목표 하나. */
-    public static String objective(Balance b, GameState s) {
+    /**
+     * 화면 왼쪽 위에 표시할 현재 목표 하나.
+     * @param firstCombatRoom 첫 구역 본 경로의 첫 전투방 ID (던전 생성 결과)
+     */
+    public static String objective(Balance b, GameState s, String firstCombatRoom) {
         Balance.ZoneDef first = b.zones[0];
         if (!s.hasAnyWeapon()) {
             int need = b.weapon(Ids.SWORD).craftCost;
-            if (s.minerals < need) return first.direction + " 광물방에서 광물 " + need + "개 모으기";
+            if (s.minerals < need) return first.direction + " " + first.name + " 입구 광물방에서 광물 " + need + "개 모으기";
             return "캠프 대장간에서 " + b.weapon(Ids.SWORD).name + " 제작하기";
         }
         Balance.ZoneDef zone = currentZone(b, s);
         if (zone == null) return "모든 봉인을 해제했습니다";
 
         if (zone == first) {
-            if (!s.isRoomCleared(Ids.battleA(zone.id))) return first.direction + " " + first.name + "의 첫 전투방 돌파하기";
+            if (firstCombatRoom != null && !s.isRoomCleared(firstCombatRoom)) return first.name + "의 첫 전투방 돌파하기";
             if (!s.firstEnhanceDone && !s.hasShortcut(zone.id)) return "대장간에서 강화해 보기";
-        } else if (!s.isRoomCleared(Ids.battleA(zone.id)) && !s.hasShortcut(zone.id)) {
+        } else if (!s.hasShortcut(zone.id) && !anyRoomCleared(s, zone.id)) {
             return "중앙 캠프로 돌아가 " + zone.direction + " " + Ko.ro(zone.name) + " 향하기";
         }
-        if (!s.hasShortcut(zone.id)) return "남은 전투방을 지나 보스 앞까지 이동하기";
+        if (!s.hasShortcut(zone.id)) return "방을 돌파하며 " + zone.name + " 깊은 곳의 보스 앞까지 이동하기";
         return "지름길을 이용해 " + b.boss(zone.boss).name + " 공략하기";
+    }
+
+    private static boolean anyRoomCleared(GameState s, String zoneId) {
+        for (String r : s.clearedRooms) if (r.startsWith(zoneId + "_")) return true;
+        return false;
     }
 }

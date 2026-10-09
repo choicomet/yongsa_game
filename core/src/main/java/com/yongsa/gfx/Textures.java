@@ -12,6 +12,8 @@ public class Textures implements Disposable {
     public final Texture glow;
     public final Texture shadow;
     public final Texture flame;
+    /** 화면 가장자리를 어둡게 하는 비네트. */
+    public final Texture vignette;
 
     public Textures() {
         Pixmap p = new Pixmap(4, 4, Pixmap.Format.RGBA8888);
@@ -24,6 +26,26 @@ public class Textures implements Disposable {
         glow = radial(128, 2.0f);
         shadow = ellipse(32, 16);
         flame = flame(16, 24);
+        vignette = vignette(128);
+    }
+
+    private static Texture vignette(int size) {
+        Pixmap p = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+        p.setBlending(Pixmap.Blending.None);
+        float c = (size - 1) / 2f;
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                float dx = (x - c) / c, dy = (y - c) / c;
+                float d = (float) Math.sqrt(dx * dx * 0.8f + dy * dy);
+                float t = Math.max(0, Math.min(1, (d - 0.62f) / 0.55f));
+                p.setColor(0, 0, 0, t * t * 0.75f);
+                p.drawPixel(x, y);
+            }
+        }
+        Texture t = new Texture(p);
+        t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        p.dispose();
+        return t;
     }
 
     private static Texture radial(int size, float power) {
@@ -89,5 +111,6 @@ public class Textures implements Disposable {
         glow.dispose();
         shadow.dispose();
         flame.dispose();
+        vignette.dispose();
     }
 }

@@ -27,7 +27,9 @@ public final class VeinGenerator {
             if ("true".equals(c.prop("visible"))) visible.add(c.name);
         }
         MineRoomState m = new MineRoomState(roomId);
-        for (String id : pick(ids, visible, b.mining.veinsPerRoom, Rng.veinSource(s))) m.veins.add(new VeinState(id));
+        RoomDef room = map.room(roomId);
+        int count = room != null && room.veinCount > 0 ? room.veinCount : b.mining.oreRoomVeins;
+        for (String id : pick(ids, visible, Math.min(count, ids.size()), Rng.veinSource(s))) m.veins.add(new VeinState(id));
         s.mineRooms.add(m);
         return m;
     }

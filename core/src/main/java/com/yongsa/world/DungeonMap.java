@@ -1,32 +1,33 @@
 package com.yongsa.world;
 
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.XmlReader;
 import com.yongsa.config.Balance;
 
-import java.io.File;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 통합 Tiled 맵(dungeon.tmx)을 게임 규칙에 필요한 형태로 해석한다.
- * 그리기는 libGDX TiledMapRenderer 가 같은 파일을 읽어 처리하고, 이 클래스는 그래픽 없이 동작한다.
- * Tiled 좌표(y 아래로 증가)를 월드 좌표(y 위로 증가)로 바꿔 저장한다.
+ * 던전 한 판의 공간 정보. DungeonGenerator 가 씨앗값으로 만든다.
+ * 그래픽 없이 동작하며, 좌표는 y 가 위로 증가하는 월드 픽셀이다.
  */
 public class DungeonMap {
+    public static final byte VOID = 0, FLOOR = 1, WALL = 2;
+
+    public final long seed;
     public final int widthTiles;
     public final int heightTiles;
     public final int tileSize;
     public final float widthPx;
     public final float heightPx;
 
-    /** [ty * width + tx], ty=0 이 맨 아래 줄. */
-    private final boolean[] solidTiles;
+    /** [ty * width + tx] 칸 종류 (VOID/FLOOR/WALL). */
+    final byte[] cells;
+    /** [ty * width + tx] 칸의 꾸밈 테마 (0 캠프, 1 폐광, 2 요새, 3 신전). */
+    final byte[] theme;
 
     public final List<RoomDef> rooms = new ArrayList<>();
     public final Map<String, RoomDef> roomById = new HashMap<>();
@@ -37,123 +38,38 @@ public class DungeonMap {
     public final List<MapObject> interacts = new ArrayList<>();
     public final List<Rectangle> solids = new ArrayList<>();
     public final List<MapObject> decor = new ArrayList<>();
+    /** 구역별 방 순서 (본 경로 순서 → 곁가지). */
+    public final Map<String, List<RoomDef>> zoneRooms = new HashMap<>();
 
-    private DungeonMap(int w, int h, int tile) {
+    public DungeonMap(long seed, int w, int h, int tile) {
+        this.seed = seed;
         widthTiles = w;
         heightTiles = h;
         tileSize = tile;
         widthPx = w * tile;
         heightPx = h * tile;
-        solidTiles = new boolean[w * h];
+        cells = new byte[w * h];
+        theme = new byte[w * h];
     }
 
-    public static DungeonMap load(String path) {
-        return load(new FileHandle(new File(path)));
+    // ---- 타일 ----
+
+    public byte cell(int tx, int ty) {
+        if (tx < 0 || ty < 0 || tx >= widthTiles || ty >= heightTiles) return VOID;
+        return cells[ty * widthTiles + tx];
     }
 
-    public static DungeonMap load(FileHandle file) {
-        XmlReader.Element root = new XmlReader().parse(file);
-        int w = root.getIntAttribute("width");
-        int h = root.getIntAttribute("height");
-        int tile = root.getIntAttribute("tilewidth");
-        DungeonMap m = new DungeonMap(w, h, tile);
-
-        int[] floor = null;
-        int[] walls = null;
-        for (XmlReader.Element layer : root.getChildrenByName("layer")) {
-            int[] data = parseCsv(layer.getChildByName("data").getText(), w * h);
-            String name = layer.getAttribute("name");
-            if ("floor".equals(name)) floor = data;
-            else if ("walls".equals(name)) walls = data;
-        }
-        if (floor == null) throw new IllegalStateException("floor 레이어가 없습니다");
-        for (int ty = 0; ty < h; ty++) {
-            for (int tx = 0; tx < w; tx++) {
-                int idx = (h - 1 - ty) * w + tx; // Tiled 행 → 월드 행
-                boolean solid = floor[idx] == 0 || (walls != null && walls[idx] != 0);
-                m.solidTiles[ty * w + tx] = solid;
-            }
-        }
-
-        for (XmlReader.Element group : root.getChildrenByName("objectgroup")) {
-            String layerName = group.getAttribute("name");
-            for (XmlReader.Element o : group.getChildrenByName("object")) {
-                String name = o.getAttribute("name", "");
-                String type = o.getAttribute("type", o.getAttribute("class", ""));
-                float x = o.getFloatAttribute("x");
-                float yDown = o.getFloatAttribute("y");
-                float ow = o.getFloatAttribute("width", 0);
-                float oh = o.getFloatAttribute("height", 0);
-                Rectangle r = new Rectangle(x, m.heightPx - yDown - oh, ow, oh);
-                Map<String, String> props = readProps(o);
-                switch (layerName) {
-                    case "rooms": {
-                        RoomDef.Kind kind = RoomDef.Kind.valueOf(type.toUpperCase());
-                        RoomDef room = new RoomDef(name, props.getOrDefault("zone", ""), kind, r);
-                        m.rooms.add(room);
-                        m.roomById.put(name, room);
-                        break;
-                    }
-                    case "doors":
-                        m.doors.add(new DoorDef(name, r, props.get("rule"), props.get("combat")));
-                        break;
-                    case "spawns":
-                        m.spawns.add(new MapObject(name, type, r, props));
-                        break;
-                    case "veins":
-                        m.veins.add(new MapObject(name, type, r, props));
-                        break;
-                    case "points":
-                        m.points.put(name, new Vector2(r.x, r.y));
-                        break;
-                    case "interact":
-                        m.interacts.add(new MapObject(name, type, r, props));
-                        break;
-                    case "solids":
-                        m.solids.add(r);
-                        break;
-                    case "decor":
-                        m.decor.add(new MapObject(name, type, r, props));
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-        return m;
+    public int theme(int tx, int ty) {
+        if (tx < 0 || ty < 0 || tx >= widthTiles || ty >= heightTiles) return 0;
+        return theme[ty * widthTiles + tx];
     }
 
-    private static Map<String, String> readProps(XmlReader.Element o) {
-        Map<String, String> props = new LinkedHashMap<>();
-        XmlReader.Element pe = o.getChildByName("properties");
-        if (pe != null) {
-            for (XmlReader.Element p : pe.getChildrenByName("property")) {
-                props.put(p.getAttribute("name"), p.getAttribute("value", p.getText()));
-            }
-        }
-        return props;
+    public boolean isFloor(int tx, int ty) {
+        return cell(tx, ty) == FLOOR;
     }
-
-    private static int[] parseCsv(String text, int expected) {
-        int[] out = new int[expected];
-        int i = 0;
-        for (String tok : text.split(",")) {
-            String t = tok.trim();
-            if (t.isEmpty()) continue;
-            // 뒤집기 플래그(상위 비트)를 제거한 타일 ID
-            long v = Long.parseLong(t) & 0x1FFFFFFFL;
-            if (i < expected) out[i] = (int) v;
-            i++;
-        }
-        if (i != expected) throw new IllegalStateException("타일 레이어 크기 불일치: " + i + " / " + expected);
-        return out;
-    }
-
-    // ---- 질의 ----
 
     public boolean isSolidTile(int tx, int ty) {
-        if (tx < 0 || ty < 0 || tx >= widthTiles || ty >= heightTiles) return true;
-        return solidTiles[ty * widthTiles + tx];
+        return cell(tx, ty) != FLOOR;
     }
 
     public boolean isSolidAt(float x, float y) {
@@ -173,6 +89,8 @@ public class DungeonMap {
         return false;
     }
 
+    // ---- 질의 ----
+
     public RoomDef roomAt(float x, float y) {
         for (RoomDef r : rooms) if (r.bounds.contains(x, y)) return r;
         return null;
@@ -180,6 +98,22 @@ public class DungeonMap {
 
     public RoomDef room(String id) {
         return roomById.get(id);
+    }
+
+    public List<RoomDef> zoneRooms(String zone) {
+        List<RoomDef> l = zoneRooms.get(zone);
+        return l == null ? new ArrayList<>() : l;
+    }
+
+    /** 구역 본 경로의 첫 전투방. */
+    public RoomDef firstCombatRoom(String zone) {
+        for (RoomDef r : zoneRooms(zone)) if (r.mainPath && r.kind == RoomDef.Kind.ROOM && r.enemies) return r;
+        return null;
+    }
+
+    public RoomDef entranceRoom(String zone) {
+        for (RoomDef r : zoneRooms(zone)) if (r.mainPath && r.depth == 0) return r;
+        return null;
     }
 
     public Vector2 point(String name) {
@@ -194,9 +128,14 @@ public class DungeonMap {
         return out;
     }
 
+    private final Map<String, MapObject> veinIndex = new HashMap<>();
+
     public MapObject vein(String candidateId) {
-        for (MapObject v : veins) if (v.name.equals(candidateId)) return v;
-        return null;
+        if (veinIndex.size() != veins.size()) {
+            veinIndex.clear();
+            for (MapObject v : veins) veinIndex.put(v.name, v);
+        }
+        return veinIndex.get(candidateId);
     }
 
     public MapObject interact(String name) {
@@ -215,44 +154,90 @@ public class DungeonMap {
         return null;
     }
 
+    public List<DoorDef> doorsOf(String roomId) {
+        List<DoorDef> out = new ArrayList<>();
+        for (DoorDef d : doors) if (d.combatRooms.contains(roomId)) out.add(d);
+        return out;
+    }
+
     /**
      * 개발 검증. 문제 목록을 돌려준다(비어 있으면 통과).
-     * 후보 지점이 부족한 맵은 실행 시 임의로 보정하지 않고 여기서 오류로 처리한다.
      */
     public List<String> validate(Balance b) {
         List<String> errors = new ArrayList<>();
-        if (!points.containsKey("camp_spawn")) {
+        Vector2 sp = points.get("camp_spawn");
+        if (sp == null) {
             errors.add("camp_spawn 없음");
-        } else {
-            Vector2 sp = points.get("camp_spawn");
-            RoomDef camp = roomAt(sp.x, sp.y);
-            if (camp == null || camp.kind != RoomDef.Kind.CAMP) errors.add("camp_spawn 이 중앙 캠프 밖에 있음");
-            Rectangle around = new Rectangle(sp.x - tileSize * 1.5f, sp.y - tileSize * 1.5f, tileSize * 3, tileSize * 3);
-            if (overlapsStatic(around)) errors.add("camp_spawn 주변 한 타일 안에 고체 오브젝트가 있음");
+            return errors;
         }
+        RoomDef camp = roomAt(sp.x, sp.y);
+        if (camp == null || camp.kind != RoomDef.Kind.CAMP) errors.add("camp_spawn 이 중앙 캠프 밖에 있음");
+        Rectangle around = new Rectangle(sp.x - tileSize * 1.5f, sp.y - tileSize * 1.5f, tileSize * 3, tileSize * 3);
+        if (overlapsStatic(around)) errors.add("camp_spawn 주변 한 타일 안에 고체 오브젝트가 있음");
+
+        for (int i = 0; i < rooms.size(); i++) {
+            for (int j = i + 1; j < rooms.size(); j++) {
+                if (rooms.get(i).bounds.overlaps(rooms.get(j).bounds)) errors.add("방이 겹침: " + rooms.get(i).id + ", " + rooms.get(j).id);
+            }
+        }
+        boolean[] reach = reachableFrom(sp.x, sp.y);
         for (Balance.ZoneDef z : b.zones) {
-            for (String rid : new String[]{z.id + "_ore", z.id + "_battle_a", z.id + "_battle_b", z.id + "_ante", z.id + "_boss"}) {
-                if (!roomById.containsKey(rid)) errors.add("방 없음: " + rid);
+            List<RoomDef> zr = zoneRooms(z.id);
+            int bosses = 0, antes = 0;
+            for (RoomDef r : zr) {
+                if (r.kind == RoomDef.Kind.BOSS) bosses++;
+                if (r.kind == RoomDef.Kind.ANTE) antes++;
+                int tx = (int) (r.centerX() / tileSize), ty = (int) (r.centerY() / tileSize);
+                if (!reach[ty * widthTiles + tx]) errors.add("캠프에서 갈 수 없는 방: " + r.id);
+                if (r.veins) {
+                    int c = veinCandidates(r.id).size();
+                    if (c < r.veinCount + 2) errors.add("광맥 후보 부족: " + r.id + " " + c);
+                    for (MapObject v : veinCandidates(r.id)) {
+                        if (overlapsStatic(VeinGeometry.solidRect(v.x(), v.y()))) errors.add("광맥 후보가 고체와 겹침: " + v.name);
+                    }
+                }
+                if (r.enemies && spawnsIn(r.id).isEmpty()) errors.add("적 생성점 없음: " + r.id);
+                if (r.kind == RoomDef.Kind.BOSS && (r.bounds.width > 24 * tileSize || r.bounds.height > 12 * tileSize))
+                    errors.add("보스방이 24x12 타일보다 큼: " + r.id);
             }
-            List<MapObject> cands = veinCandidates(z.id + "_ore");
-            if (cands.size() < b.mining.minCandidates) errors.add(z.id + " 광맥 후보 부족: " + cands.size());
-            boolean anyVisible = false;
-            for (MapObject c : cands) {
-                if ("true".equals(c.prop("visible"))) anyVisible = true;
-                Rectangle vr = VeinGeometry.solidRect(c.x(), c.y());
-                if (overlapsStatic(vr)) errors.add("광맥 후보가 고체와 겹침: " + c.name);
-                RoomDef r = roomAt(c.x(), c.y());
-                if (r == null || !r.id.equals(z.id + "_ore")) errors.add("광맥 후보가 광물방 밖: " + c.name);
-            }
-            if (!anyVisible) errors.add(z.id + " 입구에서 보이는 광맥 후보가 없음");
+            if (bosses != 1 || antes != 1) errors.add(z.id + " 보스방/보스 앞 공간 수 오류");
+            RoomDef entrance = entranceRoom(z.id);
+            if (entrance == null) errors.add(z.id + " 입구 방 없음");
             for (String p : new String[]{"shortcut_" + z.id + "_camp", "shortcut_" + z.id + "_ante"}) {
                 if (!points.containsKey(p)) errors.add("점 없음: " + p);
             }
-            RoomDef boss = roomById.get(z.id + "_boss");
-            if (boss != null && (boss.bounds.width > 24 * tileSize || boss.bounds.height > 12 * tileSize))
-                errors.add("보스방이 24x12 타일보다 큼: " + boss.id);
-            if (spawnsIn(z.id + "_boss").isEmpty()) errors.add("보스 생성점 없음: " + z.id);
+        }
+        // 첫 구역 입구는 무기 없이 재료를 모을 수 있는 안전한 광물방
+        RoomDef first = entranceRoom(b.zones[0].id);
+        if (first != null) {
+            if (first.enemies || !first.veins) errors.add("첫 구역 입구가 안전한 광물방이 아님");
+            else if (veinCandidates(first.id).size() < b.mining.minCandidates) errors.add("첫 광물방 후보 부족");
+            else if (first.veinCount * b.zones[0].veinYield < b.weapon("sword").craftCost)
+                errors.add("첫 광물방만으로 철검을 만들 수 없음");
         }
         return errors;
+    }
+
+    /** 바닥 타일을 따라 (문을 모두 연 상태로) 갈 수 있는 칸. */
+    public boolean[] reachableFrom(float x, float y) {
+        boolean[] seen = new boolean[widthTiles * heightTiles];
+        ArrayDeque<Integer> q = new ArrayDeque<>();
+        int start = (int) (y / tileSize) * widthTiles + (int) (x / tileSize);
+        seen[start] = true;
+        q.add(start);
+        while (!q.isEmpty()) {
+            int c = q.poll();
+            int cx = c % widthTiles, cy = c / widthTiles;
+            int[][] d = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+            for (int[] o : d) {
+                int nx = cx + o[0], ny = cy + o[1];
+                if (!isFloor(nx, ny)) continue;
+                int n = ny * widthTiles + nx;
+                if (seen[n]) continue;
+                seen[n] = true;
+                q.add(n);
+            }
+        }
+        return seen;
     }
 }

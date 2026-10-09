@@ -25,6 +25,8 @@ import com.yongsa.ui.GameActions;
 import com.yongsa.ui.Hud;
 import com.yongsa.ui.SettingsWindow;
 import com.yongsa.ui.Windows;
+import com.yongsa.world.DungeonGenerator;
+import com.yongsa.world.DungeonMap;
 import com.yongsa.world.FixedStepper;
 import com.yongsa.world.GameWorld;
 import com.yongsa.world.PlayerInput;
@@ -61,8 +63,9 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         this.g = g;
         this.state = state;
         this.startMessage = startMessage;
-        this.world = new GameWorld(g.balance, g.dungeon, state);
-        this.renderer = new WorldRenderer(g.batch, g.shapes, g.tiledMap, g.sprites, g.textures, g.fonts);
+        DungeonMap map = DungeonGenerator.generate(state.dungeonSeed, g.balance);
+        this.world = new GameWorld(g.balance, map, state);
+        this.renderer = new WorldRenderer(g.batch, g.shapes, map, g.sprites, g.textures, g.fonts);
         this.hud = new Hud(g.fonts, g.textures, g.sprites);
         this.stage = new Stage(new FitViewport(960, 540), g.batch);
         this.windows = new Windows(stage, g.skin);
@@ -194,6 +197,7 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         }
 
         fx.update(simDelta);
+        fx.updateDust(renderer.cam.position.x, renderer.cam.position.y, paused ? 0 : delta);
         hud.update(paused ? 0 : delta);
         renderer.updateCamera(world, paused ? 0 : delta);
         g.audio.music(world.combat != null && world.combat.boss ? "bgm_boss" : "bgm_dungeon");
@@ -215,6 +219,8 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         stage.getViewport().apply();
         g.batch.setProjectionMatrix(stage.getCamera().combined);
         g.batch.begin();
+        g.batch.setColor(Color.WHITE);
+        g.batch.draw(g.textures.vignette, 0, 0, 960, 540);
         hud.draw(g.batch, world, g.balance);
         g.batch.end();
 

@@ -13,6 +13,7 @@ public class Balance {
     public int dataVersion;
     public HeroDef hero;
     public MiningDef mining;
+    public DungeonDef dungeon;
     public WeaponDef[] weapons;
     public float dismantleRefundRate;
     public float damagePerLevel;
@@ -43,8 +44,26 @@ public class Balance {
     public static class MiningDef {
         public float holdTime;
         public float range;
-        public int veinsPerRoom;
+        public int oreRoomVeins;
+        public int mixedRoomVeins;
         public int minCandidates;
+    }
+
+    /** 무작위 던전 생성 수치. 방 크기는 타일 단위. */
+    public static class DungeonDef {
+        public int cellWidth;
+        public int cellHeight;
+        public int mainPathRooms;
+        public int branchRooms;
+        public int roomMinWidth;
+        public int roomMaxWidth;
+        public int roomMinHeight;
+        public int roomMaxHeight;
+        public float oreOnlyChance;
+        public float battleOnlyChance;
+        public float branchOreChance;
+        public int minEnemies;
+        public int maxEnemies;
     }
 
     public static class WeaponDef {
@@ -90,6 +109,8 @@ public class Balance {
         public String boss;
         public String requiresBoss;
         public String direction;
+        /** 이 구역 방에 나오는 적 (같은 이름을 여러 번 적으면 더 자주 나온다). */
+        public String[] enemyTable;
     }
 
     public static class EnemyCombatDef {
@@ -234,6 +255,7 @@ public class Balance {
             if (s.maxTries < 1) throw new IllegalStateException("최대 시도 횟수 오류: +" + s.target);
             if (s.cost < 0) throw new IllegalStateException("강화 비용 오류: +" + s.target);
         }
+        if (dungeon == null) throw new IllegalStateException("던전 생성 정의가 없습니다");
         if (enhanceCapByBossCount == null || enhanceCapByBossCount.length < zones.length + 1)
             throw new IllegalStateException("강화 상한 정의가 보스 수보다 짧습니다");
     }

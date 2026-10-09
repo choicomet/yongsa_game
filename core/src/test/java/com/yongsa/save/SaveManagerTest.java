@@ -70,7 +70,7 @@ class SaveManagerTest {
         s.minerals = 99;
         assertTrue(sm.save(s));
         String bak = new String(Files.readAllBytes(dir.resolve("save.bak.json")), StandardCharsets.UTF_8);
-        assertEquals(40 - 6 + 6 + 12, sm.parse(bak).minerals);
+        assertEquals(40 - 6 + 3 + 12, sm.parse(bak).minerals);
         assertEquals(99, sm.load().state.minerals);
     }
 
@@ -89,14 +89,14 @@ class SaveManagerTest {
         SaveManager fresh = new SaveManager(dir, b);
         SaveManager.LoadResult r = fresh.load();
         assertEquals(SaveManager.LoadStatus.OK, r.status);
-        assertEquals(52, r.state.minerals);
+        assertEquals(49, r.state.minerals);
 
         // 주 저장이 반쯤 쓰인 채 손상된 경우 → 백업에서 복원
         Files.write(dir.resolve("save.json"), "{\"saveVersion\":1,\"miner".getBytes(StandardCharsets.UTF_8));
         SaveManager.LoadResult r2 = fresh.load();
         assertEquals(SaveManager.LoadStatus.RESTORED_FROM_BACKUP, r2.status);
         assertNotNull(r2.message);
-        assertEquals(52, r2.state.minerals);
+        assertEquals(49, r2.state.minerals);
     }
 
     @Test

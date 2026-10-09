@@ -44,10 +44,10 @@ class BalanceTest {
 
     @Test
     void firstVeinsReachSwordPlusTwo() {
-        // 첫 채굴 12개 - 철검 6 = 6, +1과 +2 비용 합계 5
-        int harvest = b.zone("mine").veinYield * b.mining.veinsPerRoom;
-        assertEquals(12, harvest);
-        int left = harvest - b.weapon("sword").craftCost;
-        assertTrue(left >= b.enhanceStep(1).cost + b.enhanceStep(2).cost);
+        // 첫 광물방만으로 철검을 만들 수 있고, 첫 전투방 보상까지 더하면 +1 강화가 가능하다
+        int harvest = b.zone("mine").veinYield * b.mining.oreRoomVeins;
+        assertTrue(harvest >= b.weapon("sword").craftCost);
+        int left = harvest - b.weapon("sword").craftCost + b.zone("mine").roomReward;
+        assertTrue(left >= b.enhanceStep(1).cost);
     }
 }

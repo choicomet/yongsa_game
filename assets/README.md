@@ -6,8 +6,9 @@
 | --- | --- | --- |
 | `sprites/hero/hero.png` | 용사 4방향 × 3프레임 (26×37) | 팀 제공 원본(`art_source/hero_sheet.png`)을 `tools/import_hero_sheet.py` 로 변환 |
 | `sprites/items/*.png` | 철검, 망치, 곡괭이(채굴 동작), 랜턴 | 위와 같은 원본 시트의 아이템 줄 |
-| `data/placeholder_art.txt` | 적·보스·소품 임시 픽셀 아트 | 이 프로젝트에서 직접 작성 |
-| `maps/placeholder_tiles.png` | 임시 바닥/벽 타일 | `tools/gen_map.py` 가 생성 |
+| `tiles/dungeon_tiles.png` | 테마별 바닥·벽 타일 (임시) | `tools/gen_art.py` 가 생성 |
+| `sprites/gen/*.png` | 소품·몬스터·보스 (임시) | `tools/gen_sprites.py` 가 생성 |
+| `data/placeholder_art.txt` | 아이콘 등 작은 임시 그림 | 이 프로젝트에서 직접 작성 |
 | `sfx/*.wav`, `music/*.wav` | 임시 효과음·배경음 | `tools/gen_sfx.py` 가 합성 |
 | `fonts/Galmuri11.ttf` | 한글 픽셀 폰트 | Galmuri (quiple), SIL OFL 1.1 — `fonts/Galmuri-LICENSE.txt` |
 
@@ -49,9 +50,22 @@
 
 ## 타일셋 교체
 
-`maps/dungeon.tmx` 를 Tiled 로 열어 타일셋을 CraftPix 타일셋으로 바꾸고 `floor`/`walls` 레이어를 다시 칠한다.
-오브젝트 레이어(rooms, doors, spawns, veins, points, interact, solids, decor)는 그대로 둔다.
-`walls` 레이어에 칠한 칸은 모두 고체가 되고, `floor` 가 비어 있는 칸도 고체다.
+던전은 무작위로 생성되고, 각 칸의 역할(바닥 / 벽 정면 위·아래 / 벽 윗면)은 코드가 정한다.
+`data/tileset.json` 에서 역할마다 타일셋 이미지의 [열, 행] 좌표를 지정하면 CraftPix 타일셋으로 바뀐다.
+
+```json
+{
+  "image": "tiles/craftpix_tileset.png", "tileSize": 16,
+  "themes": [
+    { "floor": [[1,1],[2,1]], "floorWeights": [5,1],
+      "faceUpper": [[1,0]], "faceLower": [[1,1]],
+      "top": [ 16개: 열린 방향 비트(1=북,2=동,4=남,8=서) 순서 ] }
+  ],
+  "shadow": { "n": [0,5], "w": [1,5], "e": [2,5], "s": [3,5] }
+}
+```
+
+`themes` 순서는 캠프, 폐광, 요새, 신전. `tileSize` 가 16이면 자동으로 2배로 그린다.
 
 ## 효과음 교체
 

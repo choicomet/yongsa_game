@@ -72,7 +72,7 @@ public class SpriteLibrary implements Disposable {
     private final Map<String, TextureRegion> placeholders = new HashMap<>();
     private final Map<String, Texture> textureCache = new HashMap<>();
 
-    public SpriteLibrary(FileHandle artFile, FileHandle manifest) {
+    public SpriteLibrary(FileHandle artFile, FileHandle... manifests) {
         // 1) 임시 그림을 하나의 텍스처로 묶는다
         Map<String, Pixmap> pix = PixelArt.load(artFile, 2);
         PixmapPacker packer = new PixmapPacker(1024, 1024, Pixmap.Format.RGBA8888, 2, false);
@@ -90,8 +90,10 @@ public class SpriteLibrary implements Disposable {
         // 2) 기본(임시) 정의
         definePlaceholders();
 
-        // 3) 매니페스트에 적힌 실제 에셋으로 덮어쓴다
-        if (manifest != null && manifest.exists()) applyManifest(manifest);
+        // 3) 매니페스트에 적힌 실제 에셋으로 덮어쓴다 (뒤에 오는 것이 우선)
+        for (FileHandle manifest : manifests) {
+            if (manifest != null && manifest.exists()) applyManifest(manifest);
+        }
     }
 
     public TextureRegion placeholder(String name) {

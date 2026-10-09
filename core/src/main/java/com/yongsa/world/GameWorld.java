@@ -226,24 +226,24 @@ public class GameWorld implements Arena {
         room = r;
         if (r == null) return;
         lastZone = r.zone;
+        if (!state.visitedRooms.contains(r.id)) state.visitedRooms.add(r.id);
         Rectangle body = hero.body();
         boolean fullyInside = body.x >= r.bounds.x + 6 && body.y >= r.bounds.y + 6
                 && body.x + body.width <= r.bounds.x + r.bounds.width - 6
                 && body.y + body.height <= r.bounds.y + r.bounds.height - 6;
 
+        if (r.veins) {
+            boolean existed = state.mineRoom(r.id) != null;
+            VeinGenerator.ensure(b, state, map, r.id);
+            if (!existed) saveRequested = true;
+        }
         switch (r.kind) {
-            case BATTLE:
-                if (combat == null && fullyInside && !state.isRoomCleared(r.id)) startBattle(r);
+            case ROOM:
+                if (r.enemies && combat == null && fullyInside && !state.isRoomCleared(r.id)) startBattle(r);
                 break;
             case BOSS:
                 if (combat == null && fullyInside && !state.isBossDefeated(b.zone(r.zone).boss)) startBoss(r);
                 break;
-            case ORE: {
-                boolean existed = state.mineRoom(r.id) != null;
-                VeinGenerator.ensure(b, state, map, r.id);
-                if (!existed) saveRequested = true;
-                break;
-            }
             case ANTE:
                 if (Progress.onAntechamberReached(state, r.zone)) {
                     events.add(WorldEvent.text(WorldEvent.Type.SHORTCUT_UNLOCKED, b.zone(r.zone).name));
@@ -357,7 +357,8 @@ public class GameWorld implements Arena {
                 bestDist = d;
             }
         }
-        if (room != null && room.kind == RoomDef.Kind.ORE) {
+        // 광맥은 전투가 끝난 방에서만 캘 수 있다
+        if (room != null && room.veins && combat == null) {
             MineRoomState m = state.mineRoom(room.id);
             if (m != null) {
                 for (VeinState v : m.veins) {

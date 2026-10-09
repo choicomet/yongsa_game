@@ -5,8 +5,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.yongsa.audio.Audio;
 import com.yongsa.config.Balance;
@@ -18,18 +16,14 @@ import com.yongsa.save.SaveManager;
 import com.yongsa.screen.GameScreen;
 import com.yongsa.screen.TitleScreen;
 import com.yongsa.ui.UiSkin;
-import com.yongsa.world.DungeonMap;
 
 import java.nio.file.Path;
-import java.util.List;
 
 /** 용사가 다한다. 공용 자원을 갖고 화면을 전환한다. */
 public class YongsaGame extends Game {
     private final Path saveDir;
 
     public Balance balance;
-    public DungeonMap dungeon;
-    public TiledMap tiledMap;
     public SaveManager saves;
     public Settings settings;
 
@@ -50,11 +44,6 @@ public class YongsaGame extends Game {
     @Override
     public void create() {
         balance = Balance.load(Gdx.files.internal("data/balance.json"));
-        dungeon = DungeonMap.load(Gdx.files.internal("maps/dungeon.tmx"));
-        List<String> errors = dungeon.validate(balance);
-        for (String e : errors) Gdx.app.error("DungeonMap", e);
-        if (!errors.isEmpty()) throw new IllegalStateException("맵 검증 실패: " + errors);
-        tiledMap = new TmxMapLoader().load("maps/dungeon.tmx");
 
         saves = new SaveManager(saveDir, balance);
         settings = saves.loadSettings();
@@ -64,7 +53,8 @@ public class YongsaGame extends Game {
         fonts = new Fonts(Gdx.files.internal("fonts/Galmuri11.ttf"));
         skin = UiSkin.build(fonts);
         textures = new Textures();
-        sprites = new SpriteLibrary(Gdx.files.internal("data/placeholder_art.txt"), Gdx.files.internal("data/sprites.json"));
+        sprites = new SpriteLibrary(Gdx.files.internal("data/placeholder_art.txt"),
+                Gdx.files.internal("data/sprites_generated.json"), Gdx.files.internal("data/sprites.json"));
         audio = new Audio(settings);
         applyDisplay();
         setScreen(new TitleScreen(this));
@@ -124,6 +114,5 @@ public class YongsaGame extends Game {
         fonts.dispose();
         shapes.dispose();
         batch.dispose();
-        tiledMap.dispose();
     }
 }

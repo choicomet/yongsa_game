@@ -25,6 +25,8 @@ public class GameState {
     public ArrayList<String> defeatedBosses = new ArrayList<>();
     /** 보스 앞 공간에 도달해 지름길이 해금된 구역 ID. */
     public ArrayList<String> shortcuts = new ArrayList<>();
+    /** 미니맵에 표시할, 한 번이라도 들어간 방. */
+    public ArrayList<String> visitedRooms = new ArrayList<>();
     public boolean awakenGuideSeen;
     public boolean firstEnhanceDone;
 
@@ -33,6 +35,8 @@ public class GameState {
     public ArrayList<MineRoomState> mineRooms = new ArrayList<>();
 
     // 무작위 상태
+    /** 던전 배치 씨앗값. 새 게임마다 바뀌고, 같은 저장은 항상 같은 던전을 만든다. */
+    public long dungeonSeed;
     public long enhanceSeed;
     public long enhanceUses;
     public long veinSeed;
@@ -44,7 +48,8 @@ public class GameState {
     public static GameState newGame(long seed, int dataVersion, Settings settings) {
         GameState s = new GameState();
         s.dataVersion = dataVersion;
-        s.enhanceSeed = seed;
+        s.dungeonSeed = seed;
+        s.enhanceSeed = seed ^ 0x2545F4914F6CDD1DL;
         s.veinSeed = seed * 31L + 0x5DEECE66DL;
         s.settings = settings == null ? new Settings() : settings.copy();
         return s;

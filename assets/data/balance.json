@@ -17,8 +17,25 @@
   "mining": {
     "holdTime": 1.0,
     "range": 48,
-    "veinsPerRoom": 4,
+    "oreRoomVeins": 4,
+    "mixedRoomVeins": 2,
     "minCandidates": 8
+  },
+
+  "dungeon": {
+    "cellWidth": 34,
+    "cellHeight": 22,
+    "mainPathRooms": 10,
+    "branchRooms": 4,
+    "roomMinWidth": 16,
+    "roomMaxWidth": 26,
+    "roomMinHeight": 11,
+    "roomMaxHeight": 15,
+    "oreOnlyChance": 0.15,
+    "battleOnlyChance": 0.2,
+    "branchOreChance": 0.35,
+    "minEnemies": 2,
+    "maxEnemies": 4
   },
 
   "weapons": [
@@ -55,9 +72,12 @@
   },
 
   "zones": [
-    { "id": "mine",     "name": "폐광",       "veinYield": 3, "roomReward": 6,  "bossReward": 12, "boss": "boss_mine",     "requiresBoss": "",           "direction": "왼쪽" },
-    { "id": "fortress", "name": "지하 요새",  "veinYield": 5, "roomReward": 10, "bossReward": 20, "boss": "boss_fortress", "requiresBoss": "boss_mine",     "direction": "오른쪽" },
-    { "id": "temple",   "name": "봉인의 신전", "veinYield": 8, "roomReward": 16, "bossReward": 32, "boss": "boss_temple",   "requiresBoss": "boss_fortress", "direction": "위쪽" }
+    { "id": "mine",     "name": "폐광",       "veinYield": 2, "roomReward": 3, "bossReward": 12, "boss": "boss_mine",     "requiresBoss": "",              "direction": "왼쪽",
+      "enemyTable": ["slime"] },
+    { "id": "fortress", "name": "지하 요새",  "veinYield": 3, "roomReward": 5, "bossReward": 20, "boss": "boss_fortress", "requiresBoss": "boss_mine",     "direction": "오른쪽",
+      "enemyTable": ["charger", "charger", "slime"] },
+    { "id": "temple",   "name": "봉인의 신전", "veinYield": 4, "roomReward": 8, "bossReward": 32, "boss": "boss_temple",   "requiresBoss": "boss_fortress", "direction": "위쪽",
+      "enemyTable": ["watcher", "watcher", "charger", "slime"] }
   ],
 
   "enemyCombat": {

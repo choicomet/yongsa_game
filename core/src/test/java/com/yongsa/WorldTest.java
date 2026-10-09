@@ -68,38 +68,64 @@ class WorldTest {
     @Test
     void noWeaponCannotEnterFirstBattleRoom() {
         GameWorld w = new GameWorld(b, map, TestData.newGame());
-        DoorDef d = map.door("mine_door_a");
+        DoorDef d = TestData.doorOf(TestData.firstBattle());
         assertTrue(w.isDoorLocked(d));
         assertNotNull(w.ruleLockReason(d));
-        assertTrue(w.isDoorLocked(map.door("fortress_gate")));
-        assertEquals("폐광의 수호자 처치 후 개방", w.doorLockReason(map.door("fortress_gate")));
+        assertTrue(w.isDoorLocked(TestData.gate("fortress")));
+        assertEquals("폐광의 수호자 처치 후 개방", w.doorLockReason(TestData.gate("fortress")));
+    }
+
+    /** 바닥 타일을 따라 목표까지 걷는다 (테스트용 간단한 길찾기). */
+    static void walkTo(GameWorld w, float tx, float ty, float maxSeconds) {
+        DungeonMap m = w.map;
+        int T = m.tileSize;
+        int W = m.widthTiles;
+        int start = (int) (w.hero.y / T) * W + (int) (w.hero.x / T);
+        int goal = (int) (ty / T) * W + (int) (tx / T);
+        int[] prev = new int[W * m.heightTiles];
+        java.util.Arrays.fill(prev, -2);
+        java.util.ArrayDeque<Integer> q = new java.util.ArrayDeque<>();
+        q.add(start);
+        prev[start] = -1;
+        while (!q.isEmpty() && prev[goal] == -2) {
+            int c = q.poll();
+            int cx = c % W, cy = c / W;
+            for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                int nx = cx + d[0], ny = cy + d[1];
+                int n = ny * W + nx;
+                if (!m.isFloor(nx, ny) || prev[n] != -2) continue;
+                if (m.overlapsStatic(new com.badlogic.gdx.math.Rectangle(nx * T + 4, ny * T + 8, T - 8, T - 16))) continue;
+                prev[n] = c;
+                q.add(n);
+            }
+        }
+        assertNotEquals(-2, prev[goal], "목표까지 길이 없음");
+        java.util.List<Integer> path = new java.util.ArrayList<>();
+        for (int c = goal; c != -1; c = prev[c]) path.add(0, c);
+        PlayerInput in = new PlayerInput();
+        float t = 0;
+        for (int c : path) {
+            float px = (c % W + 0.5f) * T, py = (c / W + 0.5f) * T;
+            while (Math.abs(w.hero.x - px) > 3 || Math.abs(w.hero.y - py) > 3) {
+                in.moveX = Math.abs(w.hero.x - px) > 3 ? Math.signum(px - w.hero.x) : 0;
+                in.moveY = Math.abs(w.hero.y - py) > 3 ? Math.signum(py - w.hero.y) : 0;
+                in.aimX = w.hero.x;
+                in.aimY = w.hero.y - 100;
+                w.step(GameWorld.STEP, in);
+                t += GameWorld.STEP;
+                assertTrue(t < maxSeconds, "이동이 막힘");
+            }
+        }
     }
 
     @Test
-    void walkLeftReachesOreRoomWithoutWeapon() {
+    void walkFromCampToOreRoomWithoutWeapon() {
         GameWorld w = new GameWorld(b, map, TestData.newGame());
-        PlayerInput in = idle(w);
-        // 모닥불 아래에서 왼쪽 → 통로 높이로 위 → 왼쪽 통로로 걷는다 (무기 없이)
-        RoomDef camp = map.room("camp");
-        RoomDef ore = map.room("mine_ore");
-        in.moveX = -1;
-        while (w.hero.x > camp.bounds.x + 48) {
-            w.step(dt, in);
-            assertTrue(w.time < 5, "왼쪽 이동이 막힘");
-        }
-        in.moveX = 0;
-        float target = ore.centerY();
-        while (Math.abs(w.hero.y - target) > 3) {
-            in.moveY = target > w.hero.y ? 1 : -1;
-            w.step(dt, in);
-            assertTrue(w.time < 10, "세로 이동이 막힘");
-        }
-        in.moveY = 0;
-        in.moveX = -1;
-        run(w, in, 3f);
+        RoomDef ore = TestData.oreRoom();
+        walkTo(w, ore.centerX(), ore.centerY(), 30f);
         assertNotNull(w.room);
-        assertEquals("mine_ore", w.room.id);
-        assertNotNull(w.state.mineRoom("mine_ore"));
+        assertEquals(ore.id, w.room.id);
+        assertNotNull(w.state.mineRoom(ore.id));
         assertTrue(w.saveRequested);
     }
 
@@ -107,11 +133,11 @@ class WorldTest {
     void miningRequiresHoldingStill() {
         GameState s = TestData.newGame();
         GameWorld w = new GameWorld(b, map, s);
-        RoomDef ore = map.room("mine_ore");
+        RoomDef ore = TestData.oreRoom();
         put(w, ore);
         PlayerInput in = idle(w);
         w.step(dt, in);
-        MineRoomState m = s.mineRoom("mine_ore");
+        MineRoomState m = s.mineRoom(TestData.oreRoom().id);
         VeinState v = m.veins.get(0);
         MapObject o = map.vein(v.candidateId);
         // 광맥 바로 옆(아래/위)에 선다
@@ -125,7 +151,7 @@ class WorldTest {
         assertEquals(0f, w.miningProgress);
         in.interactHeld = true;
         run(w, in, 1.05f);
-        assertEquals(3, s.minerals);
+        assertEquals(b.zone("mine").veinYield, s.minerals);
         assertTrue(v.mined);
     }
 
@@ -133,31 +159,31 @@ class WorldTest {
     void battleRoomLocksSpawnsAndClearsOnce() {
         GameState s = armed();
         GameWorld w = new GameWorld(b, map, s);
-        RoomDef a = map.room("mine_battle_a");
+        RoomDef a = TestData.firstBattle();
         put(w, a);
         PlayerInput in = idle(w);
         w.step(dt, in);
         assertNotNull(w.combat);
         assertEquals(2, w.combat.enemies.size());
-        assertTrue(w.isDoorLocked(map.door("mine_door_a")));
+        assertTrue(w.isDoorLocked(TestData.doorOf(TestData.firstBattle())));
         assertFalse(w.canReturnToCamp());
         for (Enemy e : w.combat.enemies) e.hp = 0;
         w.step(dt, in);
         assertNull(w.combat);
-        assertTrue(s.isRoomCleared("mine_battle_a"));
-        assertEquals(6, s.minerals);
-        assertFalse(w.isDoorLocked(map.door("mine_door_a")));
+        assertTrue(s.isRoomCleared(TestData.firstBattle().id));
+        assertEquals(b.zone("mine").roomReward, s.minerals);
+        assertFalse(w.isDoorLocked(TestData.doorOf(TestData.firstBattle())));
         // 다시 들어와도 적이 없다
         w.hero.x += 1;
         w.step(dt, in);
         assertNull(w.combat);
-        assertEquals(6, s.minerals);
+        assertEquals(b.zone("mine").roomReward, s.minerals);
     }
 
     @Test
     void enemiesDoNotAttackDuringSpawnGrace() {
         GameWorld w = new GameWorld(b, map, armed());
-        put(w, map.room("mine_battle_a"));
+        put(w, TestData.firstBattle());
         PlayerInput in = idle(w);
         w.step(dt, in);
         Enemy e = w.combat.enemies.get(0);
@@ -172,7 +198,7 @@ class WorldTest {
     @Test
     void T07_oneHitPerAttackPerEnemy() {
         GameWorld w = new GameWorld(b, map, armed());
-        put(w, map.room("mine_battle_a"));
+        put(w, TestData.firstBattle());
         PlayerInput in = idle(w);
         w.step(dt, in);
         Enemy e = w.combat.enemies.get(0);
@@ -198,7 +224,7 @@ class WorldTest {
     @Test
     void T08_invulnerabilityBlocksExtraHits() {
         GameWorld w = new GameWorld(b, map, armed());
-        put(w, map.room("mine_battle_a"));
+        put(w, TestData.firstBattle());
         PlayerInput in = idle(w);
         w.step(dt, in);
         w.damageHero(10, w.hero.x + 10, w.hero.y);
@@ -215,7 +241,7 @@ class WorldTest {
     void T09_simultaneousDeathTakesPriority() {
         GameState s = armed();
         GameWorld w = new GameWorld(b, map, s);
-        put(w, map.room("mine_battle_a"));
+        put(w, TestData.firstBattle());
         PlayerInput in = idle(w);
         w.step(dt, in);
         Enemy last = w.combat.enemies.get(0);
@@ -237,7 +263,7 @@ class WorldTest {
         in.aimY = w.hero.hurtY();
         w.step(dt, in);
         assertTrue(w.hero.dead);
-        assertFalse(s.isRoomCleared("mine_battle_a"), "사망 우선: 클리어 없음");
+        assertFalse(s.isRoomCleared(TestData.firstBattle().id), "사망 우선: 클리어 없음");
         assertEquals(0, s.minerals);
         run(w, in, b.hero.deathTime + 0.05f);
         assertFalse(w.hero.dead);
@@ -253,17 +279,17 @@ class WorldTest {
     void T11_bedDeathReturnRules() {
         GameState s = armed();
         GameWorld w = new GameWorld(b, map, s);
-        put(w, map.room("mine_ore"));
+        put(w, TestData.oreRoom());
         PlayerInput in = idle(w);
         w.step(dt, in);
-        MineRoomState m = s.mineRoom("mine_ore");
+        MineRoomState m = s.mineRoom(TestData.oreRoom().id);
         m.veins.get(0).mined = true;
         int cycle = s.miningCycle;
         // 귀환: 위치만, 광맥 유지, HP 유지
         w.hero.hp = 50;
         assertTrue(w.returnToCamp());
         assertEquals(50, w.hero.hp);
-        assertSame(m, s.mineRoom("mine_ore"));
+        assertSame(m, s.mineRoom(TestData.oreRoom().id));
         assertEquals(cycle, s.miningCycle);
         // 사망: 광맥 재생 없음
         w.hero.hp = 1;
@@ -271,13 +297,13 @@ class WorldTest {
         w.step(dt, in);
         run(w, in, 1.1f);
         assertEquals(100, w.hero.hp);
-        assertTrue(s.mineRoom("mine_ore").veins.get(0).mined);
+        assertTrue(s.mineRoom(TestData.oreRoom().id).veins.get(0).mined);
         // 침대: 새 회차
         w.hero.hp = 40;
         w.useBed();
         assertEquals(100, w.hero.hp);
         assertEquals(cycle + 1, s.miningCycle);
-        assertNull(s.mineRoom("mine_ore"));
+        assertNull(s.mineRoom(TestData.oreRoom().id));
     }
 
     @Test
@@ -285,7 +311,7 @@ class WorldTest {
         GameState s = armed();
         Progress.onBossDefeated(b, s, "boss_mine");
         GameWorld w = new GameWorld(b, map, s);
-        RoomDef a = map.room("mine_battle_a");
+        RoomDef a = TestData.firstBattle();
         put(w, a);
         PlayerInput in = idle(w);
         w.step(dt, in);
@@ -328,7 +354,7 @@ class WorldTest {
         for (int k = 0; k < 3; k++) {
             GameState s = armed();
             GameWorld w = new GameWorld(b, map, s);
-            put(w, map.room("mine_ore"));
+            put(w, TestData.oreRoom());
             PlayerInput in = idle(w);
             w.step(dt, in);
             float x0 = w.hero.x;
@@ -412,7 +438,7 @@ class WorldTest {
         assertTrue(s.isBossDefeated("boss_mine"));
         assertEquals(12, s.minerals);
         assertTrue(w.events.stream().anyMatch(e -> e.type == WorldEvent.Type.AWAKEN_GUIDE));
-        assertFalse(w.isDoorLocked(map.door("fortress_gate")));
+        assertFalse(w.isDoorLocked(TestData.gate("fortress")));
         assertTrue(Progress.isAwakeningUnlocked(b, s));
     }
 

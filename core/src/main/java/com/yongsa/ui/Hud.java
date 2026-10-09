@@ -94,7 +94,8 @@ public class Hud {
         body.draw(batch, w.hero.hp + " / " + w.hero.maxHp, x + 178, y - 9);
 
         // 현재 목표
-        String obj = Progress.objective(b, w.state);
+        com.yongsa.world.RoomDef fc = w.map.firstCombatRoom(b.zones[0].id);
+        String obj = Progress.objective(b, w.state, fc == null ? null : fc.id);
         layout.setText(small, obj);
         float ow = layout.width + 34;
         panel(batch, x, y - 64, ow, 26);
@@ -118,6 +119,8 @@ public class Hud {
         batch.draw(tx.white, px + 30 + mw + 10, y - 24, 1, 18);
         batch.setColor(Color.WHITE);
         body.draw(batch, loc, px + 30 + mw + 20, y - 9);
+
+        drawMinimap(batch, w, 960 - 12 - 196, y - 30 - 8 - 100, 196, 100);
 
         // ---- 아래 왼쪽: 무기 ----
         WeaponState ws = w.state.equippedWeapon();
@@ -248,6 +251,59 @@ public class Hud {
             small.draw(batch, help, 480 - layout.width / 2f, 104);
             small.setColor(UiSkin.TEXT);
         }
+    }
+
+    private static final Color[] THEME = {
+            new Color(0.75f, 0.62f, 0.45f, 1), new Color(0.62f, 0.5f, 0.38f, 1),
+            new Color(0.45f, 0.55f, 0.7f, 1), new Color(0.58f, 0.45f, 0.75f, 1)};
+
+    /** 미니맵: 용사 주변 구역을 보여준다. 들어가 본 방만 보인다. 현재 방은 금색 테두리, 보스방은 붉게. */
+    private void drawMinimap(SpriteBatch batch, GameWorld w, float x, float y, float mw, float mh) {
+        com.yongsa.world.DungeonMap m = w.map;
+        panel(batch, x, y, mw, mh);
+        float pad = 4;
+        float viewW = 4200f; // 미니맵이 보여주는 월드 폭(px)
+        float k = (mw - pad * 2) / viewW;
+        float cxw = w.hero.x, cyw = w.hero.y;
+        float left = x + pad, bottom = y + pad, right = x + mw - pad, top = y + mh - pad;
+        float ox = x + mw / 2f - cxw * k, oy = y + mh / 2f - cyw * k;
+        for (com.yongsa.world.RoomDef r : m.rooms) {
+            boolean visited = r.kind == com.yongsa.world.RoomDef.Kind.CAMP || w.state.visitedRooms.contains(r.id);
+            if (!visited) continue;
+            Color c;
+            int theme = m.theme((int) (r.centerX() / m.tileSize), (int) (r.centerY() / m.tileSize));
+            if (r.kind == com.yongsa.world.RoomDef.Kind.BOSS) {
+                c = w.state.isBossDefeated(w.b.zone(r.zone).boss) ? new Color(0.5f, 0.3f, 0.3f, 1) : new Color(0.9f, 0.2f, 0.2f, 1);
+            } else if (r.isCombat() && !w.state.isRoomCleared(r.id)) {
+                c = new Color(0.75f, 0.32f, 0.28f, 1);
+            } else {
+                c = THEME[Math.max(0, Math.min(3, theme))];
+            }
+            float rx = ox + r.bounds.x * k, ry = oy + r.bounds.y * k;
+            float rx2 = rx + r.bounds.width * k, ry2 = ry + r.bounds.height * k;
+            // 패널 밖은 잘라낸다
+            float cx0 = Math.max(rx, left), cy0 = Math.max(ry, bottom), cx1 = Math.min(rx2, right), cy1 = Math.min(ry2, top);
+            if (cx1 <= cx0 || cy1 <= cy0) continue;
+            batch.setColor(c.r, c.g, c.b, 0.85f);
+            batch.draw(tx.white, cx0, cy0, cx1 - cx0, cy1 - cy0);
+            if (r == w.room) {
+                batch.setColor(UiSkin.GOLD);
+                batch.draw(tx.white, cx0, cy0, cx1 - cx0, 1);
+                batch.draw(tx.white, cx0, cy1 - 1, cx1 - cx0, 1);
+                batch.draw(tx.white, cx0, cy0, 1, cy1 - cy0);
+                batch.draw(tx.white, cx1 - 1, cy0, 1, cy1 - cy0);
+            }
+            // 미처치 보스방 표시
+            if (r.kind == com.yongsa.world.RoomDef.Kind.BOSS && !w.state.isBossDefeated(w.b.zone(r.zone).boss)) {
+                batch.setColor(1, 0.9f, 0.9f, 1);
+                float bx = (cx0 + cx1) / 2f, by = (cy0 + cy1) / 2f;
+                batch.draw(tx.white, bx - 2, by - 1, 4, 3);
+            }
+        }
+        float blink = (w.time * 3) % 1 < 0.6f ? 1 : 0.4f;
+        batch.setColor(1, 1, 1, blink);
+        batch.draw(tx.white, x + mw / 2f - 2, y + mh / 2f - 2, 4, 4);
+        batch.setColor(Color.WHITE);
     }
 
     private void panel(SpriteBatch batch, float x, float y, float w, float h) {

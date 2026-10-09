@@ -4,7 +4,8 @@
 기획서 v1.1(2026-10-09)을 기준으로 구현했다.
 
 - Java 17+ / libGDX 1.13.1 (LWJGL3 데스크톱)
-- 통합 Tiled 맵 1개 (`assets/maps/dungeon.tmx`), 수치는 전부 JSON (`assets/data/balance.json`)
+- **무작위 던전**: 새 게임마다 씨앗값으로 던전을 생성(저장에 씨앗값이 남아 같은 저장은 항상 같은 던전). 구역마다 약 16개, 전체 48개 방
+- 수치는 전부 JSON (`assets/data/balance.json`)
 - 충돌은 타일 + 단순 사각형 (Box2D 미사용), 1/60초 고정 간격 시뮬레이션
 
 ## 실행
@@ -60,41 +61,41 @@ jpackage --type app-image --name YongsaGame --input build\dist --main-jar yongsa
 | --- | --- |
 | `config` | `Balance` — balance.json 전체 (무기·강화·적·보스·구역·충격파 수치) |
 | `model` | `GameState`(저장되는 상태), `EnhanceService`, `CraftService`, `Progress`(해금·상한·목표 문구), `DamageCalc`, `Rng` |
-| `world` | `DungeonMap`(TMX 해석·검증), `GameWorld`(시뮬레이션), `VeinGenerator`, `FixedStepper` |
+| `world` | `DungeonGenerator`(무작위 던전), `DungeonMap`(공간 정보·검증), `GameWorld`(시뮬레이션), `VeinGenerator`, `FixedStepper` |
 | `combat` | `Hero`, `Enemy`, `MonsterAI`, `BossPattern`, `HitShape`, `AttackInstance` |
 | `save` | `SaveManager` — 임시 파일 → 재검증 → 정상 저장 백업 → 원자적 교체 |
 | `ui` | `Hud`, `ForgeWindow`, `BagWindow`, `SettingsWindow`, `Windows`(창 쌓기) |
 | `screen` | `TitleScreen`, `StoryScreen`(소개·엔딩), `GameScreen` |
-| `gfx` | `WorldRenderer`, `SpriteLibrary`(에셋 연결), `Lighting`, `Effects`, `Fonts` |
+| `gfx` | `WorldRenderer`, `TileLayer`(타일 자동 배치), `SpriteLibrary`(에셋 연결), `Lighting`, `Effects`, `Fonts` |
 
 `GameWorld.step()` 의 갱신 순서는 입력과 이동 → 공격 판정 → 피해와 사망 → 방 완료와 보상 → 저장 요청 으로 고정되어 있다.
 창이 열려 있거나 앱이 포커스를 잃으면 `step()` 을 호출하지 않으므로 적·무적·경고·재사용 시간이 모두 멈춘다.
 
-## 맵 수정
+## 던전 구조 (무작위 생성)
 
-`tools/gen_map.py` 가 `dungeon.tmx` 와 임시 타일셋을 만든다. 레이아웃은 스크립트 위쪽 표에서 바꾼다.
+`world/DungeonGenerator` 가 씨앗값으로 던전 전체를 만든다.
+
+- 중앙 캠프에서 왼쪽 폐광, 오른쪽 지하 요새, 위쪽 봉인의 신전으로 뻗는다 (요새·신전은 앞 보스 처치 후 개방).
+- 구역마다 **본 경로 10개 방 → 보스 앞 공간 → 보스방**, 그리고 본 경로에서 갈라지는 **곁가지 방 4개**.
+- 일반 방은 대부분 **몬스터와 광맥이 함께** 있다. 전투가 끝나야 광맥을 캘 수 있다. 일부는 전투만, 일부는 안전한 광맥 방.
+- 곁가지는 광맥이 더 많은 보상 방. 첫 구역 입구는 무기 없이 재료를 모을 수 있는 안전한 광물방.
+- 적 수는 깊이에 따라 늘고, 구역별 적 구성은 `balance.json` 의 `enemyTable` 로 정한다.
+- 생성 수치(방 수, 크기, 방 성격 비율, 적 수)는 `balance.json` 의 `dungeon` 항목.
+
+방 ID는 `<구역>_<번호>`(예: `mine_03`), 보스 앞/보스는 `<구역>_ante` / `<구역>_boss`. 같은 씨앗값이면 ID가 같으므로 저장과 호환된다.
 
 ```bash
-python3 tools/gen_map.py
-./gradlew core:test   # MapTest 가 맵 검증(광맥 후보 수, camp_spawn 주변, 보스방 크기 등)을 수행
+./gradlew core:mapPreview -Pseed=7 -Pout=build/map.png   # 생성된 던전 전체 그림 (개발용)
 ```
 
-Tiled 에서 직접 편집해도 된다. 게임은 다음 레이어 이름만 사용한다.
+기획서 v1.1의 '고정 Tiled 맵' 은 요청에 따라 무작위 생성으로 바뀌었다. 나머지 규칙(방 상태, 사망 시 실패한 방만 초기화, 지름길, 침대와 채굴 회차)은 그대로다.
 
-| 레이어 | 종류 | 용도 |
-| --- | --- | --- |
-| `floor` | 타일 | 바닥 (비어 있으면 벽) |
-| `walls` | 타일 | 벽 (값이 있으면 고체) |
-| `rooms` | 사각형 | 방. 이름 = 방 ID(`mine_battle_a` 등), type = camp/ore/battle/ante/boss, 속성 zone |
-| `doors` | 사각형 | 문. 속성 `rule`(zone:구역, weapon, cleared:방), `combat`(전투 중 잠그는 방 목록) |
-| `spawns` | 점 | 적 생성점. 속성 room, enemy |
-| `veins` | 점 | 광맥 후보. 속성 room, visible |
-| `points` | 점 | `camp_spawn`, `shortcut_<구역>_camp`, `shortcut_<구역>_ante` |
-| `interact` | 사각형 | bed, forge, shortcut, return |
-| `solids` | 사각형 | 장식물 충돌 |
-| `decor` | 점 | 장식·조명 (torch_warm, campfire, furnace …) |
+## 그래픽
 
-방·문·광맥 후보 ID는 저장 파일에 기록되므로 바꾸면 저장 호환성을 함께 검토한다.
+- 타일: `assets/tiles/dungeon_tiles.png` + `assets/data/tileset.json` (테마 4종: 캠프·폐광·요새·신전). 벽은 정면 2칸 + 윗면 16종 자동 배치.
+- 소품·몬스터·보스: `assets/sprites/gen/` + `assets/data/sprites_generated.json`
+- 위 두 가지는 `python3 tools/gen_art.py` 로 다시 만든다 (임시 아트).
+- 조명(횃불·화로·모닥불·랜턴), 비네트, 떠다니는 먼지, 피격/처치 파편, 화면 흔들림, 미니맵.
 
 ## 에셋 (CraftPix 교체)
 
@@ -111,7 +112,7 @@ Tiled 에서 직접 편집해도 된다. 게임은 다음 레이어 이름만 �
 | `CraftTest` | T05 장착/마지막 무기 분해 거부 · T06 분해 반환과 재제작 |
 | `WorldTest` | T07 공격당 1회 판정 · T08 무적 · T09 동시 사망 · T11 침대/사망/귀환 · T16 충격파 벽 · T20 30/60/120FPS · T21 새 게임 위치 · T24 지름길 |
 | `ProgressTest` | T10 중복 클리어 · 목표 문구 우선순위 · 강화 상한 |
-| `MapTest` | T12 광맥 생성 · T23 캠프 경계 · 맵 검증 |
+| `MapTest` | T12 광맥 생성 · T23 캠프 경계 · 씨앗값 40개 던전 검증(연결성·방 수·방 성격 비율) · 같은 씨앗값 재현 |
 | `SaveManagerTest` | T17 저장/불러오기 · T18 교체 중단 복구 · T19 손상/새 버전 |
 | `BalanceTest` | 피해량 표 · 강화 확률표 자동 검증 |
 

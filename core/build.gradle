@@ -17,3 +17,11 @@ test {
         exceptionFormat 'full'
     }
 }
+
+// 개발용: ./gradlew core:mapPreview -Pseed=1 -Pout=/tmp/map.png
+tasks.register('mapPreview', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.yongsa.tools.MapPreview'
+    workingDir = rootProject.file('assets')
+    args = [findProperty('seed') ?: '1', findProperty('out') ?: rootProject.file('build/map.png').path]
+}

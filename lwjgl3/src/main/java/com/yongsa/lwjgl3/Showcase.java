@@ -50,13 +50,13 @@ class Showcase implements Runnable {
             case 2: at(4.5f, () -> shot("02_camp")); break;
             case 3: at(5f, () -> {
                 gs.scriptedInput = in;
-                put(world().map.room("mine_ore"), 0, -60);
+                put(world().map.entranceRoom("mine"), 0, -60);
             }); break;
             case 4: at(7f, () -> {
                 GameWorld w = world();
                 // 광맥 옆에서 채굴
-                w.state.mineRoom("mine_ore").veins.forEach(v -> { });
-                var v = w.state.mineRoom("mine_ore").veins.get(0);
+                w.state.mineRoom(w.map.entranceRoom("mine").id).veins.forEach(v -> { });
+                var v = w.state.mineRoom(w.map.entranceRoom("mine").id).veins.get(0);
                 var o = w.map.vein(v.candidateId);
                 w.hero.x = o.x();
                 w.hero.y = o.y() + (o.y() > w.room.centerY() ? -26 : 26);
@@ -75,7 +75,7 @@ class Showcase implements Runnable {
             case 7: at(9.2f, () -> shot("04_forge")); break;
             case 8: at(9.6f, () -> {
                 gs.windows().closeAll();
-                put(world().map.room("mine_battle_a"), 220, 0);
+                put(world().map.firstCombatRoom("mine"), 0, -40);
                 in.attackHeld = false;
             }); break;
             case 9: at(11.0f, () -> {
@@ -97,7 +97,7 @@ class Showcase implements Runnable {
             case 13: at(14f, () -> {
                 Progress.onBossDefeated(g.balance, world().state, "boss_mine");
                 world().state.awakenGuideSeen = true;
-                put(world().map.room("fortress_battle_a"), -240, 0);
+                put(world().map.firstCombatRoom("fortress"), 0, -40);
             }); break;
             case 14: at(16.3f, () -> {
                 GameWorld w = world();

@@ -10,8 +10,6 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -27,6 +25,7 @@ import com.yongsa.model.MineRoomState;
 import com.yongsa.model.VeinState;
 import com.yongsa.model.WeaponState;
 import com.yongsa.world.DoorDef;
+import com.yongsa.world.DungeonMap;
 import com.yongsa.world.GameWorld;
 import com.yongsa.world.MapObject;
 import com.yongsa.world.RoomDef;
@@ -47,7 +46,7 @@ public class WorldRenderer implements Disposable {
 
     private final SpriteBatch batch;
     private final ShapeRenderer shapes;
-    private final OrthogonalTiledMapRenderer tiles;
+    private final TileLayer tiles;
     private final SpriteLibrary sprites;
     private final Textures tx;
     private final Fonts fonts;
@@ -59,7 +58,17 @@ public class WorldRenderer implements Disposable {
     private final Vector3 tmp3 = new Vector3();
 
     private static final Color WARN = new Color(1f, 0.32f, 0.18f, 1f);
-    private static final Color AMBIENT = new Color(0.42f, 0.39f, 0.45f, 1f);
+    /** 테마별 기본 밝기: 캠프, 폐광, 요새, 신전. */
+    private static final Color[] AMBIENTS = {
+            new Color(0.52f, 0.46f, 0.45f, 1f), new Color(0.46f, 0.41f, 0.39f, 1f),
+            new Color(0.38f, 0.43f, 0.52f, 1f), new Color(0.43f, 0.37f, 0.52f, 1f)};
+    private final Color ambient = new Color(AMBIENTS[0]);
+
+    private void updateAmbient(GameWorld w) {
+        int t = w.map.theme((int) (cam.position.x / w.map.tileSize), (int) (cam.position.y / w.map.tileSize));
+        Color target = AMBIENTS[Math.max(0, Math.min(3, t))];
+        ambient.lerp(target, 0.05f);
+    }
 
     private interface Draw {
         void draw();
@@ -77,10 +86,10 @@ public class WorldRenderer implements Disposable {
 
     private final List<Item> items = new ArrayList<>();
 
-    public WorldRenderer(SpriteBatch batch, ShapeRenderer shapes, TiledMap map, SpriteLibrary sprites, Textures tx, Fonts fonts) {
+    public WorldRenderer(SpriteBatch batch, ShapeRenderer shapes, DungeonMap map, SpriteLibrary sprites, Textures tx, Fonts fonts) {
         this.batch = batch;
         this.shapes = shapes;
-        this.tiles = new OrthogonalTiledMapRenderer(map, 1f, batch);
+        this.tiles = new TileLayer(map, Gdx.files.internal("data/tileset.json"));
         this.sprites = sprites;
         this.tx = tx;
         this.fonts = fonts;
@@ -147,16 +156,13 @@ public class WorldRenderer implements Disposable {
         cam.position.add(shakeX, shakeY, 0);
         cam.update();
 
-        // 1) 타일
-        tiles.setView(cam);
-        tiles.render();
-
         Gdx.gl.glEnable(GL20.GL_BLEND);
         batch.setProjectionMatrix(cam.combined);
         shapes.setProjectionMatrix(cam.combined);
 
-        // 2) 바닥 장식: 문, 지름길, 귀환문, 그림자
+        // 1) 타일과 바닥 장식 (깔개, 봉인 문양, 뼈, 지름길, 귀환문)
         batch.begin();
+        tiles.render(batch, cam);
         drawFloorDecals(w);
         batch.end();
 
@@ -173,13 +179,15 @@ public class WorldRenderer implements Disposable {
         if (!w.hero.dead) drawHero(w, 0.28f);
         drawHeroAttackFx(w);
         fx.drawParticles(batch, tx);
+        fx.drawDust(batch, tx);
         batch.end();
 
         // 5) 경고 테두리는 장식물 위에
         drawTelegraphOutline(w);
 
         // 6) 조명
-        lighting.begin(batch, cam, AMBIENT);
+        updateAmbient(w);
+        lighting.begin(batch, cam, ambient);
         drawLights(w);
         lighting.end(batch);
         lighting.apply(batch, cam);
@@ -200,45 +208,80 @@ public class WorldRenderer implements Disposable {
 
     // ---- 바닥 ----
 
+    private boolean visible(float x, float y, float margin) {
+        return Math.abs(x - cam.position.x) < VIEW_W / 2f + margin && Math.abs(y - cam.position.y) < VIEW_H / 2f + margin;
+    }
+
     private void drawFloorDecals(GameWorld w) {
-        for (DoorDef d : w.map.doors) {
-            if (!w.isDoorLocked(d)) continue;
-            TextureRegion bars = sprites.placeholder(d.horizontal() ? "door_bars_h" : "door_bars_v");
-            Rectangle b = d.bounds;
-            if (d.horizontal()) {
-                for (float x = b.x; x < b.x + b.width; x += bars.getRegionWidth()) {
-                    float ww = Math.min(bars.getRegionWidth(), b.x + b.width - x);
-                    batch.draw(bars.getTexture(), x, b.y + 8, ww, bars.getRegionHeight(),
-                            bars.getRegionX(), bars.getRegionY(), (int) ww, bars.getRegionHeight(), false, false);
+        for (MapObject d : w.map.decor) {
+            if (!isGroundDecal(d.type) || !visible(d.x(), d.y(), 220)) continue;
+            if ("boss_seal".equals(d.type)) batch.setColor(1, 1, 1, 0.35f + 0.1f * MathUtils.sin(w.time * 1.5f));
+            drawProp(d.type, d.x(), d.y());
+            batch.setColor(Color.WHITE);
+        }
+        for (MapObject o : w.map.interacts) {
+            if (!visible(o.x(), o.y(), 100)) continue;
+            if ("shortcut".equals(o.type)) {
+                boolean open = w.state.hasShortcut(o.prop("zone"));
+                batch.setColor(open ? Color.WHITE : new Color(0.6f, 0.58f, 0.62f, 1f));
+                drawProp("shortcut_door", o.x(), o.bounds.y);
+                batch.setColor(Color.WHITE);
+                if (open) {
+                    batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+                    batch.setColor(0.6f, 0.35f, 1f, 0.35f + 0.15f * MathUtils.sin(w.time * 3f));
+                    batch.draw(tx.glow, o.x() - 22, o.bounds.y, 44, 50);
+                    batch.setColor(Color.WHITE);
+                    batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
                 }
-            } else {
-                for (float y = b.y; y < b.y + b.height; y += bars.getRegionHeight()) {
-                    float hh = Math.min(bars.getRegionHeight(), b.y + b.height - y);
-                    batch.draw(bars.getTexture(), b.x + 8, y, bars.getRegionWidth(), hh,
-                            bars.getRegionX(), bars.getRegionY(), bars.getRegionWidth(), (int) hh, false, false);
-                }
-            }
-            if (w.isZoneGate(d)) {
-                TextureRegion rune = sprites.placeholder("rune_circle");
-                float pulse = 0.75f + 0.25f * MathUtils.sin(w.time * 3f);
-                batch.setColor(1, 1, 1, pulse);
-                batch.draw(rune, b.x + b.width / 2f - rune.getRegionWidth() / 2f, b.y + b.height / 2f - rune.getRegionHeight() / 2f);
+            } else if ("return".equals(o.type)) {
+                batch.setColor(1, 1, 1, 0.75f + 0.25f * MathUtils.sin(w.time * 2.5f));
+                drawProp("rune_circle", o.x(), o.y() - 12);
                 batch.setColor(Color.WHITE);
             }
         }
-        for (MapObject o : w.map.interacts) {
-            if ("shortcut".equals(o.type)) {
-                TextureRegion door = sprites.placeholder("shortcut_door");
-                boolean open = w.state.hasShortcut(o.prop("zone"));
-                batch.setColor(open ? Color.WHITE : new Color(0.55f, 0.55f, 0.6f, 1f));
-                batch.draw(door, o.x() - door.getRegionWidth() / 2f, o.bounds.y);
-                batch.setColor(Color.WHITE);
-            } else if ("return".equals(o.type)) {
-                TextureRegion rune = sprites.placeholder("rune_circle");
-                batch.setColor(1, 1, 1, 0.8f + 0.2f * MathUtils.sin(w.time * 2.5f));
-                batch.draw(rune, o.x() - rune.getRegionWidth() / 2f, o.y() - rune.getRegionHeight() / 2f);
-                batch.setColor(Color.WHITE);
+    }
+
+    private static boolean isGroundDecal(String type) {
+        switch (type) {
+            case "rug":
+            case "boss_seal":
+            case "bones":
+            case "skull":
+            case "rubble":
+            case "cobweb":
+            case "cobweb_r":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /** 잠긴 문: 창살. 세로 통로를 막는 문은 정면 창살, 가로 통로를 막는 문은 옆에서 본 창살. */
+    private void drawDoor(GameWorld w, DoorDef d) {
+        Rectangle b = d.bounds;
+        if (d.horizontal()) {
+            SpriteLibrary.Entry e = sprites.get("gate_h");
+            if (e == null) return;
+            TextureRegion r = e.frame("idle", 0);
+            for (float x = b.x; x < b.x + b.width - 1; x += r.getRegionWidth()) {
+                float ww = Math.min(r.getRegionWidth(), b.x + b.width - x);
+                batch.draw(r.getTexture(), x, b.y + 4, ww, r.getRegionHeight(), r.getRegionX(), r.getRegionY(),
+                        (int) ww, r.getRegionHeight(), false, false);
             }
+        } else {
+            SpriteLibrary.Entry e = sprites.get("gate_v");
+            if (e == null) return;
+            TextureRegion r = e.frame("idle", 0);
+            float cx = b.x + b.width / 2f - r.getRegionWidth() / 2f;
+            for (float y = b.y; y < b.y + b.height + 20; y += r.getRegionHeight()) {
+                batch.draw(r, cx, y);
+            }
+        }
+        if (w.isZoneGate(d)) {
+            float pulse = 0.7f + 0.3f * MathUtils.sin(w.time * 3f);
+            batch.setColor(1, 1, 1, pulse);
+            drawProp("rune_circle", b.x + b.width / 2f, b.y + b.height / 2f - 12);
+            batch.setColor(Color.WHITE);
         }
     }
 
@@ -250,39 +293,42 @@ public class WorldRenderer implements Disposable {
     // ---- 정렬되는 오브젝트 ----
 
     private void collectItems(GameWorld w) {
-        float left = cam.position.x - VIEW_W / 2f - 96, right = cam.position.x + VIEW_W / 2f + 96;
-        float bottom = cam.position.y - VIEW_H / 2f - 96, top = cam.position.y + VIEW_H / 2f + 128;
         for (MapObject d : w.map.decor) {
             float x = d.x(), y = d.y();
-            if (x < left || x > right || y < bottom || y > top) continue;
+            if (isGroundDecal(d.type) || !visible(x, y, 120)) continue;
             String type = d.type;
             if (type.startsWith("torch_")) {
-                items.add(new Item(y + 40, () -> drawProp("torch", x, y - 4)));
+                items.add(new Item(y + 64, () -> drawProp("torch", x, y)));
                 continue;
             }
             switch (type) {
-                case "campfire":
-                    items.add(new Item(y, () -> drawProp("campfire_log", x, y - 10)));
+                case "banner":
+                    items.add(new Item(y + 64, () -> drawProp("banner", x, y + 46)));
                     break;
-                case "bedroll":
-                case "furnace":
-                case "anvil":
-                case "workbench":
-                case "crate":
-                case "lantern_table":
-                case "brazier":
+                case "campfire":
+                    items.add(new Item(y, () -> drawProp("campfire_log", x, y - 8)));
+                    break;
                 case "pillar":
+                case "statue":
                     items.add(new Item(y, () -> {
-                        if (!"pillar".equals(type)) shadow(x, y - 2, 36);
-                        drawProp(type, x, y - 8);
+                        shadow(x, y, 34);
+                        drawProp(type, x, y - 6);
                     }));
                     break;
                 default:
+                    items.add(new Item(y, () -> {
+                        shadow(x, y, 30);
+                        drawProp(type, x, y - 6);
+                    }));
                     break;
             }
         }
-        // 광맥
-        if (w.room != null && w.room.kind == RoomDef.Kind.ORE) {
+        for (DoorDef d : w.map.doors) {
+            if (!w.isDoorLocked(d) || !visible(d.bounds.x, d.bounds.y, 120)) continue;
+            items.add(new Item(d.bounds.y + 2, () -> drawDoor(w, d)));
+        }
+        // 광맥 (전투가 끝난 방에서 캘 수 있다)
+        if (w.room != null && w.room.veins) {
             MineRoomState m = w.state.mineRoom(w.room.id);
             if (m != null) {
                 for (VeinState v : m.veins) {
@@ -315,26 +361,25 @@ public class WorldRenderer implements Disposable {
     }
 
     private void drawVein(GameWorld w, String zone, float x, float y, String id) {
-        shadow(x, y - 4, 34);
-        SpriteLibrary.Entry e = sprites.get("vein");
-        TextureRegion r = e.frame("idle", 0);
-        Color tint = "fortress".equals(zone) ? new Color(0.75f, 0.85f, 1.1f, 1) : "temple".equals(zone)
-                ? new Color(1.0f, 0.8f, 1.15f, 1) : Color.WHITE;
-        batch.setColor(tint);
-        batch.draw(r, x - e.originX, y - 8, r.getRegionWidth() * e.scale, r.getRegionHeight() * e.scale);
-        batch.setColor(Color.WHITE);
+        shadow(x, y - 2, 36);
+        String key = sprites.get("vein_" + zone) != null ? "vein_" + zone : "vein";
+        drawProp(key, x, y - 6);
         // 반짝임
         float s = (MathUtils.sin(w.time * 4f + x) + 1) / 2f;
-        batch.setColor(1f, 0.95f, 0.6f, 0.4f + 0.6f * s);
-        batch.draw(tx.white, x - 6 + (x % 7), y + 6, 2, 2);
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+        batch.setColor(1f, 0.95f, 0.7f, 0.5f * s);
+        float sx = x - 8 + (Math.abs((int) x) % 13), sy = y + 4 + (Math.abs((int) y) % 7);
+        batch.draw(tx.white, sx - 1, sy, 3, 1);
+        batch.draw(tx.white, sx, sy - 1, 1, 3);
         batch.setColor(Color.WHITE);
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         // 채굴 진행
         if (id.equals(w.miningVein) && w.miningProgress > 0) {
             float p = Math.min(1, w.miningProgress / w.b.mining.holdTime);
             batch.setColor(0, 0, 0, 0.7f);
-            batch.draw(tx.white, x - 18, y + 22, 36, 6);
+            batch.draw(tx.white, x - 18, y + 24, 36, 6);
             batch.setColor(1f, 0.85f, 0.3f, 1);
-            batch.draw(tx.white, x - 17, y + 23, 34 * p, 4);
+            batch.draw(tx.white, x - 17, y + 25, 34 * p, 4);
             batch.setColor(Color.WHITE);
         }
     }
@@ -350,7 +395,7 @@ public class WorldRenderer implements Disposable {
         float sw = r.getRegionWidth() * s.scale, sh = r.getRegionHeight() * s.scale;
         boolean flip = e.faceLeft != s.facesLeft;
         float ox = s.originX * s.scale;
-        float bob = "watcher".equals(e.id) ? 6 + MathUtils.sin(t * 3f) * 3 : 0;
+        float bob = "watcher".equals(e.id) ? 8 + MathUtils.sin(t * 3f) * 3 : "boss_temple".equals(e.id) ? 6 + MathUtils.sin(t * 2f) * 3 : 0;
         // 예고 중에는 몸을 살짝 웅크리거나 떤다
         float shakeX = e.state == Enemy.State.TELEGRAPH ? MathUtils.sin(e.stateTime * 60f) * 1.2f : 0;
         float x0 = e.x - (flip ? sw - ox : ox) + shakeX;
@@ -508,15 +553,12 @@ public class WorldRenderer implements Disposable {
             float dx = Dir8.DX[a.dir], dy = Dir8.DY[a.dir];
             if (a.kind == AttackInstance.Kind.NORMAL) {
                 if (ph == AttackInstance.Phase.ACTIVE) {
-                    shapes.setColor(1f, 0.97f, 0.85f, 0.22f);
+                    shapes.setColor(1f, 0.97f, 0.85f, 0.08f);
                     fillShape(HitShape.box(ox, oy, dx, dy, a.length, a.width), 1f);
-                    slashArc(ox, oy, dx, dy, a.length, a.width, (a.t - a.windup) / a.active);
+                    slashArc(ox, oy, dx, dy, a.length, a.width, (a.t - a.windup) / a.active, 1f);
                 } else if (ph == AttackInstance.Phase.RECOVERY) {
                     float k = 1f - (a.t - a.windup - a.active) / 0.12f;
-                    if (k > 0) {
-                        shapes.setColor(1f, 0.97f, 0.85f, 0.18f * k);
-                        fillShape(HitShape.box(ox, oy, dx, dy, a.length, a.width), 1f);
-                    }
+                    if (k > 0) slashArc(ox, oy, dx, dy, a.length, a.width, 1f, k);
                 }
             } else if (a.effectiveLength >= 0) {
                 float k = ph == AttackInstance.Phase.ACTIVE ? 1f
@@ -547,26 +589,31 @@ public class WorldRenderer implements Disposable {
         shapes.end();
     }
 
-    /** 판정 상자 안쪽에 그리는 초승달 모양 베기 궤적. */
-    private void slashArc(float ox, float oy, float dx, float dy, float length, float width, float progress) {
+    /** 판정 상자 안에 그리는 초승달 모양 베기 궤적 (바깥쪽이 밝고 안쪽으로 흐려진다). */
+    private void slashArc(float ox, float oy, float dx, float dy, float length, float width, float progress, float alpha) {
         float px = -dy, py = dx;
-        int n = 10;
-        float r = length * 0.72f;
+        int n = 14;
         float half = width / 2f * 0.95f;
-        float prevX = 0, prevY = 0;
-        for (int i = 0; i <= n; i++) {
-            float k = i / (float) n;
-            if (k > progress + 0.35f) break;
-            float across = -half + 2 * half * k;
-            float along = (float) Math.sqrt(Math.max(0, r * r - across * across * 0.6f));
-            along = Math.min(along, length - 4);
-            float x = ox + dx * along + px * across, y = oy + dy * along + py * across;
-            if (i > 0) {
-                shapes.setColor(1f, 1f, 0.95f, 0.85f);
-                shapes.rectLine(prevX, prevY, x, y, 4f - 2.5f * Math.abs(k - 0.5f) * 2);
+        int shown = Math.max(2, Math.round(n * Math.min(1f, progress + 0.3f)));
+        for (int band = 0; band < 4; band++) {
+            float r = length * (0.95f - band * 0.12f);
+            float a = alpha * (0.9f - band * 0.22f);
+            float prevX = 0, prevY = 0;
+            for (int i = 0; i <= shown; i++) {
+                float k = i / (float) n;
+                float across = half - 2 * half * k;
+                float along = (float) Math.sqrt(Math.max(0, r * r - across * across)) ;
+                along = Math.max(6, Math.min(along, length - 2));
+                float x = ox + dx * along + px * across, y = oy + dy * along + py * across;
+                if (i > 0) {
+                    float thick = (band == 0 ? 3.5f : 3f) * (0.4f + 0.6f * (float) Math.sin(Math.PI * k));
+                    if (band == 0) shapes.setColor(1f, 1f, 0.95f, a);
+                    else shapes.setColor(0.85f, 0.92f, 1f, a);
+                    shapes.rectLine(prevX, prevY, x, y, thick);
+                }
+                prevX = x;
+                prevY = y;
             }
-            prevX = x;
-            prevY = y;
         }
     }
 
@@ -602,13 +649,13 @@ public class WorldRenderer implements Disposable {
             float flick = 0.9f + 0.1f * MathUtils.sin(t * 9f + x * 0.37f) + 0.05f * MathUtils.sin(t * 23f + y);
             switch (d.type) {
                 case "torch_warm":
-                    lighting.light(batch, x, y + 6, 220 * flick, 1f, 0.62f, 0.3f, 0.95f);
+                    lighting.light(batch, x, y + 18, 230 * flick, 1f, 0.62f, 0.3f, 0.95f);
                     break;
                 case "torch_blue":
-                    lighting.light(batch, x, y + 6, 220 * flick, 0.35f, 0.55f, 1f, 0.95f);
+                    lighting.light(batch, x, y + 18, 230 * flick, 0.4f, 0.6f, 1f, 0.95f);
                     break;
                 case "torch_violet":
-                    lighting.light(batch, x, y + 6, 220 * flick, 0.7f, 0.4f, 1f, 0.95f);
+                    lighting.light(batch, x, y + 18, 230 * flick, 0.75f, 0.45f, 1f, 0.95f);
                     break;
                 case "campfire":
                     lighting.light(batch, x, y, 300 * flick, 1f, 0.6f, 0.28f, 1.1f);
@@ -621,6 +668,9 @@ public class WorldRenderer implements Disposable {
                     break;
                 case "lantern_table":
                     lighting.light(batch, x, y + 12, 110 * flick, 1f, 0.8f, 0.45f, 0.8f);
+                    break;
+                case "candles":
+                    lighting.light(batch, x, y + 6, 90 * flick, 1f, 0.75f, 0.45f, 0.7f);
                     break;
                 default:
                     break;
@@ -662,13 +712,13 @@ public class WorldRenderer implements Disposable {
                 }
             }
         }
-        if (w.room != null && w.room.kind == RoomDef.Kind.ORE) {
+        if (w.room != null && w.room.veins) {
             MineRoomState m = w.state.mineRoom(w.room.id);
             if (m != null) {
                 for (VeinState v : m.veins) {
                     if (v.mined) continue;
                     MapObject o = w.map.vein(v.candidateId);
-                    if (o != null) lighting.light(batch, o.x(), o.y(), 60, 1f, 0.85f, 0.5f, 0.45f);
+                    if (o != null) lighting.light(batch, o.x(), o.y() + 4, 70, 1f, 0.85f, 0.55f, 0.5f);
                 }
             }
         }
@@ -684,13 +734,13 @@ public class WorldRenderer implements Disposable {
             if (x < left || x > right || y < bottom || y > top) continue;
             switch (d.type) {
                 case "torch_warm":
-                    flame(x, y + 14, 0.7f, t, 1f, 0.55f, 0.2f);
+                    flame(x, y + 16, 0.6f, t, 1f, 0.55f, 0.2f);
                     break;
                 case "torch_blue":
-                    flame(x, y + 14, 0.7f, t, 0.35f, 0.6f, 1f);
+                    flame(x, y + 16, 0.6f, t, 0.35f, 0.6f, 1f);
                     break;
                 case "torch_violet":
-                    flame(x, y + 14, 0.7f, t, 0.75f, 0.4f, 1f);
+                    flame(x, y + 16, 0.6f, t, 0.75f, 0.4f, 1f);
                     break;
                 case "campfire":
                     flame(x - 6, y - 4, 1.3f, t + 0.3f, 1f, 0.45f, 0.12f);
@@ -703,7 +753,12 @@ public class WorldRenderer implements Disposable {
                     break;
                 case "furnace":
                     batch.setColor(1f, 0.5f, 0.15f, 0.35f + 0.15f * MathUtils.sin(t * 7f));
-                    batch.draw(tx.glow, x - 22, y - 2, 44, 30);
+                    batch.draw(tx.glow, x - 22, y - 8, 44, 30);
+                    break;
+                case "candles":
+                    flame(x - 4, y + 2, 0.22f, t, 1f, 0.7f, 0.3f);
+                    flame(x + 1, y + 5, 0.22f, t + 0.4f, 1f, 0.7f, 0.3f);
+                    flame(x + 6, y, 0.22f, t + 0.8f, 1f, 0.7f, 0.3f);
                     break;
                 default:
                     break;
@@ -753,7 +808,9 @@ public class WorldRenderer implements Disposable {
         // 상호작용 안내 (안내 대상 = 실행 대상)
         if (w.focus != null && !w.hero.dead) {
             Color c = w.focus.enabled ? Color.WHITE : new Color(0.7f, 0.7f, 0.75f, 1f);
-            labelBox(f, w.focus.label, w.focus.x, w.focus.y + 14, c);
+            boolean vein = w.focus.kind == GameWorld.FocusKind.VEIN;
+            // 광맥 안내는 용사 머리 위에 띄워 용사를 가리지 않는다
+            labelBox(f, w.focus.label, vein ? w.hero.x : w.focus.x, vein ? w.hero.y + 58 : w.focus.y + 14, c);
         }
     }
 

@@ -25,6 +25,8 @@ public class Effects {
     }
 
     private final List<Particle> particles = new ArrayList<>();
+    /** 공중에 떠다니는 먼지 (분위기). */
+    private final List<Particle> dust = new ArrayList<>();
     private final List<FloatText> texts = new ArrayList<>();
     private final Random rnd = new Random();
     private final GlyphLayout layout = new GlyphLayout();
@@ -55,6 +57,38 @@ public class Effects {
         t.maxLife = t.life = 0.9f;
         t.scale = scale;
         texts.add(t);
+    }
+
+    /** 카메라 주변에 먼지를 유지한다. */
+    public void updateDust(float camX, float camY, float dt) {
+        while (dust.size() < 46) {
+            Particle p = new Particle();
+            p.x = camX + (rnd.nextFloat() - 0.5f) * 1000;
+            p.y = camY + (rnd.nextFloat() - 0.5f) * 580;
+            p.vx = (rnd.nextFloat() - 0.5f) * 8;
+            p.vy = 3 + rnd.nextFloat() * 6;
+            p.maxLife = p.life = 4 + rnd.nextFloat() * 5;
+            p.size = rnd.nextFloat() < 0.3f ? 2 : 1;
+            p.color = rnd.nextFloat() < 0.5f ? new Color(1f, 0.9f, 0.7f, 1) : new Color(0.85f, 0.85f, 0.9f, 1);
+            dust.add(p);
+        }
+        for (Iterator<Particle> it = dust.iterator(); it.hasNext(); ) {
+            Particle p = it.next();
+            p.life -= dt;
+            p.x += (p.vx + (float) Math.sin(p.life * 1.3f) * 4) * dt;
+            p.y += p.vy * dt;
+            if (p.life <= 0 || Math.abs(p.x - camX) > 560 || Math.abs(p.y - camY) > 330) it.remove();
+        }
+    }
+
+    public void drawDust(SpriteBatch batch, Textures tx) {
+        for (Particle p : dust) {
+            float k = p.life / p.maxLife;
+            float a = Math.min(1, Math.min(k * 3, (1 - k) * 3)) * 0.35f;
+            batch.setColor(p.color.r, p.color.g, p.color.b, a);
+            batch.draw(tx.white, p.x, p.y, p.size, p.size);
+        }
+        batch.setColor(Color.WHITE);
     }
 
     public void update(float dt) {
