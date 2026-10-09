@@ -10,6 +10,8 @@ public class Hero {
     public int hp;
     public int maxHp;
     public int aimDir = 6;
+    /** 그림이 바라보는 8방향 (공격 중이면 공격 방향, 아니면 마지막 이동 방향). */
+    public int facing = 6;
     public boolean faceLeft;
     public float invuln;
     public float kbTime, kbVx, kbVy;

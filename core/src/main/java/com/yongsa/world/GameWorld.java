@@ -166,6 +166,8 @@ public class GameWorld implements Arena {
                 startAttack(w);
             }
         }
+        if (hero.attack != null) hero.facing = hero.attack.dir;
+        else if (hero.moving) hero.facing = Dir8.fromVector(mx, my, hero.facing, 0.01f);
         if (hero.attack != null) hero.faceLeft = Dir8.facesLeft(hero.attack.dir);
         else if (Math.abs(mx) > 0.01f) hero.faceLeft = mx < 0;
     }

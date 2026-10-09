@@ -315,12 +315,12 @@
   <object id="18" name="mine_door_ab" type="door" x="1280.0" y="3456.0" width="128.0" height="32.0"><properties><property name="rule" value="cleared:mine_battle_a"/><property name="combat" value="mine_battle_a,mine_battle_b"/></properties></object>
   <object id="19" name="mine_door_b" type="door" x="1280.0" y="2592.0" width="128.0" height="32.0"><properties><property name="rule" value="cleared:mine_battle_b"/><property name="combat" value="mine_battle_b"/></properties></object>
   <object id="20" name="mine_door_boss" type="door" x="1280.0" y="2144.0" width="128.0" height="32.0"><properties><property name="combat" value="mine_boss"/></properties></object>
-  <object id="21" name="fortress_gate" type="door" x="3680.0" y="3680.0" width="32.0" height="96.0"><properties><property name="rule" value="zone:fortress"/></properties></object>
+  <object id="21" name="fortress_gate" type="door" x="3648.0" y="3680.0" width="32.0" height="96.0"><properties><property name="rule" value="zone:fortress"/></properties></object>
   <object id="22" name="fortress_door_a" type="door" x="4704.0" y="3680.0" width="32.0" height="96.0"><properties><property name="rule" value="weapon"/><property name="combat" value="fortress_battle_a"/></properties></object>
   <object id="23" name="fortress_door_ab" type="door" x="4992.0" y="3456.0" width="128.0" height="32.0"><properties><property name="rule" value="cleared:fortress_battle_a"/><property name="combat" value="fortress_battle_a,fortress_battle_b"/></properties></object>
   <object id="24" name="fortress_door_b" type="door" x="4992.0" y="2592.0" width="128.0" height="32.0"><properties><property name="rule" value="cleared:fortress_battle_b"/><property name="combat" value="fortress_battle_b"/></properties></object>
   <object id="25" name="fortress_door_boss" type="door" x="4992.0" y="2144.0" width="128.0" height="32.0"><properties><property name="combat" value="fortress_boss"/></properties></object>
-  <object id="26" name="temple_gate" type="door" x="3136.0" y="3456.0" width="128.0" height="32.0"><properties><property name="rule" value="zone:temple"/></properties></object>
+  <object id="26" name="temple_gate" type="door" x="3136.0" y="3488.0" width="128.0" height="32.0"><properties><property name="rule" value="zone:temple"/></properties></object>
   <object id="27" name="temple_door_a" type="door" x="3136.0" y="2624.0" width="128.0" height="32.0"><properties><property name="rule" value="weapon"/><property name="combat" value="temple_battle_a"/></properties></object>
   <object id="28" name="temple_door_ab" type="door" x="3136.0" y="2144.0" width="128.0" height="32.0"><properties><property name="rule" value="cleared:temple_battle_a"/><property name="combat" value="temple_battle_a,temple_battle_b"/></properties></object>
   <object id="29" name="temple_door_b" type="door" x="3136.0" y="1344.0" width="128.0" height="32.0"><properties><property name="rule" value="cleared:temple_battle_b"/><property name="combat" value="temple_battle_b"/></properties></object>
@@ -389,8 +389,8 @@
   <object id="86" name="shortcut_temple_ante" type="point" x="3040.0" y="1160.0"><point/></object>
  </objectgroup>
  <objectgroup id="8" name="interact">
-  <object id="87" name="bed" type="bed" x="2962.0" y="3738.0" width="60.0" height="44.0"></object>
-  <object id="88" name="forge" type="forge" x="3368.0" y="3730.0" width="80.0" height="60.0"></object>
+  <object id="87" name="bed" type="bed" x="3026.0" y="3738.0" width="60.0" height="44.0"></object>
+  <object id="88" name="forge" type="forge" x="3304.0" y="3730.0" width="80.0" height="60.0"></object>
   <object id="89" name="shortcut_mine" type="shortcut" x="2756.0" y="3568.0" width="40.0" height="56.0"><properties><property name="zone" value="mine"/></properties></object>
   <object id="90" name="return_mine" type="return" x="1112.0" y="2376.0" width="48.0" height="56.0"><properties><property name="zone" value="mine"/></properties></object>
   <object id="91" name="shortcut_fortress" type="shortcut" x="3604.0" y="3568.0" width="40.0" height="56.0"><properties><property name="zone" value="fortress"/></properties></object>
@@ -400,60 +400,102 @@
  </objectgroup>
  <objectgroup id="9" name="solids">
   <object id="95" name="solid_0" type="solid" x="3180.0" y="3732.0" width="40.0" height="22.0"></object>
-  <object id="96" name="solid_1" type="solid" x="2964.0" y="3746.0" width="56.0" height="26.0"></object>
-  <object id="97" name="solid_2" type="solid" x="3360.0" y="3660.8" width="64.0" height="36.0"></object>
-  <object id="98" name="solid_3" type="solid" x="3392.0" y="3754.0" width="32.0" height="16.0"></object>
-  <object id="99" name="solid_4" type="solid" x="3449.6" y="3699.2" width="48.0" height="24.0"></object>
-  <object id="100" name="solid_5" type="solid" x="2834.0" y="3608.0" width="28.0" height="16.0"></object>
-  <object id="101" name="solid_6" type="solid" x="2834.0" y="3864.0" width="28.0" height="16.0"></object>
-  <object id="102" name="solid_7" type="solid" x="3538.0" y="3608.0" width="28.0" height="16.0"></object>
-  <object id="103" name="solid_8" type="solid" x="3538.0" y="3864.0" width="28.0" height="16.0"></object>
+  <object id="96" name="solid_1" type="solid" x="3028.0" y="3746.0" width="56.0" height="26.0"></object>
+  <object id="97" name="solid_2" type="solid" x="3040.0" y="3665.6" width="32.0" height="14.0"></object>
+  <object id="98" name="solid_3" type="solid" x="2964.0" y="3684.8" width="24.0" height="14.0"></object>
+  <object id="99" name="solid_4" type="solid" x="3296.0" y="3660.8" width="64.0" height="36.0"></object>
+  <object id="100" name="solid_5" type="solid" x="3328.0" y="3754.0" width="32.0" height="16.0"></object>
+  <object id="101" name="solid_6" type="solid" x="3385.6" y="3699.2" width="48.0" height="24.0"></object>
+  <object id="102" name="solid_7" type="solid" x="2834.0" y="3608.0" width="28.0" height="16.0"></object>
+  <object id="103" name="solid_8" type="solid" x="2834.0" y="3864.0" width="28.0" height="16.0"></object>
+  <object id="104" name="solid_9" type="solid" x="3538.0" y="3608.0" width="28.0" height="16.0"></object>
+  <object id="105" name="solid_10" type="solid" x="3538.0" y="3864.0" width="28.0" height="16.0"></object>
  </objectgroup>
  <objectgroup id="10" name="decor">
-  <object id="104" name="decor_0" type="campfire" x="3200.0" y="3744.0"><point/></object>
-  <object id="105" name="decor_1" type="bedroll" x="2992.0" y="3760.0"><point/></object>
-  <object id="106" name="decor_2" type="crate" x="2912.0" y="3680.0"><point/></object>
-  <object id="107" name="decor_3" type="lantern_table" x="3008.0" y="3667.2"><point/></object>
-  <object id="108" name="decor_4" type="furnace" x="3392.0" y="3686.4"><point/></object>
-  <object id="109" name="decor_5" type="anvil" x="3408.0" y="3764.0"><point/></object>
-  <object id="110" name="decor_6" type="workbench" x="3488.0" y="3718.4"><point/></object>
-  <object id="111" name="decor_7" type="torch_warm" x="2931.2" y="3514.0"><point/></object>
-  <object id="112" name="decor_8" type="torch_warm" x="3468.8" y="3514.0"><point/></object>
-  <object id="113" name="decor_9" type="torch_warm" x="1958.4" y="3514.0"><point/></object>
-  <object id="114" name="decor_10" type="torch_warm" x="2265.6" y="3514.0"><point/></object>
-  <object id="115" name="decor_11" type="torch_warm" x="1152.0" y="3482.0"><point/></object>
-  <object id="116" name="decor_12" type="torch_warm" x="1536.0" y="3482.0"><point/></object>
-  <object id="117" name="decor_13" type="torch_warm" x="1152.0" y="2778.0"><point/></object>
-  <object id="118" name="decor_14" type="torch_warm" x="1536.0" y="2778.0"><point/></object>
-  <object id="119" name="decor_15" type="torch_warm" x="1190.4" y="2266.0"><point/></object>
-  <object id="120" name="decor_16" type="torch_warm" x="1497.6" y="2266.0"><point/></object>
-  <object id="121" name="decor_17" type="torch_warm" x="1113.6" y="1754.0"><point/></object>
-  <object id="122" name="decor_18" type="torch_warm" x="1574.4" y="1754.0"><point/></object>
-  <object id="123" name="decor_19" type="torch_blue" x="4134.4" y="3514.0"><point/></object>
-  <object id="124" name="decor_20" type="torch_blue" x="4441.6" y="3514.0"><point/></object>
-  <object id="125" name="decor_21" type="torch_blue" x="4864.0" y="3482.0"><point/></object>
-  <object id="126" name="decor_22" type="torch_blue" x="5248.0" y="3482.0"><point/></object>
-  <object id="127" name="decor_23" type="torch_blue" x="4864.0" y="2778.0"><point/></object>
-  <object id="128" name="decor_24" type="torch_blue" x="5248.0" y="2778.0"><point/></object>
-  <object id="129" name="decor_25" type="torch_blue" x="4902.4" y="2266.0"><point/></object>
-  <object id="130" name="decor_26" type="torch_blue" x="5209.6" y="2266.0"><point/></object>
-  <object id="131" name="decor_27" type="torch_blue" x="4825.6" y="1754.0"><point/></object>
-  <object id="132" name="decor_28" type="torch_blue" x="5286.4" y="1754.0"><point/></object>
-  <object id="133" name="decor_29" type="torch_violet" x="3046.4" y="2810.0"><point/></object>
-  <object id="134" name="decor_30" type="torch_violet" x="3353.6" y="2810.0"><point/></object>
-  <object id="135" name="decor_31" type="torch_violet" x="3008.0" y="2170.0"><point/></object>
-  <object id="136" name="decor_32" type="torch_violet" x="3392.0" y="2170.0"><point/></object>
-  <object id="137" name="decor_33" type="torch_violet" x="3008.0" y="1530.0"><point/></object>
-  <object id="138" name="decor_34" type="torch_violet" x="3392.0" y="1530.0"><point/></object>
-  <object id="139" name="decor_35" type="torch_violet" x="3046.4" y="1018.0"><point/></object>
-  <object id="140" name="decor_36" type="torch_violet" x="3353.6" y="1018.0"><point/></object>
-  <object id="141" name="decor_37" type="torch_violet" x="2969.6" y="506.0"><point/></object>
-  <object id="142" name="decor_38" type="torch_violet" x="3430.4" y="506.0"><point/></object>
-  <object id="143" name="decor_39" type="brazier" x="3104.0" y="3552.0"><point/></object>
-  <object id="144" name="decor_40" type="brazier" x="3296.0" y="3552.0"><point/></object>
-  <object id="145" name="decor_41" type="pillar" x="2848.0" y="3616.0"><point/></object>
-  <object id="146" name="decor_42" type="pillar" x="2848.0" y="3872.0"><point/></object>
-  <object id="147" name="decor_43" type="pillar" x="3552.0" y="3616.0"><point/></object>
-  <object id="148" name="decor_44" type="pillar" x="3552.0" y="3872.0"><point/></object>
+  <object id="106" name="decor_0" type="campfire" x="3200.0" y="3744.0"><point/></object>
+  <object id="107" name="decor_1" type="bedroll" x="3056.0" y="3760.0"><point/></object>
+  <object id="108" name="decor_2" type="crate" x="2976.0" y="3692.8"><point/></object>
+  <object id="109" name="decor_3" type="lantern_table" x="3056.0" y="3673.6"><point/></object>
+  <object id="110" name="decor_4" type="furnace" x="3328.0" y="3686.4"><point/></object>
+  <object id="111" name="decor_5" type="anvil" x="3344.0" y="3764.0"><point/></object>
+  <object id="112" name="decor_6" type="workbench" x="3424.0" y="3718.4"><point/></object>
+  <object id="113" name="decor_7" type="torch_warm" x="2913.3" y="3514.0"><point/></object>
+  <object id="114" name="decor_8" type="torch_warm" x="3200.0" y="3514.0"><point/></object>
+  <object id="115" name="decor_9" type="torch_warm" x="3486.7" y="3514.0"><point/></object>
+  <object id="116" name="decor_10" type="torch_warm" x="1948.2" y="3514.0"><point/></object>
+  <object id="117" name="decor_11" type="torch_warm" x="2112.0" y="3514.0"><point/></object>
+  <object id="118" name="decor_12" type="torch_warm" x="2275.8" y="3514.0"><point/></object>
+  <object id="119" name="decor_13" type="torch_warm" x="1867.2" y="3635.2"><point/></object>
+  <object id="120" name="decor_14" type="torch_warm" x="2356.8" y="3635.2"><point/></object>
+  <object id="121" name="decor_15" type="torch_warm" x="1139.2" y="3482.0"><point/></object>
+  <object id="122" name="decor_16" type="torch_warm" x="1344.0" y="3482.0"><point/></object>
+  <object id="123" name="decor_17" type="torch_warm" x="1548.8" y="3482.0"><point/></object>
+  <object id="124" name="decor_18" type="torch_warm" x="1035.2" y="3622.4"><point/></object>
+  <object id="125" name="decor_19" type="torch_warm" x="1652.8" y="3622.4"><point/></object>
+  <object id="126" name="decor_20" type="torch_warm" x="1139.2" y="2778.0"><point/></object>
+  <object id="127" name="decor_21" type="torch_warm" x="1344.0" y="2778.0"><point/></object>
+  <object id="128" name="decor_22" type="torch_warm" x="1548.8" y="2778.0"><point/></object>
+  <object id="129" name="decor_23" type="torch_warm" x="1035.2" y="2918.4"><point/></object>
+  <object id="130" name="decor_24" type="torch_warm" x="1652.8" y="2918.4"><point/></object>
+  <object id="131" name="decor_25" type="torch_warm" x="1180.2" y="2266.0"><point/></object>
+  <object id="132" name="decor_26" type="torch_warm" x="1344.0" y="2266.0"><point/></object>
+  <object id="133" name="decor_27" type="torch_warm" x="1507.8" y="2266.0"><point/></object>
+  <object id="134" name="decor_28" type="torch_warm" x="1098.2" y="1754.0"><point/></object>
+  <object id="135" name="decor_29" type="torch_warm" x="1344.0" y="1754.0"><point/></object>
+  <object id="136" name="decor_30" type="torch_warm" x="1589.8" y="1754.0"><point/></object>
+  <object id="137" name="decor_31" type="torch_warm" x="971.2" y="1875.2"><point/></object>
+  <object id="138" name="decor_32" type="torch_warm" x="1716.8" y="1875.2"><point/></object>
+  <object id="139" name="decor_33" type="torch_blue" x="4124.2" y="3514.0"><point/></object>
+  <object id="140" name="decor_34" type="torch_blue" x="4288.0" y="3514.0"><point/></object>
+  <object id="141" name="decor_35" type="torch_blue" x="4451.8" y="3514.0"><point/></object>
+  <object id="142" name="decor_36" type="torch_blue" x="4043.2" y="3635.2"><point/></object>
+  <object id="143" name="decor_37" type="torch_blue" x="4532.8" y="3635.2"><point/></object>
+  <object id="144" name="decor_38" type="torch_blue" x="4851.2" y="3482.0"><point/></object>
+  <object id="145" name="decor_39" type="torch_blue" x="5056.0" y="3482.0"><point/></object>
+  <object id="146" name="decor_40" type="torch_blue" x="5260.8" y="3482.0"><point/></object>
+  <object id="147" name="decor_41" type="torch_blue" x="4747.2" y="3622.4"><point/></object>
+  <object id="148" name="decor_42" type="torch_blue" x="5364.8" y="3622.4"><point/></object>
+  <object id="149" name="decor_43" type="torch_blue" x="4851.2" y="2778.0"><point/></object>
+  <object id="150" name="decor_44" type="torch_blue" x="5056.0" y="2778.0"><point/></object>
+  <object id="151" name="decor_45" type="torch_blue" x="5260.8" y="2778.0"><point/></object>
+  <object id="152" name="decor_46" type="torch_blue" x="4747.2" y="2918.4"><point/></object>
+  <object id="153" name="decor_47" type="torch_blue" x="5364.8" y="2918.4"><point/></object>
+  <object id="154" name="decor_48" type="torch_blue" x="4892.2" y="2266.0"><point/></object>
+  <object id="155" name="decor_49" type="torch_blue" x="5056.0" y="2266.0"><point/></object>
+  <object id="156" name="decor_50" type="torch_blue" x="5219.8" y="2266.0"><point/></object>
+  <object id="157" name="decor_51" type="torch_blue" x="4810.2" y="1754.0"><point/></object>
+  <object id="158" name="decor_52" type="torch_blue" x="5056.0" y="1754.0"><point/></object>
+  <object id="159" name="decor_53" type="torch_blue" x="5301.8" y="1754.0"><point/></object>
+  <object id="160" name="decor_54" type="torch_blue" x="4683.2" y="1875.2"><point/></object>
+  <object id="161" name="decor_55" type="torch_blue" x="5428.8" y="1875.2"><point/></object>
+  <object id="162" name="decor_56" type="torch_violet" x="3036.2" y="2810.0"><point/></object>
+  <object id="163" name="decor_57" type="torch_violet" x="3200.0" y="2810.0"><point/></object>
+  <object id="164" name="decor_58" type="torch_violet" x="3363.8" y="2810.0"><point/></object>
+  <object id="165" name="decor_59" type="torch_violet" x="2955.2" y="2931.2"><point/></object>
+  <object id="166" name="decor_60" type="torch_violet" x="3444.8" y="2931.2"><point/></object>
+  <object id="167" name="decor_61" type="torch_violet" x="2995.2" y="2170.0"><point/></object>
+  <object id="168" name="decor_62" type="torch_violet" x="3200.0" y="2170.0"><point/></object>
+  <object id="169" name="decor_63" type="torch_violet" x="3404.8" y="2170.0"><point/></object>
+  <object id="170" name="decor_64" type="torch_violet" x="2891.2" y="2310.4"><point/></object>
+  <object id="171" name="decor_65" type="torch_violet" x="3508.8" y="2310.4"><point/></object>
+  <object id="172" name="decor_66" type="torch_violet" x="2995.2" y="1530.0"><point/></object>
+  <object id="173" name="decor_67" type="torch_violet" x="3200.0" y="1530.0"><point/></object>
+  <object id="174" name="decor_68" type="torch_violet" x="3404.8" y="1530.0"><point/></object>
+  <object id="175" name="decor_69" type="torch_violet" x="2891.2" y="1670.4"><point/></object>
+  <object id="176" name="decor_70" type="torch_violet" x="3508.8" y="1670.4"><point/></object>
+  <object id="177" name="decor_71" type="torch_violet" x="3036.2" y="1018.0"><point/></object>
+  <object id="178" name="decor_72" type="torch_violet" x="3200.0" y="1018.0"><point/></object>
+  <object id="179" name="decor_73" type="torch_violet" x="3363.8" y="1018.0"><point/></object>
+  <object id="180" name="decor_74" type="torch_violet" x="2954.2" y="506.0"><point/></object>
+  <object id="181" name="decor_75" type="torch_violet" x="3200.0" y="506.0"><point/></object>
+  <object id="182" name="decor_76" type="torch_violet" x="3445.8" y="506.0"><point/></object>
+  <object id="183" name="decor_77" type="torch_violet" x="2827.2" y="627.2"><point/></object>
+  <object id="184" name="decor_78" type="torch_violet" x="3572.8" y="627.2"><point/></object>
+  <object id="185" name="decor_79" type="brazier" x="3104.0" y="3552.0"><point/></object>
+  <object id="186" name="decor_80" type="brazier" x="3296.0" y="3552.0"><point/></object>
+  <object id="187" name="decor_81" type="pillar" x="2848.0" y="3616.0"><point/></object>
+  <object id="188" name="decor_82" type="pillar" x="2848.0" y="3872.0"><point/></object>
+  <object id="189" name="decor_83" type="pillar" x="3552.0" y="3616.0"><point/></object>
+  <object id="190" name="decor_84" type="pillar" x="3552.0" y="3872.0"><point/></object>
  </objectgroup>
 </map>

@@ -16,6 +16,16 @@ public final class Dir8 {
         return ((idx % 8) + 8) % 8;
     }
 
+    /** 4방향 그림 이름. 대각선은 좌우를 우선한다. */
+    public static String name4(int dir) {
+        switch (dir) {
+            case 2: return "up";
+            case 6: return "down";
+            case 3: case 4: case 5: return "left";
+            default: return "right";
+        }
+    }
+
     public static boolean facesLeft(int dir) {
         return dir >= 3 && dir <= 5;
     }

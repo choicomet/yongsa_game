@@ -1,0 +1,74 @@
+{
+  "_설명": "CraftPix 스프라이트 시트 연결표. file 이 실제로 있으면 그 그림을, 없으면 임시 그림(placeholder_art.txt)을 쓴다. 키 이름은 코드에서 쓰는 이름이므로 바꾸지 말 것. 자세한 방법은 assets/README.md 참고.",
+  "_형식": "frameWidth/frameHeight=한 프레임 크기(px), frames=프레임 수, row=시트의 몇 번째 줄(0부터), fps=초당 프레임, originX/originY=발 위치(프레임 왼쪽 아래 기준 px), scale=확대 배율, facesLeft=원본이 왼쪽을 보면 true",
+
+  "_hero": "직접 제공한 용사 시트(art_source/hero_sheet.png)를 tools/import_hero_sheet.py 로 변환한 것. 행 = 방향(아래·왼쪽·오른쪽·위), 열 = 걷기 프레임.",
+  "hero": {
+    "originX": 13, "originY": 1, "directional": true,
+    "anims": {
+      "idle_down": { "file": "sprites/hero/hero.png", "frameWidth": 26, "frameHeight": 37, "row": 0, "frames": 1, "fps": 1 },
+      "walk_down": { "file": "sprites/hero/hero.png", "frameWidth": 26, "frameHeight": 37, "row": 0, "frames": 3, "frameOrder": [0, 1, 2, 1], "fps": 8 },
+      "idle_left": { "file": "sprites/hero/hero.png", "frameWidth": 26, "frameHeight": 37, "row": 1, "frames": 1, "fps": 1 },
+      "walk_left": { "file": "sprites/hero/hero.png", "frameWidth": 26, "frameHeight": 37, "row": 1, "frames": 3, "frameOrder": [0, 1, 2, 1], "fps": 8 },
+      "idle_right": { "file": "sprites/hero/hero.png", "frameWidth": 26, "frameHeight": 37, "row": 2, "frames": 1, "fps": 1 },
+      "walk_right": { "file": "sprites/hero/hero.png", "frameWidth": 26, "frameHeight": 37, "row": 2, "frames": 3, "frameOrder": [0, 1, 2, 1], "fps": 8 },
+      "idle_up": { "file": "sprites/hero/hero.png", "frameWidth": 26, "frameHeight": 37, "row": 3, "frames": 1, "fps": 1 },
+      "walk_up": { "file": "sprites/hero/hero.png", "frameWidth": 26, "frameHeight": 37, "row": 3, "frames": 3, "frameOrder": [0, 1, 2, 1], "fps": 8 }
+    }
+  },
+
+  "sword":   { "file": "sprites/items/sword.png",   "originX": 4.5, "originY": 3, "pointAngle": 90 },
+  "hammer":  { "file": "sprites/items/hammer.png",  "originX": 7.5, "originY": 1, "pointAngle": 90 },
+  "pickaxe": { "file": "sprites/items/pickaxe.png", "originX": 10,  "originY": 1, "pointAngle": 90 },
+  "lantern": { "file": "sprites/items/lantern.png", "originX": 5,   "originY": 0 },
+
+  "slime": {
+    "originX": 32, "originY": 8,
+    "anims": {
+      "idle": { "file": "sprites/craftpix/slime/Idle.png", "frameWidth": 64, "frameHeight": 64, "frames": 6, "fps": 6 },
+      "move": { "file": "sprites/craftpix/slime/Walk.png", "frameWidth": 64, "frameHeight": 64, "frames": 8, "fps": 10 }
+    }
+  },
+  "charger": {
+    "originX": 32, "originY": 6,
+    "anims": {
+      "idle": { "file": "sprites/craftpix/charger/Idle.png", "frameWidth": 64, "frameHeight": 64, "frames": 4, "fps": 6 },
+      "move": { "file": "sprites/craftpix/charger/Walk.png", "frameWidth": 64, "frameHeight": 64, "frames": 6, "fps": 10 }
+    }
+  },
+  "watcher": {
+    "originX": 32, "originY": 6,
+    "anims": {
+      "idle": { "file": "sprites/craftpix/watcher/Flight.png", "frameWidth": 64, "frameHeight": 64, "frames": 8, "fps": 8 }
+    }
+  },
+
+  "boss_mine": {
+    "originX": 48, "originY": 8, "scale": 1.0,
+    "anims": {
+      "idle": { "file": "sprites/craftpix/boss_mine/Idle.png", "frameWidth": 96, "frameHeight": 96, "frames": 4, "fps": 5 },
+      "move": { "file": "sprites/craftpix/boss_mine/Walk.png", "frameWidth": 96, "frameHeight": 96, "frames": 6, "fps": 8 }
+    }
+  },
+  "boss_fortress": {
+    "originX": 48, "originY": 8,
+    "anims": {
+      "idle": { "file": "sprites/craftpix/boss_fortress/Idle.png", "frameWidth": 96, "frameHeight": 96, "frames": 4, "fps": 5 },
+      "move": { "file": "sprites/craftpix/boss_fortress/Walk.png", "frameWidth": 96, "frameHeight": 96, "frames": 6, "fps": 8 }
+    }
+  },
+  "boss_temple": {
+    "originX": 48, "originY": 8,
+    "anims": {
+      "idle": { "file": "sprites/craftpix/boss_temple/Idle.png", "frameWidth": 96, "frameHeight": 96, "frames": 4, "fps": 5 }
+    }
+  },
+
+  "anvil":        { "file": "sprites/craftpix/props/anvil.png",        "originX": 16, "originY": 2 },
+  "furnace":      { "file": "sprites/craftpix/props/furnace.png",      "originX": 24, "originY": 2 },
+  "workbench":    { "file": "sprites/craftpix/props/workbench.png",    "originX": 20, "originY": 2 },
+  "bedroll":      { "file": "sprites/craftpix/props/bedroll.png",      "originX": 32, "originY": 2 },
+  "crate":        { "file": "sprites/craftpix/props/crate.png",        "originX": 12, "originY": 2 },
+  "pillar":       { "file": "sprites/craftpix/props/pillar.png",       "originX": 16, "originY": 2 },
+  "vein":         { "file": "sprites/craftpix/props/ore.png",          "originX": 16, "originY": 4 }
+}

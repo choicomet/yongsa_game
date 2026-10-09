@@ -94,7 +94,7 @@ def side_doors(zone, sign):
     def mx(x, w):
         return x if sign < 0 else W - x - w
     if zone != "mine":
-        door(f"{zone}_gate", mx(84, 1), 115, 1, 3, rule=f"zone:{zone}")
+        door(f"{zone}_gate", mx(85, 1), 115, 1, 3, rule=f"zone:{zone}")
     door(f"{zone}_door_a", mx(52, 1), 115, 1, 3, rule="weapon", combat=f"{zone}_battle_a")
     door(f"{zone}_door_ab", mx(40, 4), 108, 4, 1, rule=f"cleared:{zone}_battle_a",
          combat=f"{zone}_battle_a,{zone}_battle_b")
@@ -104,7 +104,7 @@ def side_doors(zone, sign):
 
 side_doors("mine", -1)
 side_doors("fortress", +1)
-door("temple_gate", 98, 108, 4, 1, rule="zone:temple")
+door("temple_gate", 98, 109, 4, 1, rule="zone:temple")
 door("temple_door_a", 98, 82, 4, 1, rule="weapon", combat="temple_battle_a")
 door("temple_door_ab", 98, 67, 4, 1, rule="cleared:temple_battle_a", combat="temple_battle_a,temple_battle_b")
 door("temple_door_b", 98, 42, 4, 1, rule="cleared:temple_battle_b", combat="temple_battle_b")
@@ -159,21 +159,23 @@ fire_x, fire_y = (cx + 14) * T, (cy + 7) * T
 DECOR.append(("campfire", fire_x, fire_y))
 SOLIDS.append(dict(x=fire_x - 20, y=fire_y - 12, w=40, h=22))
 
-bed_x, bed_y = (cx + 7.5) * T, (cy + 7.5) * T
+bed_x, bed_y = (cx + 9.5) * T, (cy + 7.5) * T
 interact("bed", "bed", bed_x - 30, bed_y - 22, 60, 44)
 SOLIDS.append(dict(x=bed_x - 28, y=bed_y - 14, w=56, h=26))
 DECOR.append(("bedroll", bed_x, bed_y))
-DECOR.append(("crate", (cx + 5) * T, (cy + 5) * T))
-DECOR.append(("lantern_table", (cx + 8) * T, (cy + 4.6) * T))
+DECOR.append(("crate", (cx + 7) * T, (cy + 5.4) * T))
+DECOR.append(("lantern_table", (cx + 9.5) * T, (cy + 4.8) * T))
+SOLIDS.append(dict(x=(cx + 9.5) * T - 16, y=(cy + 4.8) * T - 8, w=32, h=14))
+SOLIDS.append(dict(x=(cx + 7) * T - 12, y=(cy + 5.4) * T - 8, w=24, h=14))
 
-forge_x, forge_y = (cx + 20.5) * T, (cy + 7.5) * T
+forge_x, forge_y = (cx + 18.5) * T, (cy + 7.5) * T
 interact("forge", "forge", forge_x - 40, forge_y - 30, 80, 60)
-DECOR.append(("furnace", (cx + 20) * T, (cy + 5.2) * T))
+DECOR.append(("furnace", (cx + 18) * T, (cy + 5.2) * T))
 DECOR.append(("anvil", forge_x, forge_y + 4))
-DECOR.append(("workbench", (cx + 23) * T, (cy + 6.2) * T))
-SOLIDS.append(dict(x=(cx + 19) * T, y=(cy + 4.4) * T, w=64, h=36))
+DECOR.append(("workbench", (cx + 21) * T, (cy + 6.2) * T))
+SOLIDS.append(dict(x=(cx + 17) * T, y=(cy + 4.4) * T, w=64, h=36))
 SOLIDS.append(dict(x=forge_x - 16, y=forge_y - 6, w=32, h=16))
-SOLIDS.append(dict(x=(cx + 21.8) * T, y=(cy + 5.6) * T, w=48, h=24))
+SOLIDS.append(dict(x=(cx + 19.8) * T, y=(cy + 5.6) * T, w=48, h=24))
 
 # 지름길: 캠프 벽면(통로 옆)에 문, 보스 앞 공간에 귀환문
 SHORTCUTS = [
@@ -194,8 +196,11 @@ for zone, (x, y, w, h), (ax, ay) in SHORTCUTS:
 # 횃불 (캠프와 각 방)
 def torches_for(r, color):
     x0, y0, w, h = r["x"], r["y"], r["w"], r["h"]
-    for fx in (0.2, 0.8):
+    for fx in (0.18, 0.5, 0.82):
         DECOR.append((f"torch_{color}", (x0 + w * fx) * T, y0 * T - 6))
+    if r["kind"] in ("battle", "boss", "ore"):
+        for side in (x0 + 0.35, x0 + w - 0.35):
+            DECOR.append((f"torch_{color}", side * T, (y0 + h * 0.3) * T))
 
 
 for r in ROOMS:

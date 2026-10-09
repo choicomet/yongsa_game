@@ -1,0 +1,59 @@
+# 에셋 안내
+
+## 지금 들어 있는 것
+
+| 경로 | 내용 | 출처 / 라이선스 |
+| --- | --- | --- |
+| `sprites/hero/hero.png` | 용사 4방향 × 3프레임 (26×37) | 팀 제공 원본(`art_source/hero_sheet.png`)을 `tools/import_hero_sheet.py` 로 변환 |
+| `sprites/items/*.png` | 철검, 망치, 곡괭이(채굴 동작), 랜턴 | 위와 같은 원본 시트의 아이템 줄 |
+| `data/placeholder_art.txt` | 적·보스·소품 임시 픽셀 아트 | 이 프로젝트에서 직접 작성 |
+| `maps/placeholder_tiles.png` | 임시 바닥/벽 타일 | `tools/gen_map.py` 가 생성 |
+| `sfx/*.wav`, `music/*.wav` | 임시 효과음·배경음 | `tools/gen_sfx.py` 가 합성 |
+| `fonts/Galmuri11.ttf` | 한글 픽셀 폰트 | Galmuri (quiple), SIL OFL 1.1 — `fonts/Galmuri-LICENSE.txt` |
+
+배포물에는 이 표(에셋 출처와 라이선스 목록)를 함께 넣는다. CraftPix 에셋을 추가하면 팩 이름과 라이선스를 이 표에 적는다.
+
+## CraftPix 스프라이트로 바꾸는 방법
+
+1. 시트를 `assets/sprites/craftpix/...` 아래에 넣는다 (경로는 자유).
+2. `assets/data/sprites.json` 에서 해당 키의 `file` 경로와 프레임 정보를 맞춘다.
+3. 실행하면 파일이 있는 항목만 교체되고, 없는 항목은 임시 그림이 그대로 쓰인다.
+
+```json
+"slime": {
+  "originX": 32, "originY": 8,
+  "anims": {
+    "idle": { "file": "sprites/craftpix/slime/Idle.png", "frameWidth": 64, "frameHeight": 64, "frames": 6, "fps": 6 },
+    "move": { "file": "sprites/craftpix/slime/Walk.png", "frameWidth": 64, "frameHeight": 64, "frames": 8, "fps": 10 }
+  }
+}
+```
+
+| 항목 | 뜻 |
+| --- | --- |
+| `frameWidth`, `frameHeight` | 한 프레임 크기(px) |
+| `frames`, `row`, `col` | 프레임 수, 시작 줄(0부터), 시작 칸 |
+| `frameOrder` | 재생 순서 지정 (예: `[0, 1, 2, 1]`) |
+| `fps`, `loop` | 초당 프레임, 반복 여부 |
+| `originX`, `originY` | 발 위치 — 프레임 왼쪽 아래 기준 px. 그림자·겹침 순서·판정이 이 점을 기준으로 맞춰진다 |
+| `scale` | 확대 배율 (게임 화면 기준 32px = 1타일) |
+| `facesLeft` | 원본이 왼쪽을 보고 있으면 true (좌우 반전 기준) |
+| `directional` | `idle_down`, `walk_left` 처럼 방향별 동작을 쓰면 true (용사가 이 방식) |
+| `pointAngle` | 무기 그림이 가리키는 각도(도). 위를 향하면 90 |
+
+사용하는 키: `hero`, `slime`, `charger`, `watcher`, `boss_mine`, `boss_fortress`, `boss_temple`,
+`sword`, `hammer`, `pickaxe`, `anvil`, `furnace`, `workbench`, `bedroll`, `crate`, `lantern_table`, `torch`, `brazier`, `pillar`, `vein`.
+
+**판정은 그림 크기와 무관하다.** 공격 범위·피격 반경은 `balance.json` 값을 쓴다. 그림을 바꾼 뒤 게임에서 F3 을 눌러
+판정 영역과 그림이 어긋나지 않는지 확인한다 (기획서: 판정이 보이는 이펙트보다 넓으면 안 됨).
+
+## 타일셋 교체
+
+`maps/dungeon.tmx` 를 Tiled 로 열어 타일셋을 CraftPix 타일셋으로 바꾸고 `floor`/`walls` 레이어를 다시 칠한다.
+오브젝트 레이어(rooms, doors, spawns, veins, points, interact, solids, decor)는 그대로 둔다.
+`walls` 레이어에 칠한 칸은 모두 고체가 되고, `floor` 가 비어 있는 칸도 고체다.
+
+## 효과음 교체
+
+`sfx/<id>.ogg` 또는 `.wav` 를 같은 이름으로 넣는다(.ogg 우선). id 목록은 `tools/gen_sfx.py` 의 `SOUNDS` 참고.
+배경음: `music/bgm_title`, `music/bgm_dungeon`, `music/bgm_boss`.

@@ -19,6 +19,9 @@ dependencies {
 run {
     workingDir = assetsDir
     setIgnoreExitValue(true)
+    // -Pyongsa.saveDir=... 처럼 넘긴 값을 게임에 전달한다
+    project.properties.findAll { it.key.startsWith('yongsa.') }.each { k, v -> systemProperty k, v }
+    jvmArgs += ['-Dfile.encoding=UTF-8', '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8']
     if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
         jvmArgs += '-XstartOnFirstThread'
     }
