@@ -87,8 +87,10 @@ class MapTest {
             int maxDepth = 0;
             for (RoomDef r : rooms) if (r.mainPath) maxDepth = Math.max(maxDepth, r.depth);
             assertEquals(RoomDef.Kind.BOSS, map.room(z + "_boss").kind);
-            assertEquals(maxDepth, map.room(z + "_boss").depth);
-            assertEquals(maxDepth - 1, map.room(z + "_ante").depth);
+            // 본 경로의 끝은 보스 앞 공간, 그 뒤가 보스방
+            assertEquals(maxDepth, map.room(z + "_ante").depth);
+            assertEquals(maxDepth + 1, map.room(z + "_boss").depth);
+            assertEquals(1, map.doorsOf(z + "_boss").size(), "보스방 입구는 하나");
         }
     }
 

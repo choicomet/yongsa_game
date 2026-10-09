@@ -29,9 +29,9 @@ public final class DungeonGenerator {
     private DungeonGenerator() {}
 
     public static final int TILE = 32;
-    static final int GRID_W = 13, GRID_H = 9;
-    static final int CAMP_GX = 6, CAMP_GY = 0;
-    static final int MARGIN = 5;
+    static final int GRID_W = 17, GRID_H = 13;
+    static final int CAMP_GX = 8, CAMP_GY = 6;
+    static final int MARGIN = 2;
     static final int CORRIDOR = 3;
 
     /** 생성 중의 방. */
@@ -53,26 +53,6 @@ public final class DungeonGenerator {
             this.kind = kind;
             this.gx = gx;
             this.gy = gy;
-        }
-    }
-
-    // ---- 구역 영역 ----
-
-    static String regionOf(int gx, int gy) {
-        if (gx == CAMP_GX && gy == CAMP_GY) return "camp";
-        if (gx < 0 || gy < 0 || gx >= GRID_W || gy >= GRID_H) return null;
-        if (gx <= 5 && gy <= 5) return "mine";
-        if (gx >= 7 && gy <= 5) return "fortress";
-        if (gx == 6 && gy >= 1 && gy <= 5) return "temple";
-        if (gy >= 6 && gx >= 2 && gx <= 10) return "temple";
-        return null;
-    }
-
-    static int[] entranceOf(String zone) {
-        switch (zone) {
-            case "mine": return new int[]{5, 0};
-            case "fortress": return new int[]{7, 0};
-            default: return new int[]{6, 1};
         }
     }
 
@@ -101,9 +81,10 @@ public final class DungeonGenerator {
         all.add(camp);
         Map<String, List<Gen>> byZone = new LinkedHashMap<>();
 
+        Map<String, List<Gen>> laid = layoutAll(b, rnd, grid);
+        if (laid == null) return null;
         for (Balance.ZoneDef z : b.zones) {
-            List<Gen> rooms = layoutZone(z.id, b, rnd, grid);
-            if (rooms == null) return null;
+            List<Gen> rooms = laid.get(z.id);
             assignContent(rooms, z, b, rnd);
             byZone.put(z.id, rooms);
             all.addAll(rooms);
@@ -129,7 +110,7 @@ public final class DungeonGenerator {
 
         DungeonMap map = new DungeonMap(seed, GRID_W * cw, GRID_H * ch, TILE);
         for (Gen g : all) {
-            carve(map, g.x, g.y, g.w, g.h, themeOf(g.zone));
+            carve(map, g.x, g.y, g.w, g.h, g.kind == RoomDef.Kind.BOSS ? (byte) (themeOf(g.zone) + 3) : themeOf(g.zone));
             Rectangle r = new Rectangle(g.x * TILE, g.y * TILE, g.w * TILE, g.h * TILE);
             RoomDef room = new RoomDef(g.id, g.zone, g.kind, r);
             room.enemies = g.enemies;
@@ -172,109 +153,167 @@ public final class DungeonGenerator {
         }
     }
 
-    // ---- 구역 배치 ----
+    // ---- 배치 (아이작 방식) ----
 
-    /** 본 경로(입구 → … → 보스 앞 → 보스)와 곁가지를 격자에 놓는다. */
-    static List<Gen> layoutZone(String zone, Balance b, Random rnd, Gen[][] grid) {
-        int mainLen = b.dungeon.mainPathRooms + 2;
-        int[] start = entranceOf(zone);
-        List<int[]> path = new ArrayList<>();
-        path.add(start);
-        boolean[][] used = new boolean[GRID_W][GRID_H];
-        for (int x = 0; x < GRID_W; x++) for (int y = 0; y < GRID_H; y++) used[x][y] = grid[x][y] != null;
-        used[start[0]][start[1]] = true;
-        if (!extend(path, used, zone, mainLen, rnd, new int[]{0})) return null;
-
-        List<Gen> rooms = new ArrayList<>();
-        Gen prev = null;
-        for (int i = 0; i < path.size(); i++) {
-            int[] c = path.get(i);
-            RoomDef.Kind kind = i == path.size() - 1 ? RoomDef.Kind.BOSS
-                    : i == path.size() - 2 ? RoomDef.Kind.ANTE : RoomDef.Kind.ROOM;
-            String id = kind == RoomDef.Kind.BOSS ? zone + "_boss" : kind == RoomDef.Kind.ANTE ? zone + "_ante"
-                    : String.format("%s_%02d", zone, i);
-            Gen g = new Gen(id, zone, kind, c[0], c[1]);
-            g.parent = prev;
-            g.depth = i;
-            g.main = true;
-            grid[c[0]][c[1]] = g;
-            rooms.add(g);
-            prev = g;
+    /** 캠프 옆의 구역 입구 칸: 폐광 왼쪽, 요새 오른쪽, 신전 위쪽. */
+    static int[] entranceOf(String zone) {
+        switch (zone) {
+            case "mine": return new int[]{CAMP_GX - 1, CAMP_GY};
+            case "fortress": return new int[]{CAMP_GX + 1, CAMP_GY};
+            default: return new int[]{CAMP_GX, CAMP_GY + 1};
         }
-
-        // 곁가지: 본 경로의 일반 방에서 비어 있는 이웃 칸으로 1~2칸
-        int added = 0, tries = 0;
-        int next = b.dungeon.mainPathRooms;
-        while (added < b.dungeon.branchRooms && tries++ < 200) {
-            Gen base = rooms.get(1 + rnd.nextInt(b.dungeon.mainPathRooms - 1));
-            if (rnd.nextFloat() < 0.35f) {
-                // 이미 있는 곁가지를 더 길게
-                List<Gen> branches = new ArrayList<>();
-                for (Gen r : rooms) if (!r.main) branches.add(r);
-                if (!branches.isEmpty()) base = branches.get(rnd.nextInt(branches.size()));
-            }
-            int[] n = freeNeighbor(base.gx, base.gy, zone, grid, rnd);
-            if (n == null) continue;
-            Gen g = new Gen(String.format("%s_%02d", zone, next++), zone, RoomDef.Kind.ROOM, n[0], n[1]);
-            g.parent = base;
-            g.depth = base.depth + 1;
-            g.main = false;
-            grid[n[0]][n[1]] = g;
-            rooms.add(g);
-            added++;
-        }
-        return rooms;
     }
 
     private static final int[][] DIRS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
-    /** 무작위 깊이 우선 탐색으로 길이 len 의 단순 경로를 만든다. 캠프에서 멀어지는 쪽을 선호한다. */
-    static boolean extend(List<int[]> path, boolean[][] used, String zone, int len, Random rnd, int[] budget) {
-        if (path.size() == len) return true;
-        if (++budget[0] > 4000) return false;
-        int[] c = path.get(path.size() - 1);
-        List<int[]> opts = new ArrayList<>();
-        for (int[] dd : DIRS) {
-            int nx = c[0] + dd[0], ny = c[1] + dd[1];
-            if (!zone.equals(regionOf(nx, ny)) || used[nx][ny]) continue;
-            opts.add(new int[]{nx, ny});
+    private static boolean inGrid(int x, int y) {
+        return x >= 1 && y >= 1 && x < GRID_W - 1 && y < GRID_H - 1;
+    }
+
+    private static boolean nextToCamp(int x, int y) {
+        return Math.abs(x - CAMP_GX) + Math.abs(y - CAMP_GY) == 1;
+    }
+
+    /**
+     * 세 구역을 캠프 둘레에 번갈아 키운다. 새 방은 같은 구역 방 하나에만 맞닿게 해서(고리 없음) 갈래가 생기고,
+     * 서로 다른 구역 방은 벽을 사이에 두고 붙을 수 있어 전체가 한 덩어리로 모인다.
+     * 그다음 각 구역에서 가장 깊은 막다른 방 뒤에 보스 앞 공간과 보스방을 붙인다.
+     */
+    static Map<String, List<Gen>> layoutAll(Balance b, Random rnd, Gen[][] grid) {
+        int rooms = b.dungeon.mainPathRooms + b.dungeon.branchRooms; // 일반 방 수
+        Map<String, List<Gen>> byZone = new LinkedHashMap<>();
+        Map<String, Integer> counter = new HashMap<>();
+        for (Balance.ZoneDef z : b.zones) {
+            int[] e = entranceOf(z.id);
+            Gen g = new Gen(String.format("%s_%02d", z.id, 0), z.id, RoomDef.Kind.ROOM, e[0], e[1]);
+            g.depth = 0;
+            grid[e[0]][e[1]] = g;
+            List<Gen> list = new ArrayList<>();
+            list.add(g);
+            byZone.put(z.id, list);
+            counter.put(z.id, 1);
         }
-        Collections.shuffle(opts, rnd);
-        int cd = dist(c);
-        opts.sort((p, q) -> Boolean.compare(dist(q) > cd && rnd.nextFloat() < 0.75f, dist(p) > cd && rnd.nextFloat() < 0.75f));
-        for (int[] o : opts) {
-            used[o[0]][o[1]] = true;
-            path.add(o);
-            if (extend(path, used, zone, len, rnd, budget)) return true;
-            path.remove(path.size() - 1);
-            used[o[0]][o[1]] = false;
+        boolean grew = true;
+        while (grew) {
+            grew = false;
+            for (Balance.ZoneDef z : b.zones) {
+                List<Gen> list = byZone.get(z.id);
+                if (list.size() >= rooms) continue;
+                List<int[]> cands = new ArrayList<>();
+                List<Gen> parents = new ArrayList<>();
+                List<Float> weights = new ArrayList<>();
+                for (Gen p : list) {
+                    for (int[] d : DIRS) {
+                        int x = p.gx + d[0], y = p.gy + d[1];
+                        if (!inGrid(x, y) || grid[x][y] != null || nextToCamp(x, y)) continue;
+                        int own = 0, total = 0;
+                        for (int[] d2 : DIRS) {
+                            Gen n = gridAt(grid, x + d2[0], y + d2[1]);
+                            if (n == null) continue;
+                            total++;
+                            if (n.zone.equals(z.id)) own++;
+                        }
+                        if (own != 1) continue;
+                        cands.add(new int[]{x, y});
+                        parents.add(p);
+                        // 이웃이 적을수록, 너무 깊지 않을수록 선호 → 덩어리지면서도 갈래가 생긴다
+                        float w = (total == 1 ? 3f : total == 2 ? 1.5f : 0.6f) * (p.depth < 7 ? 1.4f : 1f);
+                        weights.add(w);
+                    }
+                }
+                if (cands.isEmpty()) continue;
+                int pick = weighted(weights, rnd);
+                int[] c = cands.get(pick);
+                Gen parent = parents.get(pick);
+                int n = counter.get(z.id);
+                counter.put(z.id, n + 1);
+                Gen g = new Gen(String.format("%s_%02d", z.id, n), z.id, RoomDef.Kind.ROOM, c[0], c[1]);
+                g.parent = parent;
+                g.depth = parent.depth + 1;
+                grid[c[0]][c[1]] = g;
+                list.add(g);
+                grew = true;
+            }
+        }
+        for (Balance.ZoneDef z : b.zones) {
+            List<Gen> list = byZone.get(z.id);
+            if (list.size() < rooms) return null;
+            if (!placeBoss(z.id, list, grid, rnd)) return null;
+            // 본 경로 = 입구 → 보스 앞
+            Gen ante = list.get(list.size() - 2);
+            for (Gen g = ante; g != null; g = g.parent) g.main = true;
+        }
+        return byZone;
+    }
+
+    private static Gen gridAt(Gen[][] grid, int x, int y) {
+        if (x < 0 || y < 0 || x >= GRID_W || y >= GRID_H) return null;
+        return grid[x][y];
+    }
+
+    private static int weighted(List<Float> w, Random rnd) {
+        float total = 0;
+        for (float f : w) total += f;
+        float r = rnd.nextFloat() * total;
+        for (int i = 0; i < w.size(); i++) {
+            r -= w.get(i);
+            if (r < 0) return i;
+        }
+        return w.size() - 1;
+    }
+
+    /** 가장 깊은 막다른 방부터 살펴, 한 방향으로 빈 칸 두 개가 있으면 보스 앞 공간과 보스방을 놓는다. */
+    static boolean placeBoss(String zone, List<Gen> list, Gen[][] grid, Random rnd) {
+        List<Gen> leaves = new ArrayList<>();
+        for (Gen g : list) {
+            boolean leaf = true;
+            for (Gen o : list) if (o.parent == g) leaf = false;
+            if (leaf && g.depth >= 4) leaves.add(g);
+        }
+        Collections.shuffle(leaves, rnd);
+        leaves.sort((a, c) -> c.depth - a.depth);
+        for (Gen leaf : leaves) {
+            List<int[]> dirs = new ArrayList<>();
+            for (int[] d : DIRS) dirs.add(d);
+            Collections.shuffle(dirs, rnd);
+            for (int[] d : dirs) {
+                int ax = leaf.gx + d[0], ay = leaf.gy + d[1];
+                int bx = ax + d[0], by = ay + d[1];
+                if (!inGrid(ax, ay) || !inGrid(bx, by) || grid[ax][ay] != null || grid[bx][by] != null) continue;
+                if (nextToCamp(ax, ay) || nextToCamp(bx, by)) continue;
+                // 보스 앞 공간과 보스방은 같은 구역의 다른 방과 맞닿지 않게 (입구는 하나뿐)
+                if (ownNeighbors(grid, ax, ay, zone) != 1 || ownNeighbors(grid, bx, by, zone) != 0) continue;
+                Gen ante = new Gen(zone + "_ante", zone, RoomDef.Kind.ANTE, ax, ay);
+                ante.parent = leaf;
+                ante.depth = leaf.depth + 1;
+                Gen boss = new Gen(zone + "_boss", zone, RoomDef.Kind.BOSS, bx, by);
+                boss.parent = ante;
+                boss.depth = ante.depth + 1;
+                grid[ax][ay] = ante;
+                grid[bx][by] = boss;
+                list.add(ante);
+                list.add(boss);
+                return true;
+            }
         }
         return false;
     }
 
-    private static int dist(int[] c) {
-        return Math.abs(c[0] - CAMP_GX) + Math.abs(c[1] - CAMP_GY);
-    }
-
-    private static int[] freeNeighbor(int gx, int gy, String zone, Gen[][] grid, Random rnd) {
-        List<int[]> opts = new ArrayList<>();
-        for (int[] dd : DIRS) {
-            int nx = gx + dd[0], ny = gy + dd[1];
-            if (zone.equals(regionOf(nx, ny)) && grid[nx][ny] == null) opts.add(new int[]{nx, ny});
+    private static int ownNeighbors(Gen[][] grid, int x, int y, String zone) {
+        int n = 0;
+        for (int[] d : DIRS) {
+            Gen g = gridAt(grid, x + d[0], y + d[1]);
+            if (g != null && g.zone.equals(zone)) n++;
         }
-        return opts.isEmpty() ? null : opts.get(rnd.nextInt(opts.size()));
+        return n;
     }
 
     /** 방 성격: 몬스터+광맥(기본), 전투만, 광맥만(안전). */
     static void assignContent(List<Gen> rooms, Balance.ZoneDef z, Balance b, Random rnd) {
         Balance.DungeonDef d = b.dungeon;
         boolean firstZone = z == b.zones[0];
-        Gen prev = null;
         for (Gen g : rooms) {
-            if (g.kind != RoomDef.Kind.ROOM) {
-                prev = g;
-                continue;
-            }
+            if (g.kind != RoomDef.Kind.ROOM) continue;
             if (g.main && g.depth == 0 && firstZone) {
                 // 무기 없이도 재료를 모을 수 있는 첫 광물방
                 g.enemies = false;
@@ -283,8 +322,9 @@ public final class DungeonGenerator {
                 continue;
             }
             float roll = rnd.nextFloat();
-            boolean lastBeforeAnte = g.main && g.depth == d.mainPathRooms - 1;
-            boolean prevSafe = prev != null && prev.kind == RoomDef.Kind.ROOM && !prev.enemies;
+            boolean lastBeforeAnte = false;
+            for (Gen o : rooms) if (o.parent == g && o.kind == RoomDef.Kind.ANTE) lastBeforeAnte = true;
+            boolean prevSafe = g.parent != null && g.parent.kind == RoomDef.Kind.ROOM && !g.parent.enemies;
             if (g.main) {
                 if (!lastBeforeAnte && !prevSafe && g.depth >= 2 && roll < d.oreOnlyChance) {
                     g.enemies = false;
@@ -310,7 +350,6 @@ public final class DungeonGenerator {
                     g.veinCount = b.mining.mixedRoomVeins + 1;
                 }
             }
-            if (g.main) prev = g;
         }
     }
 

@@ -23,7 +23,7 @@ public class MapPreview {
         int s = 4;
         BufferedImage img = new BufferedImage(m.widthTiles * s, m.heightTiles * s, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
-        Color[] floors = {new Color(150, 120, 90), new Color(120, 100, 80), new Color(90, 105, 130), new Color(110, 90, 140)};
+        Color[] floors = {new Color(150, 120, 90), new Color(120, 100, 80), new Color(90, 105, 130), new Color(110, 90, 140), new Color(160, 80, 50), new Color(70, 90, 160), new Color(90, 130, 80)};
         for (int ty = 0; ty < m.heightTiles; ty++) {
             for (int tx = 0; tx < m.widthTiles; tx++) {
                 int py = (m.heightTiles - 1 - ty) * s;

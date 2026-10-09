@@ -23,14 +23,14 @@
   },
 
   "dungeon": {
-    "cellWidth": 34,
-    "cellHeight": 22,
+    "cellWidth": 30,
+    "cellHeight": 18,
     "mainPathRooms": 10,
     "branchRooms": 4,
-    "roomMinWidth": 16,
+    "roomMinWidth": 20,
     "roomMaxWidth": 26,
     "roomMinHeight": 11,
-    "roomMaxHeight": 15,
+    "roomMaxHeight": 14,
     "oreOnlyChance": 0.15,
     "battleOnlyChance": 0.2,
     "branchOreChance": 0.35,

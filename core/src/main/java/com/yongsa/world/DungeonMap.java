@@ -107,8 +107,11 @@ public class DungeonMap {
 
     /** 구역 본 경로의 첫 전투방. */
     public RoomDef firstCombatRoom(String zone) {
-        for (RoomDef r : zoneRooms(zone)) if (r.mainPath && r.kind == RoomDef.Kind.ROOM && r.enemies) return r;
-        return null;
+        RoomDef best = null;
+        for (RoomDef r : zoneRooms(zone)) {
+            if (r.mainPath && r.kind == RoomDef.Kind.ROOM && r.enemies && (best == null || r.depth < best.depth)) best = r;
+        }
+        return best;
     }
 
     public RoomDef entranceRoom(String zone) {
