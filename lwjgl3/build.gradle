@@ -1,0 +1,42 @@
+apply plugin: 'application'
+
+def assetsDir = rootProject.file('assets')
+
+application {
+    mainClass = 'com.yongsa.lwjgl3.Lwjgl3Launcher'
+    applicationName = 'yongsagame'
+}
+
+sourceSets.main.resources.srcDirs += [assetsDir]
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+}
+
+run {
+    workingDir = assetsDir
+    setIgnoreExitValue(true)
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        jvmArgs += '-XstartOnFirstThread'
+    }
+}
+
+// 모든 의존성과 에셋을 포함한 단일 실행 jar: ./gradlew lwjgl3:dist
+tasks.register('dist', Jar) {
+    group = 'distribution'
+    archiveFileName = 'yongsagame.jar'
+    destinationDirectory = rootProject.file('build/dist')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+    exclude('META-INF/INDEX.LIST', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA')
+}

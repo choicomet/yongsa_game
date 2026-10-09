@@ -1,0 +1,19 @@
+apply plugin: 'java-library'
+
+dependencies {
+    api "com.badlogicgames.gdx:gdx:$gdxVersion"
+    api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+test {
+    useJUnitPlatform()
+    // 테스트는 저장소 루트의 assets 폴더(balance.json, dungeon.tmx)를 읽는다.
+    workingDir = rootProject.file('assets')
+    testLogging {
+        events 'failed'
+        exceptionFormat 'full'
+    }
+}
