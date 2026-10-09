@@ -54,7 +54,8 @@ public class YongsaGame extends Game {
         skin = UiSkin.build(fonts);
         textures = new Textures();
         sprites = new SpriteLibrary(Gdx.files.internal("data/placeholder_art.txt"),
-                Gdx.files.internal("data/sprites_generated.json"), Gdx.files.internal("data/sprites.json"));
+                Gdx.files.internal("data/sprites_generated.json"), Gdx.files.internal("data/sprites_craftpix.json"),
+                Gdx.files.internal("data/sprites.json"));
         audio = new Audio(settings);
         applyDisplay();
         setScreen(new TitleScreen(this));

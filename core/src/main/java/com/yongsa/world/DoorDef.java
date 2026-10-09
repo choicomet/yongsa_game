@@ -15,6 +15,13 @@ public class DoorDef {
     public final Rectangle bounds;
     public final String rule;
     public final List<String> combatRooms;
+    /** 문이 붙은 방의 어느 벽인지: N, S, E, W (그리기용). */
+    public String wall = "";
+
+    public DoorDef(String id, Rectangle bounds, String rule, String combat, String wall) {
+        this(id, bounds, rule, combat);
+        this.wall = wall;
+    }
 
     public DoorDef(String id, Rectangle bounds, String rule, String combat) {
         this.id = id;

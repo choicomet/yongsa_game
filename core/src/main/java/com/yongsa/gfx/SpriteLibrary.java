@@ -38,6 +38,8 @@ public class SpriteLibrary implements Disposable {
         /** 무기 그림이 원래 가리키는 각도(도). 오른쪽=0, 위=90. */
         public float pointAngle = 45f;
         public boolean fromAsset;
+        /** 프레임이 여러 장인 그림 (불꽃 등). */
+        public boolean animated;
 
         /** 방향이 있는 그림이면 "이름_방향"을 먼저 찾는다. */
         public TextureRegion frame(String name, String dir, float time) {
@@ -102,6 +104,28 @@ public class SpriteLibrary implements Disposable {
 
     public Entry get(String key) {
         return entries.get(key);
+    }
+
+    /** 애니메이션의 프레임 수 (getKeyFrames 는 배열 형 변환 문제로 쓰지 않는다). */
+    public static int frameCount(Animation<TextureRegion> a) {
+        return Math.max(1, Math.round(a.getAnimationDuration() / a.getFrameDuration()));
+    }
+
+    private final Map<String, Integer> variantCount = new HashMap<>();
+
+    /**
+     * 같은 종류의 여러 그림(key_0, key_1 …) 중 하나를 고른다. 변형이 없으면 key 그대로.
+     * 같은 seed 는 항상 같은 그림이 된다.
+     */
+    public String resolve(String key, int seed) {
+        Integer n = variantCount.get(key);
+        if (n == null) {
+            n = 0;
+            while (entries.containsKey(key + "_" + n)) n++;
+            variantCount.put(key, n);
+        }
+        if (n == 0) return key;
+        return key + "_" + Math.floorMod(seed, n);
     }
 
     private void definePlaceholders() {
@@ -188,6 +212,7 @@ public class SpriteLibrary implements Disposable {
                 e.anims.putIfAbsent(b.getKey(), b.getValue());
             }
         }
+        for (Animation<TextureRegion> a : e.anims.values()) if (frameCount(a) > 1) e.animated = true;
         TextureRegion first = e.anims.values().iterator().next().getKeyFrame(0);
         e.originX = item.getFloat("originX", first.getRegionWidth() / 2f);
         e.originY = item.getFloat("originY", 0);

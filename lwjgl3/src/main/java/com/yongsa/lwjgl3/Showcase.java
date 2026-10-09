@@ -135,7 +135,16 @@ class Showcase implements Runnable {
                 put(world().map.room("camp"), 0, 60);
             }); break;
             case 25: at(25.5f, () -> shot("13_camp_unlocked")); break;
-            case 26: at(26f, () -> Gdx.app.exit()); break;
+            case 26: at(26f, () -> {
+                world().state.defeatedBosses.add("boss_temple");
+                put(world().map.room("mine_boss"), 0, -60);
+            }); break;
+            case 27: at(27.5f, () -> shot("14_arena_mine")); break;
+            case 28: at(28f, () -> put(world().map.room("temple_boss"), 0, -60)); break;
+            case 29: at(29.5f, () -> shot("15_arena_temple")); break;
+            case 30: at(30f, () -> put(world().map.room("fortress_boss"), 0, -60)); break;
+            case 31: at(31.5f, () -> shot("16_arena_fortress")); break;
+            case 32: at(32f, () -> Gdx.app.exit()); break;
             default: break;
         }
     }

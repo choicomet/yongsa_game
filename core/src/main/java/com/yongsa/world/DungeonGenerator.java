@@ -32,7 +32,7 @@ public final class DungeonGenerator {
     static final int GRID_W = 17, GRID_H = 13;
     static final int CAMP_GX = 8, CAMP_GY = 6;
     static final int MARGIN = 2;
-    static final int CORRIDOR = 3;
+    static final int CORRIDOR = 2;
 
     /** 생성 중의 방. */
     static class Gen {
@@ -417,8 +417,8 @@ public final class DungeonGenerator {
                 carve(m, bx, Math.min(ly, ry), CORRIDOR, Math.abs(ly - ry) + CORRIDOR, theme);
                 carve(m, bx, ry, x1 - bx, CORRIDOR, theme);
             }
-            addDoor(m, edge + "-L", l, new Rectangle(x0 * TILE, ly * TILE, TILE, CORRIDOR * TILE), r);
-            addDoor(m, edge + "-R", r, new Rectangle((x1 - 1) * TILE, ry * TILE, TILE, CORRIDOR * TILE), l);
+            addDoor(m, edge + "-L", l, new Rectangle(x0 * TILE, ly * TILE, TILE, CORRIDOR * TILE), r, "E");
+            addDoor(m, edge + "-R", r, new Rectangle((x1 - 1) * TILE, ry * TILE, TILE, CORRIDOR * TILE), l, "W");
         } else {
             Gen lo = a.gy < b.gy ? a : b, hiR = a.gy < b.gy ? b : a;
             int lx = corridorPos(lo, false, rnd), hx = corridorPos(hiR, false, rnd);
@@ -438,8 +438,8 @@ public final class DungeonGenerator {
                 carve(m, Math.min(lx, hx), by, Math.abs(lx - hx) + CORRIDOR, CORRIDOR, theme);
                 carve(m, hx, by, CORRIDOR, y1 - by, theme);
             }
-            addDoor(m, edge + "-D", lo, new Rectangle(lx * TILE, y0 * TILE, CORRIDOR * TILE, TILE), hiR);
-            addDoor(m, edge + "-U", hiR, new Rectangle(hx * TILE, (y1 - 1) * TILE, CORRIDOR * TILE, TILE), lo);
+            addDoor(m, edge + "-D", lo, new Rectangle(lx * TILE, y0 * TILE, CORRIDOR * TILE, TILE), hiR, "N");
+            addDoor(m, edge + "-U", hiR, new Rectangle(hx * TILE, (y1 - 1) * TILE, CORRIDOR * TILE, TILE), lo, "S");
         }
     }
 
@@ -450,7 +450,7 @@ public final class DungeonGenerator {
     }
 
     /** room 쪽 입구의 문. 캠프 쪽 문은 구역 봉인, 적이 있는 방 쪽 문은 무기 필요 규칙을 갖는다. */
-    private static void addDoor(DungeonMap m, String id, Gen room, Rectangle r, Gen other) {
+    private static void addDoor(DungeonMap m, String id, Gen room, Rectangle r, Gen other, String wall) {
         String rule = "";
         String combat = "";
         if (room.kind == RoomDef.Kind.CAMP) {
@@ -459,7 +459,7 @@ public final class DungeonGenerator {
             combat = room.id;
             if (room.enemies || room.kind == RoomDef.Kind.BOSS) rule = "weapon";
         }
-        m.doors.add(new DoorDef(id, r, rule, combat));
+        m.doors.add(new DoorDef(id, r, rule, combat, wall));
     }
 
     // ---- 캠프 ----
@@ -478,10 +478,13 @@ public final class DungeonGenerator {
         decor(m, "bedroll", bx, by);
         decor(m, "lantern_table", cx + 9.5f * TILE, cy + 9.2f * TILE);
         m.solids.add(new Rectangle(cx + 9.5f * TILE - 16, cy + 9.2f * TILE - 8, 32, 14));
-        decor(m, "crate", cx + 7 * TILE, cy + 8.6f * TILE);
-        m.solids.add(new Rectangle(cx + 7 * TILE - 12, cy + 8.6f * TILE - 8, 24, 14));
-        decor(m, "barrel", cx + 6.2f * TILE, cy + 7.6f * TILE);
-        m.solids.add(new Rectangle(cx + 6.2f * TILE - 10, cy + 7.6f * TILE - 6, 20, 12));
+        prop(m, "crates", cx + 6.6f * TILE, cy + 8.4f * TILE, true);
+        prop(m, "barrel", cx + 5.2f * TILE, cy + 6.6f * TILE, true);
+        // 위쪽 벽을 따라 보급품
+        prop(m, "shelf", cx + 5.2f * TILE, cy + 12.9f * TILE, true);
+        prop(m, "supplies", cx + 20.6f * TILE, cy + 12.7f * TILE, true);
+        prop(m, "sacks", cx + 23.2f * TILE, cy + 12.7f * TILE, true);
+        prop(m, "chest", cx + 9.6f * TILE, cy + 12.9f * TILE, true);
         // 대장간 (오른쪽)
         float fx = cx + 18.5f * TILE, fy = cy + 6.5f * TILE;
         interact(m, "forge", "forge", new Rectangle(fx - 40, fy - 28, 80, 60), null);
@@ -491,7 +494,7 @@ public final class DungeonGenerator {
         m.solids.add(new Rectangle(fx - 16, fy - 10, 32, 16));
         decor(m, "workbench", cx + 21 * TILE, cy + 7.8f * TILE);
         m.solids.add(new Rectangle(cx + 20 * TILE - 8, cy + 7.4f * TILE, 48, 22));
-        decor(m, "weapon_rack", cx + 22.6f * TILE, cy + 9.6f * TILE);
+        prop(m, "weapon_rack", cx + 23 * TILE, cy + 9.6f * TILE, true);
         // 기둥과 화로
         for (float px : new float[]{3, 25}) {
             for (float py : new float[]{3, 11}) {
@@ -501,8 +504,8 @@ public final class DungeonGenerator {
         }
         decor(m, "brazier", cx + 11 * TILE, cy + 12.6f * TILE);
         decor(m, "brazier", cx + 17 * TILE, cy + 12.6f * TILE);
-        decor(m, "banner", cx + 6 * TILE, (c.y + c.h) * TILE + 4);
-        decor(m, "banner", cx + 22 * TILE, (c.y + c.h) * TILE + 4);
+        decor(m, "banner_red", cx + 7.3f * TILE, (c.y + c.h) * TILE + 60);
+        decor(m, "banner_red", cx + 18.5f * TILE, (c.y + c.h) * TILE + 60);
         torches(m, roomRect(c), "warm", new ArrayList<>());
 
         // 지름길 문: 각 통로 옆 벽면
@@ -566,6 +569,7 @@ public final class DungeonGenerator {
             decor(m, "brazier", r.x + 1.4f * TILE, r.y + 1.4f * TILE);
             decor(m, "brazier", r.x + r.width - 1.4f * TILE, r.y + 1.4f * TILE);
             decor(m, "boss_seal", room.centerX(), room.centerY());
+            bossDecor(m, room, rnd);
             Map<String, String> p = new HashMap<>();
             p.put("room", room.id);
             p.put("enemy", b.zone(room.zone).boss);
@@ -604,15 +608,23 @@ public final class DungeonGenerator {
 
         // 장식물: 벽 가까이에만 (전투방 가운데는 비워 둔다)
         String[] props = propsFor(room.zone);
-        int count = 3 + rnd.nextInt(4);
-        for (int i = 0, tries = 0; i < count && tries < 80; tries++) {
+        int count = 4 + rnd.nextInt(4);
+        for (int i = 0, tries = 0; i < count && tries < 120; tries++) {
             String type = props[rnd.nextInt(props.length)];
-            Vector2 p = wallSpot(r, rnd);
-            if (nearAny(p, doorCenters, 3.2f * TILE) || nearAny(p, taken, 1.4f * TILE)) continue;
-            decor(m, type, p.x, p.y);
-            if (isSolidProp(type)) m.solids.add(new Rectangle(p.x - 12, p.y - 6, 24, 12));
+            float[] fp = footprint(type);
+            Vector2 p = wallSpot(r, rnd, fp != null && fp[0] > 40 ? 0 : rnd.nextInt(4));
+            float clear = fp != null ? Math.max(1.4f * TILE, fp[0] * 0.6f + 16) : 1.4f * TILE;
+            if (nearAny(p, doorCenters, 3.4f * TILE) || nearAny(p, taken, clear)) continue;
+            if (fp != null && m.overlapsStatic(new Rectangle(p.x - fp[0] / 2, p.y - fp[1] / 2, fp[0], fp[1]))) continue;
+            prop(m, type, p.x, p.y, true);
             taken.add(p);
             i++;
+        }
+        // 벽에 거는 장식
+        String banner = "fortress".equals(room.zone) ? "banner_blue" : "temple".equals(room.zone) ? "banner_red" : null;
+        if (banner != null && rnd.nextFloat() < 0.7f) {
+            float bx0 = r.x + (0.25f + rnd.nextFloat() * 0.5f) * r.width;
+            if (!nearAny(new Vector2(bx0, r.y + r.height), doorCenters, 2.5f * TILE)) decor(m, banner, bx0, r.y + r.height + 60);
         }
         // 구석 거미줄
         if (rnd.nextFloat() < 0.6f) decor(m, "cobweb", r.x + 14, r.y + r.height - 14);
@@ -648,35 +660,90 @@ public final class DungeonGenerator {
 
     private static String[] propsFor(String zone) {
         switch (zone) {
-            case "mine": return new String[]{"barrel", "crate", "rubble", "bones", "minecart", "pot", "crate"};
-            case "fortress": return new String[]{"barrel", "crate", "weapon_rack", "bones", "skull", "pot", "rubble"};
-            default: return new String[]{"pot", "candles", "statue", "bones", "skull", "rubble", "pot"};
+            case "mine": return new String[]{"barrel", "crate", "crates", "sacks", "gold", "pot", "minecart", "crystal_mine", "rubble"};
+            case "fortress": return new String[]{"weapon_rack", "tool_rack", "armor", "barrel", "crates", "shields", "big_barrel", "crate", "skull"};
+            default: return new String[]{"vases", "pot", "grave", "ubones", "candle", "crystal_temple", "ruin", "thorn", "statue"};
         }
     }
 
-    private static boolean isSolidProp(String type) {
+    /** 고체 장식의 바닥 충돌 크기(px). null 이면 지나갈 수 있는 장식. */
+    static float[] footprint(String type) {
         switch (type) {
-            case "barrel":
+            case "shelf": return new float[]{84, 16};
+            case "supplies": return new float[]{56, 16};
+            case "weapon_rack": return new float[]{70, 14};
+            case "tool_rack": return new float[]{40, 14};
+            case "big_barrel": return new float[]{44, 16};
+            case "crates": return new float[]{48, 16};
+            case "barrel": return new float[]{40, 14};
+            case "armor": return new float[]{28, 12};
+            case "ruin": return new float[]{56, 18};
             case "crate":
-            case "pot":
-            case "minecart":
+            case "chest":
+            case "vases":
             case "statue":
-            case "weapon_rack":
-                return true;
+            case "minecart":
+            case "grave":
+                return new float[]{26, 12};
+            case "pot":
+                return new float[]{18, 10};
             default:
-                return false;
+                return null;
         }
     }
 
-    /** 벽에서 한 칸 안쪽의 무작위 위치. */
-    private static Vector2 wallSpot(Rectangle r, Random rnd) {
-        int side = rnd.nextInt(4);
-        float t = 0.08f + rnd.nextFloat() * 0.84f;
+    /** 장식 하나를 놓는다. solid 이면 크기만큼 충돌을 더한다. */
+    private static void prop(DungeonMap m, String type, float x, float y, boolean solid) {
+        decor(m, type, x, y);
+        float[] fp = footprint(type);
+        if (solid && fp != null) m.solids.add(new Rectangle(x - fp[0] / 2, y - fp[1] / 2, fp[0], fp[1]));
+    }
+
+    /** 보스방마다 다른 분위기. 전투 공간을 막지 않도록 벽 가장자리에만 둔다. */
+    static void bossDecor(DungeonMap m, RoomDef room, Random rnd) {
+        Rectangle r = room.bounds;
+        float top = r.y + r.height - 0.9f * TILE, bottom = r.y + 0.7f * TILE;
+        switch (room.zone) {
+            case "mine":
+                for (int i = 0; i < 7; i++) decor(m, "gold", r.x + (2.5f + i * 3.1f) * TILE, rnd.nextBoolean() ? top : bottom);
+                decor(m, "chest_gold", r.x + 3 * TILE, top);
+                decor(m, "chest_gold", r.x + r.width - 3 * TILE, top);
+                decor(m, "cauldron", r.x + 1.5f * TILE, r.y + r.height / 2);
+                decor(m, "cauldron", r.x + r.width - 1.5f * TILE, r.y + r.height / 2);
+                for (int i = 0; i < 6; i++) decor(m, "crystal_mine", r.x + (1.4f + rnd.nextFloat() * (r.width / TILE - 2.8f)) * TILE, rnd.nextBoolean() ? top - 8 : bottom + 4);
+                break;
+            case "fortress":
+                for (int i = 0; i < 4; i++) {
+                    float x = r.x + (4 + i * 5.3f) * TILE;
+                    decor(m, i % 2 == 0 ? "banner_red" : "banner_blue", x, r.y + r.height + 60);
+                    decor(m, "armor", x + 1.6f * TILE, top);
+                }
+                decor(m, "dragon_skull", r.x + 2.2f * TILE, r.y + r.height / 2);
+                decor(m, "dragon_skull", r.x + r.width - 2.2f * TILE, r.y + r.height / 2);
+                decor(m, "weapon_rack", r.x + 5 * TILE, bottom);
+                decor(m, "weapon_rack", r.x + r.width - 5 * TILE, bottom);
+                break;
+            default:
+                decor(m, "lich", r.x + 5.5f * TILE, r.y + r.height - 3.2f * TILE);
+                decor(m, "skull_pile", r.x + r.width - 3 * TILE, top - 6);
+                for (int i = 0; i < 7; i++) decor(m, "grave", r.x + (9 + i * 2f) * TILE, top);
+                for (int i = 0; i < 8; i++) decor(m, "ubones", r.x + (1.5f + rnd.nextFloat() * (r.width / TILE - 3)) * TILE, bottom + rnd.nextFloat() * 20);
+                decor(m, "dead_tree", r.x + 1.6f * TILE, r.y + 2.5f * TILE);
+                decor(m, "dead_tree", r.x + r.width - 1.8f * TILE, r.y + 3 * TILE);
+                for (int i = 0; i < 3; i++) decor(m, "thorn", r.x + (3 + i * 8) * TILE, bottom);
+                for (int i = 0; i < 4; i++) decor(m, "candle", r.x + (2 + i * 6.5f) * TILE, r.y + r.height / 2 + (i % 2 == 0 ? 60 : -60));
+                break;
+        }
+    }
+
+    /** 벽에서 한 칸 안쪽의 무작위 위치. side 0 위, 1 아래, 2 왼쪽, 3 오른쪽. */
+    private static Vector2 wallSpot(Rectangle r, Random rnd, int side) {
+        float t = 0.1f + rnd.nextFloat() * 0.8f;
         switch (side) {
-            case 0: return new Vector2(r.x + r.width * t, r.y + r.height - 0.85f * TILE);
+            case 0: return new Vector2(r.x + r.width * t, r.y + r.height - 0.8f * TILE);
             case 1: return new Vector2(r.x + r.width * t, r.y + 0.7f * TILE);
-            case 2: return new Vector2(r.x + 0.8f * TILE, r.y + r.height * t);
-            default: return new Vector2(r.x + r.width - 0.8f * TILE, r.y + r.height * t);
+            case 2: return new Vector2(r.x + 0.9f * TILE, r.y + r.height * t);
+            default: return new Vector2(r.x + r.width - 0.9f * TILE, r.y + r.height * t);
         }
     }
 

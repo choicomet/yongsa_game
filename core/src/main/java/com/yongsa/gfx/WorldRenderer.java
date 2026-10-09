@@ -150,7 +150,12 @@ public class WorldRenderer implements Disposable {
     // 그리기
     // =====================================================================
 
+    private float time;
+    /** 문마다 열림 정도 (0 닫힘 ~ 1 열림). */
+    private final java.util.Map<DoorDef, Float> doorOpen = new java.util.HashMap<>();
+
     public void render(GameWorld w, Effects fx, float shakeX, float shakeY) {
+        time = w.time;
         viewport.apply();
         float cx = cam.position.x, cy = cam.position.y;
         cam.position.add(shakeX, shakeY, 0);
@@ -250,9 +255,28 @@ public class WorldRenderer implements Disposable {
             case "rubble":
             case "cobweb":
             case "cobweb_r":
+            case "gold":
+            case "ubones":
+            case "lich":
                 return true;
             default:
                 return false;
+        }
+    }
+
+    private void drawArchDoor(GameWorld w, DoorDef d, float open) {
+        SpriteLibrary.Entry e = sprites.get(w.isZoneGate(d) ? "door_wood" : "door_grate");
+        com.badlogic.gdx.graphics.g2d.Animation<TextureRegion> a = e.anim("idle");
+        int n = SpriteLibrary.frameCount(a);
+        int idx = Math.min(n - 1, Math.round(open * (n - 1)));
+        TextureRegion r = a.getKeyFrame(idx * a.getFrameDuration() + a.getFrameDuration() * 0.5f);
+        float sw = r.getRegionWidth() * e.scale, sh = r.getRegionHeight() * e.scale;
+        batch.draw(r, d.bounds.x + d.bounds.width / 2f - sw / 2f, d.bounds.y, sw, sh);
+        if (w.isZoneGate(d) && open < 0.5f) {
+            float pulse = 0.7f + 0.3f * MathUtils.sin(w.time * 3f);
+            batch.setColor(1, 1, 1, pulse);
+            drawProp("rune_circle", d.bounds.x + d.bounds.width / 2f, d.bounds.y + 20);
+            batch.setColor(Color.WHITE);
         }
     }
 
@@ -305,6 +329,10 @@ public class WorldRenderer implements Disposable {
                 case "banner":
                     items.add(new Item(y + 64, () -> drawProp("banner", x, y + 46)));
                     break;
+                case "banner_red":
+                case "banner_blue":
+                    items.add(new Item(y + 64, () -> drawProp(type, x, y)));
+                    break;
                 case "campfire":
                     items.add(new Item(y, () -> drawProp("campfire_log", x, y - 8)));
                     break;
@@ -317,15 +345,26 @@ public class WorldRenderer implements Disposable {
                     break;
                 default:
                     items.add(new Item(y, () -> {
-                        shadow(x, y, 30);
+                        SpriteLibrary.Entry pe = sprites.get(sprites.resolve(type, (int) (x * 7 + y * 13)));
+                        if (pe != null && !pe.fromAsset) shadow(x, y, 30);
                         drawProp(type, x, y - 6);
                     }));
                     break;
             }
         }
         for (DoorDef d : w.map.doors) {
-            if (!w.isDoorLocked(d) || !visible(d.bounds.x, d.bounds.y, 120)) continue;
-            items.add(new Item(d.bounds.y + 2, () -> drawDoor(w, d)));
+            if (!visible(d.bounds.x, d.bounds.y, 160)) continue;
+            boolean locked = w.isDoorLocked(d);
+            float o = doorOpen.getOrDefault(d, locked ? 0f : 1f);
+            o = locked ? Math.max(0, o - Gdx.graphics.getDeltaTime() * 5f) : Math.min(1, o + Gdx.graphics.getDeltaTime() * 4f);
+            doorOpen.put(d, o);
+            final float open = o;
+            if ("N".equals(d.wall) && sprites.get(w.isZoneGate(d) ? "door_wood" : "door_grate") != null) {
+                // 위쪽 벽의 아치 문 (CraftPix): 닫힘 → 열림 애니메이션
+                items.add(new Item(d.bounds.y, () -> drawArchDoor(w, d, open)));
+            } else if (locked) {
+                items.add(new Item(d.bounds.y + 2, () -> drawDoor(w, d)));
+            }
         }
         // 광맥 (전투가 끝난 방에서 캘 수 있다)
         if (w.room != null && w.room.veins) {
@@ -352,9 +391,9 @@ public class WorldRenderer implements Disposable {
     }
 
     private void drawProp(String key, float x, float footY) {
-        SpriteLibrary.Entry e = sprites.get(key);
+        SpriteLibrary.Entry e = sprites.get(sprites.resolve(key, (int) (x * 7 + footY * 13)));
         if (e == null) return;
-        TextureRegion r = e.frame("idle", 0);
+        TextureRegion r = e.frame("idle", e.animated ? time + (x * 0.013f) : 0);
         if (r == null) return;
         float sw = r.getRegionWidth() * e.scale, sh = r.getRegionHeight() * e.scale;
         batch.draw(r, x - e.originX * e.scale, footY - e.originY * e.scale, sw, sh);
@@ -670,7 +709,18 @@ public class WorldRenderer implements Disposable {
                     lighting.light(batch, x, y + 12, 110 * flick, 1f, 0.8f, 0.45f, 0.8f);
                     break;
                 case "candles":
-                    lighting.light(batch, x, y + 6, 90 * flick, 1f, 0.75f, 0.45f, 0.7f);
+                case "candle":
+                    lighting.light(batch, x, y + 10, 100 * flick, 1f, 0.75f, 0.45f, 0.75f);
+                    break;
+                case "cauldron":
+                case "fire_bowl":
+                    lighting.light(batch, x, y + 24, 220 * flick, 1f, 0.55f, 0.25f, 1f);
+                    break;
+                case "crystal_mine":
+                    lighting.light(batch, x, y + 8, 70, 1f, 0.8f, 0.3f, 0.5f);
+                    break;
+                case "crystal_temple":
+                    lighting.light(batch, x, y + 8, 70, 0.7f, 0.4f, 1f, 0.5f);
                     break;
                 default:
                     break;
@@ -732,15 +782,19 @@ public class WorldRenderer implements Disposable {
         for (MapObject d : w.map.decor) {
             float x = d.x(), y = d.y();
             if (x < left || x > right || y < bottom || y > top) continue;
+            boolean animTorch = sprites.get("torch") != null && sprites.get("torch").animated;
+            boolean animBrazier = sprites.get("brazier") != null && sprites.get("brazier").animated;
             switch (d.type) {
                 case "torch_warm":
-                    flame(x, y + 16, 0.6f, t, 1f, 0.55f, 0.2f);
+                    if (!animTorch) flame(x, y + 16, 0.6f, t, 1f, 0.55f, 0.2f);
                     break;
                 case "torch_blue":
-                    flame(x, y + 16, 0.6f, t, 0.35f, 0.6f, 1f);
+                    if (!animTorch) flame(x, y + 16, 0.6f, t, 0.35f, 0.6f, 1f);
+                    else flame(x, y + 30, 0.35f, t, 0.35f, 0.6f, 1f);
                     break;
                 case "torch_violet":
-                    flame(x, y + 16, 0.6f, t, 0.75f, 0.4f, 1f);
+                    if (!animTorch) flame(x, y + 16, 0.6f, t, 0.75f, 0.4f, 1f);
+                    else flame(x, y + 30, 0.35f, t, 0.75f, 0.4f, 1f);
                     break;
                 case "campfire":
                     flame(x - 6, y - 4, 1.3f, t + 0.3f, 1f, 0.45f, 0.12f);
@@ -749,7 +803,7 @@ public class WorldRenderer implements Disposable {
                     flame(x, y - 2, 0.9f, t + 0.5f, 1f, 0.9f, 0.5f);
                     break;
                 case "brazier":
-                    flame(x, y + 14, 1.1f, t, 1f, 0.55f, 0.18f);
+                    if (!animBrazier) flame(x, y + 14, 1.1f, t, 1f, 0.55f, 0.18f);
                     break;
                 case "furnace":
                     batch.setColor(1f, 0.5f, 0.15f, 0.35f + 0.15f * MathUtils.sin(t * 7f));

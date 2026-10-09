@@ -42,12 +42,17 @@ public class TileLayer implements Disposable {
         TextureRegion[][] faceU = new TextureRegion[themeCount][];
         TextureRegion[][] faceL = new TextureRegion[themeCount][];
         TextureRegion[][] tops = new TextureRegion[themeCount][];
+        TextureRegion[][] faceEnds = new TextureRegion[themeCount][4]; // 위L, 위R, 아래L, 아래R
+        boolean[] checker = new boolean[themeCount];
         for (int t = 0; t < themeCount; t++) {
             JsonValue th = themes.get(t);
             floors[t] = regions(th.get("floor"));
             faceU[t] = regions(th.get("faceUpper"));
             faceL[t] = regions(th.get("faceLower"));
             tops[t] = regions(th.get("top"));
+            String[] ends = {"faceUpperL", "faceUpperR", "faceLowerL", "faceLowerR"};
+            for (int k = 0; k < 4; k++) faceEnds[t][k] = th.has(ends[k]) ? region(th.get(ends[k])) : null;
+            checker[t] = "checker".equals(th.getString("pattern", ""));
             JsonValue w = th.get("floorWeights");
             floorWeights[t] = w != null ? w.asIntArray() : null;
         }
@@ -65,7 +70,7 @@ public class TileLayer implements Disposable {
                 int t = Math.min(themeCount - 1, map.theme(tx, ty));
                 int hash = hash(tx, ty);
                 if (c == DungeonMap.FLOOR) {
-                    base[i] = pick(floors[t], floorWeights[t], hash);
+                    base[i] = checker[t] ? floors[t][(tx + ty) % floors[t].length] : pick(floors[t], floorWeights[t], hash);
                     byte s = 0;
                     if (!map.isFloor(tx, ty + 1)) s |= 1;
                     if (!map.isFloor(tx - 1, ty)) s |= 2;
@@ -75,8 +80,13 @@ public class TileLayer implements Disposable {
                 } else if (c == DungeonMap.WALL) {
                     if (map.isFloor(tx, ty - 1)) {
                         base[i] = faceL[t][hash % faceL[t].length];
+                        // 벽 정면이 끝나는 곳에는 마감 타일
+                        if (!isFace(tx - 1, ty) && faceEnds[t][2] != null) base[i] = faceEnds[t][2];
+                        else if (!isFace(tx + 1, ty) && faceEnds[t][3] != null) base[i] = faceEnds[t][3];
                     } else if (isFace(tx, ty - 1)) {
                         base[i] = faceU[t][(hash >> 3) % faceU[t].length];
+                        if (!isFace(tx - 1, ty - 1) && faceEnds[t][0] != null) base[i] = faceEnds[t][0];
+                        else if (!isFace(tx + 1, ty - 1) && faceEnds[t][1] != null) base[i] = faceEnds[t][1];
                     } else {
                         int mask = (open(tx, ty + 1) ? 1 : 0) | (open(tx + 1, ty) ? 2 : 0)
                                 | (open(tx, ty - 1) ? 4 : 0) | (open(tx - 1, ty) ? 8 : 0);

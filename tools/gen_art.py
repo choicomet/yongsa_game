@@ -322,7 +322,7 @@ def gen_tiles():
         meta["shadow"][k] = [i, sy]
     os.makedirs(os.path.join(ROOT, "assets", "tiles"), exist_ok=True)
     atlas.save(os.path.join(ROOT, "assets", "tiles", "dungeon_tiles.png"))
-    with open(os.path.join(ROOT, "assets", "data", "tileset.json"), "w", encoding="utf-8") as f:
+    with open(os.path.join(ROOT, "assets", "data", "tileset_generated.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=1)
     return atlas
 

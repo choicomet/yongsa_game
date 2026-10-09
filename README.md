@@ -76,7 +76,8 @@ jpackage --type app-image --name YongsaGame --input build\dist --main-jar yongsa
 `world/DungeonGenerator` 가 씨앗값으로 던전 전체를 만든다.
 
 - 중앙 캠프에서 왼쪽 폐광, 오른쪽 지하 요새, 위쪽 봉인의 신전으로 뻗는다 (요새·신전은 앞 보스 처치 후 개방).
-- 구역마다 **본 경로 10개 방 → 보스 앞 공간 → 보스방**, 그리고 본 경로에서 갈라지는 **곁가지 방 4개**.
+- **아이작식 밀집 배치**: 세 구역이 캠프 둘레에서 번갈아 자라 한 덩어리로 모인다. 방이 칸을 거의 채워 문 사이 통로가 짧다.
+- 구역마다 일반 방 14개(갈래 구조), 가장 깊은 막다른 방 뒤에 **보스 앞 공간 → 보스방**.
 - 일반 방은 대부분 **몬스터와 광맥이 함께** 있다. 전투가 끝나야 광맥을 캘 수 있다. 일부는 전투만, 일부는 안전한 광맥 방.
 - 곁가지는 광맥이 더 많은 보상 방. 첫 구역 입구는 무기 없이 재료를 모을 수 있는 안전한 광물방.
 - 적 수는 깊이에 따라 늘고, 구역별 적 구성은 `balance.json` 의 `enemyTable` 로 정한다.
@@ -92,9 +93,10 @@ jpackage --type app-image --name YongsaGame --input build\dist --main-jar yongsa
 
 ## 그래픽
 
-- 타일: `assets/tiles/dungeon_tiles.png` + `assets/data/tileset.json` (테마 4종: 캠프·폐광·요새·신전). 벽은 정면 2칸 + 윗면 16종 자동 배치.
-- 소품·몬스터·보스: `assets/sprites/gen/` + `assets/data/sprites_generated.json`
-- 위 두 가지는 `python3 tools/gen_art.py` 로 다시 만든다 (임시 아트).
+- 타일: CraftPix 던전 타일셋을 테마 7종으로 색을 바꿔 사용 (캠프·폐광·요새·신전 + 보스방 3종). 벽은 정면 2칸 + 윗면 16종 자동 배치.
+- **보스방마다 다른 배경**: 폐광 수호자(붉은 바닥·금화·가마솥 불), 요새 수호자(바둑판 홀·갑옷 석상·용 두개골), 봉인의 수호자(언데드 대지·거대 리치 해골·무덤).
+- 소품·불꽃·아치 문·수정 광맥: CraftPix 팩 (`tools/build_craftpix.py`, 자세한 내용은 `assets/README.md`).
+- 몬스터·보스는 아직 임시 아트 (`tools/gen_art.py`).
 - 조명(횃불·화로·모닥불·랜턴), 비네트, 떠다니는 먼지, 피격/처치 파편, 화면 흔들림, 미니맵.
 
 ## 에셋 (CraftPix 교체)

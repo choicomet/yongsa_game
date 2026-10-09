@@ -6,13 +6,31 @@
 | --- | --- | --- |
 | `sprites/hero/hero.png` | 용사 4방향 × 3프레임 (26×37) | 팀 제공 원본(`art_source/hero_sheet.png`)을 `tools/import_hero_sheet.py` 로 변환 |
 | `sprites/items/*.png` | 철검, 망치, 곡괭이(채굴 동작), 랜턴 | 위와 같은 원본 시트의 아이템 줄 |
-| `tiles/dungeon_tiles.png` | 테마별 바닥·벽 타일 (임시) | `tools/gen_art.py` 가 생성 |
+| `tiles/craftpix_tiles.png`, `data/tileset.json` | 바닥·벽 타일 7테마 (캠프·폐광·요새·신전·보스방 3종) | CraftPix *Free 2D Top-Down Pixel Dungeon* + *Free Undead Tileset* → `tools/build_craftpix.py` |
+| `sprites/cp/*.png`, `data/sprites_craftpix.json` | 소품, 불꽃 애니메이션, 아치 문, 수정 광맥, 언데드 장식 | CraftPix *Dungeon*, *Dungeon Objects*, *Undead Tileset*, *Top-Down Crystals* → `tools/build_craftpix.py` |
+| `tiles/dungeon_tiles.png` | 예전 임시 타일 (사용 안 함, `tileset_generated.json`) | `tools/gen_art.py` 가 생성 |
 | `sprites/gen/*.png` | 소품·몬스터·보스 (임시) | `tools/gen_sprites.py` 가 생성 |
 | `data/placeholder_art.txt` | 아이콘 등 작은 임시 그림 | 이 프로젝트에서 직접 작성 |
 | `sfx/*.wav`, `music/*.wav` | 임시 효과음·배경음 | `tools/gen_sfx.py` 가 합성 |
 | `fonts/Galmuri11.ttf` | 한글 픽셀 폰트 | Galmuri (quiple), SIL OFL 1.1 — `fonts/Galmuri-LICENSE.txt` |
 
-배포물에는 이 표(에셋 출처와 라이선스 목록)를 함께 넣는다. CraftPix 에셋을 추가하면 팩 이름과 라이선스를 이 표에 적는다.
+배포물에는 이 표(에셋 출처와 라이선스 목록)를 함께 넣는다.
+
+### CraftPix 팩 다시 처리하기
+
+원본 팩은 라이선스(https://craftpix.net/file-licenses/ — 게임에 넣어 배포는 가능, 에셋 자체를 그대로 재배포하는 것은 불가)
+때문에 저장소에 올리지 않는다(`.gitignore` 의 `art_source/craftpix/`). 다시 처리하려면 팩을 받아 아래처럼 풀고 실행한다.
+
+```
+art_source/craftpix/dungeon/   ← Free 2D Top-Down Pixel Dungeon Asset Pack 의 Tiled_files
+art_source/craftpix/objects/   ← Free Pixel Art Dungeon Objects Asset Pack 의 PNG
+art_source/craftpix/undead/    ← Free Undead Tileset Top-Down Pixel Art 의 PNG
+art_source/craftpix/crystals/  ← Top-Down Crystals Pixel Art 의 PNG/Assets_texture_shadow
+python3 tools/build_craftpix.py
+```
+
+그림 우선순위: `sprites.json`(직접 지정) > `sprites_craftpix.json` > `sprites_generated.json` > `placeholder_art.txt`.
+같은 종류의 그림이 여러 장이면 `crate_0`, `crate_1` … 처럼 번호를 붙이고, 게임은 위치에 따라 하나를 고른다.
 
 ## CraftPix 스프라이트로 바꾸는 방법
 
