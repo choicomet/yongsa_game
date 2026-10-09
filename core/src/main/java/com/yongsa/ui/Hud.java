@@ -50,8 +50,9 @@ public class Hud {
     private String introName;
     private boolean introFinal;
     private float introT = -1;
-    private final float[] readyFlash = new float[3];
-    private final boolean[] wasReady = {true, true, true};
+    private static final int SLOTS = 2;
+    private final float[] readyFlash = new float[SLOTS];
+    private final boolean[] wasReady = {true, true};
     private Matrix4 projection;
     private float w, h;
 
@@ -150,7 +151,7 @@ public class Hud {
         }
 
         float[] left = cooldowns();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < SLOTS; i++) {
             boolean ready = left[i] <= 0;
             if (ready && !wasReady[i] && i > 0) readyFlash[i] = 0.4f;
             wasReady[i] = ready;
@@ -159,7 +160,7 @@ public class Hud {
     }
 
     private float[] cooldowns() {
-        return new float[]{Math.max(0, g.hero.attackCd), Math.max(0, g.hero.spinCd), Math.max(0, g.hero.dashCd)};
+        return new float[]{Math.max(0, g.hero.attackCd), Math.max(0, g.hero.rollCd)};
     }
 
     public void render(Matrix4 projection, float w, float h) {
@@ -226,11 +227,11 @@ public class Hud {
         }
 
         // 스킬 칸
-        float sy = 18, sx = w - 16 - 2 * 90 - 76;
-        for (int i = 0; i < 3; i++) panel(sx + i * 90, sy, 76, 76);
+        float sy = 18, sx = w - 16 - (SLOTS - 1) * 90 - 76;
+        for (int i = 0; i < SLOTS; i++) panel(sx + i * 90, sy, 76, 76);
         float[] cd = {g.hero.attackCd / g.balance.attack.basicCooldown,
-                g.hero.spinCd / spinCooldown(), g.hero.dashCd / g.balance.attack.dashCooldown};
-        for (int i = 0; i < 3; i++) {
+                g.hero.rollCd / (g.balance.attack.rollTime + g.balance.attack.rollCooldown)};
+        for (int i = 0; i < SLOTS; i++) {
             if (cd[i] > 0) {
                 shapes.setColor(0, 0, 0, 0.6f);
                 shapes.rect(sx + i * 90 + 4, sy + 4, 68, 68 * Math.min(1, cd[i]));
@@ -286,11 +287,11 @@ public class Hud {
             shadowed(fonts.small, hpv, (w - layout.width) / 2f, h - 58, Ui.TEXT);
         }
         // 스킬 아이콘
-        String[] icons = {null, "icon_spin", "icon_dash"};
-        String[] keys = {"J", "K", "L"};
-        String[] names = {"베기", "회전 베기", "돌진 베기"};
+        String[] icons = {null, "icon_roll"};
+        String[] keys = {"J", "Space"};
+        String[] names = {"베기", "구르기"};
         float[] left = cooldowns();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < SLOTS; i++) {
             float x = sx + i * 90;
             boolean ready = left[i] <= 0;
             batch.setColor(ready ? Color.WHITE : new Color(0.5f, 0.5f, 0.55f, 1f));
@@ -305,7 +306,7 @@ public class Hud {
             fonts.small.setColor(Ui.DIM);
             layout.setText(fonts.small, names[i]);
             fonts.small.draw(batch, names[i], x + 38 - layout.width / 2f, sy + 18);
-            if (!ready && i > 0) {
+            if (!ready && i > 0 && left[i] > 0.95f) {
                 String sec = String.valueOf((int) Math.ceil(left[i]));
                 layout.setText(fonts.large, sec);
                 shadowed(fonts.large, sec, x + 38 - layout.width / 2f, sy + 54, Color.WHITE);
@@ -394,12 +395,6 @@ public class Hud {
         batch.draw(art.white(), 0, 0, w, h);
         batch.setColor(Color.WHITE);
         batch.end();
-    }
-
-    private float spinCooldown() {
-        float cd = g.balance.attack.spinCooldown;
-        if (g.rules.hasAbility(g.state, "skyfall")) cd -= 2f;
-        return cd;
     }
 
     private void shadowed(BitmapFont font, String text, float x, float y, Color c) {

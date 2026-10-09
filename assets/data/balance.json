@@ -15,13 +15,10 @@
     "basicCooldown": 0.4,
     "basicRangeTiles": 1.7,
     "basicArcDegrees": 140,
-    "spinMultiplier": 1.5,
-    "spinCooldown": 6.0,
-    "spinRadiusTiles": 2.2,
-    "dashMultiplier": 2.0,
-    "dashCooldown": 8.0,
-    "dashDistanceTiles": 3.5,
-    "dashTime": 0.2,
+    "rollDistanceTiles": 3.0,
+    "rollTime": 0.32,
+    "rollInvulnTime": 0.24,
+    "rollCooldown": 0.55,
     "damageSpreadMin": 0.9,
     "damageSpreadMax": 1.1
   },
@@ -37,7 +34,7 @@
     { "id": "bloodmoon", "name": "혈월검", "ore": "BLOODMOON", "baseAttack": 55, "perLevel": 5, "craftCost": 8, "enhanceable": true,
       "awakenedName": "만월의 혈월검", "abilityName": "혈월의 갈증", "abilityDesc": "몬스터를 쓰러뜨리면 체력을 5% 회복한다" },
     { "id": "skyfall", "name": "천공검", "ore": "SKY", "baseAttack": 110, "perLevel": 8, "craftCost": 8, "enhanceable": true,
-      "awakenedName": "뇌명의 천공검", "abilityName": "천공 낙뢰", "abilityDesc": "회전 베기의 쿨타임이 2초 줄어든다" },
+      "awakenedName": "뇌명의 천공검", "abilityName": "천공 낙뢰", "abilityDesc": "기본 공격이 20% 빨라진다" },
     { "id": "holy_awakened", "name": "깨어난 성검", "baseAttack": 200, "perLevel": 0, "craftCost": 0, "enhanceable": false, "holy": true }
   ],
 

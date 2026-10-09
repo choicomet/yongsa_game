@@ -119,4 +119,43 @@ class GameSessionTest {
         run(g, new Controls(), 2f);
         assertTrue(s.hp > 10);
     }
+
+    @Test
+    void rollMovesFasterThanWalkingAndGivesInvulnerability() {
+        GameState s = NewGame.create(b);
+        GameSession g = session(s);
+        float x0 = g.hero.x;
+        Controls c = new Controls();
+        c.moveX = -1;
+        c.roll = true;
+        g.update(1 / 60f, c);
+        assertTrue(g.hero.rolling());
+        assertTrue(g.hero.invuln > 0, "구르는 동안은 맞지 않는다");
+        c.roll = false;
+        run(g, c, b.attack.rollTime);
+        float rolled = x0 - g.hero.x;
+        float walked = b.hero.moveSpeedTiles * b.tileSize * b.attack.rollTime;
+        assertTrue(rolled > walked * 1.5f, "구르기는 같은 시간 걷는 것보다 멀리 간다: " + rolled + " vs " + walked);
+        c.roll = true;
+        g.update(1 / 60f, c);
+        assertFalse(g.hero.rolling(), "쿨타임 중에는 다시 구를 수 없다");
+    }
+
+    @Test
+    void defeatedBossRoomHasReturnPortalToCamp() {
+        GameState s = NewGame.create(b);
+        s.bossesDefeated.add("LEFT");
+        GameSession g = session(s);
+        Room boss = g.map.room("L5");
+        assertTrue(g.hasPortal(boss));
+        assertFalse(g.hasPortal(g.map.room("R6")));
+        g.hero.x = g.portalX(boss);
+        g.hero.y = g.portalY(boss);
+        Controls c = new Controls();
+        c.interact = true;
+        List<GameEvent> ev = run(g, c, 1 / 60f);
+        assertTrue(has(ev, GameEvent.Type.WARP));
+        g.warpToCamp();
+        assertTrue(g.inCamp());
+    }
 }

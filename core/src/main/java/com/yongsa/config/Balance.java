@@ -51,8 +51,8 @@ public class Balance {
 
     public static class AttackCfg {
         public float basicMultiplier, basicCooldown, basicRangeTiles, basicArcDegrees;
-        public float spinMultiplier, spinCooldown, spinRadiusTiles;
-        public float dashMultiplier, dashCooldown, dashDistanceTiles, dashTime;
+        /** 구르기: 짧게 빠르게 이동하고 그 앞부분 동안은 맞지 않는다. 공격하지는 않는다. */
+        public float rollDistanceTiles, rollTime, rollInvulnTime, rollCooldown;
         public float damageSpreadMin, damageSpreadMax;
     }
 

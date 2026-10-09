@@ -5,9 +5,11 @@ public class HeroActor extends Actor {
     public Facing facing = Facing.DOWN;
     /** 공격 방향 (마지막으로 움직인 8방향). */
     public float aimX = 0, aimY = -1;
-    public float attackCd, spinCd, dashCd, mineCd;
+    public float attackCd, rollCd, mineCd;
     public float invuln;
-    public float dashT;
+    /** 구르기 남은 시간과 방향, 전체 시간 (그리기용). */
+    public float rollT, rollTotal = 0.32f;
+    public float rollX, rollY;
     public float walkTime;
     public boolean moving;
     /** 그리기용: 지금 휘두르는 공격 종류와 남은 시간. */
@@ -21,7 +23,7 @@ public class HeroActor extends Actor {
         hurtRadius = 12;
     }
 
-    public boolean dashing() {
-        return dashT > 0;
+    public boolean rolling() {
+        return rollT > 0;
     }
 }

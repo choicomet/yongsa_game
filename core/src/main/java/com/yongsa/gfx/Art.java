@@ -1,6 +1,7 @@
 package com.yongsa.gfx;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -39,11 +40,11 @@ public class Art implements Disposable {
         Pixmap white = new Pixmap(4, 4, Pixmap.Format.RGBA8888);
         white.setColor(Color.WHITE);
         white.fill();
-        packer.pack("white", white);
-        packer.pack("shadow", shadow());
+        put(packer, "white", white);
+        put(packer, "shadow", shadow());
 
         for (Map.Entry<String, String[]> e : sources.entrySet()) {
-            packer.pack(e.getKey(), draw(e.getValue(), null));
+            put(packer, e.getKey(), draw(e.getValue(), null));
         }
         // 광물마다 색을 바꾼 광맥과 보석
         packOreVariant(packer, OreType.BLACKIRON, 0x5d6678ff, 0xb7c3d8ff);
@@ -59,22 +60,22 @@ public class Art implements Disposable {
         Map<Character, Integer> holy = new HashMap<>();
         holy.put('w', 0xfff3b0ff);
         holy.put('W', 0xf2c94cff);
-        packer.pack("sword_holy_awakened", draw(sources.get("sword_holy"), holy));
+        put(packer, "sword_holy_awakened", draw(sources.get("sword_holy"), holy));
 
         for (String theme : THEMES) {
-            for (int v = 0; v < 4; v++) packer.pack("floor_" + theme + "_v" + v, floor(theme, v));
-            packer.pack("walltop_" + theme, wallTop(theme));
-            packer.pack("wallfront_" + theme, wallFront(theme));
+            for (int v = 0; v < 4; v++) put(packer, "floor_" + theme + "_v" + v, floor(theme, v));
+            put(packer, "walltop_" + theme, wallTop(theme));
+            put(packer, "wallfront_" + theme, wallFront(theme));
         }
-        packer.pack("bars", bars());
-        packer.pack("ao_top", ao(0));
-        packer.pack("ao_left", ao(1));
-        packer.pack("ao_right", ao(2));
-        packer.pack("torch_a", torch(false));
-        packer.pack("torch_b", torch(true));
+        put(packer, "bars", bars());
+        put(packer, "ao_top", ao(0));
+        put(packer, "ao_left", ao(1));
+        put(packer, "ao_right", ao(2));
+        put(packer, "torch_a", torch(false));
+        put(packer, "torch_b", torch(true));
         for (String theme : THEMES) {
             String[] kinds = {"a", "b", "c"};
-            for (int i = 0; i < kinds.length; i++) packer.pack("decal_" + theme + "_" + kinds[i], decal(theme, i));
+            for (int i = 0; i < kinds.length; i++) put(packer, "decal_" + theme + "_" + kinds[i], decal(theme, i));
         }
 
         atlas = packer.generateTextureAtlas(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest, false);
@@ -216,6 +217,29 @@ public class Art implements Disposable {
         return t;
     }
 
+    /** 덮어쓴 그림 이름 (assets/sprites 폴더에서 읽은 것). */
+    public final java.util.List<String> overridden = new java.util.ArrayList<>();
+
+    /**
+     * assets/sprites/이름.png 가 있으면 코드·sprites.txt 로 만든 그림 대신 그 파일을 쓴다.
+     * 디자인을 바꿀 때 코드를 고치지 않고 그림 파일만 넣으면 되게 하려는 것이다.
+     * 화면에는 그림 1픽셀을 2배로 그리므로 원래 그림과 같은 크기로 만들어야 크기가 맞는다.
+     */
+    private void put(PixmapPacker packer, String name, Pixmap generated) {
+        FileHandle f = Gdx.files.internal("sprites/" + name + ".png");
+        if (!f.exists()) {
+            packer.pack(name, generated);
+            return;
+        }
+        Pixmap custom = new Pixmap(f);
+        if (custom.getWidth() != generated.getWidth() || custom.getHeight() != generated.getHeight()) {
+            Gdx.app.log("Art", name + ".png 크기가 " + custom.getWidth() + "x" + custom.getHeight()
+                    + " 입니다. 원래 크기 " + generated.getWidth() + "x" + generated.getHeight() + " 와 다르면 화면에서 크기가 달라집니다.");
+        }
+        packer.pack(name, custom);
+        overridden.add(name);
+    }
+
     private void parse(String text) {
         String name = null;
         java.util.List<String> rows = new java.util.ArrayList<>();
@@ -256,15 +280,15 @@ public class Art implements Disposable {
         Map<Character, Integer> m = new HashMap<>();
         m.put('o', dark);
         m.put('O', light);
-        packer.pack("vein_" + ore.name(), draw(sources.get("vein"), m));
-        packer.pack("gem_" + ore.name(), draw(sources.get("gem"), m));
+        put(packer, "vein_" + ore.name(), draw(sources.get("vein"), m));
+        put(packer, "gem_" + ore.name(), draw(sources.get("gem"), m));
     }
 
     private void packSword(PixmapPacker packer, String name, String base, int dark, int light) {
         Map<Character, Integer> m = new HashMap<>();
         m.put('o', dark);
         m.put('O', light);
-        packer.pack("sword_" + name, draw(sources.get(base), m));
+        put(packer, "sword_" + name, draw(sources.get(base), m));
     }
 
     private Pixmap shadow() {

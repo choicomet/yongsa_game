@@ -5,7 +5,7 @@ import java.util.Set;
 
 /** 공격 한 번. 같은 몬스터는 한 번만 맞는다 (FR-전투-14). */
 public class Attack {
-    public enum Kind { BASIC, SPIN, DASH }
+    public enum Kind { BASIC }
 
     public final Kind kind;
     public final float multiplier;

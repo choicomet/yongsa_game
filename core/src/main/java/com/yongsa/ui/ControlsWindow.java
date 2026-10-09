@@ -7,8 +7,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 public class ControlsWindow extends Modal {
     public static final String[][] KEYS = {
             {"이동", "W A S D 또는 방향키"},
-            {"기본 공격", "J 또는 스페이스"},
-            {"회전 베기 / 돌진 베기", "K / L"},
+            {"공격 (누르고 있으면 계속)", "J"},
+            {"구르기 (잠깐 무적)", "스페이스, 왼쪽 Shift 또는 K"},
             {"상호작용 (채굴, 대장간, 침대)", "E"},
             {"가방", "I"},
             {"지도 열기 / 닫기", "M 또는 Tab"},

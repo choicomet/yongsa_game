@@ -46,7 +46,7 @@ public class GameSession {
     private float entryX, entryY, outsideX, outsideY;
     private float hpAcc;
     private boolean unsealOffered;
-    private Attack basicAttack, spinAttack, dashAttack;
+    private Attack basicAttack;
     private float lockedGateMsgCd;
     private boolean justDied;
 
@@ -169,8 +169,7 @@ public class GameSession {
 
     private void updateHero(float dt, Controls c) {
         hero.attackCd -= dt;
-        hero.spinCd -= dt;
-        hero.dashCd -= dt;
+        hero.rollCd -= dt;
         hero.mineCd -= dt;
         hero.invuln -= dt;
         hero.flash -= dt;
@@ -182,12 +181,14 @@ public class GameSession {
             hero.kbT -= dt;
         }
 
-        if (hero.dashing()) {
-            hero.dashT -= dt;
-            float speed = balance.attack.dashDistanceTiles * T / balance.attack.dashTime;
-            boolean blocked = Physics.move(map, hero, hero.aimX * speed * dt, hero.aimY * speed * dt, T);
-            hitAround(dashAttack, hero.hurtRadius + 10);
-            if (blocked) hero.dashT = 0; // 벽은 통과하지 못한다
+        if (hero.rolling()) {
+            // 처음에 빠르고 끝으로 갈수록 느려진다 (평균 속도 = 거리 / 시간)
+            float total = balance.attack.rollTime;
+            float p = 1f - hero.rollT / total;
+            float speed = balance.attack.rollDistanceTiles * T / total * 2f * (1f - p);
+            Physics.move(map, hero, hero.rollX * speed * dt, hero.rollY * speed * dt, T);
+            hero.rollT -= dt;
+            hero.walkTime += dt;
             return;
         }
 
@@ -205,13 +206,12 @@ public class GameSession {
             hero.walkTime += dt;
         }
 
-        if (c.attack && hero.attackCd <= 0) basic();
-        if (c.spin && hero.spinCd <= 0) spin();
-        if (c.dash && hero.dashCd <= 0) dash();
+        if (c.roll && hero.rollCd <= 0) roll(mx, my);
+        else if (c.attack && hero.attackCd <= 0) basic();
     }
 
     private void basic() {
-        hero.attackCd = balance.attack.basicCooldown;
+        hero.attackCd = balance.attack.basicCooldown * (rules.hasAbility(state, "skyfall") ? 0.8f : 1f);
         hero.swingKind = 0;
         hero.swingT = 0.18f;
         basicAttack = new Attack(Attack.Kind.BASIC, balance.attack.basicMultiplier);
@@ -238,34 +238,21 @@ public class GameSession {
         return r;
     }
 
-    private void spin() {
-        float cd = balance.attack.spinCooldown;
-        if (rules.hasAbility(state, "skyfall")) cd -= 2f;
-        hero.spinCd = cd;
-        hero.swingKind = 1;
-        hero.swingT = 0.3f;
-        spinAttack = new Attack(Attack.Kind.SPIN, balance.attack.spinMultiplier);
-        hitAround(spinAttack, balance.attack.spinRadiusTiles * T);
-        events.add(GameEvent.sound("spin"));
-    }
-
-    private void dash() {
-        hero.dashCd = balance.attack.dashCooldown;
-        hero.dashT = balance.attack.dashTime;
-        hero.invuln = Math.max(hero.invuln, balance.attack.dashTime);
-        hero.swingKind = 2;
-        hero.swingT = balance.attack.dashTime + 0.05f;
-        dashAttack = new Attack(Attack.Kind.DASH, balance.attack.dashMultiplier);
-        events.add(GameEvent.sound("dash"));
-    }
-
-    private void hitAround(Attack a, float radius) {
-        for (Monster m : monsters) {
-            if (m.dead) continue;
-            float dx = m.x - hero.x, dy = m.centerY() - hero.centerY();
-            float dist = (float) Math.sqrt(dx * dx + dy * dy);
-            if (dist - m.hurtRadius <= radius && a.tryHit(m)) damageMonster(m, a.multiplier);
+    /** 구르기: 움직이는 방향(없으면 바라보는 방향)으로 굴러서 공격을 피한다. */
+    private void roll(float mx, float my) {
+        float len = (float) Math.sqrt(mx * mx + my * my);
+        if (len > 0.01f) {
+            hero.rollX = mx;
+            hero.rollY = my;
+        } else {
+            hero.rollX = hero.aimX;
+            hero.rollY = hero.aimY;
         }
+        hero.rollCd = balance.attack.rollTime + balance.attack.rollCooldown;
+        hero.rollT = hero.rollTotal = balance.attack.rollTime;
+        hero.invuln = Math.max(hero.invuln, balance.attack.rollInvulnTime);
+        hero.swingT = 0;
+        events.add(GameEvent.sound("dash"));
     }
 
     private int roll(int base, float mult) {
@@ -316,7 +303,7 @@ public class GameSession {
     }
 
     private void hitHero(int base, float mult, float fromX, float fromY) {
-        if (hero.invuln > 0 || hero.dashing()) return;
+        if (hero.invuln > 0) return;
         int dmg = roll(base, mult);
         state.hp -= dmg;
         hero.invuln = balance.hero.invulnAfterHit;
@@ -341,7 +328,7 @@ public class GameSession {
         monsters.clear();
         placeAtCampSpawn();
         heroRoom = currentRoom = map.room("CAMP");
-        hero.dashT = 0;
+        hero.rollT = 0;
         hero.kbT = 0;
         state.hp = rules.maxHp(state);
         events.add(new GameEvent(GameEvent.Type.HERO_DIED));
@@ -372,7 +359,7 @@ public class GameSession {
             }
         }
         if (fightRoom == null && heroRoom != null && heroRoom.type.hasFight()
-                && !state.room(heroRoom.id).cleared
+                && !state.room(heroRoom.id).cleared && !hasPortal(heroRoom)
                 && heroRoom.insideWithMargin(tileX(hero.x), tileY(hero.y), 1)) {
             startFight(heroRoom);
         }
@@ -811,7 +798,7 @@ public class GameSession {
         if (fightRoom != null) return;
         placeAtCampSpawn();
         heroRoom = currentRoom = map.room("CAMP");
-        hero.dashT = 0;
+        hero.rollT = 0;
         hero.kbT = 0;
     }
 

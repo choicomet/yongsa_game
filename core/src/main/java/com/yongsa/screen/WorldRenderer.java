@@ -291,7 +291,7 @@ public class WorldRenderer implements Disposable {
         for (Iterator<Ghost> it = ghosts.iterator(); it.hasNext(); ) {
             Ghost gh = it.next();
             gh.t += dt;
-            if (gh.t > 0.25f) it.remove();
+            if (gh.t > 0.2f) it.remove();
         }
         for (Iterator<Ring> it = rings.iterator(); it.hasNext(); ) {
             Ring r = it.next();
@@ -306,10 +306,13 @@ public class WorldRenderer implements Disposable {
 
         HeroActor h = g.hero;
         // 돌진 잔상
-        if (h.dashing()) {
+        if (h.rolling()) {
             ghostT -= dt;
+            if (MathUtils.random() < dt * 40f) {
+                particles.smoke(h.x, h.y + 2, 1, new Color(0.75f, 0.7f, 0.62f, 0.3f), 6, 7, 0.4f);
+            }
             if (ghostT <= 0) {
-                ghostT = 0.03f;
+                ghostT = 0.06f;
                 Ghost gh = new Ghost();
                 gh.region = heroRegion(h);
                 gh.w = gh.region.getRegionWidth() * S;
@@ -321,7 +324,7 @@ public class WorldRenderer implements Disposable {
             }
         }
         // 발걸음 먼지
-        int step = h.moving && !h.dashing() ? (int) (h.walkTime * 4f) : -1;
+        int step = h.moving && !h.rolling() ? (int) (h.walkTime * 4f) : -1;
         if (step >= 0 && step != lastStep) {
             particles.smoke(h.x, h.y + 1, 2, new Color(0.75f, 0.7f, 0.62f, 0.28f), 4, 6, 0.45f);
         }
@@ -701,7 +704,11 @@ public class WorldRenderer implements Disposable {
     private void drawHero() {
         HeroActor h = g.hero;
         drawShadow(h.x, h.y, 26);
-        boolean blink = h.invuln > 0 && !h.dashing() && ((int) (h.invuln * 20)) % 2 == 0;
+        if (h.rolling()) {
+            drawRoll(h);
+            return;
+        }
+        boolean blink = h.invuln > 0 && ((int) (h.invuln * 20)) % 2 == 0;
         float alpha = blink ? 0.35f : 1f;
         boolean walk = h.moving && ((int) (h.walkTime * 8)) % 2 == 1;
         boolean flip = h.facing == Facing.LEFT;
@@ -710,7 +717,6 @@ public class WorldRenderer implements Disposable {
         boolean swordBehind = h.facing == Facing.UP;
         if (swordBehind) drawSword(h, alpha);
         batch.setColor(1f, 1f, 1f, alpha);
-        if (h.dashing()) batch.setColor(0.8f, 0.9f, 1f, 0.8f);
         // 휘두를 때 몸을 살짝 찌그러뜨려 힘이 들어간 느낌을 준다
         float squash = h.swingT > 0 && h.swingKind == 0 ? 1f - 0.08f * (h.swingT / 0.18f) : 1f;
         float bob = h.moving ? (walk ? 2 : 0) : 0;
@@ -725,6 +731,21 @@ public class WorldRenderer implements Disposable {
             Particles.normal(batch);
         }
         if (!swordBehind) drawSword(h, alpha);
+        batch.setColor(Color.WHITE);
+    }
+
+    /** 구르기: 몸을 한 바퀴 굴리고 살짝 웅크린다. 칼은 그리지 않는다. */
+    private void drawRoll(HeroActor h) {
+        float p = 1f - h.rollT / h.rollTotal;
+        TextureRegion r = art.get(h.facing == Facing.UP ? "hero_up" : h.facing == Facing.DOWN ? "hero_down" : "hero_side");
+        float w = r.getRegionWidth() * S, hgt = r.getRegionHeight() * S;
+        float dir = h.rollX < -0.1f ? 1f : -1f;
+        float angle = dir * 360f * p;
+        float squash = 0.8f + 0.2f * Math.abs(MathUtils.cos(p * MathUtils.PI));
+        float hop = MathUtils.sin(p * MathUtils.PI) * 6f;
+        boolean flip = h.facing == Facing.LEFT;
+        batch.setColor(Color.WHITE);
+        batch.draw(r, h.x - w / 2f, h.y - 2 + hop, w / 2f, hgt / 2f, w, hgt, flip ? -squash : squash, squash, angle);
         batch.setColor(Color.WHITE);
     }
 
@@ -743,13 +764,6 @@ public class WorldRenderer implements Disposable {
             float e = 1f - (1f - p) * (1f - p) * (1f - p); // 처음에 빠르고 끝에 느리게
             angle = aim + 75 - 150 * e;
             scale = 1.15f;
-        } else if (h.swingT > 0 && h.swingKind == 1) {
-            float p = 1f - h.swingT / 0.3f;
-            angle = aim + 360 * (1f - (1f - p) * (1f - p));
-            scale = 1.15f;
-        } else if (h.swingKind == 2 && h.swingT > 0) {
-            angle = aim;
-            scale = 1.1f;
         } else {
             switch (h.facing) {
                 case LEFT: angle = 125; break;
@@ -829,7 +843,7 @@ public class WorldRenderer implements Disposable {
     private void drawGhosts() {
         Particles.additive(batch);
         for (Ghost gh : ghosts) {
-            float a = 0.45f * (1f - gh.t / 0.25f);
+            float a = 0.25f * (1f - gh.t / 0.2f);
             batch.setColor(0.45f, 0.7f, 1f, a);
             if (gh.flip) batch.draw(gh.region, gh.x + gh.w / 2f, gh.y - 2, -gh.w, gh.h);
             else batch.draw(gh.region, gh.x - gh.w / 2f, gh.y - 2, gh.w, gh.h);
@@ -979,14 +993,6 @@ public class WorldRenderer implements Disposable {
             outer = g.basicRange();
             inner = outer * 0.5f;
             alpha = 0.85f * Math.min(1f, h.swingT / 0.08f);
-        } else if (h.swingKind == 1) {
-            float p = 1f - h.swingT / 0.3f;
-            float e = 1f - (1f - p) * (1f - p);
-            end = aim + 360 * e;
-            start = end - Math.min(300f, 360 * e);
-            outer = g.balance.attack.spinRadiusTiles * T;
-            inner = outer * 0.45f;
-            alpha = 0.75f * Math.min(1f, h.swingT / 0.1f);
         } else {
             return;
         }
