@@ -67,6 +67,12 @@ public class Nav {
         refresh();
     }
 
+    /** from 번째부터 눌 수 있는 첫 버튼 번호 (없으면 from). */
+    public int firstEnabledFrom(int from) {
+        for (int i = from; i < entries.size(); i++) if (!entries.get(i).button.isDisabled()) return i;
+        return Math.min(from, entries.size() - 1);
+    }
+
     public void setFocusIndex(int i) {
         focus = Math.max(0, Math.min(entries.size() - 1, i));
         refresh();

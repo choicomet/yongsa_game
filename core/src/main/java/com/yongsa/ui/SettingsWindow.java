@@ -38,6 +38,13 @@ public class SettingsWindow extends Modal {
             rebuild();
         })).width(220).height(46).left().padBottom(10).row();
 
+        p.add(label("화면 흔들림", "default", Ui.DIM)).left().padRight(24);
+        p.add(nav.add(game.settings.screenShake ? "켜기" : "끄기", () -> {
+            game.settings.screenShake = !game.settings.screenShake;
+            game.saveSettings();
+            rebuild();
+        })).width(220).height(46).left().padBottom(10).row();
+
         p.add(nav.add("닫기", this::close)).colspan(2).width(200).height(50).padTop(14);
     }
 

@@ -9,7 +9,13 @@ public class GameEvent {
         ROOM_LOCKED, ROOM_CLEARED,
         OPEN_FORGE, BED_USED, AUTOSAVE,
         BOSS_DEFEATED, FINAL_DEFEATED, HERO_DIED,
-        UNSEAL_READY, ENTERED_DUNGEON
+        UNSEAL_READY, ENTERED_DUNGEON,
+        /** 연출용: 맞은 자리 (tone 이 HERO_HIT 면 용사가 맞음), 쓰러진 몬스터, 보스 내려찍기, 곡괭이질. */
+        HIT_FX, MONSTER_DIED, SLAM_FX, MINE_FX,
+        /** 보스방 문이 잠기며 보스가 나타남 (text = 보스 이름). */
+        BOSS_FIGHT_START,
+        /** 귀환 포탈을 사용함. 화면이 어두워진 뒤 GameSession.warpToCamp 를 부른다. */
+        WARP
     }
 
     /** 떠오르는 글자 색 구분. */
@@ -24,6 +30,10 @@ public class GameEvent {
     public String dungeonId;
     public int hpGain;
     public String opened;
+    /** 연출용 값: 방향, 크기, 그림 이름. */
+    public float dirX, dirY, size;
+    public String sprite;
+    public boolean boss, flip;
 
     public GameEvent(Type type) {
         this.type = type;
@@ -41,6 +51,13 @@ public class GameEvent {
         e.y = y;
         e.text = text;
         e.tone = tone;
+        return e;
+    }
+
+    public static GameEvent fx(Type type, float x, float y) {
+        GameEvent e = new GameEvent(type);
+        e.x = x;
+        e.y = y;
         return e;
     }
 

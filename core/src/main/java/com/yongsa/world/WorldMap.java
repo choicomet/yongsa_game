@@ -127,8 +127,10 @@ public class WorldMap {
 
     private void buildCampProps() {
         Room camp = byId.get("CAMP");
-        props.add(new Prop(Prop.Kind.FORGE, camp.x0 + 4, camp.y1 - 4, 2, 2));
-        props.add(new Prop(Prop.Kind.BED, camp.x1 - 5, camp.y1 - 4, 2, 2));
+        // 캠프 가운데 모닥불 가까이에 둬서 들어오자마자 한 화면에 보이게 한다
+        int cy = (int) camp.centerTileY();
+        props.add(new Prop(Prop.Kind.FORGE, camp.x0 + 5, cy + 1, 2, 2));
+        props.add(new Prop(Prop.Kind.BED, camp.x1 - 6, cy + 1, 2, 2));
         props.add(new Prop(Prop.Kind.CAMPFIRE, (int) camp.centerTileX(), (int) camp.centerTileY() - 1, 1, 1));
         for (Prop p : props) {
             for (int x = p.tileX; x < p.tileX + p.w; x++)

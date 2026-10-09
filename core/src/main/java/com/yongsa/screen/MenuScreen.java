@@ -27,6 +27,9 @@ public abstract class MenuScreen extends ScreenAdapter {
         this.game = game;
         this.stage = new Stage(new FitViewport(YongsaGame.WIDTH, YongsaGame.HEIGHT), game.batch);
         this.modals = new ModalStack(stage);
+        this.embers = new com.yongsa.gfx.Particles(game.art.white(), game.art.glow);
+        lightCam.position.set(YongsaGame.WIDTH / 2f, YongsaGame.HEIGHT / 2f, 0);
+        lightCam.update();
     }
 
     /** 바닥에 깔리는 창. 다른 창이 위에 열리면 그 창이 키를 받는다. */
@@ -63,29 +66,72 @@ public abstract class MenuScreen extends ScreenAdapter {
 
     protected void drawBackground(SpriteBatch b) {
         Art art = game.art;
-        int T = 32;
-        for (int y = 0; y < YongsaGame.HEIGHT / T + 1; y++) {
-            for (int x = 0; x < YongsaGame.WIDTH / T + 1; x++) {
-                b.setColor(0.45f, 0.42f, 0.42f, 1f);
+        float W = YongsaGame.WIDTH, H = YongsaGame.HEIGHT;
+        float cx = W / 2f, cy = 96;
+        float flick = 1f + 0.05f * MathUtils.sin(time * 9f) + 0.03f * MathUtils.sin(time * 23f);
+        // 캠프 바닥. 밝기는 아래에서 빛 지도를 곱해 정한다.
+        int T = 48;
+        for (int y = 0; y < H / T + 1; y++) {
+            for (int x = 0; x < W / T + 1; x++) {
                 b.draw(art.floor("CAMP", x, y), x * T, y * T, T, T);
+                TextureRegion dec = art.decal("CAMP", x, y);
+                if (dec != null) b.draw(dec, x * T, y * T, T, T);
             }
         }
-        float cx = YongsaGame.WIDTH / 2f, cy = 90;
-        // 모닥불 빛
-        for (int i = 6; i >= 1; i--) {
-            float a = (0.05f + 0.015f * MathUtils.sin(time * 8)) * (7 - i) / 6f;
-            b.setColor(1f, 0.6f, 0.25f, a);
-            b.draw(art.white(), cx - 60 * i, cy - 30 * i + 20, 120 * i, 60 * i);
-        }
+        b.setColor(Color.WHITE);
+        // 성검과 용사 (모닥불을 보고 앉아 있다)
+        b.setColor(0, 0, 0, 0.35f);
+        b.draw(art.get("shadow"), cx - 150, cy - 8, 60, 16);
+        b.draw(art.get("shadow"), cx - 30, cy - 10, 60, 18);
+        b.setColor(1f, 0.85f, 0.7f, 1f);
+        b.draw(art.get("hero_side"), cx - 152, cy - 6, 48, 60);
+        b.draw(art.get("sword_holy"), cx + 112, cy + 44, 0, 0, 48, 48, 1, 1, -135);
+        b.draw(art.get("chain"), cx + 110, cy + 36, 0, 0, 36, 36, 1, 1, -135);
         b.setColor(Color.WHITE);
         TextureRegion fire = art.get(((int) (time * 6)) % 2 == 0 ? "campfire" : "campfire2");
-        b.draw(fire, cx - 32, cy - 10, 64, 64);
-        TextureRegion hero = art.get("hero_side");
-        b.draw(hero, cx - 130, cy - 6, 64, 80);
-        b.draw(art.get("sword_holy"), cx - 92, cy + 24, 6, 6, 40, 40, 1, 1, 30);
-        b.draw(art.get("chain"), cx - 88, cy + 26, 4, 4, 30, 30, 1, 1, 30);
+        b.draw(fire, cx - 24, cy - 8, 48, 48);
+
+        b.end();
+        light.begin(0.07f, 0.06f, 0.08f);
+        light.add(cx, cy + 20, 560 * flick, 1f, 0.62f, 0.32f, 1f);
+        light.add(cx + 112, cy + 10, 110, 1f, 0.9f, 0.5f, 0.35f + 0.1f * MathUtils.sin(time * 2f));
+        light.render(b, lightCam);
+        stage.getViewport().apply();
+        light.composite(b);
+        b.setProjectionMatrix(stage.getCamera().combined);
+        b.begin();
+        // 빛과 불똥 (더하기)
+        embers.update(Gdx.graphics.getDeltaTime());
+        emberT -= Gdx.graphics.getDeltaTime();
+        while (emberT <= 0) {
+            emberT += 0.04f;
+            com.yongsa.gfx.Particles.P e = embers.spawn(cx + MathUtils.random(-14f, 14f), cy + 18, MathUtils.random(1.2f, 2.6f),
+                    MathUtils.random(2f, 4f), new Color(1f, MathUtils.random(0.45f, 0.8f), 0.2f, 1f));
+            e.vy = MathUtils.random(40f, 90f);
+            e.vx = MathUtils.random(-18f, 18f);
+            e.glow = true;
+            e.endSize = 0;
+        }
+        com.yongsa.gfx.Particles.additive(b);
+        b.setColor(1f, 0.55f, 0.2f, 0.35f * flick);
+        b.draw(art.glow, cx - 160, cy - 110, 320, 260);
+        b.setColor(1f, 0.7f, 0.3f, 0.5f * flick);
+        b.draw(art.glow, cx - 50, cy - 20, 100, 90);
+        b.setColor(1f, 0.9f, 0.5f, 0.25f + 0.1f * MathUtils.sin(time * 2f));
+        b.draw(art.glow, cx + 72, cy - 20, 80, 80);
+        b.setColor(1f, 0.8f, 0.4f, 0.12f + 0.04f * MathUtils.sin(time * 1.3f));
+        b.draw(art.glow, cx - 420, H - 300, 840, 260);
+        embers.drawGlow(b);
+        com.yongsa.gfx.Particles.normal(b);
+        b.setColor(0, 0, 0, 0.75f);
+        b.draw(art.vignette, 0, 0, W, H);
         b.setColor(Color.WHITE);
     }
+
+    private final com.yongsa.gfx.Particles embers;
+    private final com.yongsa.gfx.Lighting light = new com.yongsa.gfx.Lighting(YongsaGame.WIDTH, YongsaGame.HEIGHT);
+    private final com.badlogic.gdx.graphics.OrthographicCamera lightCam = new com.badlogic.gdx.graphics.OrthographicCamera(YongsaGame.WIDTH, YongsaGame.HEIGHT);
+    private float emberT;
 
     @Override
     public void resize(int width, int height) {
@@ -95,5 +141,6 @@ public abstract class MenuScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         stage.dispose();
+        light.dispose();
     }
 }

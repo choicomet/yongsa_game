@@ -101,7 +101,14 @@ public class ForgeWindow extends Modal {
         foot.add(nav.add("닫기", this::close)).width(180).height(46);
         foot.add(label("   Esc 닫기 · 방향키/Tab 이동 · Enter 선택", "small", Ui.DIM));
         p.add(foot).padTop(8);
+        // 처음 열 때는 탭이 아니라 지금 탭의 첫 번째 할 일 버튼에 초점을 둔다
+        if (!opened) {
+            opened = true;
+            nav.setFocusIndex(nav.firstEnabledFrom(3));
+        }
     }
+
+    private boolean opened;
 
     private void tabButton(Table head, String text, Tab t) {
         TextButton b = nav.add(text, () -> {

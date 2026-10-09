@@ -55,6 +55,7 @@ public class GameSession {
     public float promptX, promptY;
     private Prop targetProp;
     private Vein targetVein;
+    private boolean targetPortal;
 
     public GameSession(Balance balance, WorldMap map, GameState state, long seed) {
         this.balance = balance;
@@ -289,10 +290,23 @@ public class GameSession {
         if (!m.boss) m.knockback(m.x - hero.x, m.y - hero.y, balance.monster.knockbackTiles * T);
         events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), GameEvent.Tone.MONSTER_HIT));
         events.add(GameEvent.sound("hit"));
+        GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, m.x, m.centerY());
+        fx.tone = GameEvent.Tone.MONSTER_HIT;
+        float ddx = m.x - hero.x, ddy = m.centerY() - hero.centerY(), dl = (float) Math.sqrt(ddx * ddx + ddy * ddy);
+        fx.dirX = dl > 0.01f ? ddx / dl : hero.aimX;
+        fx.dirY = dl > 0.01f ? ddy / dl : hero.aimY;
+        fx.boss = m.boss;
+        events.add(fx);
         if (m.hp <= 0) {
             m.hp = 0;
             m.dead = true;
             state.stats.monstersKilled++;
+            GameEvent died = GameEvent.fx(GameEvent.Type.MONSTER_DIED, m.x, m.y);
+            died.sprite = m.def.sprite;
+            died.size = m.finalBoss ? 2.0f : m.boss ? 1.7f : 1f;
+            died.boss = m.boss;
+            died.flip = m.dirX < -0.2f;
+            events.add(died);
             if (rules.hasAbility(state, "bloodmoon")) {
                 int heal = Math.max(1, Math.round(rules.maxHp(state) * 0.05f));
                 state.hp = Math.min(rules.maxHp(state), state.hp + heal);
@@ -310,6 +324,9 @@ public class GameSession {
         hero.knockback(hero.x - fromX, hero.y - fromY, balance.hero.knockbackTiles * T);
         events.add(GameEvent.floatText(hero.x, hero.y + 40, String.valueOf(dmg), GameEvent.Tone.HERO_HIT));
         events.add(GameEvent.sound("hurt"));
+        GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, hero.x, hero.centerY());
+        fx.tone = GameEvent.Tone.HERO_HIT;
+        events.add(fx);
         if (state.hp <= 0) die();
     }
 
@@ -396,8 +413,15 @@ public class GameSession {
             for (int i = 0; i < d.mobsPerRoom; i++) spawn(r, d.mob, false, false, false);
         } else if (r.type == RoomType.BOSS) {
             spawn(r, d.boss, true, false, true);
+            GameEvent e = new GameEvent(GameEvent.Type.BOSS_FIGHT_START);
+            e.text = d.boss.name;
+            events.add(e);
         } else if (r.type == RoomType.FINAL) {
             spawn(r, balance.finalBoss, true, true, true);
+            GameEvent e = new GameEvent(GameEvent.Type.BOSS_FIGHT_START);
+            e.text = balance.finalBoss.name;
+            e.boss = true;
+            events.add(e);
         }
         events.add(new GameEvent(GameEvent.Type.ROOM_LOCKED));
         events.add(GameEvent.sound("door"));
@@ -541,6 +565,9 @@ public class GameSession {
                         m.stateT = 0.5f;
                         m.slamCd = mc.bossSlamCooldown * (m.finalBoss ? 0.7f : 1f);
                         events.add(GameEvent.sound("slam"));
+                        GameEvent fx = GameEvent.fx(GameEvent.Type.SLAM_FX, m.slamX, m.slamY);
+                        fx.size = m.slamRadius;
+                        events.add(fx);
                     }
                     break;
                 case RECOVER:
@@ -618,7 +645,18 @@ public class GameSession {
         prompt = null;
         targetProp = null;
         targetVein = null;
+        targetPortal = false;
         float best = Float.MAX_VALUE;
+        if (heroRoom != null && hasPortal(heroRoom) && fightRoom == null) {
+            float d = (float) Math.hypot(portalX(heroRoom) - hero.x, portalY(heroRoom) - hero.y);
+            if (d < 1.1f * T) {
+                targetPortal = true;
+                prompt = "E  캠프로 귀환";
+                promptX = portalX(heroRoom);
+                promptY = portalY(heroRoom) + 1.6f * T;
+                return;
+            }
+        }
         for (Prop p : map.props) {
             float px = Math.max(p.tileX * T, Math.min(hero.x, (p.tileX + p.w) * T));
             float py = Math.max(p.tileY * T, Math.min(hero.y, (p.tileY + p.h) * T));
@@ -673,6 +711,11 @@ public class GameSession {
     }
 
     private void interact() {
+        if (targetPortal) {
+            events.add(new GameEvent(GameEvent.Type.WARP));
+            events.add(GameEvent.sound("warp"));
+            return;
+        }
         if (targetProp != null) {
             switch (targetProp.kind) {
                 case FORGE:
@@ -697,6 +740,10 @@ public class GameSession {
         if (Math.abs(dx) + Math.abs(dy) > 1) hero.facing = Facing.of(dx, dy);
         v.hitsLeft--;
         events.add(GameEvent.sound("mine"));
+        GameEvent fx = GameEvent.fx(GameEvent.Type.MINE_FX, center(v.tileX), center(v.tileY));
+        fx.ore = v.ore;
+        fx.size = v.hitsLeft;
+        events.add(fx);
         if (v.hitsLeft > 0) return;
         state.addOre(v.ore, v.amount);
         state.stats.oreMined += v.amount;
@@ -744,6 +791,28 @@ public class GameSession {
         placeAtCampSpawn();
         heroRoom = currentRoom = map.room("CAMP");
         return true;
+    }
+
+    /** 보스를 쓰러뜨린 보스방 가운데에는 캠프로 돌아가는 포탈이 생긴다. */
+    public boolean hasPortal(Room r) {
+        return r.type == RoomType.BOSS && state.bossDefeated(r.dungeonId);
+    }
+
+    public float portalX(Room r) {
+        return center((int) r.centerTileX());
+    }
+
+    public float portalY(Room r) {
+        return center((int) r.centerTileY());
+    }
+
+    /** 귀환 포탈로 캠프에 돌아간다. */
+    public void warpToCamp() {
+        if (fightRoom != null) return;
+        placeAtCampSpawn();
+        heroRoom = currentRoom = map.room("CAMP");
+        hero.dashT = 0;
+        hero.kbT = 0;
     }
 
     /** 저장 직전에 이어하기 위치를 정한다 (FR-저장-03, A25). */

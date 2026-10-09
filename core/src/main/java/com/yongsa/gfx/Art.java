@@ -27,6 +27,10 @@ public class Art implements Disposable {
     private final Map<String, String[]> sources = new LinkedHashMap<>();
     private final TextureAtlas atlas;
     private final Map<String, TextureRegion> cache = new HashMap<>();
+    /** 부드러운 빛 원 (입자, 불빛, 포탈). */
+    public final Texture glow;
+    /** 화면 가장자리를 어둡게 하는 그림. */
+    public final Texture vignette;
 
     public Art() {
         parse(Gdx.files.internal("data/sprites.txt").readString("UTF-8"));
@@ -63,9 +67,153 @@ public class Art implements Disposable {
             packer.pack("wallfront_" + theme, wallFront(theme));
         }
         packer.pack("bars", bars());
+        packer.pack("ao_top", ao(0));
+        packer.pack("ao_left", ao(1));
+        packer.pack("ao_right", ao(2));
+        packer.pack("torch_a", torch(false));
+        packer.pack("torch_b", torch(true));
+        for (String theme : THEMES) {
+            String[] kinds = {"a", "b", "c"};
+            for (int i = 0; i < kinds.length; i++) packer.pack("decal_" + theme + "_" + kinds[i], decal(theme, i));
+        }
 
         atlas = packer.generateTextureAtlas(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest, false);
         packer.dispose();
+        glow = Lighting.radial(128);
+        vignette = vignetteTexture();
+    }
+
+    /** 벽 바로 옆 바닥에 지는 그늘. side 0 위쪽 벽, 1 왼쪽 벽, 2 오른쪽 벽. */
+    private Pixmap ao(int side) {
+        Pixmap p = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+        p.setBlending(Pixmap.Blending.None);
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                float d = side == 0 ? y : side == 1 ? x : 15 - x;
+                float a = side == 0 ? 0.5f * Math.max(0, 1f - d / 9f) : 0.3f * Math.max(0, 1f - d / 6f);
+                p.drawPixel(x, y, Color.rgba8888(0, 0, 0, a));
+            }
+        }
+        return p;
+    }
+
+    /** 벽에 거는 횃불. 불꽃 모양이 두 장 번갈아 나온다. */
+    private Pixmap torch(boolean alt) {
+        Pixmap p = new Pixmap(8, 16, Pixmap.Format.RGBA8888);
+        p.setBlending(Pixmap.Blending.None);
+        int k = 0x1b1b24ff, wood = 0x6b4826ff, metal = 0x6e6e7aff, f1 = 0xff9c2aff, f2 = 0xffd75eff, f3 = 0xfff6c8ff;
+        // 받침
+        p.setColor(new Color(k));
+        p.fillRectangle(2, 9, 4, 1);
+        p.fillRectangle(3, 10, 2, 5);
+        p.setColor(new Color(metal));
+        p.fillRectangle(2, 8, 4, 1);
+        p.setColor(new Color(wood));
+        p.fillRectangle(3, 10, 2, 4);
+        // 불꽃
+        p.setColor(new Color(f1));
+        if (alt) {
+            p.fillRectangle(2, 3, 4, 5);
+            p.fillRectangle(3, 1, 2, 2);
+            p.drawPixel(5, 2, f1);
+        } else {
+            p.fillRectangle(2, 4, 4, 4);
+            p.fillRectangle(3, 2, 2, 2);
+            p.drawPixel(2, 3, f1);
+        }
+        p.setColor(new Color(f2));
+        p.fillRectangle(3, alt ? 4 : 5, 2, 3);
+        p.drawPixel(3, alt ? 6 : 6, f3);
+        return p;
+    }
+
+    /** 바닥 장식 (자갈, 금, 풀, 뼈, 룬). 일부 바닥 칸에만 얹는다. */
+    private Pixmap decal(String theme, int kind) {
+        int[] c = themeColors(theme);
+        Pixmap p = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+        p.setBlending(Pixmap.Blending.None);
+        Random r = new Random(theme.hashCode() * 17L + kind);
+        if (kind == 0) {
+            // 자갈
+            for (int i = 0; i < 3; i++) {
+                int x = 3 + r.nextInt(9), y = 4 + r.nextInt(8);
+                p.drawPixel(x, y, c[1]);
+                p.drawPixel(x + 1, y, c[1]);
+                p.drawPixel(x, y + 1, c[2]);
+                p.drawPixel(x + 1, y + 1, c[3]);
+            }
+        } else if (kind == 1) {
+            // 금
+            p.setColor(new Color(c[3]));
+            p.drawLine(2, 9, 6, 7);
+            p.drawLine(6, 7, 9, 8);
+            p.drawLine(9, 8, 13, 5);
+            p.drawLine(6, 7, 7, 4);
+        } else {
+            switch (theme) {
+                case "CAMP": {
+                    // 풀
+                    int g1 = 0x5f7a3aff, g2 = 0x7f9c4aff;
+                    for (int i = 0; i < 4; i++) {
+                        int x = 4 + i * 2 + r.nextInt(2);
+                        p.drawPixel(x, 10, g1);
+                        p.drawPixel(x, 9, g1);
+                        p.drawPixel(x + (i % 2 == 0 ? -1 : 1), 8, g2);
+                    }
+                    break;
+                }
+                case "LEFT": {
+                    // 부서진 나무 받침
+                    p.setColor(new Color(0x5a4430ff));
+                    p.fillRectangle(3, 8, 9, 2);
+                    p.setColor(new Color(0x3c2c1fff));
+                    p.drawLine(3, 10, 11, 10);
+                    p.drawPixel(12, 7, 0x5a4430ff);
+                    break;
+                }
+                case "RIGHT": {
+                    // 뼈
+                    int b1 = 0xd8d0bcff, b2 = 0xa8a090ff;
+                    p.setColor(new Color(b1));
+                    p.drawLine(4, 10, 11, 7);
+                    p.drawPixel(3, 10, b1);
+                    p.drawPixel(4, 11, b1);
+                    p.drawPixel(12, 6, b1);
+                    p.drawPixel(12, 7, b1);
+                    p.drawPixel(5, 11, b2);
+                    p.drawPixel(10, 8, b2);
+                    break;
+                }
+                default: {
+                    // 희미한 룬
+                    int v = 0x6a55a0ff;
+                    p.setColor(new Color(v));
+                    p.drawLine(5, 5, 10, 5);
+                    p.drawLine(7, 5, 7, 11);
+                    p.drawLine(5, 11, 10, 8);
+                    break;
+                }
+            }
+        }
+        return p;
+    }
+
+    private static Texture vignetteTexture() {
+        int w = 128, h = 72;
+        Pixmap p = new Pixmap(w, h, Pixmap.Format.RGBA8888);
+        p.setBlending(Pixmap.Blending.None);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                float dx = (x - (w - 1) / 2f) / (w / 2f), dy = (y - (h - 1) / 2f) / (h / 2f);
+                float d = (float) Math.sqrt(dx * dx * 0.8f + dy * dy);
+                float a = Math.max(0f, Math.min(1f, (d - 0.55f) / 0.6f));
+                p.drawPixel(x, y, Color.rgba8888(1f, 1f, 1f, a * a));
+            }
+        }
+        Texture t = new Texture(p);
+        t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        p.dispose();
+        return t;
     }
 
     private void parse(String text) {
@@ -232,6 +380,14 @@ public class Art implements Disposable {
         }
     }
 
+    /** 이 바닥 칸에 얹을 장식 (없으면 null). 칸 위치로 정해져서 매번 같은 자리에 나온다. */
+    public TextureRegion decal(String theme, int x, int y) {
+        int h = (x * 73856093) ^ (y * 19349663);
+        h = Math.floorMod(h, 100);
+        if (h >= 9) return null;
+        return get("decal_" + theme + "_" + (h < 4 ? "a" : h < 7 ? "b" : "c"));
+    }
+
     public TextureRegion floor(String theme, int x, int y) {
         int v = Math.floorMod(x * 7 + y * 13 + (x * y) % 5, 9);
         return get("floor_" + theme + "_v" + (v < 6 ? 0 : v - 5));
@@ -240,5 +396,7 @@ public class Art implements Disposable {
     @Override
     public void dispose() {
         atlas.dispose();
+        glow.dispose();
+        vignette.dispose();
     }
 }
