@@ -218,6 +218,10 @@ public class GameScreen extends ScreenAdapter {
                     shake(0.5f);
                     hud.bossIntro(e.text, e.boss);
                     break;
+                case BOSS_ENRAGED:
+                    shake(0.6f);
+                    hud.banner(e.text + " · 분노");
+                    break;
                 case WARP:
                     warping = true;
                     fadeTarget = 1f;

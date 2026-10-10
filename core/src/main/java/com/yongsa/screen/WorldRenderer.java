@@ -16,6 +16,7 @@ import com.yongsa.YongsaGame;
 import com.yongsa.combat.Facing;
 import com.yongsa.combat.HeroActor;
 import com.yongsa.combat.Monster;
+import com.yongsa.combat.Projectile;
 import com.yongsa.gfx.Art;
 import com.yongsa.gfx.Fonts;
 import com.yongsa.gfx.Lighting;
@@ -215,6 +216,16 @@ public class WorldRenderer implements Disposable {
                 flash(e.x, e.y, 160, oc, 0.4f);
                 break;
             }
+            case BLINK_FX:
+                particles.burst(e.x, e.y, 18, new Color(0.75f, 0.4f, 1f, 1f), 180, 0.45f, 3, true);
+                particles.smoke(e.x, e.y - 8, 5, new Color(0.3f, 0.15f, 0.4f, 0.6f), 14, 12, 0.5f);
+                flash(e.x, e.y, 90, new Color(0.7f, 0.35f, 1f, 1f), 0.2f);
+                break;
+            case BOSS_ENRAGED:
+                ring(e.x, e.y - 20, 20, 300, 0.8f, new Color(1f, 0.25f, 0.15f, 1f));
+                particles.burst(e.x, e.y, 40, new Color(1f, 0.3f, 0.2f, 1f), 320, 0.7f, 3, true);
+                flash(e.x, e.y, 360, new Color(1f, 0.2f, 0.1f, 1f), 0.6f);
+                break;
             case WARP:
                 particles.burst(g.hero.x, g.hero.centerY(), 40, new Color(0.6f, 0.5f, 1f, 1f), 260, 0.8f, 3, true);
                 flash(g.hero.x, g.hero.y, 260, new Color(0.6f, 0.5f, 1f, 1f), 0.6f);
@@ -333,6 +344,16 @@ public class WorldRenderer implements Disposable {
         // 몬스터 등장
         for (Monster m : g.monsters) {
             if (m.dead || ages.containsKey(m)) continue;
+            if (m.state == Monster.State.SPAWN) {
+                // 마법진 위로 빛 알갱이가 모인다
+                if (MathUtils.random() < 0.5f) {
+                    Color c = spawnColor(m);
+                    Particles.P p = particles.spawn(m.x + MathUtils.random(-m.hurtRadius, m.hurtRadius), m.y + MathUtils.random(-4f, 4f), 0.5f, 2, c);
+                    p.vz = 60f;
+                    p.glow = true;
+                }
+                continue;
+            }
             ages.put(m, 0f);
             particles.smoke(m.x, m.y + 8, m.boss ? 22 : 8, new Color(0.3f, 0.25f, 0.4f, 0.75f), m.boss ? 40 : 12, m.boss ? 22 : 12, 0.7f);
             particles.burst(m.x, m.y + 10, m.boss ? 30 : 8, new Color(0.7f, 0.5f, 1f, 1f), 160, 0.5f, 3, true);
@@ -491,6 +512,15 @@ public class WorldRenderer implements Disposable {
                 lighting.add(m.slamX, m.slamY, m.slamRadius * 1.6f, 1f, 0.25f, 0.15f, 0.55f);
             }
             if (m.finalBoss) lighting.add(m.x, m.y + 40, 260, 0.7f, 0.3f, 1f, 0.6f);
+            if (m.enraged) lighting.add(m.x, m.y + 30, 200, 1f, 0.2f, 0.15f, 0.35f + 0.15f * MathUtils.sin(time * 8f));
+            if (m.state == Monster.State.SPAWN) {
+                Color c = spawnColor(m);
+                lighting.add(m.x, m.y, 110, c.r, c.g, c.b, 0.6f * m.progress());
+            }
+        }
+        for (Projectile p : g.projectiles) {
+            Color c = projectileColor(p.source);
+            lighting.add(p.x, p.y, 90, c.r, c.g, c.b, 0.7f);
         }
         for (Flash f : flashes) {
             float a = 1f - f.t / f.dur;
@@ -617,13 +647,52 @@ public class WorldRenderer implements Disposable {
             shapes.ellipse(px - 34, py - 16, 68, 32, 40);
         }
         for (Monster m : g.monsters) {
-            if (m.dead || m.state != Monster.State.SLAM_TELEGRAPH) continue;
-            float total = g.balance.monster.bossSlamTelegraph;
-            float prog = 1f - Math.max(0, m.stateT) / total;
-            shapes.setColor(0.9f, 0.1f, 0.05f, 0.16f + 0.08f * MathUtils.sin(time * 20f));
-            shapes.circle(m.slamX, m.slamY, m.slamRadius, 56);
-            shapes.setColor(1f, 0.2f, 0.1f, 0.3f);
-            shapes.circle(m.slamX, m.slamY, m.slamRadius * prog, 56);
+            if (m.dead) continue;
+            float prog = m.progress();
+            float blink = 0.16f + 0.08f * MathUtils.sin(time * 20f);
+            switch (m.state) {
+                case SLAM_TELEGRAPH:
+                    shapes.setColor(0.9f, 0.1f, 0.05f, blink);
+                    shapes.circle(m.slamX, m.slamY, m.slamRadius, 56);
+                    shapes.setColor(1f, 0.2f, 0.1f, 0.3f);
+                    shapes.circle(m.slamX, m.slamY, m.slamRadius * prog, 56);
+                    break;
+                case CHARGE_TELEGRAPH:
+                case SWOOP_TELEGRAPH: {
+                    // 돌진할 길을 바닥에 미리 보여 준다
+                    boolean charge = m.state == Monster.State.CHARGE_TELEGRAPH;
+                    float len = charge ? g.balance.monster.chargeMaxTiles * T : g.balance.monster.swoopDistanceTiles * T;
+                    float wid = m.hurtRadius * 1.7f;
+                    float ex = m.x + m.lockX * len, ey = m.y + m.lockY * len;
+                    shapes.setColor(0.9f, 0.1f, 0.05f, blink);
+                    shapes.rectLine(m.x, m.y, ex, ey, wid);
+                    shapes.setColor(1f, 0.25f, 0.1f, 0.32f);
+                    shapes.rectLine(m.x, m.y, m.x + m.lockX * len * prog, m.y + m.lockY * len * prog, wid);
+                    break;
+                }
+                case TELEGRAPH:
+                case COMBO_TELEGRAPH: {
+                    // 휘두를 앞쪽 부채꼴
+                    float reach = g.balance.monster.attackReachTiles * T + m.hw + 10
+                            + (m.state == Monster.State.COMBO_TELEGRAPH ? g.balance.monster.comboStepTiles * T + 0.6f * T : 0);
+                    if ("brute".equals(m.ai())) reach += g.balance.monster.lungeTiles * T;
+                    float ang = MathUtils.atan2(m.dirY, m.dirX) * MathUtils.radDeg;
+                    shapes.setColor(0.9f, 0.1f, 0.05f, blink * 0.9f);
+                    shapes.arc(m.x, m.y, reach, ang - 78, 156, 24);
+                    shapes.setColor(1f, 0.25f, 0.1f, 0.25f);
+                    shapes.arc(m.x, m.y, reach * prog, ang - 78, 156, 24);
+                    break;
+                }
+                case SPAWN: {
+                    Color c = spawnColor(m);
+                    float r = m.hurtRadius * 1.6f;
+                    shapes.setColor(c.r * 0.3f, c.g * 0.3f, c.b * 0.3f, 0.5f * Math.min(1f, prog * 3f));
+                    shapes.ellipse(m.x - r, m.y - r * 0.5f, r * 2, r, 32);
+                    break;
+                }
+                default:
+                    break;
+            }
         }
         shapes.end();
     }
@@ -787,37 +856,47 @@ public class WorldRenderer implements Disposable {
     private void drawMonster(Monster m) {
         TextureRegion r = art.get(m.def.sprite);
         float scale = S * (m.finalBoss ? 2.0f : m.boss ? 1.7f : 1f);
-        float age = ages.containsKey(m) ? ages.get(m) : 1f;
-        float appear = Math.min(1f, age / 0.35f);
+        float appear = m.state == Monster.State.SPAWN ? Math.max(0f, (m.progress() - 0.35f) / 0.65f) : 1f;
+        if (appear <= 0f) return;
         float w = art.width(r) * scale, hgt = art.height(r) * scale;
         drawShadow(m.x, m.y, w * 0.8f * appear);
         float bob = m.state == Monster.State.CHASE ? Math.abs(MathUtils.sin(m.walkTime * 9f)) * 3f : 0;
         if ("bat".equals(m.def.sprite)) bob = 6 + MathUtils.sin(time * 8f + m.x) * 4f;
         // 공격 예고: 뒤로 살짝 움츠렸다가 친다
         float sx = 1f, sy = 1f;
-        if (m.state == Monster.State.TELEGRAPH) {
-            float p = 1f - Math.max(0, m.stateT) / g.balance.monster.telegraphSeconds;
-            sx = 1f + 0.12f * p;
-            sy = 1f - 0.1f * p;
-        } else if (m.state == Monster.State.SLAM_TELEGRAPH) {
-            float p = 1f - Math.max(0, m.stateT) / g.balance.monster.bossSlamTelegraph;
+        float jx = 0;
+        if (m.state == Monster.State.SLAM_TELEGRAPH || m.state == Monster.State.CAST_TELEGRAPH) {
+            float p = m.progress();
             sx = 1f - 0.08f * p;
             sy = 1f + 0.12f * p;
-            bob += 10 * p;
+            bob += (m.state == Monster.State.SLAM_TELEGRAPH ? 10 : 4) * p;
+        } else if (m.warning()) {
+            float p = m.progress();
+            sx = 1f + 0.12f * p;
+            sy = 1f - 0.1f * p;
+            if (m.state == Monster.State.CHARGE_TELEGRAPH) jx = MathUtils.sin(time * 60f) * 2f * p;
+        } else if (m.state == Monster.State.CHARGING || m.state == Monster.State.SWOOPING) {
+            sx = 1.15f;
+            sy = 0.9f;
+        } else if (m.state == Monster.State.STUNNED) {
+            sy = 0.92f;
+            jx = MathUtils.sin(time * 14f) * 1.5f;
         }
         float dw = w * sx * appear, dh = hgt * sy * appear;
         boolean flip = m.dirX < -0.2f;
-        if (m.state == Monster.State.TELEGRAPH) batch.setColor(1f, 0.8f, 0.7f, appear);
+        float mx = m.x + jx;
+        if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
+        else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
-        if (flip) batch.draw(r, m.x + dw / 2f, m.y - 2 + bob, -dw, dh);
-        else batch.draw(r, m.x - dw / 2f, m.y - 2 + bob, dw, dh);
+        if (flip) batch.draw(r, mx + dw / 2f, m.y - 2 + bob, -dw, dh);
+        else batch.draw(r, mx - dw / 2f, m.y - 2 + bob, dw, dh);
         if (m.flash > 0) {
             // 맞은 순간 하얗게 번쩍인다
             Particles.additive(batch);
             batch.setColor(1f, 1f, 1f, Math.min(1f, m.flash / 0.15f));
             for (int i = 0; i < 2; i++) {
-                if (flip) batch.draw(r, m.x + dw / 2f, m.y - 2 + bob, -dw, dh);
-                else batch.draw(r, m.x - dw / 2f, m.y - 2 + bob, dw, dh);
+                if (flip) batch.draw(r, mx + dw / 2f, m.y - 2 + bob, -dw, dh);
+                else batch.draw(r, mx - dw / 2f, m.y - 2 + bob, dw, dh);
             }
             Particles.normal(batch);
         }
@@ -940,6 +1019,49 @@ public class WorldRenderer implements Disposable {
             batch.setColor(0.6f, 0.2f, 1f, 0.35f + 0.1f * MathUtils.sin(time * 5f));
             batch.draw(art.glow, m.x - 90, m.y - 20, 180, 160);
         }
+        // 몬스터 투사체와 모으는 빛, 기절 별
+        for (Monster m : g.monsters) {
+            if (m.dead) continue;
+            if (m.state == Monster.State.SPAWN) {
+                Color c = spawnColor(m);
+                float p = m.progress();
+                float r = m.hurtRadius * 2.2f;
+                batch.setColor(c.r, c.g, c.b, 0.55f * Math.min(1f, p * 2.5f));
+                batch.draw(art.glow, m.x - r, m.y - r * 0.45f, r * 2, r * 0.9f);
+            } else if (m.state == Monster.State.CAST_TELEGRAPH) {
+                Color c = projectileColor(m.def.sprite);
+                float p = m.progress();
+                float sz = (m.boss ? 70 : 34) * (0.4f + p);
+                batch.setColor(c.r, c.g, c.b, 0.35f + 0.5f * p);
+                batch.draw(art.glow, m.x - sz / 2f, m.centerY() + m.hurtRadius * 0.4f - sz / 2f, sz, sz);
+            } else if (m.state == Monster.State.STUNNED) {
+                float top = m.y + m.hurtRadius * 2.4f + 4;
+                for (int i = 0; i < 3; i++) {
+                    float a = time * 5f + i * MathUtils.PI2 / 3f;
+                    float px = m.x + MathUtils.cos(a) * m.hurtRadius * 0.7f, py = top + MathUtils.sin(a) * 5f;
+                    batch.setColor(1f, 0.9f, 0.4f, 0.9f);
+                    batch.draw(art.glow, px - 7, py - 7, 14, 14);
+                    batch.draw(art.white(), px - 1, py - 1, 3, 3);
+                }
+            }
+        }
+        for (Projectile p : g.projectiles) {
+            Color c = projectileColor(p.source);
+            float r = p.radius;
+            float pulse = 1f + 0.15f * MathUtils.sin(time * 25f + p.x);
+            batch.setColor(c.r, c.g, c.b, 0.75f);
+            batch.draw(art.glow, p.x - r * 3.2f * pulse, p.y - r * 3.2f * pulse, r * 6.4f * pulse, r * 6.4f * pulse);
+            // 꼬리
+            float vl = (float) Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+            for (int k = 1; k <= 3; k++) {
+                float tx = p.x - p.vx / vl * r * 1.4f * k, ty = p.y - p.vy / vl * r * 1.4f * k;
+                float ts = r * (2.2f - k * 0.45f);
+                batch.setColor(c.r, c.g, c.b, 0.45f - k * 0.1f);
+                batch.draw(art.glow, tx - ts, ty - ts, ts * 2, ts * 2);
+            }
+            batch.setColor(1f, 0.95f, 0.85f, 1f);
+            batch.draw(art.glow, p.x - r, p.y - r, r * 2, r * 2);
+        }
         particles.drawGlow(batch);
         batch.setColor(Color.WHITE);
         batch.end();
@@ -1049,7 +1171,7 @@ public class WorldRenderer implements Disposable {
     private void drawTexts(OrthographicCamera cam) {
         for (Monster m : g.monsters) {
             if (m.dead) continue;
-            if (m.state == Monster.State.TELEGRAPH || m.state == Monster.State.SLAM_TELEGRAPH) {
+            if (m.warning()) {
                 float top = m.y + m.hurtRadius * 2.4f + 18;
                 float pop = 1f + 0.15f * MathUtils.sin(time * 30f);
                 layout.setText(fonts.large, "!");
@@ -1124,6 +1246,31 @@ public class WorldRenderer implements Disposable {
             default: return new Color(1f, 0.8f, 0.6f, 1f);
         }
     }
+
+    /** 투사체 색: 쏜 몬스터마다 다르다. */
+    private static Color projectileColor(String source) {
+        if (source == null) return PROJ_FIRE;
+        switch (source) {
+            case "knight": return PROJ_BLOOD;
+            case "warden": return PROJ_SKY;
+            case "demonlord": return PROJ_DARK;
+            default: return PROJ_FIRE;
+        }
+    }
+
+    private static Color spawnColor(Monster m) {
+        if (m.finalBoss) return PROJ_DARK;
+        String th = m.def.sprite;
+        if ("bat".equals(th) || "golem".equals(th)) return SPAWN_BLUE;
+        if ("skeleton".equals(th) || "knight".equals(th)) return PROJ_BLOOD;
+        return PROJ_DARK;
+    }
+
+    private static final Color PROJ_FIRE = new Color(1f, 0.5f, 0.2f, 1f);
+    private static final Color PROJ_BLOOD = new Color(1f, 0.2f, 0.25f, 1f);
+    private static final Color PROJ_SKY = new Color(0.4f, 0.8f, 1f, 1f);
+    private static final Color PROJ_DARK = new Color(0.7f, 0.3f, 1f, 1f);
+    private static final Color SPAWN_BLUE = new Color(0.4f, 0.6f, 1f, 1f);
 
     @Override
     public void dispose() {

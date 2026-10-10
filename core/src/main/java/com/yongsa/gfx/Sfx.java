@@ -46,6 +46,7 @@ public class Sfx implements Disposable {
             add("warp", mix(sweep(200, 1600, 0.7f, 0.18f, 0), mix(sweep(300, 2400, 0.7f, 0.08f, 0), noise(0.5f, 0.12f, 0.3f))));
             add("kill", mix(sweep(520, 140, 0.16f, 0.35f, 2), noise(0.14f, 0.4f, 0.35f)));
             add("roar", mix(sweep(140, 70, 0.9f, 0.45f, 1), noise(0.8f, 0.35f, 0.08f)));
+            add("cast", mix(sweep(500, 1300, 0.18f, 0.18f, 0), noise(0.12f, 0.15f, 0.5f)));
             add("death", seq(new float[]{392, 330, 262, 196}, 0.18f, 0.35f, 2));
         } catch (Exception e) {
             Gdx.app.log("Sfx", "효과음을 만들지 못했습니다: " + e.getMessage());

@@ -4,19 +4,48 @@ import com.yongsa.config.Balance.MonsterDef;
 
 /** 잡몹과 보스 (FR-전투-06, 10). */
 public class Monster extends Actor {
-    public enum State { CHASE, TELEGRAPH, RECOVER, SLAM_TELEGRAPH }
+    public enum State {
+        /** 방에 막 나타남. 마법진만 보이고 움직이지 않는다. */
+        SPAWN,
+        CHASE,
+        /** 근접 공격 예고 (잡몹 공통, 보스 근접). */
+        TELEGRAPH,
+        RECOVER,
+        /** 박쥐: 방향을 정하고 움츠림 → 일직선으로 덮침. */
+        SWOOP_TELEGRAPH, SWOOPING,
+        /** 마족병·보스: 투사체를 쏘기 전 모으기. */
+        CAST_TELEGRAPH,
+        /** 보스 패턴. */
+        SLAM_TELEGRAPH, CHARGE_TELEGRAPH, CHARGING, STUNNED, COMBO_TELEGRAPH
+    }
 
     public final MonsterDef def;
     public final boolean boss, finalBoss;
     public final float speed;
     public State state = State.CHASE;
-    public float stateT;
+    /** 지금 상태가 끝날 때까지 남은 시간, 그 상태의 전체 시간. */
+    public float stateT, stateTotal;
     public float attackCd;
     public float dirX = 0, dirY = -1;
-    public float slamCd;
     public float slamX, slamY, slamRadius;
     public float walkTime;
     public float immuneMsgCd;
+
+    /** 보스: 다음 고유 패턴까지 남은 시간, 마지막에 쓴 패턴. */
+    public float patternCd;
+    public String lastPattern;
+    /** 체력이 절반 아래로 내려가 2페이즈가 됐다. */
+    public boolean enraged;
+    /** 돌진·덮치기 방향과 남은 거리, 이번 돌진으로 이미 때렸는지. */
+    public float lockX, lockY, dashLeft;
+    public boolean dashHit;
+    /** 연속 베기 남은 횟수. */
+    public int comboLeft;
+    /** 지금 준비 중인 투사체 패턴 (cast, volley, ring). */
+    public String castKind;
+    /** 박쥐가 도는 방향, 마족병 순간이동 쿨타임. */
+    public float orbitSign = 1;
+    public float blinkCd;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
@@ -30,7 +59,32 @@ public class Monster extends Actor {
         hurtRadius = 12 * scale;
     }
 
+    public String ai() {
+        return def.ai == null ? "melee" : def.ai;
+    }
+
     public Facing facing() {
         return Facing.of(dirX, dirY);
+    }
+
+    public void enter(State s, float seconds) {
+        state = s;
+        stateT = stateTotal = seconds;
+    }
+
+    /** 0 → 1 로 차오르는 지금 상태의 진행도. */
+    public float progress() {
+        return stateTotal <= 0 ? 1f : 1f - Math.max(0f, stateT) / stateTotal;
+    }
+
+    /** 공격을 준비하거나 돌진하는 중: 이때는 맞아도 밀려나지 않는다. */
+    public boolean committed() {
+        return state != State.CHASE && state != State.RECOVER && state != State.SPAWN && state != State.STUNNED;
+    }
+
+    /** 머리 위에 ‘!’ 를 띄울 상태. */
+    public boolean warning() {
+        return state == State.TELEGRAPH || state == State.SWOOP_TELEGRAPH || state == State.CAST_TELEGRAPH
+                || state == State.SLAM_TELEGRAPH || state == State.CHARGE_TELEGRAPH || state == State.COMBO_TELEGRAPH;
     }
 }

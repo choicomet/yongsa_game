@@ -89,7 +89,27 @@ public class Balance {
 
     public static class MonsterCfg {
         public float detectTiles, attackReachTiles, telegraphSeconds, attackCooldown, knockbackTiles;
-        public float bossSlamTelegraph, bossSlamRadiusTiles, bossSlamMultiplier, bossSlamCooldown;
+        public float bossSlamTelegraph, bossSlamRadiusTiles, bossSlamMultiplier;
+        /** 방에 나타난 뒤 움직이기 시작할 때까지 (마법진이 보이는 시간). */
+        public float spawnSeconds;
+        /** 박쥐: 주위를 돌다가 일직선으로 덮친다. */
+        public float swoopTelegraph, swoopDistanceTiles, swoopTime, swoopRecover, orbitTiles;
+        /** 해골병: 휘두르며 앞으로 한 발 내딛는다. */
+        public float lungeTiles;
+        /** 마족병: 떨어져서 불덩이를 쏜다. 가까이 오면 순간이동으로 물러난다. */
+        public float castTelegraph, castCooldown, castRangeTiles, keepAwayTiles, blinkCooldown;
+        public float projectileSpeedTiles, projectileRadius;
+        /** 보스 고유 패턴. */
+        public float bossPatternGap;
+        public float chargeTelegraph, chargeSpeedTiles, chargeMaxTiles, chargeStun, chargeMultiplier;
+        public int comboHits;
+        public float comboTelegraph, comboStepTiles;
+        public int volleyCount;
+        public float volleySpreadDegrees, volleyTelegraph;
+        public int ringCount;
+        public int summonCount;
+        /** 체력이 이 비율 아래로 내려가면 2페이즈 (패턴이 빨라지고 하나가 더 붙는다). */
+        public float phase2HpRatio, phase2Speed;
     }
 
     public static class DungeonDef {
@@ -102,5 +122,11 @@ public class Balance {
         public String name, sprite;
         public int hp, attack;
         public float speedTiles;
+        /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
+        public String ai;
+        /** 보스 패턴 이름: slam, charge, combo, volley, ring, summon. */
+        public List<String> patterns;
+        /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). */
+        public List<String> phase2Patterns;
     }
 }

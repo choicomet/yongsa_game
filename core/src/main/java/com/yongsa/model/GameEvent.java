@@ -15,7 +15,11 @@ public class GameEvent {
         /** 보스방 문이 잠기며 보스가 나타남 (text = 보스 이름). */
         BOSS_FIGHT_START,
         /** 귀환 포탈을 사용함. 화면이 어두워진 뒤 GameSession.warpToCamp 를 부른다. */
-        WARP
+        WARP,
+        /** 보스 체력이 절반 아래로 내려가 2페이즈가 됨 (text = 보스 이름). */
+        BOSS_ENRAGED,
+        /** 마족병이 순간이동한 자리. */
+        BLINK_FX
     }
 
     /** 떠오르는 글자 색 구분. */

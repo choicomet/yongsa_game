@@ -5,6 +5,7 @@ import com.yongsa.combat.Facing;
 import com.yongsa.combat.HeroActor;
 import com.yongsa.combat.Monster;
 import com.yongsa.combat.Physics;
+import com.yongsa.combat.Projectile;
 import com.yongsa.config.Balance;
 import com.yongsa.config.Balance.DungeonDef;
 import com.yongsa.world.Door;
@@ -33,6 +34,7 @@ public class GameSession {
     public final WorldMap map;
     public final HeroActor hero = new HeroActor();
     public final List<Monster> monsters = new ArrayList<>();
+    public final List<Projectile> projectiles = new ArrayList<>();
     public final Random random;
 
     private final int T;
@@ -150,6 +152,7 @@ public class GameSession {
         updateHero(dt, c);
         updateRooms();
         updateMonsters(dt);
+        if (!justDied) updateProjectiles(dt);
         if (!justDied) resolveFight();
         if (inCamp()) {
             hpAcc += rules.maxHp(state) * balance.hero.campRegenFractionPerSec * dt;
@@ -274,7 +277,18 @@ public class GameSession {
         int dmg = roll(rules.attack(state), mult);
         m.hp -= dmg;
         m.flash = 0.15f;
-        if (!m.boss) m.knockback(m.x - hero.x, m.y - hero.y, balance.monster.knockbackTiles * T);
+        // 공격을 준비하거나 돌진하는 중에는 밀리지 않는다: 연타로 공격을 끊을 수 없다
+        if (!m.boss && !m.committed()) m.knockback(m.x - hero.x, m.y - hero.y, balance.monster.knockbackTiles * T);
+        if (m.boss && !m.enraged && m.hp > 0 && m.hp <= m.maxHp * balance.monster.phase2HpRatio) {
+            m.enraged = true;
+            m.patternCd = Math.min(m.patternCd, 0.6f);
+            GameEvent e = new GameEvent(GameEvent.Type.BOSS_ENRAGED);
+            e.text = m.def.name;
+            e.x = m.x;
+            e.y = m.centerY();
+            events.add(e);
+            events.add(GameEvent.sound("roar"));
+        }
         events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), GameEvent.Tone.MONSTER_HIT));
         events.add(GameEvent.sound("hit"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, m.x, m.centerY());
@@ -326,6 +340,7 @@ public class GameSession {
             fightRoom = null;
         }
         monsters.clear();
+        projectiles.clear();
         placeAtCampSpawn();
         heroRoom = currentRoom = map.room("CAMP");
         hero.rollT = 0;
@@ -395,6 +410,7 @@ public class GameSession {
         fightRoom = r;
         r.setFightLock(true);
         monsters.clear();
+        projectiles.clear();
         DungeonDef d = balance.dungeon(r.dungeonId);
         if (r.type == RoomType.MOB) {
             for (int i = 0; i < d.mobsPerRoom; i++) spawn(r, d.mob, false, false, false);
@@ -415,7 +431,14 @@ public class GameSession {
     }
 
     private void spawn(Room r, Balance.MonsterDef def, boolean boss, boolean fin, boolean farSide) {
+        Monster m = makeMonster(r, def, boss, fin, farSide);
+        if (m != null) monsters.add(m);
+    }
+
+    /** 방 안 빈 자리에 몬스터를 만든다 (목록에 넣지는 않는다). 처음 잠깐은 마법진만 보이고 움직이지 않는다. */
+    private Monster makeMonster(Room r, Balance.MonsterDef def, boolean boss, boolean fin, boolean farSide) {
         Monster m = new Monster(def, boss, fin, T);
+        boolean placed = false;
         for (int tries = 0; tries < 200; tries++) {
             int tx, ty;
             if (farSide) {
@@ -438,11 +461,19 @@ public class GameSession {
             if (!Physics.free(map, px, py, m, T)) continue;
             m.x = px;
             m.y = py;
+            placed = true;
             break;
         }
+        if (!placed && !farSide) return null;
+        if (!placed) {
+            m.x = center((int) r.centerTileX());
+            m.y = center((int) r.centerTileY());
+        }
         m.attackCd = 0.6f + random.nextFloat() * 0.6f;
-        m.slamCd = 2.5f;
-        monsters.add(m);
+        m.patternCd = 2.5f;
+        m.orbitSign = random.nextBoolean() ? 1 : -1;
+        m.enter(Monster.State.SPAWN, balance.monster.spawnSeconds * (boss ? 1.4f : 1f) + random.nextFloat() * 0.25f);
+        return m;
     }
 
     private void resolveFight() {
@@ -452,6 +483,7 @@ public class GameSession {
         fightRoom = null;
         r.setFightLock(false);
         monsters.clear();
+        projectiles.clear();
         state.room(r.id).cleared = true;
         events.add(GameEvent.sound("door"));
         events.add(new GameEvent(GameEvent.Type.ROOM_CLEARED));
@@ -494,77 +526,362 @@ public class GameSession {
 
     private void updateMonsters(float dt) {
         Balance.MonsterCfg mc = balance.monster;
+        List<Monster> summoned = new ArrayList<>();
         for (Monster m : monsters) {
             if (m.dead) continue;
             m.flash -= dt;
-            m.attackCd -= dt;
-            m.slamCd -= dt;
             m.immuneMsgCd -= dt;
+            m.blinkCd -= dt;
             if (m.kbT > 0) {
                 Physics.move(map, m, m.kbVX * dt, m.kbVY * dt, T);
                 m.kbT -= dt;
             }
+            if (m.state == Monster.State.SPAWN) {
+                m.stateT -= dt;
+                if (m.stateT <= 0) m.state = Monster.State.CHASE;
+                continue;
+            }
+            float speedUp = m.enraged ? mc.phase2Speed : 1f;
+            m.attackCd -= dt * speedUp;
+            m.patternCd -= dt * speedUp;
             float dx = hero.x - m.x, dy = hero.y - m.y;
             float dist = (float) Math.sqrt(dx * dx + dy * dy);
             float reach = mc.attackReachTiles * T + m.hw + hero.hw;
             switch (m.state) {
                 case CHASE:
-                    if (m.boss && m.slamCd <= 0 && dist < 9 * T) {
-                        m.state = Monster.State.SLAM_TELEGRAPH;
-                        m.stateT = mc.bossSlamTelegraph;
-                        m.slamX = hero.x;
-                        m.slamY = hero.y;
-                        m.slamRadius = mc.bossSlamRadiusTiles * T * (m.finalBoss ? 1.3f : 1f);
-                        break;
-                    }
                     if (dist > 0.01f) {
                         m.dirX = dx / dist;
                         m.dirY = dy / dist;
                     }
-                    if (dist <= reach && m.attackCd <= 0) {
-                        m.state = Monster.State.TELEGRAPH;
-                        m.stateT = mc.telegraphSeconds;
-                    } else if (dist > reach * 0.7f) {
-                        Physics.move(map, m, m.dirX * m.speed * dt, m.dirY * m.speed * dt, T);
-                        m.walkTime += dt;
-                    }
+                    if (m.boss) chaseBoss(m, dist, reach, dt, summoned);
+                    else chaseMob(m, dist, reach, dt);
                     break;
                 case TELEGRAPH:
-                    m.stateT -= dt;
+                    m.stateT -= dt * speedUp;
                     if (m.stateT <= 0) {
                         // 예고한 방향으로 친다. 그 사이 걸어서 벗어났으면 빗나간다.
-                        float dot = dist > 0.01f ? (dx * m.dirX + dy * m.dirY) / dist : 1f;
-                        if (dist <= reach + 4 && dot > 0.2f) hitHero(m.def.attack, 1f, m.x, m.y);
-                        m.state = Monster.State.RECOVER;
-                        m.stateT = 0.35f;
+                        if ("brute".equals(m.ai())) Physics.move(map, m, m.dirX * mc.lungeTiles * T, m.dirY * mc.lungeTiles * T, T);
+                        meleeStrike(m, reach, 1f);
+                        m.enter(Monster.State.RECOVER, m.boss ? 0.45f : "brute".equals(m.ai()) ? 0.6f : 0.35f);
                         m.attackCd = mc.attackCooldown;
-                        events.add(GameEvent.sound("monsterAttack"));
+                    }
+                    break;
+                case COMBO_TELEGRAPH:
+                    m.stateT -= dt * speedUp;
+                    if (m.stateT <= 0) {
+                        Physics.move(map, m, m.dirX * mc.comboStepTiles * T, m.dirY * mc.comboStepTiles * T, T);
+                        meleeStrike(m, reach + 0.6f * T, 1.1f);
+                        if (--m.comboLeft > 0) {
+                            comboStep(m);
+                        } else {
+                            m.enter(Monster.State.RECOVER, 0.9f);
+                        }
+                    }
+                    break;
+                case SWOOP_TELEGRAPH:
+                    m.stateT -= dt * speedUp;
+                    if (m.stateT <= 0) {
+                        m.enter(Monster.State.SWOOPING, mc.swoopTime);
+                        m.dashLeft = mc.swoopDistanceTiles * T;
+                        m.dashHit = false;
+                        events.add(GameEvent.sound("dash"));
+                    }
+                    break;
+                case SWOOPING:
+                case CHARGING: {
+                    boolean charge = m.state == Monster.State.CHARGING;
+                    float spd = charge ? mc.chargeSpeedTiles * T : mc.swoopDistanceTiles * T / mc.swoopTime;
+                    float step = Math.min(m.dashLeft, spd * dt);
+                    boolean blocked = Physics.move(map, m, m.lockX * step, m.lockY * step, T);
+                    m.dashLeft -= step;
+                    m.stateT -= dt;
+                    float hx = hero.x - m.x, hy = hero.y - m.y;
+                    float touch = m.hurtRadius + hero.hw + 4;
+                    if (!m.dashHit && hx * hx + hy * hy < touch * touch) {
+                        m.dashHit = true;
+                        hitHero(m.def.attack, charge ? mc.chargeMultiplier : 1f, m.x, m.y);
+                        if (justDied) return;
+                    }
+                    if (charge && blocked) {
+                        // 벽에 부딪혀 잠깐 기절한다: 반격할 기회
+                        m.enter(Monster.State.STUNNED, mc.chargeStun);
+                        events.add(GameEvent.sound("slam"));
+                        GameEvent fx = GameEvent.fx(GameEvent.Type.SLAM_FX, m.x + m.lockX * m.hw, m.y + m.lockY * m.hh);
+                        fx.size = T * 1.4f;
+                        events.add(fx);
+                    } else if (m.dashLeft <= 0.5f || m.stateT <= 0 || blocked) {
+                        m.enter(Monster.State.RECOVER, charge ? 0.6f : mc.swoopRecover);
+                        m.attackCd = mc.attackCooldown;
+                    }
+                    break;
+                }
+                case CAST_TELEGRAPH:
+                    m.stateT -= dt * speedUp;
+                    if (dist > 0.01f && !"ring".equals(m.castKind)) {
+                        m.dirX = dx / dist;
+                        m.dirY = dy / dist;
+                    }
+                    if (m.stateT <= 0) {
+                        fire(m);
+                        m.enter(Monster.State.RECOVER, m.boss ? 0.6f : 0.4f);
+                        m.attackCd = m.boss ? mc.attackCooldown : mc.castCooldown;
                     }
                     break;
                 case SLAM_TELEGRAPH:
-                    m.stateT -= dt;
+                    m.stateT -= dt * speedUp;
                     if (m.stateT <= 0) {
                         float sx = hero.x - m.slamX, sy = hero.y - m.slamY;
                         if (sx * sx + sy * sy <= m.slamRadius * m.slamRadius) {
                             hitHero(m.def.attack, mc.bossSlamMultiplier, m.slamX, m.slamY);
                         }
-                        m.state = Monster.State.RECOVER;
-                        m.stateT = 0.5f;
-                        m.slamCd = mc.bossSlamCooldown * (m.finalBoss ? 0.7f : 1f);
+                        m.enter(Monster.State.RECOVER, 0.7f);
                         events.add(GameEvent.sound("slam"));
                         GameEvent fx = GameEvent.fx(GameEvent.Type.SLAM_FX, m.slamX, m.slamY);
                         fx.size = m.slamRadius;
                         events.add(fx);
                     }
                     break;
+                case CHARGE_TELEGRAPH:
+                    m.stateT -= dt * speedUp;
+                    if (m.stateT <= 0) {
+                        m.enter(Monster.State.CHARGING, 3f);
+                        m.dashLeft = mc.chargeMaxTiles * T;
+                        m.dashHit = false;
+                        events.add(GameEvent.sound("dash"));
+                    }
+                    break;
+                case STUNNED:
                 case RECOVER:
                     m.stateT -= dt;
                     if (m.stateT <= 0) m.state = Monster.State.CHASE;
                     break;
+                default:
+                    break;
             }
             if (justDied) return; // die() 가 몬스터 목록을 비웠다
         }
+        monsters.addAll(summoned);
         separate();
+    }
+
+    /** 잡몹: 종류마다 다르게 다가오고 공격한다. */
+    private void chaseMob(Monster m, float dist, float reach, float dt) {
+        Balance.MonsterCfg mc = balance.monster;
+        switch (m.ai()) {
+            case "swoop": {
+                // 용사 둘레를 빙글빙글 돌다가 방향을 정하고 덮친다.
+                float orbit = mc.orbitTiles * T;
+                if (m.attackCd <= 0 && dist < orbit * 1.8f) {
+                    m.lockX = m.dirX;
+                    m.lockY = m.dirY;
+                    m.enter(Monster.State.SWOOP_TELEGRAPH, mc.swoopTelegraph);
+                    return;
+                }
+                float tx = -m.dirY * m.orbitSign, ty = m.dirX * m.orbitSign;
+                float pull = (dist - orbit) / orbit;
+                float mx = tx + m.dirX * pull * 2f, my = ty + m.dirY * pull * 2f;
+                float l = (float) Math.sqrt(mx * mx + my * my);
+                if (l > 0.01f && Physics.move(map, m, mx / l * m.speed * dt, my / l * m.speed * dt, T)) m.orbitSign = -m.orbitSign;
+                m.walkTime += dt;
+                return;
+            }
+            case "caster": {
+                float keep = mc.keepAwayTiles * T;
+                if (dist < keep * 0.6f && m.blinkCd <= 0 && blinkAway(m)) return;
+                if (m.attackCd <= 0 && dist < mc.castRangeTiles * T) {
+                    m.castKind = "cast";
+                    m.enter(Monster.State.CAST_TELEGRAPH, mc.castTelegraph);
+                    return;
+                }
+                float dir = dist < keep ? -1f : dist > keep * 1.4f ? 1f : 0f;
+                if (dir != 0) {
+                    Physics.move(map, m, m.dirX * dir * m.speed * dt, m.dirY * dir * m.speed * dt, T);
+                    m.walkTime += dt;
+                }
+                return;
+            }
+            default:
+                // melee, brute: 다가가서 휘두른다
+                if (dist <= reach * ("brute".equals(m.ai()) ? 1.6f : 1f) && m.attackCd <= 0) {
+                    m.enter(Monster.State.TELEGRAPH, mc.telegraphSeconds * ("brute".equals(m.ai()) ? 1.2f : 1f));
+                } else if (dist > reach * 0.7f) {
+                    Physics.move(map, m, m.dirX * m.speed * dt, m.dirY * m.speed * dt, T);
+                    m.walkTime += dt;
+                }
+        }
+    }
+
+    /** 보스: 다가가 근접 공격을 하다가, 패턴 쿨타임이 차면 고유 패턴을 하나 고른다. */
+    private void chaseBoss(Monster m, float dist, float reach, float dt, List<Monster> summoned) {
+        Balance.MonsterCfg mc = balance.monster;
+        if (m.patternCd <= 0 && dist < 11 * T) {
+            String p = pickPattern(m);
+            m.lastPattern = p;
+            m.patternCd = mc.bossPatternGap;
+            if (startPattern(m, p, summoned)) return;
+        }
+        if (dist <= reach && m.attackCd <= 0) {
+            m.enter(Monster.State.TELEGRAPH, mc.telegraphSeconds);
+        } else if (dist > reach * 0.7f) {
+            Physics.move(map, m, m.dirX * m.speed * dt * (m.enraged ? 1.15f : 1f), m.dirY * m.speed * dt * (m.enraged ? 1.15f : 1f), T);
+            m.walkTime += dt;
+        }
+    }
+
+    private String pickPattern(Monster m) {
+        List<String> pool = new ArrayList<>();
+        if (m.def.patterns != null) pool.addAll(m.def.patterns);
+        if (m.enraged && m.def.phase2Patterns != null) pool.addAll(m.def.phase2Patterns);
+        if (pool.isEmpty()) return "slam";
+        if (pool.size() > 1) pool.remove(m.lastPattern);
+        return pool.get(random.nextInt(pool.size()));
+    }
+
+    private boolean startPattern(Monster m, String p, List<Monster> summoned) {
+        Balance.MonsterCfg mc = balance.monster;
+        switch (p) {
+            case "slam":
+                m.slamX = hero.x;
+                m.slamY = hero.y;
+                m.slamRadius = mc.bossSlamRadiusTiles * T * (m.finalBoss ? 1.3f : 1f);
+                m.enter(Monster.State.SLAM_TELEGRAPH, mc.bossSlamTelegraph);
+                return true;
+            case "charge":
+                m.lockX = m.dirX;
+                m.lockY = m.dirY;
+                m.enter(Monster.State.CHARGE_TELEGRAPH, mc.chargeTelegraph);
+                events.add(GameEvent.sound("roar"));
+                return true;
+            case "combo":
+                m.comboLeft = mc.comboHits;
+                comboStep(m);
+                return true;
+            case "volley":
+            case "ring":
+                m.castKind = p;
+                m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
+                return true;
+            case "summon": {
+                int alive = 0;
+                for (Monster o : monsters) if (!o.dead && !o.boss) alive++;
+                if (alive >= mc.summonCount) return false;
+                Room r = fightRoom;
+                if (r == null) return false;
+                DungeonDef d = balance.dungeon(r.dungeonId);
+                for (int i = 0; i < mc.summonCount; i++) {
+                    Monster s = makeMonster(r, d.mob, false, false, false);
+                    if (s != null) summoned.add(s);
+                }
+                events.add(GameEvent.toast(m.def.name + "이(가) 부하를 불렀다!"));
+                events.add(GameEvent.sound("roar"));
+                m.enter(Monster.State.RECOVER, 0.8f);
+                return true;
+            }
+            default:
+                return false;
+        }
+    }
+
+    /** 연속 베기 한 번 예고: 그때 용사 쪽을 다시 노린다. */
+    private void comboStep(Monster m) {
+        float dx = hero.x - m.x, dy = hero.y - m.y, l = (float) Math.sqrt(dx * dx + dy * dy);
+        if (l > 0.01f) {
+            m.dirX = dx / l;
+            m.dirY = dy / l;
+        }
+        float t = balance.monster.comboTelegraph;
+        // 첫 번째는 조금 길게 예고한다
+        m.enter(Monster.State.COMBO_TELEGRAPH, m.comboLeft == balance.monster.comboHits ? t * 1.6f : t);
+    }
+
+    /** 앞쪽 부채꼴 안에 용사가 있으면 맞힌다. */
+    private void meleeStrike(Monster m, float reach, float mult) {
+        float dx = hero.x - m.x, dy = hero.y - m.y;
+        float dist = (float) Math.sqrt(dx * dx + dy * dy);
+        float dot = dist > 0.01f ? (dx * m.dirX + dy * m.dirY) / dist : 1f;
+        if (dist <= reach + 4 && dot > 0.2f) hitHero(m.def.attack, mult, m.x, m.y);
+        events.add(GameEvent.sound("monsterAttack"));
+    }
+
+    /** 마족병: 너무 가까우면 용사 반대쪽으로 순간이동한다. */
+    private boolean blinkAway(Monster m) {
+        m.blinkCd = balance.monster.blinkCooldown;
+        Room r = fightRoom;
+        if (r == null) return false;
+        for (int tries = 0; tries < 30; tries++) {
+            int tx = r.x0 + 2 + random.nextInt(Math.max(1, r.x1 - r.x0 - 3));
+            int ty = r.y0 + 2 + random.nextInt(Math.max(1, r.y1 - r.y0 - 3));
+            float px = center(tx), py = center(ty);
+            float hx = px - hero.x, hy = py - hero.y;
+            if (hx * hx + hy * hy < (4.5f * T) * (4.5f * T)) continue;
+            if (!Physics.free(map, px, py, m, T)) continue;
+            GameEvent a = GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY());
+            events.add(a);
+            m.x = px;
+            m.y = py;
+            events.add(GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY()));
+            events.add(GameEvent.sound("warp"));
+            m.attackCd = Math.max(m.attackCd, 0.5f);
+            return true;
+        }
+        return false;
+    }
+
+    /** 모은 투사체를 쏜다: cast(한 발), volley(부채꼴), ring(사방). */
+    private void fire(Monster m) {
+        Balance.MonsterCfg mc = balance.monster;
+        float speed = mc.projectileSpeedTiles * T * (m.boss ? 1.1f : 1f);
+        float base = (float) Math.atan2(m.dirY, m.dirX);
+        float sy = m.centerY();
+        String kind = m.castKind == null ? "cast" : m.castKind;
+        if ("ring".equals(kind)) {
+            int n = mc.ringCount;
+            float off = random.nextFloat() * 6.283f;
+            for (int i = 0; i < n; i++) shoot(m, m.x, sy, off + 6.283f * i / n, speed * 0.8f);
+        } else if ("volley".equals(kind)) {
+            int n = mc.volleyCount;
+            float spread = (float) Math.toRadians(mc.volleySpreadDegrees);
+            for (int i = 0; i < n; i++) shoot(m, m.x, sy, base - spread / 2f + spread * i / Math.max(1, n - 1), speed);
+        } else {
+            shoot(m, m.x, sy, base, speed);
+        }
+        events.add(GameEvent.sound("cast"));
+    }
+
+    private void shoot(Monster m, float x, float y, float angle, float speed) {
+        Projectile p = new Projectile();
+        p.x = x + (float) Math.cos(angle) * m.hurtRadius;
+        p.y = y + (float) Math.sin(angle) * m.hurtRadius;
+        p.vx = (float) Math.cos(angle) * speed;
+        p.vy = (float) Math.sin(angle) * speed;
+        p.radius = balance.monster.projectileRadius * (m.boss ? 1.4f : 1f);
+        p.life = 4f;
+        p.damage = m.def.attack;
+        p.source = m.def.sprite;
+        projectiles.add(p);
+    }
+
+    private void updateProjectiles(float dt) {
+        for (Projectile p : projectiles) {
+            if (p.dead) continue;
+            p.age += dt;
+            p.life -= dt;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            if (p.life <= 0 || map.solid(tileX(p.x), tileY(p.y - 6))) {
+                p.dead = true;
+                continue;
+            }
+            float hx = hero.x - p.x, hy = hero.centerY() - p.y;
+            float r = p.radius + hero.hw;
+            if (hx * hx + hy * hy < r * r) {
+                if (hero.rolling()) continue; // 굴러서 피한다
+                p.dead = true;
+                hitHero(p.damage, 1f, p.x - p.vx, p.y - p.vy);
+                if (justDied) return;
+            }
+        }
+        projectiles.removeIf(p -> p.dead);
     }
 
     /** 몬스터끼리 겹치지 않게 살짝 민다. */

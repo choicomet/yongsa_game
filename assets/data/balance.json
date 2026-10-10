@@ -73,23 +73,61 @@
     "bossSlamTelegraph": 1.0,
     "bossSlamRadiusTiles": 2.6,
     "bossSlamMultiplier": 1.5,
-    "bossSlamCooldown": 4.5
+
+    "spawnSeconds": 0.7,
+
+    "swoopTelegraph": 0.5,
+    "swoopDistanceTiles": 4.0,
+    "swoopTime": 0.32,
+    "swoopRecover": 0.7,
+    "orbitTiles": 2.8,
+
+    "lungeTiles": 0.9,
+
+    "castTelegraph": 0.6,
+    "castCooldown": 2.6,
+    "castRangeTiles": 7.0,
+    "keepAwayTiles": 3.5,
+    "blinkCooldown": 3.5,
+    "projectileSpeedTiles": 5.5,
+    "projectileRadius": 7,
+
+    "bossPatternGap": 2.2,
+    "chargeTelegraph": 0.85,
+    "chargeSpeedTiles": 13.0,
+    "chargeMaxTiles": 11.0,
+    "chargeStun": 1.4,
+    "chargeMultiplier": 1.3,
+    "comboHits": 3,
+    "comboTelegraph": 0.38,
+    "comboStepTiles": 1.3,
+    "volleyCount": 5,
+    "volleySpreadDegrees": 60,
+    "volleyTelegraph": 0.7,
+    "ringCount": 12,
+    "summonCount": 2,
+    "phase2HpRatio": 0.5,
+    "phase2Speed": 1.35
   },
 
   "dungeons": [
     { "id": "LEFT", "name": "무너진 갱도", "ore": "BLACKIRON", "recommended": "봉인된 성검 → 흑철검",
-      "mob":  { "name": "갱도 박쥐", "hp": 40, "attack": 8, "speedTiles": 2.6, "sprite": "bat" },
-      "boss": { "name": "갱도를 삼킨 골렘", "hp": 500, "attack": 15, "speedTiles": 1.6, "sprite": "golem" },
-      "mobsPerRoom": 3, "bossOreReward": 5 },
+      "mob":  { "name": "갱도 박쥐", "hp": 40, "attack": 10, "speedTiles": 2.6, "sprite": "bat", "ai": "swoop" },
+      "boss": { "name": "갱도를 삼킨 골렘", "hp": 500, "attack": 15, "speedTiles": 1.6, "sprite": "golem",
+                "patterns": ["slam", "charge"], "phase2Patterns": [] },
+      "mobsPerRoom": 4, "bossOreReward": 5 },
     { "id": "RIGHT", "name": "저주받은 성채", "ore": "BLOODMOON", "recommended": "흑철검 +6 이상",
-      "mob":  { "name": "저주받은 해골병", "hp": 130, "attack": 22, "speedTiles": 2.3, "sprite": "skeleton" },
-      "boss": { "name": "혈월의 기사", "hp": 1500, "attack": 35, "speedTiles": 1.9, "sprite": "knight" },
+      "mob":  { "name": "저주받은 해골병", "hp": 130, "attack": 22, "speedTiles": 2.3, "sprite": "skeleton", "ai": "brute" },
+      "boss": { "name": "혈월의 기사", "hp": 1500, "attack": 32, "speedTiles": 1.9, "sprite": "knight",
+                "patterns": ["combo", "slam"], "phase2Patterns": ["ring"] },
       "mobsPerRoom": 4, "bossOreReward": 5 },
     { "id": "TOP", "name": "마왕의 탑", "ore": "SKY", "recommended": "혈월검 +6 이상",
-      "mob":  { "name": "탑의 마족병", "hp": 280, "attack": 40, "speedTiles": 2.5, "sprite": "imp" },
-      "boss": { "name": "탑의 수문장", "hp": 4000, "attack": 60, "speedTiles": 1.8, "sprite": "warden" },
-      "mobsPerRoom": 5, "bossOreReward": 5 }
+      "mob":  { "name": "탑의 마족병", "hp": 280, "attack": 30, "speedTiles": 2.5, "sprite": "imp", "ai": "caster" },
+      "boss": { "name": "탑의 수문장", "hp": 3300, "attack": 60, "speedTiles": 1.8, "sprite": "warden",
+                "patterns": ["volley", "slam"], "phase2Patterns": ["summon"] },
+      "mobsPerRoom": 4, "bossOreReward": 5 }
   ],
 
-  "finalBoss": { "name": "마왕", "hp": 6000, "attack": 100, "speedTiles": 2.0, "sprite": "demonlord" }
+  "finalBoss": { "name": "마왕", "hp": 6000, "attack": 100, "speedTiles": 2.0, "sprite": "demonlord",
+                "patterns": ["slam", "charge", "volley", "combo"], "phase2Patterns": ["ring", "summon"] }
 }
