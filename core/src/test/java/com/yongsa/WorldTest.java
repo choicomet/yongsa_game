@@ -28,6 +28,7 @@ class WorldTest {
         for (Room r : map.rooms) if (r.type == RoomType.BOSS) boss++;
         assertEquals(3, boss);
         assertEquals(RoomType.FINAL, map.room("F").type);
+        assertTrue(map.room("F").doors.isEmpty(), "마왕의 심연은 어느 방과도 이어지지 않는다 (캠프 문양에서 떨어져서 간다)");
         Room camp = map.room("CAMP");
         assertTrue(map.room("L1").x1 < camp.x0, "왼쪽 던전은 캠프 왼쪽");
         assertTrue(map.room("R1").x0 > camp.x1, "오른쪽 던전은 캠프 오른쪽");
@@ -42,17 +43,12 @@ class WorldTest {
         assertFalse(gate(map, "LEFT").gateClosed);
         assertTrue(gate(map, "RIGHT").gateClosed);
         assertTrue(gate(map, "TOP").gateClosed);
-        assertTrue(gate(map, "FINAL").gateClosed);
         s.bossesDefeated.add("LEFT");
         map.updateGates(s);
         assertFalse(gate(map, "RIGHT").gateClosed);
         s.bossesDefeated.add("RIGHT");
-        s.bossesDefeated.add("TOP");
         map.updateGates(s);
-        assertTrue(gate(map, "FINAL").gateClosed, "보스 셋을 잡아도 봉인을 풀기 전에는 닫혀 있다");
-        s.unsealed = true;
-        map.updateGates(s);
-        assertFalse(gate(map, "FINAL").gateClosed);
+        assertFalse(gate(map, "TOP").gateClosed);
     }
 
     @Test

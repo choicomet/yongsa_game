@@ -217,7 +217,13 @@ public class Hud {
             rect(bx, h - 73, 420, 9, new Color(0x39232aff));
             rect(bx, h - 73, 420 * MathUtils.clamp(bossTrail / boss.maxHp, 0, 1), 9, Ui.GOLD);
             rect(bx, h - 73, 420 * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 9, boss.finalBoss ? Ui.PURPLE : Ui.RED);
-            centered(fonts.small, boss.hp + " / " + boss.maxHp, w / 2, h - 80, Ui.DIM);
+            if (boss.shield > 0 && boss.shieldMax > 0) {
+                // 방패: 체력바 위 밝은 막대. 다 깎기 전에는 체력이 닳지 않는다
+                rect(bx, h - 61, 420, 4, new Color(0x2a2418ff));
+                rect(bx, h - 61, 420 * MathUtils.clamp((float) boss.shield / boss.shieldMax, 0, 1), 4, new Color(1f, 0.82f, 0.55f, 1f));
+            }
+            centered(fonts.small, boss.shield > 0 ? "방패 " + boss.shield + "  ·  " + boss.hp + " / " + boss.maxHp
+                    : boss.hp + " / " + boss.maxHp, w / 2, h - 80, Ui.DIM);
         }
 
         card(24, 24, 624, 88);
@@ -336,7 +342,7 @@ public class Hud {
             Door da = l.doorA, db = l.doorB;
             float x0 = ox + (da.tilesX[1] + 0.5f) * k, y0 = oy + (da.tilesY[1] + 0.5f) * k;
             float x1 = ox + (db.tilesX[1] + 0.5f) * k, y1 = oy + (db.tilesY[1] + 0.5f) * k;
-            if (l.gateClosed) shapes.setColor("FINAL".equals(l.gate) ? new Color(0.95f, 0.75f, 0.3f, a) : new Color(0.65f, 0.45f, 1f, a));
+            if (l.gateClosed) shapes.setColor(0.65f, 0.45f, 1f, a);
             else shapes.setColor(0.42f, 0.4f, 0.46f, a);
             shapes.rectLine(x0, y0, x1, y1, Math.max(4f, k * 2.2f));
         }
@@ -345,6 +351,7 @@ public class Hud {
             boolean visited = known(r);
             boolean boss = r.type == RoomType.BOSS || r.type == RoomType.FINAL;
             if (!visited && !boss) continue;
+            if (r.type == RoomType.FINAL && r != here) continue; // 심연은 길로 이어지지 않아 지도에 없다
             float rx = ox + r.x0 * k, ry = oy + r.y0 * k, rw = (r.x1 - r.x0 + 1) * k, rh = (r.y1 - r.y0 + 1) * k;
             Color c = roomColor(r, visited);
             if (r == here) {

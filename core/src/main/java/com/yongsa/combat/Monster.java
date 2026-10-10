@@ -16,7 +16,11 @@ public class Monster extends Actor {
         /** 마족병·보스: 투사체를 쏘기 전 모으기. */
         CAST_TELEGRAPH,
         /** 보스 패턴. */
-        SLAM_TELEGRAPH, CHARGE_TELEGRAPH, CHARGING, STUNNED, COMBO_TELEGRAPH
+        SLAM_TELEGRAPH, CHARGE_TELEGRAPH, CHARGING, STUNNED, COMBO_TELEGRAPH,
+        /** 보스: 제자리에서 낙석·낙뢰·회전 화염·피웅덩이 같은 긴 패턴을 이어 간다. */
+        CHANNEL,
+        /** 마왕: 1페이즈에서 쓰러져 2페이즈로 변하는 중. 무적. */
+        PHASE_SHIFT
     }
 
     public final MonsterDef def;
@@ -46,6 +50,20 @@ public class Monster extends Actor {
     /** 박쥐가 도는 방향, 마족병 순간이동 쿨타임. */
     public float orbitSign = 1;
     public float blinkCd;
+    /** 연속 돌진 남은 횟수. */
+    public int rushLeft;
+    /** 긴 패턴(CHANNEL) 종류, 남은 횟수, 다음 단계까지 시간, 회전 화염 각도. */
+    public String channelKind;
+    public int channelLeft;
+    public float channelT, spinAngle;
+    /** 방패: 남아 있으면 체력 대신 방패가 닳는다. */
+    public int shield, shieldMax;
+    /** 마왕 2페이즈. */
+    public boolean phase2;
+    /** 구석에 몰려 용사가 붙어 있던 시간. */
+    public float cornerT;
+    /** 공격력 배율 (보스를 잡은 던전의 잡몹, 마왕 2페이즈). */
+    public float attackMul = 1f;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
@@ -57,6 +75,20 @@ public class Monster extends Actor {
         hw = 9 * scale;
         hh = 6 * scale;
         hurtRadius = 12 * scale;
+    }
+
+    /** 실제 공격력. */
+    public int attack() {
+        return Math.round(def.attack * attackMul);
+    }
+
+    /** 이 잡몹의 공격 예고 시간, 공격 뒤 쉬는 시간 (따로 정하지 않았으면 공통 값). */
+    public float telegraph(float common) {
+        return def.telegraph > 0 ? def.telegraph : common;
+    }
+
+    public float cooldown(float common) {
+        return def.cooldown > 0 ? def.cooldown : common;
     }
 
     public String ai() {
@@ -80,6 +112,11 @@ public class Monster extends Actor {
     /** 공격을 준비하거나 돌진하는 중: 이때는 맞아도 밀려나지 않는다. */
     public boolean committed() {
         return state != State.CHASE && state != State.RECOVER && state != State.SPAWN && state != State.STUNNED;
+    }
+
+    /** 변신 중이라 맞지 않는다. */
+    public boolean invulnerable() {
+        return state == State.PHASE_SHIFT || state == State.SPAWN;
     }
 
     /** 머리 위에 ‘!’ 를 띄울 상태. */

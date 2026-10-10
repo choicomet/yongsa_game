@@ -110,6 +110,34 @@ public class Balance {
         public int summonCount;
         /** 체력이 이 비율 아래로 내려가면 2페이즈 (패턴이 빨라지고 하나가 더 붙는다). */
         public float phase2HpRatio, phase2Speed;
+        /** 연속 돌진: 매번 다시 조준해서 rushCount 번 달려든다. */
+        public int rushCount;
+        public float rushTelegraph;
+        /** 낙석: 용사가 있던 자리마다 차례로 예고 뒤 떨어진다. */
+        public int rockCount;
+        public float rockInterval, rockWarning, rockRadiusTiles, rockMultiplier;
+        /** 방패: 최대 체력의 shieldRatio 만큼 막이 생기고, 깨기 전엔 보스 체력이 닳지 않는다. 깨지면 휘청. */
+        public float shieldRatio, shieldStagger;
+        /** 피웅덩이: 점점 넓어지는 웅덩이. 밟으면 초당 최대 체력의 poolDamageRatio + 둔화. 이어서 창 세 줄. */
+        public int poolCount;
+        public float poolStartRadiusTiles, poolMaxRadiusTiles, poolGrowTime, poolLife, poolDamageRatio;
+        public float slowRatio, slowSeconds;
+        public int spearCount;
+        public float spearDelay, spearWarning, spearWidthTiles, spearLengthTiles, spearMultiplier, spearSpreadDegrees;
+        /** 낙뢰: 용사 자리에 차례로 번개. */
+        public int strikeCount;
+        public float strikeInterval, strikeWarning, strikeRadiusTiles, strikeMultiplier;
+        /** 회전 화염: 제자리에서 돌며 두 갈래로 불덩이를 뿜는다. */
+        public float spinMin, spinMax, spinRate, spinTurnSpeed, spinProjectileSpeedTiles, spinMultiplier;
+        /** 마왕 2페이즈 촉수: 용사 자리와 그 둘레에 예고 뒤 솟는다. */
+        public int tentacleCount;
+        public float tentacleRingTiles, tentacleRadiusTiles, tentacleWarning, tentacleMultiplier;
+        /** 구석 몰이 방지: 벽 가까이에서 용사가 cornerTime 초 넘게 붙어 있으면 순간이동하고 세 갈래 탄. */
+        public float cornerTime, cornerCooldown;
+        /** 마왕: 처음 쓰러지면 체력이 이만큼 다시 차서 2페이즈 (변신하는 동안은 무적). */
+        public float finalPhase2HpMultiplier, finalPhase2AttackMultiplier, phaseShiftSeconds;
+        /** 보스를 잡은 던전의 잡몹: 흡수하지 못한 힘이 퍼져 강해진다. */
+        public float clearedMobHpMultiplier, clearedMobAttackMultiplier;
     }
 
     public static class DungeonDef {
@@ -124,9 +152,13 @@ public class Balance {
         public float speedTiles;
         /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
         public String ai;
-        /** 보스 패턴 이름: slam, charge, combo, volley, ring, summon. */
+        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle. */
         public List<String> patterns;
-        /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). */
+        /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;
+        /** 잡몹: 공격 예고 시간과 공격 뒤 쉬는 시간 (0이면 monster 공통 값). */
+        public float telegraph, cooldown;
+        /** 보스: 구석에 몰리면 순간이동해서 빠져나간다. */
+        public boolean cornerBlink;
     }
 }

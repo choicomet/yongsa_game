@@ -35,7 +35,7 @@
     { "id": "T5", "type": "ORE",  "dungeon": "TOP", "cx": 1, "cy": 3 },
     { "id": "T6", "type": "MOB",  "dungeon": "TOP", "cx": 0, "cy": 4 },
     { "id": "T7", "type": "BOSS", "dungeon": "TOP", "cx": 0, "cy": 5 },
-    { "id": "F",  "type": "FINAL","dungeon": "TOP", "cx": 0, "cy": 6 }
+    { "id": "F",  "type": "FINAL","dungeon": "TOP", "cx": 0, "cy": 6, "_note": "심연: 어느 방과도 이어지지 않는다. 캠프 문양에서 떨어져서만 온다" }
   ],
   "links": [
     { "a": "CAMP", "b": "L1", "gate": "LEFT" },
@@ -57,7 +57,6 @@
     { "a": "T3", "b": "T4" },
     { "a": "T3", "b": "T5" },
     { "a": "T3", "b": "T6" },
-    { "a": "T6", "b": "T7" },
-    { "a": "T7", "b": "F", "gate": "FINAL" }
+    { "a": "T6", "b": "T7" }
   ]
 }

@@ -132,13 +132,16 @@ public class WorldMap {
         props.add(new Prop(Prop.Kind.FORGE, camp.x0 + 5, cy + 1, 2, 2));
         props.add(new Prop(Prop.Kind.BED, camp.x1 - 6, cy + 1, 2, 2));
         props.add(new Prop(Prop.Kind.CAMPFIRE, (int) camp.centerTileX(), (int) camp.centerTileY() - 1, 1, 1));
+        // 캠프 아래쪽 바닥의 봉인 문양: 세 보스의 힘을 모아 성검을 풀면 땅이 갈라져 심연(마왕)으로 떨어진다
+        props.add(new Prop(Prop.Kind.SEAL, (int) camp.centerTileX() - 1, camp.y0 + 2, 2, 2));
         for (Prop p : props) {
+            if (p.walkable()) continue;
             for (int x = p.tileX; x < p.tileX + p.w; x++)
                 for (int y = p.tileY; y < p.tileY + p.h; y++) setBlocked(x, y, true);
         }
     }
 
-    /** 던전 입구와 최종 보스방 문을 진행 상황에 맞춰 연다 (FR-던전-01, FR-맵-08). */
+    /** 던전 입구를 진행 상황에 맞춰 연다 (FR-던전-01, FR-맵-08). */
     public void updateGates(GameState s) {
         for (Link l : links) {
             if (l.gate == null) continue;
@@ -151,7 +154,6 @@ public class WorldMap {
             case "LEFT": return true;
             case "RIGHT": return s.bossDefeated("LEFT");
             case "TOP": return s.bossDefeated("RIGHT");
-            case "FINAL": return s.unsealed;
             default: return false;
         }
     }

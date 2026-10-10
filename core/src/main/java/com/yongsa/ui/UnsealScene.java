@@ -16,7 +16,7 @@ public class UnsealScene extends Modal {
             "세 보스에게서 흡수한 힘이 몸 안에서 하나로 모인다.",
             "가보로 물려받은 성검이 손안에서 떨리기 시작했다.",
             "이제 용사는 봉인을 풀 수 있을 만큼 강해졌다.",
-            "쇠사슬이 끊어지고, 성검이 깨어났다!",
+            "쇠사슬이 끊어지고, 성검이 깨어났다! 발밑의 문양이 갈라진다…",
     };
     private final GameScreen screen;
     private int step;
@@ -46,6 +46,7 @@ public class UnsealScene extends Modal {
     private void advance() {
         if (done) {
             close();
+            screen.startFall(); // 봉인이 풀리자 땅이 갈라져 심연으로 떨어진다
             return;
         }
         step++;
@@ -56,7 +57,7 @@ public class UnsealScene extends Modal {
             sword.setDrawable(new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(
                     screen.game.art.get("sword_holy_awakened")));
             text.setColor(Ui.GOLD);
-            screen.hud.toast("깨어난 성검을 장착했다. 위쪽 던전 끝의 최종 보스방이 열렸다");
+            screen.hud.toast("깨어난 성검을 장착했다. 문양이 갈라진다!");
             screen.save(false);
             done = true;
         } else {
