@@ -1,0 +1,93 @@
+package com.yongsa.world;
+
+import com.google.gson.Gson;
+import java.util.List;
+
+/**
+ * Opt-in room artwork coordinate contract. Does not change WorldMap or progression.
+ * Source points are normalized image coordinates (top left, y down).
+ * All world coordinates use the game's existing bottom-left/y-up convention.
+ */
+public final class RoomSceneLayout {
+    public int version;
+    public String status, coordinateSystem;
+    public float referenceTileSize, footRadiusWorld;
+    public List<Scene> scenes;
+
+    public static RoomSceneLayout parse(String json) {
+        RoomSceneLayout data = new Gson().fromJson(json, RoomSceneLayout.class);
+        if (data == null || data.version != 1 || data.scenes == null || data.scenes.isEmpty()
+                || !"normalized-image-top-left-x-right-y-down".equals(data.coordinateSystem))
+            throw new IllegalArgumentException("Unsupported room scene manifest");
+        java.util.Set<String> ids = new java.util.HashSet<>();
+        for (Scene scene : data.scenes) {
+            scene.validate();
+            if (!ids.add(scene.id)) throw new IllegalArgumentException("Duplicate scene: " + scene.id);
+        }
+        return data;
+    }
+
+    public static final class Portal {
+        public String id, kind, facing;
+        public float[] foot;
+    }
+
+    public static final class Scene {
+        public String id, title, image;
+        public int pixelWidth, pixelHeight;
+        public float suggestedWidthTiles;
+        public float[] walkable, playerSpawn;
+        public List<float[]> enemySpawns;
+        public List<Portal> portals;
+
+        public void validate() {
+            if (id == null || image == null || pixelWidth <= 0 || pixelHeight <= 0
+                    || !Float.isFinite(suggestedWidthTiles) || suggestedWidthTiles <= 0
+                    || walkable == null || walkable.length < 6 || walkable.length % 2 != 0)
+                throw new IllegalArgumentException("Invalid room scene: " + id);
+            for (float p : walkable) normalized(p);
+            point(playerSpawn);
+            if (enemySpawns == null || portals == null) throw new IllegalArgumentException("Missing anchors");
+            for (float[] p : enemySpawns) point(p);
+            for (Portal p : portals) point(p.foot);
+        }
+
+        private static void normalized(float n) {
+            if (!Float.isFinite(n) || n < 0 || n > 1) throw new IllegalArgumentException("Invalid normalized point");
+        }
+
+        private static void point(float[] p) {
+            if (p == null || p.length != 2) throw new IllegalArgumentException("Invalid point");
+            normalized(p[0]); normalized(p[1]);
+        }
+
+        public float height(float width) { return width * pixelHeight / pixelWidth; }
+        public float x(float u, float originX, float width) { return originX + u * width; }
+        public float y(float v, float originY, float width) { return originY + (1f - v) * height(width); }
+        public float u(float worldX, float originX, float width) { return (worldX - originX) / width; }
+        public float v(float worldY, float originY, float width) { return 1f - (worldY - originY) / height(width); }
+
+        /** A circle representing feet must fit fully inside the polygon, including concave corners. */
+        public boolean allowsFoot(float worldX, float worldY, float radius,
+                                  float originX, float originY, float width) {
+            if (!Float.isFinite(worldX) || !Float.isFinite(worldY) || !Float.isFinite(radius)
+                    || radius < 0 || !Float.isFinite(width) || width <= 0) return false;
+            float px = worldX - originX, py = worldY - originY, h = height(width);
+            boolean inside = false;
+            float radius2 = radius * radius;
+            int count = walkable.length / 2;
+            for (int i = 0, j = count - 1; i < count; j = i++) {
+                float ax = walkable[j * 2] * width, ay = (1 - walkable[j * 2 + 1]) * h;
+                float bx = walkable[i * 2] * width, by = (1 - walkable[i * 2 + 1]) * h;
+                if ((ay > py) != (by > py) && px < (bx - ax) * (py - ay) / (by - ay) + ax)
+                    inside = !inside;
+                float dx = bx - ax, dy = by - ay;
+                float length2 = dx * dx + dy * dy;
+                float t = length2 == 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / length2));
+                float ex = px - ax - t * dx, ey = py - ay - t * dy;
+                if (ex * ex + ey * ey < radius2) return false;
+            }
+            return inside;
+        }
+    }
+}

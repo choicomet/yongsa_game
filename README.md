@@ -10,6 +10,8 @@ uiux 팀 프로젝트 (최해성 · 박지용 · 김선우). Java 17 + libGDX 2D
 
 ## 실행
 
+[자연스러운 던전 구상과 Java 미리보기](design/natural-dungeons/README.md)는 캠프 분위기를 이어가는 배경 4장과 이동 경계·출입구 초안을 제공합니다. 본 게임 방 구조에 연결하기 전 준비본입니다. [구상안 / Java 화면 / 경계 비교](design/natural-dungeons/index.html).
+
 Windows (JDK 17 필요, `JAVA_HOME` 설정):
 
 ```

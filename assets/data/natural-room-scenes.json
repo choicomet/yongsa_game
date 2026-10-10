@@ -1,0 +1,562 @@
+{
+  "version": 1,
+  "status": "candidate-layout-for-integration",
+  "coordinateSystem": "normalized-image-top-left-x-right-y-down",
+  "referenceTileSize": 32,
+  "footRadiusWorld": 10,
+  "notes": [
+    "Backgrounds contain baked environmental light and flame poses. Do not apply the old darkening pass unchanged.",
+    "Walkable outlines are conservative draft foot boundaries; final collision, door state and combat must be integrated and playtested by gameplay implementation.",
+    "Sealed doors and glowing ore currently remain decorative pixels. Functional doors/veins need independently controlled overlays or further clean plates.",
+    "No template is automatically assigned to existing room IDs. Preserve progression graph while choosing compatible entrances."
+  ],
+  "scenes": [
+    {
+      "id": "mine",
+      "title": "무너진 갱도",
+      "image": "scenes/natural-v1/mine.png",
+      "walkable": [
+        0.455,
+        0.075,
+        0.535,
+        0.075,
+        0.535,
+        0.14,
+        0.585,
+        0.2,
+        0.69,
+        0.24,
+        0.8,
+        0.32,
+        0.85,
+        0.42,
+        0.83,
+        0.53,
+        0.75,
+        0.63,
+        0.65,
+        0.69,
+        0.57,
+        0.76,
+        0.55,
+        0.89,
+        0.47,
+        0.89,
+        0.45,
+        0.78,
+        0.35,
+        0.72,
+        0.28,
+        0.65,
+        0.26,
+        0.57,
+        0.225,
+        0.53,
+        0.215,
+        0.47,
+        0.2,
+        0.4,
+        0.16,
+        0.33,
+        0.125,
+        0.24,
+        0.145,
+        0.18,
+        0.205,
+        0.18,
+        0.22,
+        0.25,
+        0.28,
+        0.31,
+        0.38,
+        0.27,
+        0.45,
+        0.19
+      ],
+      "playerSpawn": [
+        0.5,
+        0.66
+      ],
+      "enemySpawns": [
+        [
+          0.42,
+          0.37
+        ],
+        [
+          0.63,
+          0.39
+        ],
+        [
+          0.69,
+          0.53
+        ]
+      ],
+      "portals": [
+        {
+          "id": "south",
+          "kind": "open-passage",
+          "foot": [
+            0.51,
+            0.855
+          ],
+          "facing": "DOWN"
+        },
+        {
+          "id": "north",
+          "kind": "open-passage",
+          "foot": [
+            0.497,
+            0.12
+          ],
+          "facing": "UP"
+        },
+        {
+          "id": "rail",
+          "kind": "open-passage",
+          "foot": [
+            0.176,
+            0.225
+          ],
+          "facing": "UP_LEFT"
+        }
+      ],
+      "landmarks": [
+        {
+          "id": "iron-seam",
+          "kind": "decorative-ore",
+          "foot": [
+            0.805,
+            0.43
+          ]
+        },
+        {
+          "id": "cart",
+          "kind": "solid-decoration",
+          "foot": [
+            0.24,
+            0.57
+          ]
+        }
+      ],
+      "lights": [
+        [
+          0.181,
+          0.183,
+          "#ffae4b"
+        ],
+        [
+          0.594,
+          0.093,
+          "#ffae4b"
+        ],
+        [
+          0.78,
+          0.236,
+          "#ffae4b"
+        ],
+        [
+          0.837,
+          0.269,
+          "#4291ff"
+        ],
+        [
+          0.434,
+          0.81,
+          "#ffae4b"
+        ],
+        [
+          0.571,
+          0.81,
+          "#ffae4b"
+        ]
+      ],
+      "pixelWidth": 1672,
+      "pixelHeight": 941,
+      "suggestedWidthTiles": 26
+    },
+    {
+      "id": "citadel",
+      "title": "저주받은 성채",
+      "image": "scenes/natural-v1/citadel.png",
+      "walkable": [
+        0.445,
+        0.2,
+        0.57,
+        0.2,
+        0.62,
+        0.25,
+        0.7,
+        0.3,
+        0.76,
+        0.36,
+        0.8,
+        0.47,
+        0.75,
+        0.55,
+        0.65,
+        0.65,
+        0.563,
+        0.715,
+        0.55,
+        0.92,
+        0.47,
+        0.92,
+        0.455,
+        0.755,
+        0.4,
+        0.7,
+        0.29,
+        0.64,
+        0.22,
+        0.56,
+        0.17,
+        0.51,
+        0.125,
+        0.45,
+        0.085,
+        0.375,
+        0.064,
+        0.285,
+        0.097,
+        0.268,
+        0.12,
+        0.355,
+        0.17,
+        0.39,
+        0.225,
+        0.37,
+        0.31,
+        0.35,
+        0.37,
+        0.26
+      ],
+      "playerSpawn": [
+        0.5,
+        0.65
+      ],
+      "enemySpawns": [
+        [
+          0.42,
+          0.37
+        ],
+        [
+          0.64,
+          0.4
+        ],
+        [
+          0.69,
+          0.51
+        ]
+      ],
+      "portals": [
+        {
+          "id": "south",
+          "kind": "open-passage",
+          "foot": [
+            0.51,
+            0.87
+          ],
+          "facing": "DOWN"
+        },
+        {
+          "id": "west",
+          "kind": "open-passage",
+          "foot": [
+            0.09,
+            0.34
+          ],
+          "facing": "LEFT"
+        }
+      ],
+      "landmarks": [
+        {
+          "id": "rear-grate",
+          "kind": "baked-closed-gate-needs-variants",
+          "foot": [
+            0.505,
+            0.215
+          ]
+        },
+        {
+          "id": "red-seal",
+          "kind": "baked-closed-gate-needs-variants",
+          "foot": [
+            0.77,
+            0.47
+          ]
+        }
+      ],
+      "lights": [
+        [
+          0.196,
+          0.2,
+          "#ffae4b"
+        ],
+        [
+          0.392,
+          0.127,
+          "#ffae4b"
+        ],
+        [
+          0.6,
+          0.127,
+          "#ffae4b"
+        ],
+        [
+          0.847,
+          0.25,
+          "#ffae4b"
+        ],
+        [
+          0.4,
+          0.71,
+          "#ffae4b"
+        ],
+        [
+          0.6,
+          0.71,
+          "#ffae4b"
+        ]
+      ],
+      "pixelWidth": 1672,
+      "pixelHeight": 941,
+      "suggestedWidthTiles": 26
+    },
+    {
+      "id": "tower",
+      "title": "마왕의 탑",
+      "image": "scenes/natural-v1/tower.png",
+      "walkable": [
+        0.445,
+        0.19,
+        0.57,
+        0.19,
+        0.59,
+        0.265,
+        0.69,
+        0.32,
+        0.78,
+        0.415,
+        0.76,
+        0.51,
+        0.69,
+        0.6,
+        0.6,
+        0.68,
+        0.56,
+        0.735,
+        0.55,
+        0.89,
+        0.47,
+        0.89,
+        0.455,
+        0.755,
+        0.4,
+        0.69,
+        0.3,
+        0.61,
+        0.235,
+        0.52,
+        0.21,
+        0.43,
+        0.25,
+        0.36,
+        0.35,
+        0.3,
+        0.425,
+        0.27
+      ],
+      "playerSpawn": [
+        0.5,
+        0.61
+      ],
+      "enemySpawns": [
+        [
+          0.42,
+          0.4
+        ],
+        [
+          0.62,
+          0.42
+        ],
+        [
+          0.64,
+          0.54
+        ]
+      ],
+      "portals": [
+        {
+          "id": "south",
+          "kind": "open-passage",
+          "foot": [
+            0.51,
+            0.84
+          ],
+          "facing": "DOWN"
+        }
+      ],
+      "landmarks": [
+        {
+          "id": "rear-seal",
+          "kind": "baked-closed-gate-needs-variants",
+          "foot": [
+            0.5,
+            0.215
+          ]
+        },
+        {
+          "id": "side-stair",
+          "kind": "decorative-stair",
+          "foot": [
+            0.25,
+            0.385
+          ]
+        }
+      ],
+      "lights": [
+        [
+          0.4,
+          0.127,
+          "#ab74ff"
+        ],
+        [
+          0.604,
+          0.125,
+          "#ab74ff"
+        ],
+        [
+          0.315,
+          0.245,
+          "#ffbb64"
+        ],
+        [
+          0.709,
+          0.237,
+          "#ffbb64"
+        ],
+        [
+          0.842,
+          0.49,
+          "#67adff"
+        ],
+        [
+          0.183,
+          0.555,
+          "#67adff"
+        ]
+      ],
+      "pixelWidth": 1672,
+      "pixelHeight": 941,
+      "suggestedWidthTiles": 26
+    },
+    {
+      "id": "seal-hall",
+      "title": "최종 봉인 전당",
+      "image": "scenes/natural-v1/seal-hall.png",
+      "walkable": [
+        0.405,
+        0.29,
+        0.61,
+        0.29,
+        0.7,
+        0.33,
+        0.78,
+        0.4,
+        0.805,
+        0.49,
+        0.775,
+        0.58,
+        0.7,
+        0.65,
+        0.6,
+        0.71,
+        0.555,
+        0.76,
+        0.56,
+        0.905,
+        0.47,
+        0.905,
+        0.465,
+        0.78,
+        0.4,
+        0.73,
+        0.29,
+        0.68,
+        0.22,
+        0.6,
+        0.19,
+        0.5,
+        0.21,
+        0.42,
+        0.29,
+        0.35
+      ],
+      "playerSpawn": [
+        0.5,
+        0.67
+      ],
+      "enemySpawns": [
+        [
+          0.51,
+          0.35
+        ]
+      ],
+      "portals": [
+        {
+          "id": "south",
+          "kind": "open-passage",
+          "foot": [
+            0.515,
+            0.86
+          ],
+          "facing": "DOWN"
+        }
+      ],
+      "landmarks": [
+        {
+          "id": "sealed-monument",
+          "kind": "decorative-closed-door",
+          "foot": [
+            0.51,
+            0.31
+          ]
+        }
+      ],
+      "lights": [
+        [
+          0.288,
+          0.16,
+          "#ffb153"
+        ],
+        [
+          0.697,
+          0.157,
+          "#ffb153"
+        ],
+        [
+          0.147,
+          0.335,
+          "#ffb153"
+        ],
+        [
+          0.86,
+          0.322,
+          "#ffb153"
+        ],
+        [
+          0.419,
+          0.758,
+          "#ffb153"
+        ],
+        [
+          0.61,
+          0.757,
+          "#ffb153"
+        ]
+      ],
+      "pixelWidth": 1672,
+      "pixelHeight": 941,
+      "suggestedWidthTiles": 26
+    }
+  ]
+}
