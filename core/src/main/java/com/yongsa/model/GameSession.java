@@ -16,7 +16,9 @@ import com.yongsa.world.VeinGenerator;
 import com.yongsa.world.WorldMap;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Random;
 
 /**
@@ -51,6 +53,11 @@ public class GameSession {
     private Attack basicAttack;
     private float lockedGateMsgCd;
     private boolean justDied;
+
+    /** 개발용: 맞아도 체력이 줄지 않는다. */
+    public boolean devGodMode;
+    /** 개발용: 다시 싸우려고 되살린 보스의 던전 (저장하지 않는다). 흡수한 힘과 열린 길은 그대로다. */
+    private final Set<String> revived = new HashSet<>();
 
     /** HUD 에 보여줄 상호작용 안내 (없으면 null). */
     public String prompt;
@@ -318,6 +325,12 @@ public class GameSession {
 
     private void hitHero(int base, float mult, float fromX, float fromY) {
         if (hero.invuln > 0) return;
+        if (devGodMode) {
+            hero.invuln = balance.hero.invulnAfterHit;
+            hero.flash = balance.hero.invulnAfterHit;
+            events.add(GameEvent.floatText(hero.x, hero.y + 40, "0", GameEvent.Tone.BLOCKED));
+            return;
+        }
         int dmg = roll(base, mult);
         state.hp -= dmg;
         hero.invuln = balance.hero.invulnAfterHit;
@@ -489,6 +502,7 @@ public class GameSession {
         events.add(new GameEvent(GameEvent.Type.ROOM_CLEARED));
         if (r.type == RoomType.BOSS) {
             DungeonDef d = balance.dungeon(r.dungeonId);
+            revived.remove(d.id);
             int gain = absorb.absorbBoss(state, d.id);
             OreType ore = OreType.valueOf(d.ore);
             state.addOre(ore, d.bossOreReward);
@@ -1099,7 +1113,40 @@ public class GameSession {
 
     /** 보스를 쓰러뜨린 보스방 가운데에는 캠프로 돌아가는 포탈이 생긴다. */
     public boolean hasPortal(Room r) {
-        return r.type == RoomType.BOSS && state.bossDefeated(r.dungeonId);
+        return r.type == RoomType.BOSS && state.bossDefeated(r.dungeonId) && !revived.contains(r.dungeonId);
+    }
+
+    // ───────────────────────── 개발용 (F1)
+
+    /**
+     * 쓰러뜨린 보스를 다시 싸울 수 있게 되살린다. 이미 흡수한 힘·열린 던전·광물은 그대로 두고,
+     * 보스방에 다시 들어가면 싸움이 시작된다. dungeonId 가 "FINAL" 이면 마왕.
+     * 싸우는 중이면 되살리지 않는다. 되살렸으면 true.
+     */
+    public boolean devReviveBoss(String dungeonId) {
+        if (fightRoom != null) return false;
+        if ("FINAL".equals(dungeonId)) {
+            if (!state.finalBossDefeated) return false;
+            state.finalBossDefeated = false;
+            for (Room r : map.rooms) if (r.type == RoomType.FINAL) state.room(r.id).cleared = false;
+            return true;
+        }
+        if (!state.bossDefeated(dungeonId) || revived.contains(dungeonId)) return false;
+        revived.add(dungeonId);
+        for (Room r : map.rooms) {
+            if (r.type == RoomType.BOSS && dungeonId.equals(r.dungeonId)) state.room(r.id).cleared = false;
+        }
+        return true;
+    }
+
+    /** 되살아나 보스방에서 기다리는 보스인가 (개발 메뉴 표시용). */
+    public boolean devRevived(String dungeonId) {
+        return revived.contains(dungeonId);
+    }
+
+    /** 광물 무한: 모자라면 채워 둔다. */
+    public void devFillOres(int amount) {
+        for (OreType t : OreType.values()) if (state.ore(t) < amount) state.ores.put(t, amount);
     }
 
     public float portalX(Room r) {

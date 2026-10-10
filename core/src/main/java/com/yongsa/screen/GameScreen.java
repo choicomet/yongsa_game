@@ -17,6 +17,7 @@ import com.yongsa.model.GameSession;
 import com.yongsa.model.GameState;
 import com.yongsa.ui.BagWindow;
 import com.yongsa.ui.ConfirmDialog;
+import com.yongsa.ui.DevMenu;
 import com.yongsa.ui.ForgeWindow;
 import com.yongsa.ui.Hud;
 import com.yongsa.ui.MessageWindow;
@@ -67,6 +68,10 @@ public class GameScreen extends ScreenAdapter {
         InputAdapter keys = new InputAdapter() {
             @Override
             public boolean keyDown(int keycode) {
+                if (keycode == Input.Keys.F1 && endingDelay < 0) {
+                    toggleDevMenu();
+                    return true;
+                }
                 if (!modals.isEmpty()) {
                     boolean handled = modals.keyDown(keycode);
                     if (handled) game.sfx.play("select");
@@ -110,6 +115,8 @@ public class GameScreen extends ScreenAdapter {
         boolean paused = !modals.isEmpty() || endingDelay >= 0 || warping;
         boolean frozen = hitStop > 0;
         hitStop -= dt;
+        session.devGodMode = game.settings.devGodMode;
+        if (game.settings.devInfiniteOre) session.devFillOres(DevMenu.INFINITE_ORE);
         if (!paused && !frozen) {
             readControls();
             session.update(dt, controls);
@@ -295,6 +302,13 @@ public class GameScreen extends ScreenAdapter {
             return "다음에 만들 무기: " + w.name + " (" + com.yongsa.model.OreType.valueOf(d.ore).displayName + " " + w.craftCost + "개)";
         }
         return "이제 캠프로 돌아가면 성검의 봉인을 풀 수 있다";
+    }
+
+    /** 개발용 메뉴 (F1): 보스 부활, 광물 무한, 무적. */
+    public void toggleDevMenu() {
+        if (modals.top() instanceof DevMenu) modals.top().close();
+        else modals.push(new DevMenu(this));
+        game.sfx.play("select");
     }
 
     public void openPause() {

@@ -8,4 +8,8 @@ public class Settings {
     public float effectSpeed = 1f;
     /** 타격·보스 공격 때 화면 흔들림. */
     public boolean screenShake = true;
+    /** 개발용 (F1): 광물이 줄지 않는다. */
+    public boolean devInfiniteOre = false;
+    /** 개발용 (F1): 맞아도 체력이 줄지 않는다. */
+    public boolean devGodMode = false;
 }
