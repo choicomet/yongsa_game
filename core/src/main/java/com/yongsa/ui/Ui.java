@@ -16,10 +16,10 @@ import com.yongsa.gfx.Fonts;
 
 /** Scene2D 스킨을 코드로 만든다 (그림 파일 없음). */
 public final class Ui {
-    public static final Color GOLD = new Color(0xf2c94cff);
-    public static final Color TEXT = new Color(0xeeeae0ff);
-    public static final Color DIM = new Color(0x9a95a8ff);
-    public static final Color BLUE = new Color(0x5aa0ffff);
+    public static final Color GOLD = new Color(0xe3b875ff);
+    public static final Color TEXT = new Color(0xf2eee5ff);
+    public static final Color DIM = new Color(0xaeb5baff);
+    public static final Color BLUE = new Color(0x7ac9e4ff);
     public static final Color ORANGE = new Color(0xffa040ff);
     public static final Color RED = new Color(0xff5a4eff);
     public static final Color GREEN = new Color(0x6fd38aff);
@@ -31,12 +31,12 @@ public final class Ui {
 
     public static Skin createSkin(Fonts fonts, Art art) {
         Skin skin = new Skin();
-        skin.add("panel", patch(0x1b1824f2, 0x8a7442ff, 3), Drawable.class);
-        skin.add("panelDark", patch(0x0f0d14e6, 0x3a3447ff, 2), Drawable.class);
+        skin.add("panel", patch(0x141b22fa, 0x75624aff, 1), Drawable.class);
+        skin.add("panelDark", patch(0x0c1219ef, 0x35414aff, 1), Drawable.class);
         skin.add("dim", new TextureRegionDrawable(art.white()).tint(new Color(0, 0, 0, 0.55f)), Drawable.class);
 
-        skin.add("default", buttonStyle(fonts, 0x3a3447ff, 0x5a5070ff, 0x4a4359ff, 0x2a2533ff), TextButton.TextButtonStyle.class);
-        skin.add("focused", buttonStyle(fonts, 0x544a6eff, 0xf2c94cff, 0x5e5478ff, 0x2a2533ff), TextButton.TextButtonStyle.class);
+        skin.add("default", buttonStyle(fonts, 0x202a33ff, 0x45515bff, 0x303d48ff, 0x131c25ff), TextButton.TextButtonStyle.class);
+        skin.add("focused", buttonStyle(fonts, 0x3d352bff, 0xe3b875ff, 0x504431ff, 0x29241eff), TextButton.TextButtonStyle.class);
         skin.add("danger", buttonStyle(fonts, 0x7a2219ff, 0xc0392bff, 0x8e2a20ff, 0x5a160fff), TextButton.TextButtonStyle.class);
         skin.add("dangerFocused", buttonStyle(fonts, 0xa0301fff, 0xf2c94cff, 0xb03a28ff, 0x5a160fff), TextButton.TextButtonStyle.class);
         skin.add("tab", buttonStyle(fonts, 0x2a2533ff, 0x3a3447ff, 0x3a3447ff, 0x2a2533ff), TextButton.TextButtonStyle.class);
@@ -54,9 +54,9 @@ public final class Ui {
         s.font = fonts.normal;
         s.fontColor = TEXT;
         s.disabledFontColor = new Color(0x6a6575ff);
-        s.up = patch(bg, border, 2);
-        s.over = patch(over, border, 2);
-        s.down = patch(down, border, 2);
+        s.up = patch(bg, border, 1);
+        s.over = patch(over, border, 1);
+        s.down = patch(down, border, 1);
         s.disabled = patch(0x221f29ff, 0x2f2b38ff, 2);
         return s;
     }
@@ -84,5 +84,11 @@ public final class Ui {
         Label l = new Label(text, skin, style);
         if (color != null) l.setColor(color);
         return l;
+    }
+
+    public static com.badlogic.gdx.scenes.scene2d.ui.Image artImage(TextureRegion region) {
+        com.badlogic.gdx.scenes.scene2d.ui.Image image = new com.badlogic.gdx.scenes.scene2d.ui.Image(region);
+        image.setScaling(com.badlogic.gdx.utils.Scaling.fit);
+        return image;
     }
 }

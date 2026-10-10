@@ -47,8 +47,6 @@ public class Hud {
     private float time;
     private boolean mapOpen;
     private float mapAnim;
-    private String introName;
-    private boolean introFinal;
     private float introT = -1;
     private static final int SLOTS = 2;
     private final float[] readyFlash = new float[SLOTS];
@@ -77,7 +75,7 @@ public class Hud {
         Toast t = new Toast();
         t.text = text;
         toasts.add(t);
-        if (toasts.size() > 3) toasts.remove(0);
+        if (toasts.size() > 1) toasts.remove(0);
     }
 
     public void banner(String text) {
@@ -98,10 +96,8 @@ public class Hud {
         hurtT = 0.35f;
     }
 
-    /** 보스가 나타날 때 위아래 검은 띠와 함께 이름을 크게 보여 준다. */
+    /** 보스가 나타날 때 체력 패널을 강조한다. */
     public void bossIntro(String name, boolean finalBoss) {
-        introName = name;
-        introFinal = finalBoss;
         introT = 0;
         banner = null;
     }
@@ -169,222 +165,120 @@ public class Hud {
         this.h = h;
         batch.setProjectionMatrix(projection);
         shapes.setProjectionMatrix(projection);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-
         GameState s = g.state;
         int maxHp = g.rules.maxHp(s);
+        Weapon weapon = s.equipped();
         Monster boss = g.activeBoss();
-
-        // ── 화면 가장자리 어둡게, 체력이 낮거나 맞으면 붉게
         batch.begin();
-        batch.setColor(0, 0, 0, 0.55f);
+        batch.setColor(0, 0, 0, 0.28f);
         batch.draw(art.vignette, 0, 0, w, h);
-        float low = s.hp < maxHp * 0.3f ? 0.35f + 0.25f * MathUtils.sin(time * 6f) : 0f;
-        float red = Math.max(low, Math.max(0, hurtT) / 0.35f * 0.8f);
+        float low = s.hp < maxHp * 0.3f ? 0.22f + 0.12f * MathUtils.sin(time * 6f) : 0f;
+        float red = Math.max(low, Math.max(0, hurtT) / 0.35f * 0.65f);
         if (red > 0) {
             batch.setColor(0.8f, 0.05f, 0.05f, red);
             batch.draw(art.vignette, 0, 0, w, h);
         }
+        card(24, h - 122, 326, 98);
         batch.setColor(Color.WHITE);
-        batch.end();
-
-        // ── 막대들
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        panel(16, h - 104, 360, 88);
-        float barX = 36, barY = h - 52, barW = 320, barH = 22;
-        shapes.setColor(0.1f, 0.08f, 0.12f, 1f);
-        shapes.rect(barX - 2, barY - 2, barW + 4, barH + 4);
-        shapes.setColor(0.2f, 0.12f, 0.14f, 1f);
-        shapes.rect(barX, barY, barW, barH);
-        shapes.setColor(1f, 0.95f, 0.85f, 0.85f);
-        shapes.rect(barX, barY, barW * Math.min(1f, trailHp / maxHp), barH);
-        float hpw = barW * Math.min(1f, shownHp / maxHp);
-        shapes.rect(barX, barY, hpw, barH, new Color(0.62f, 0.1f, 0.12f, 1f), new Color(0.9f, 0.22f, 0.2f, 1f),
-                new Color(0.95f, 0.32f, 0.28f, 1f), new Color(0.7f, 0.14f, 0.14f, 1f));
-        shapes.setColor(1f, 1f, 1f, 0.18f);
-        shapes.rect(barX, barY + barH - 7, hpw, 4);
-        // 50 마다 눈금
-        shapes.setColor(0, 0, 0, 0.35f);
-        for (int v = 50; v < maxHp; v += 50) shapes.rect(barX + barW * v / maxHp - 1, barY, 2, barH);
-
-        panel(w - 300, h - 70, 284, 54);
-
-        if (boss != null) {
-            float bw = 600, bx = (w - bw) / 2f, by = h - 74;
-            float fill = introT >= 0 ? Math.min(1f, introT / 1.2f) : 1f;
-            panel(bx - 18, by - 14, bw + 36, 68);
-            shapes.setColor(0.1f, 0.08f, 0.12f, 1f);
-            shapes.rect(bx - 2, by - 2, bw + 4, 22);
-            shapes.setColor(1f, 0.95f, 0.85f, 0.8f);
-            shapes.rect(bx, by, bw * fill * bossTrail / boss.maxHp, 18);
-            Color c0 = boss.finalBoss ? new Color(0.45f, 0.12f, 0.6f, 1f) : new Color(0.6f, 0.2f, 0.1f, 1f);
-            Color c1 = boss.finalBoss ? new Color(0.75f, 0.35f, 0.95f, 1f) : new Color(0.95f, 0.45f, 0.2f, 1f);
-            shapes.rect(bx, by, bw * fill * bossShown / boss.maxHp, 18, c0, c1, c1, c0);
-            shapes.setColor(1f, 1f, 1f, 0.15f);
-            shapes.rect(bx, by + 12, bw * fill * bossShown / boss.maxHp, 3);
+        batch.draw(art.get("hero_down"), 30, h - 113, 53, 80);
+        text(fonts.small, "용사", 88, h - 40, Ui.GOLD);
+        String hp = Math.max(0, s.hp) + " / " + maxHp;
+        layout.setText(fonts.small, hp);
+        text(fonts.small, hp, 330 - layout.width, h - 40, Ui.TEXT);
+        rect(88, h - 67, 242, 9, new Color(0x40232aff));
+        rect(88, h - 67, 242 * MathUtils.clamp(trailHp / maxHp, 0, 1), 9, Ui.GOLD);
+        rect(88, h - 67, 242 * MathUtils.clamp(shownHp / maxHp, 0, 1), 9, new Color(0xd65958ff));
+        if (weapon != null) {
+            text(fonts.small, g.rules.weaponName(weapon), 88, h - 79, Ui.TEXT);
+            text(fonts.small, "공격력 " + g.rules.attack(s) + "  ·  흡수 " + s.imprints.size(), 88, h - 101, Ui.DIM);
         }
 
-        // 스킬 칸
-        float sy = 18, sx = w - 16 - (SLOTS - 1) * 90 - 76;
-        for (int i = 0; i < SLOTS; i++) panel(sx + i * 90, sy, 76, 76);
-        float[] cd = {g.hero.attackCd / g.balance.attack.basicCooldown,
-                g.hero.rollCd / (g.balance.attack.rollTime + g.balance.attack.rollCooldown)};
-        for (int i = 0; i < SLOTS; i++) {
-            if (cd[i] > 0) {
-                shapes.setColor(0, 0, 0, 0.6f);
-                shapes.rect(sx + i * 90 + 4, sy + 4, 68, 68 * Math.min(1, cd[i]));
-            }
-            if (readyFlash[i] > 0) {
-                float a = readyFlash[i] / 0.4f;
-                shapes.setColor(1f, 0.9f, 0.5f, 0.5f * a);
-                shapes.rect(sx + i * 90 - 3, sy - 3, 82, 82);
-            }
-        }
-        // 다음 할 일
-        String task = "다음 할 일: " + g.nextTask();
-        layout.setText(fonts.normal, task);
-        panel(16, 16, layout.width + 36, 46);
-        shapes.end();
-
-        // ── 그림과 글자
-        batch.begin();
-        batch.setColor(Color.WHITE);
-        BitmapFont f = fonts.normal;
-        String hpText = Math.max(0, s.hp) + " / " + maxHp;
-        layout.setText(fonts.small, hpText);
-        shadowed(fonts.small, hpText, barX + (barW - layout.width) / 2f, barY + (barH + layout.height) / 2f, Ui.TEXT);
-        Weapon wpn = s.equipped();
-        if (wpn != null) {
-            batch.draw(art.sword(wpn.defId, wpn.awakened), 32, h - 98, 40, 40);
-            if ("holy_sealed".equals(wpn.defId)) batch.draw(art.get("chain"), 36, h - 94, 32, 32);
-            f.setColor(wpn.awakened || "holy_awakened".equals(wpn.defId) ? Ui.GOLD : Ui.TEXT);
-            f.draw(batch, g.rules.weaponName(wpn), 80, h - 60);
-            fonts.small.setColor(Ui.DIM);
-            String extra = "공격력 " + g.rules.attack(s);
-            if (!s.imprints.isEmpty()) extra += "   흡수한 힘 " + s.imprints.size() + "개 (+" + (s.imprints.size() * 10) + "%)";
-            fonts.small.draw(batch, extra, 80, h - 84);
-        }
-        // 광물
-        float ox = w - 290;
-        for (OreType t : OreType.values()) {
-            batch.draw(art.gem(t), ox, h - 62, 36, 36);
-            f.setColor(Ui.TEXT);
-            f.draw(batch, String.valueOf(s.ore(t)), ox + 38, h - 34);
+        card(w - 320, h - 88, 296, 64);
+        float ox = w - 306;
+        for (OreType type : OreType.values()) {
+            batch.setColor(Color.WHITE);
+            batch.draw(art.gem(type), ox, h - 76, 40, 40);
+            text(fonts.small, String.valueOf(s.ore(type)), ox + 43, h - 49, Ui.TEXT);
             ox += 94;
         }
-        fonts.small.setColor(Ui.DIM);
-        layout.setText(fonts.small, "M  지도");
-        fonts.small.draw(batch, "M  지도", w - 16 - layout.width, h - 80);
-        // 보스 이름
-        if (boss != null) {
-            String name = boss.def.name;
-            layout.setText(fonts.normal, name);
-            shadowed(fonts.normal, name, (w - layout.width) / 2f, h - 24, boss.finalBoss ? Ui.PURPLE : Ui.ORANGE);
-            String hpv = boss.hp + " / " + boss.maxHp;
-            layout.setText(fonts.small, hpv);
-            shadowed(fonts.small, hpv, (w - layout.width) / 2f, h - 58, Ui.TEXT);
+        text(fonts.small, "I  가방     M  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
+
+        Room room = g.heroRoom();
+        String zone = room == null ? "연결 통로" : room.dungeonId == null ? "용사의 캠프"
+                : g.balance.dungeon(room.dungeonId).name;
+        if (boss == null) {
+            centered(fonts.small, banner == null ? zone : banner, w / 2, h - 35, Ui.GOLD);
+            centered(fonts.small, g.inCamp() ? "정비하고, 다음 여정을 준비하세요" : "탐험 중", w / 2, h - 59, Ui.DIM);
+        } else {
+            float bx = w / 2 - 210;
+            card(bx - 16, h - 100, 452, 76);
+            if (introT >= 0) rect(bx - 16, h - 25, 452 * Math.min(1, introT / 0.5f), 1, Ui.GOLD);
+            centered(fonts.normal, boss.def.name, w / 2, h - 38, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
+            rect(bx, h - 73, 420, 9, new Color(0x39232aff));
+            rect(bx, h - 73, 420 * MathUtils.clamp(bossTrail / boss.maxHp, 0, 1), 9, Ui.GOLD);
+            rect(bx, h - 73, 420 * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 9, boss.finalBoss ? Ui.PURPLE : Ui.RED);
+            centered(fonts.small, boss.hp + " / " + boss.maxHp, w / 2, h - 80, Ui.DIM);
         }
-        // 스킬 아이콘
-        String[] icons = {null, "icon_roll"};
+
+        card(24, 24, 624, 88);
+        rect(24, 24, 3, 88, Ui.GOLD);
+        text(fonts.small, "다음 여정", 42, 95, Ui.GOLD);
+        fonts.normal.setColor(Ui.TEXT);
+        fonts.normal.draw(batch, g.nextTask(), 42, 69, 586, com.badlogic.gdx.utils.Align.left, true);
+        text(fonts.small, "W A S D  이동    ·    E  상호작용", 24, 136, Ui.DIM);
+
+        float[] left = cooldowns();
         String[] keys = {"J", "Space"};
         String[] names = {"베기", "구르기"};
-        float[] left = cooldowns();
         for (int i = 0; i < SLOTS; i++) {
-            float x = sx + i * 90;
-            boolean ready = left[i] <= 0;
-            batch.setColor(ready ? Color.WHITE : new Color(0.5f, 0.5f, 0.55f, 1f));
-            if (icons[i] == null) {
-                if (wpn != null) batch.draw(art.sword(wpn.defId, wpn.awakened), x + 14, sy + 18, 48, 48);
-            } else {
-                batch.draw(art.get(icons[i]), x + 14, sy + 18, 48, 48);
-            }
+            float x = w - 252 + i * 120;
+            card(x, 24, 108, 88);
+            if (readyFlash[i] > 0) rect(x, 111, 108, 2, Ui.GOLD);
+            float total = i == 0 ? g.balance.attack.basicCooldown : g.balance.attack.rollTime + g.balance.attack.rollCooldown;
+            if (left[i] > 0) rect(x + 1, 25, 106, 86 * Math.min(1, left[i] / total), new Color(0, 0, 0, 0.5f));
             batch.setColor(Color.WHITE);
-            fonts.small.setColor(Ui.GOLD);
-            fonts.small.draw(batch, keys[i], x + 8, sy + 72);
-            fonts.small.setColor(Ui.DIM);
-            layout.setText(fonts.small, names[i]);
-            fonts.small.draw(batch, names[i], x + 38 - layout.width / 2f, sy + 18);
-            if (!ready && i > 0 && left[i] > 0.95f) {
-                String sec = String.valueOf((int) Math.ceil(left[i]));
-                layout.setText(fonts.large, sec);
-                shadowed(fonts.large, sec, x + 38 - layout.width / 2f, sy + 54, Color.WHITE);
-            }
+            if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
+            if (i == 1) batch.draw(art.get("hero_side_walk"), x + 48, 51, 34, 48);
+            text(fonts.small, keys[i], x + 10, 100, Ui.GOLD);
+            text(fonts.small, names[i], x + 12, 47, Ui.DIM);
+            if (i == 1 && left[i] > 0.1f) centered(fonts.small, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 71, 77, Ui.TEXT);
         }
-        // 다음 할 일
-        f.setColor(Ui.GOLD);
-        f.draw(batch, task, 34, 47);
-        // 알림
-        float ty = 150 + (toasts.size() - 1) * 46;
-        for (Toast t : toasts) {
-            float a = Math.min(1f, (3.2f - t.t) / 0.5f) * Math.min(1f, t.t / 0.15f);
-            float slide = (1f - Math.min(1f, t.t / 0.15f)) * 12f;
-            layout.setText(fonts.normal, t.text);
-            float bx = (w - layout.width) / 2f - 20, bw = layout.width + 40, bh = layout.height + 22;
-            batch.setColor(0.05f, 0.04f, 0.07f, 0.75f * a);
-            batch.draw(art.white(), bx, ty - layout.height - 11 + slide, bw, bh);
-            batch.setColor(Ui.GOLD.r, Ui.GOLD.g, Ui.GOLD.b, 0.6f * a);
-            batch.draw(art.white(), bx, ty - layout.height - 11 + slide, 3, bh);
-            batch.setColor(Color.WHITE);
-            fonts.normal.setColor(1, 1, 1, a);
-            fonts.normal.draw(batch, t.text, (w - layout.width) / 2f, ty + slide);
-            ty -= 46;
+        for (Toast toast : toasts) {
+            float alpha = Math.min(1, (3.2f - toast.t) / 0.5f);
+            layout.setText(fonts.small, toast.text);
+            float tw = Math.min(800, layout.width + 40);
+            card((w - tw) / 2, 162, tw, 44);
+            centered(fonts.small, toast.text, w / 2, 190, new Color(1, 1, 1, alpha));
         }
-        if (banner != null) {
-            float a = bannerT < 0.4f ? bannerT / 0.4f : Math.min(1f, (2.6f - bannerT) / 0.6f);
-            float rise = (1f - Math.min(1f, bannerT / 0.4f)) * 14f;
-            layout.setText(fonts.title, banner);
-            float bx = (w - layout.width) / 2f, by = h * 0.7f - rise;
-            batch.setColor(0, 0, 0, 0.35f * a);
-            batch.draw(art.glow, bx - 80, by - layout.height - 40, layout.width + 160, layout.height + 80);
-            batch.setColor(Color.WHITE);
-            fonts.title.setColor(0, 0, 0, 0.7f * a);
-            fonts.title.draw(batch, banner, bx + 3, by - 3);
-            fonts.title.setColor(1f, 0.85f, 0.4f, a);
-            fonts.title.draw(batch, banner, bx, by);
-            // 이름 아래 가는 금색 선이 양옆으로 퍼진다
-            float lw = (layout.width + 60) * Math.min(1f, bannerT / 0.6f);
-            batch.setColor(1f, 0.85f, 0.4f, 0.8f * a);
-            batch.draw(art.white(), w / 2f - lw / 2f, by - layout.height - 18, lw, 2);
-            batch.setColor(Color.WHITE);
-        }
+        batch.setColor(Color.WHITE);
         batch.end();
-
-        if (introT >= 0) drawBossIntro();
         if (mapAnim > 0.01f) drawMap();
-        f.setColor(Color.WHITE);
+        fonts.normal.setColor(Color.WHITE);
         fonts.small.setColor(Color.WHITE);
     }
 
-    private void drawBossIntro() {
-        float in = Math.min(1f, introT / 0.35f), out = Math.min(1f, Math.max(0f, (2.6f - introT) / 0.4f));
-        float k = Math.min(in, out);
-        float bar = 80 * k;
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(0, 0, 0, 0.92f);
-        shapes.rect(0, h - bar, w, bar);
-        shapes.rect(0, 0, w, bar);
-        shapes.end();
-        batch.begin();
-        float ta = Math.min(1f, Math.max(0f, (introT - 0.25f) / 0.35f)) * out;
-        String sub = introFinal ? "최종 보스" : "보스";
-        layout.setText(fonts.normal, sub);
-        float slide = (1f - Math.min(1f, Math.max(0f, (introT - 0.25f) / 0.35f))) * 40f;
-        fonts.normal.setColor(0.9f, 0.3f, 0.25f, ta);
-        fonts.normal.draw(batch, sub, (w - layout.width) / 2f, h * 0.5f + 70);
-        layout.setText(fonts.title, introName);
-        batch.setColor(0, 0, 0, 0.5f * ta);
-        batch.draw(art.glow, (w - layout.width) / 2f - 100, h * 0.5f - 40, layout.width + 200, 120);
-        batch.setColor(Color.WHITE);
-        fonts.title.setColor(0, 0, 0, ta);
-        fonts.title.draw(batch, introName, (w - layout.width) / 2f + 3 - slide, h * 0.5f + 37);
-        Color c = introFinal ? Ui.PURPLE : Ui.ORANGE;
-        fonts.title.setColor(c.r, c.g, c.b, ta);
-        fonts.title.draw(batch, introName, (w - layout.width) / 2f - slide, h * 0.5f + 40);
-        batch.end();
+    private void rect(float x, float y, float width, float height, Color color) {
+        batch.setColor(color);
+        batch.draw(art.white(), x, y, width, height);
     }
+
+    private void card(float x, float y, float width, float height) {
+        rect(x, y, width, height, new Color(0x101820ed));
+        rect(x, y + height - 1, width, 1, new Color(0x806c4bca));
+        rect(x, y, width, 1, new Color(0x39454fca));
+    }
+
+    private void text(BitmapFont font, String value, float x, float y, Color color) {
+        font.setColor(color);
+        batch.setColor(Color.WHITE);
+        font.draw(batch, value, x, y);
+    }
+
+    private void centered(BitmapFont font, String value, float x, float y, Color color) {
+        layout.setText(font, value);
+        text(font, value, x - layout.width / 2, y, color);
+    }
+
 
     /** 전체 화면 검은 막 (화면 전환용). */
     public void renderFade(float alpha) {
@@ -404,21 +298,6 @@ public class Hud {
         font.draw(batch, text, x, y);
     }
 
-    private void panel(float x, float y, float pw, float ph) {
-        shapes.setColor(0.07f, 0.06f, 0.09f, 0.82f);
-        shapes.rect(x, y, pw, ph);
-        shapes.setColor(0.55f, 0.46f, 0.27f, 0.9f);
-        shapes.rect(x, y, pw, 2);
-        shapes.rect(x, y + ph - 2, pw, 2);
-        shapes.rect(x, y, 2, ph);
-        shapes.rect(x + pw - 2, y, 2, ph);
-        // 모서리 장식
-        shapes.setColor(0.85f, 0.7f, 0.38f, 1f);
-        shapes.rect(x - 1, y - 1, 5, 5);
-        shapes.rect(x + pw - 4, y - 1, 5, 5);
-        shapes.rect(x - 1, y + ph - 4, 5, 5);
-        shapes.rect(x + pw - 4, y + ph - 4, 5, 5);
-    }
 
     // ───────────────────────── 지도 (M)
 

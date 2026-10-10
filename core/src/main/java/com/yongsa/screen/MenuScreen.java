@@ -67,6 +67,18 @@ public abstract class MenuScreen extends ScreenAdapter {
     protected void drawBackground(SpriteBatch b) {
         Art art = game.art;
         float W = YongsaGame.WIDTH, H = YongsaGame.HEIGHT;
+        if (art.hasHd("title_background")) {
+            b.setColor(Color.WHITE);
+            b.draw(art.get("title_background"), 0, 0, W, H);
+            // Fine strips produce a smooth readable scrim without another bitmap.
+            for (int x = 0; x < W; x += 4) {
+                float a = 0.86f * (1f - MathUtils.clamp((x - 270f) / 720f, 0, 1));
+                b.setColor(0.025f, 0.035f, 0.045f, a);
+                b.draw(art.white(), x, 0, 4, H);
+            }
+            b.setColor(Color.WHITE);
+            return;
+        }
         float cx = W / 2f, cy = 96;
         float flick = 1f + 0.05f * MathUtils.sin(time * 9f) + 0.03f * MathUtils.sin(time * 23f);
         // 캠프 바닥. 밝기는 아래에서 빛 지도를 곱해 정한다.

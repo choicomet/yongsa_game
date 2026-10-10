@@ -18,10 +18,10 @@ public class Fonts implements Disposable {
 
     public Fonts() {
         generator = new FreeTypeFontGenerator(Gdx.files.internal("fonts/NanumSquareRoundB.ttf"));
-        small = make(16, 1);
-        normal = make(20, 1);
-        large = make(28, 2);
-        title = make(48, 3);
+        small = make(16, 0);
+        normal = make(20, 0);
+        large = make(28, 0);
+        title = make(48, 1);
     }
 
     private BitmapFont make(int size, int border) {

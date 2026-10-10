@@ -90,6 +90,21 @@ public class Nav {
             boolean f = i == focus;
             String style = e.danger ? (f ? "dangerFocused" : "danger") : (f ? "focused" : "default");
             e.button.setStyle(skin.get(style, TextButton.TextButtonStyle.class));
+            if (f) keepVisible(e.button);
+        }
+    }
+
+    /** Keyboard focus remains visible in inventory and equipment scroll lists. */
+    private void keepVisible(TextButton button) {
+        com.badlogic.gdx.scenes.scene2d.Actor parent = button.getParent();
+        while (parent != null) {
+            if (parent instanceof com.badlogic.gdx.scenes.scene2d.ui.ScrollPane scroll) {
+                scroll.validate();
+                com.badlogic.gdx.math.Vector2 p = button.localToAscendantCoordinates(scroll.getActor(), new com.badlogic.gdx.math.Vector2());
+                scroll.scrollTo(p.x, p.y, button.getWidth(), button.getHeight());
+                scroll.updateVisualScroll();
+            }
+            parent = parent.getParent();
         }
     }
 

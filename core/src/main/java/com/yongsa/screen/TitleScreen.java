@@ -35,17 +35,20 @@ public class TitleScreen extends MenuScreen {
         @Override
         public void build() {
             Table col = new Table();
-            col.add(label("용사가 다한다", "title", Ui.GOLD)).padBottom(6).row();
-            col.add(label("던전 한가운데 캠프에서, 용사가 다 한다", "default", Ui.DIM)).padBottom(40).row();
+            col.defaults().left();
+            col.add(label("THE HERO DOES IT ALL", "small", Ui.GOLD)).padBottom(18).row();
+            col.add(label("용사가 다한다", "title", Ui.TEXT)).padBottom(18).row();
+            col.add(label("검을 벼리고, 던전을 넘어, 봉인을 깨워라.", "small", Ui.DIM)).padBottom(38).row();
             boolean hasSave = game.saves.hasSave();
             TextButton cont = nav.add("이어하기", TitleScreen.this::continueGame);
             cont.setDisabled(!hasSave);
-            col.add(cont).width(320).height(54).padBottom(10).row();
-            col.add(nav.add("새 게임", TitleScreen.this::newGame)).width(320).height(54).padBottom(10).row();
-            col.add(nav.add("설정", () -> modals.push(new SettingsWindow(game)))).width(320).height(54).padBottom(10).row();
-            col.add(nav.add("조작 키", () -> modals.push(new ControlsWindow(game.skin)))).width(320).height(54).padBottom(10).row();
-            col.add(nav.add("종료", () -> Gdx.app.exit())).width(320).height(54).row();
-            add(col).expand().center().padBottom(80);
+            col.add(cont).width(310).height(52).padBottom(8).row();
+            col.add(nav.add("새 게임", TitleScreen.this::newGame)).width(310).height(52).padBottom(8).row();
+            col.add(nav.add("설정", () -> modals.push(new SettingsWindow(game)))).width(310).height(46).padBottom(8).row();
+            col.add(nav.add("조작 키", () -> modals.push(new ControlsWindow(game.skin)))).width(310).height(46).padBottom(8).row();
+            col.add(nav.add("종료", () -> Gdx.app.exit())).width(310).height(46).row();
+            col.add(label("방향키로 이동  ·  Enter 선택", "small", Ui.DIM)).padTop(24).row();
+            add(col).expand().left().padLeft(80).padBottom(12);
             nav.setFocusIndex(hasSave ? 0 : 1);
         }
     }

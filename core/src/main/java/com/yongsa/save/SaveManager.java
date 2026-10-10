@@ -36,6 +36,8 @@ public class SaveManager {
     }
 
     public static SaveManager inUserHome() {
+        String isolated = System.getProperty("yongsa.saveDir");
+        if (isolated != null && !isolated.isBlank()) return new SaveManager(Paths.get(isolated));
         return new SaveManager(Paths.get(System.getProperty("user.home"), ".yongsa_game"));
     }
 

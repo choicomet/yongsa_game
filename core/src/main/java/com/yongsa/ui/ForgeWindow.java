@@ -88,7 +88,8 @@ public class ForgeWindow extends Modal {
         tabButton(head, "제작", Tab.CRAFT);
         tabButton(head, "강화", Tab.ENHANCE);
         tabButton(head, "분해", Tab.DISMANTLE);
-        p.add(head).left().padBottom(16).row();
+        head.add(label("불꽃에서 깨어나는 힘", "small", Ui.DIM)).padLeft(24);
+        p.add(head).left().padBottom(24).row();
 
         Table body = new Table();
         switch (tab) {
@@ -127,26 +128,30 @@ public class ForgeWindow extends Modal {
 
     private void buildCraft(Table body) {
         GameState s = g.state;
-        body.top();
-        body.add(label("그 던전의 광물로 그 던전의 무기를 만든다. 만든 무기가 더 세면 바로 장착한다.", "small", Ui.DIM))
-                .colspan(4).left().padBottom(14).row();
+        body.top().left();
+        body.add(label("광물에 깃든 힘을 검으로 벼리세요.", "default", Ui.TEXT)).colspan(3).left().padBottom(8).row();
+        body.add(label("더 강한 무기는 제작 즉시 장착됩니다.  +10에 도달하면 각성합니다.", "small", Ui.DIM))
+                .colspan(3).left().padBottom(22).row();
         for (WeaponDef d : g.balance.weapons) {
             if (!d.enhanceable) continue;
             OreType ore = OreType.valueOf(d.ore);
-            String dungeon = dungeonOf(d.ore);
-            body.add(new Image(art.sword(d.id, false))).size(56).padRight(12);
-            Table info = new Table();
-            info.add(label(d.name + "  (" + dungeon + ")", "default", Ui.TEXT)).left().row();
-            info.add(label("기본 공격력 " + d.baseAttack + "  ·  강화 1단계당 +" + d.perLevel, "small", Ui.DIM)).left().row();
-            body.add(info).width(380).left();
+            Table card = new Table(skin);
+            card.setBackground(skin.getDrawable("panelDark"));
+            card.pad(18);
+            card.add(label(dungeonOf(d.ore), "small", Ui.GOLD)).left().row();
+            card.add(Ui.artImage(art.sword(d.id, false))).size(160).pad(8).row();
+            card.add(label(d.name, "large", Ui.TEXT)).left().padBottom(8).row();
+            card.add(label("공격력 " + d.baseAttack + "  ·  강화마다 +" + d.perLevel, "small", Ui.DIM)).left().padBottom(16).row();
             boolean enough = s.ore(ore) >= d.craftCost;
-            body.add(label(ore.displayName + " " + d.craftCost + "개 (보유 " + s.ore(ore) + ")", "default",
-                    enough ? Ui.TEXT : Ui.ORANGE)).width(260).left();
-            TextButton b = nav.add("제작", () -> craft(d));
-            b.setDisabled(!enough);
-            body.add(b).width(120).height(46).padBottom(12).row();
+            card.add(label(ore.displayName + "  " + s.ore(ore) + " / " + d.craftCost,
+                    "default", enough ? Ui.TEXT : Ui.ORANGE)).left().padBottom(14).row();
+            TextButton button = nav.add("제작하기", () -> craft(d));
+            button.setDisabled(g.forge.craftBlockReason(s, d) != null);
+            card.add(button).growX().height(46);
+            body.add(card).width(288).height(380).padRight(12).top();
         }
-        if (resultText != null) body.add(label(resultText, "default", resultColor)).colspan(4).padTop(14).row();
+        body.row();
+        if (resultText != null) body.add(label(resultText, "default", resultColor)).colspan(3).left().padTop(14);
     }
 
     private String dungeonOf(String ore) {
@@ -176,9 +181,12 @@ public class ForgeWindow extends Modal {
         WeaponDef d = g.balance.weapon(w.defId);
         EnhanceService es = g.enhance;
 
-        Table left = new Table();
-        Image pic = new Image(art.sword(w.defId, w.awakened));
-        left.add(pic).size(150).padBottom(8).row();
+        Table left = new Table(skin);
+        left.setBackground(skin.getDrawable("panelDark"));
+        left.pad(20);
+        left.add(label("장착 중인 무기", "small", Ui.DIM)).padBottom(10).row();
+        Image pic = Ui.artImage(art.sword(w.defId, w.awakened));
+        left.add(pic).size(208).padBottom(18).row();
         Label name = label(g.rules.weaponName(w), "large", w.awakened || "holy_awakened".equals(w.defId) ? Ui.GOLD : Ui.TEXT);
         left.add(name).padBottom(4).row();
         left.add(label("공격력 " + g.rules.attack(s, w), "default", Ui.TEXT)).padBottom(10).row();
@@ -198,7 +206,7 @@ public class ForgeWindow extends Modal {
             hammerLabel = label("탕!", "title", Ui.GOLD);
             left.add(hammerLabel).padTop(10).row();
         } else if (awakenT > 0) {
-            left.add(label(d.awakenedName + "(으)로 각성했다!", "large", Ui.GOLD)).padTop(10).row();
+            left.add(wrapped(d.awakenedName + "(으)로 각성했다!", "default", Ui.GOLD)).width(280).padTop(10).row();
         }
         body.add(left).width(320).top().padRight(20);
 
@@ -213,8 +221,8 @@ public class ForgeWindow extends Modal {
             msg.setWrap(true);
             right.add(msg).width(520).left().padBottom(16).row();
         } else if (es.isMax(w)) {
-            right.add(label("최대 단계(+" + g.balance.enhance.maxLevel + ")에 닿아 각성했다. 더 강화하지 않는다.", "default", Ui.GOLD))
-                    .left().padBottom(14).row();
+            right.add(wrapped("최대 단계(+" + g.balance.enhance.maxLevel + ")에 닿아 각성했다. 더 강화하지 않는다.", "default", Ui.GOLD))
+                    .width(520).left().padBottom(14).row();
             String reason = g.absorb.weaponAbsorbBlockReason(s, w);
             Label hint = label("각성한 무기의 힘을 용사에게 흡수시키면 무기는 사라지지만, " + d.abilityName
                     + "과 모든 무기 공격력 +10%가 용사에게 남는다.", "small", Ui.DIM);
@@ -251,7 +259,7 @@ public class ForgeWindow extends Modal {
             b.setDisabled(!enough || hammerT > 0);
             right.add(b).width(300).height(52).left().padBottom(10).row();
         }
-        if (resultText != null) right.add(label(resultText, "large", resultColor)).left().padBottom(8).row();
+        if (resultText != null) right.add(wrapped(resultText, "default", resultColor)).width(520).left().padBottom(8).row();
 
         // 다른 무기 장착 (장착한 무기만 강화한다)
         if (s.weapons.size() > 1) {
@@ -265,7 +273,9 @@ public class ForgeWindow extends Modal {
                     rebuild();
                 })).height(40).padRight(6);
             }
-            right.add(swap).left().padBottom(8).row();
+            com.badlogic.gdx.scenes.scene2d.ui.ScrollPane scroll = new com.badlogic.gdx.scenes.scene2d.ui.ScrollPane(swap);
+            scroll.setScrollingDisabled(false, true);
+            right.add(scroll).width(520).height(48).left().padBottom(8).row();
         }
         if (!s.enhanceLog.isEmpty()) {
             right.add(label("최근 기록", "small", Ui.DIM)).left().row();
@@ -288,6 +298,12 @@ public class ForgeWindow extends Modal {
                 new ConfirmDialog.Line("파괴되면 무기가 사라지고 " + ore.displayName + " " + es.destroyRefund(w) + "개만 돌려받습니다.", Ui.DIM),
         };
         screen.modals.push(new ConfirmDialog(skin, "파괴될 수 있습니다", lines, "그래도 강화", true, () -> doEnhance(w)));
+    }
+
+    private Label wrapped(String text, String style, Color color) {
+        Label value = label(text, style, color);
+        value.setWrap(true);
+        return value;
     }
 
     private void doEnhance(Weapon w) {

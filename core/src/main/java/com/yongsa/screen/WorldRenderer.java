@@ -176,8 +176,8 @@ public class WorldRenderer implements Disposable {
                 Corpse c = new Corpse();
                 c.region = art.get(e.sprite);
                 float scale = S * e.size;
-                c.w = c.region.getRegionWidth() * scale;
-                c.h = c.region.getRegionHeight() * scale;
+                c.w = art.width(c.region) * scale;
+                c.h = art.height(c.region) * scale;
                 c.x = e.x;
                 c.y = e.y;
                 c.flip = e.flip;
@@ -315,8 +315,8 @@ public class WorldRenderer implements Disposable {
                 ghostT = 0.06f;
                 Ghost gh = new Ghost();
                 gh.region = heroRegion(h);
-                gh.w = gh.region.getRegionWidth() * S;
-                gh.h = gh.region.getRegionHeight() * S;
+                gh.w = art.width(gh.region) * S;
+                gh.h = art.height(gh.region) * S;
                 gh.x = h.x;
                 gh.y = h.y;
                 gh.flip = h.facing == Facing.LEFT;
@@ -662,17 +662,17 @@ public class WorldRenderer implements Disposable {
             case FORGE: {
                 TextureRegion r = art.get("forge");
                 drawShadow(px + 28, py + 2, 64);
-                batch.draw(r, px - 8, py - 6, r.getRegionWidth() * S, r.getRegionHeight() * S);
+                batch.draw(r, px - 8, py - 6, art.width(r) * S, art.height(r) * S);
                 break;
             }
             case BED: {
                 TextureRegion r = art.get("bed");
-                batch.draw(r, px - 4, py - 22, r.getRegionWidth() * S, r.getRegionHeight() * S);
+                batch.draw(r, px - 4, py - 22, art.width(r) * S, art.height(r) * S);
                 break;
             }
             default: {
                 TextureRegion r = art.get(((int) (time * 6)) % 2 == 0 ? "campfire" : "campfire2");
-                batch.draw(r, px, py - 4, r.getRegionWidth() * S, r.getRegionHeight() * S);
+                batch.draw(r, px, py - 4, art.width(r) * S, art.height(r) * S);
             }
         }
     }
@@ -713,7 +713,7 @@ public class WorldRenderer implements Disposable {
         boolean walk = h.moving && ((int) (h.walkTime * 8)) % 2 == 1;
         boolean flip = h.facing == Facing.LEFT;
         TextureRegion r = heroRegion(h);
-        float w = r.getRegionWidth() * S, hgt = r.getRegionHeight() * S;
+        float w = art.width(r) * S, hgt = art.height(r) * S;
         boolean swordBehind = h.facing == Facing.UP;
         if (swordBehind) drawSword(h, alpha);
         batch.setColor(1f, 1f, 1f, alpha);
@@ -738,7 +738,7 @@ public class WorldRenderer implements Disposable {
     private void drawRoll(HeroActor h) {
         float p = 1f - h.rollT / h.rollTotal;
         TextureRegion r = art.get(h.facing == Facing.UP ? "hero_up" : h.facing == Facing.DOWN ? "hero_down" : "hero_side");
-        float w = r.getRegionWidth() * S, hgt = r.getRegionHeight() * S;
+        float w = art.width(r) * S, hgt = art.height(r) * S;
         float dir = h.rollX < -0.1f ? 1f : -1f;
         float angle = dir * 360f * p;
         float squash = 0.8f + 0.2f * Math.abs(MathUtils.cos(p * MathUtils.PI));
@@ -778,7 +778,7 @@ public class WorldRenderer implements Disposable {
         batch.setColor(1f, 1f, 1f, alpha);
         // 그림 속 칼날은 45도로 누워 있으므로 그만큼 빼고 돌린다. 손잡이(왼쪽 아래)를 회전 중심으로.
         batch.draw(r, hx - 6, hy - 6, 6, 6, 32, 32, scale, scale, angle - 45);
-        if ("holy_sealed".equals(w.defId) && h.swingT <= 0) {
+        if ("holy_sealed".equals(w.defId) && !art.hasHd("sword_holy") && h.swingT <= 0) {
             batch.setColor(1f, 1f, 1f, alpha * 0.8f);
             batch.draw(art.get("chain"), hx - 4, hy, 4, 4, 18, 18, 1f, 1f, angle - 45);
         }
@@ -789,7 +789,7 @@ public class WorldRenderer implements Disposable {
         float scale = S * (m.finalBoss ? 2.0f : m.boss ? 1.7f : 1f);
         float age = ages.containsKey(m) ? ages.get(m) : 1f;
         float appear = Math.min(1f, age / 0.35f);
-        float w = r.getRegionWidth() * scale, hgt = r.getRegionHeight() * scale;
+        float w = art.width(r) * scale, hgt = art.height(r) * scale;
         drawShadow(m.x, m.y, w * 0.8f * appear);
         float bob = m.state == Monster.State.CHASE ? Math.abs(MathUtils.sin(m.walkTime * 9f)) * 3f : 0;
         if ("bat".equals(m.def.sprite)) bob = 6 + MathUtils.sin(time * 8f + m.x) * 4f;

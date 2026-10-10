@@ -17,8 +17,8 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * 게임의 모든 그림. 그림 파일 없이 data/sprites.txt 의 픽셀 그림과
- * 코드로 그린 바닥·벽 타일을 한 장의 아틀라스로 묶는다. 화면에는 2배로 그린다.
+ * data/hd-art.json 의 고해상도 아트와 기존 픽셀 아틀라스를 함께 관리한다.
+ * 원본 이미지 픽셀 수와 월드 크기는 별개이며, 렌더러는 width/height를 사용한다.
  */
 public class Art implements Disposable {
     public static final int SCALE = 2;
@@ -27,6 +27,7 @@ public class Art implements Disposable {
     private final Map<Character, Integer> palette = new HashMap<>();
     private final Map<String, String[]> sources = new LinkedHashMap<>();
     private final TextureAtlas atlas;
+    private final HdArt hd;
     private final Map<String, TextureRegion> cache = new HashMap<>();
     /** 부드러운 빛 원 (입자, 불빛, 포탈). */
     public final Texture glow;
@@ -80,6 +81,7 @@ public class Art implements Disposable {
 
         atlas = packer.generateTextureAtlas(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest, false);
         packer.dispose();
+        hd = new HdArt();
         glow = Lighting.radial(128);
         vignette = vignetteTexture();
     }
@@ -223,12 +225,13 @@ public class Art implements Disposable {
     /**
      * assets/sprites/이름.png 가 있으면 코드·sprites.txt 로 만든 그림 대신 그 파일을 쓴다.
      * 디자인을 바꿀 때 코드를 고치지 않고 그림 파일만 넣으면 되게 하려는 것이다.
-     * 화면에는 그림 1픽셀을 2배로 그리므로 원래 그림과 같은 크기로 만들어야 크기가 맞는다.
+     * 이 경로는 기존 저해상도 오버라이드용이다. 새 고해상도 그림은 hd-art.json에 등록한다.
      */
     private void put(PixmapPacker packer, String name, Pixmap generated) {
         FileHandle f = Gdx.files.internal("sprites/" + name + ".png");
         if (!f.exists()) {
             packer.pack(name, generated);
+            generated.dispose();
             return;
         }
         Pixmap custom = new Pixmap(f);
@@ -238,6 +241,8 @@ public class Art implements Disposable {
         }
         packer.pack(name, custom);
         overridden.add(name);
+        custom.dispose();
+        generated.dispose();
     }
 
     private void parse(String text) {
@@ -292,10 +297,13 @@ public class Art implements Disposable {
     }
 
     private Pixmap shadow() {
-        Pixmap p = new Pixmap(16, 6, Pixmap.Format.RGBA8888);
-        p.setColor(0, 0, 0, 0.35f);
-        p.fillRectangle(3, 0, 10, 6);
-        p.fillRectangle(1, 1, 14, 4);
+        Pixmap p = new Pixmap(96, 48, Pixmap.Format.RGBA8888);
+        p.setBlending(Pixmap.Blending.None);
+        for (int y = 0; y < 48; y++) for (int x = 0; x < 96; x++) {
+            float dx = (x - 47.5f) / 48, dy = (y - 23.5f) / 24;
+            float alpha = 0.42f * (float)Math.pow(Math.max(0, 1 - dx * dx - dy * dy), 2);
+            p.drawPixel(x, y, Color.rgba8888(0, 0, 0, alpha));
+        }
         return p;
     }
 
@@ -374,6 +382,8 @@ public class Art implements Disposable {
     }
 
     public TextureRegion get(String name) {
+        TextureRegion highResolution = hd.get(name);
+        if (highResolution != null) return highResolution;
         TextureRegion r = cache.get(name);
         if (r == null) {
             r = atlas.findRegion(name);
@@ -406,6 +416,7 @@ public class Art implements Disposable {
 
     /** 이 바닥 칸에 얹을 장식 (없으면 null). 칸 위치로 정해져서 매번 같은 자리에 나온다. */
     public TextureRegion decal(String theme, int x, int y) {
+        if (hd.contains("floor_" + theme + "_hd0")) return null;
         int h = (x * 73856093) ^ (y * 19349663);
         h = Math.floorMod(h, 100);
         if (h >= 9) return null;
@@ -413,14 +424,21 @@ public class Art implements Disposable {
     }
 
     public TextureRegion floor(String theme, int x, int y) {
+        if (hd.contains("floor_" + theme + "_hd0"))
+            return get("floor_" + theme + "_hd" + (Math.floorMod(y, 4) * 4 + Math.floorMod(x, 4)));
         int v = Math.floorMod(x * 7 + y * 13 + (x * y) % 5, 9);
         return get("floor_" + theme + "_v" + (v < 6 ? 0 : v - 5));
     }
 
     @Override
     public void dispose() {
+        hd.dispose();
         atlas.dispose();
         glow.dispose();
         vignette.dispose();
     }
+
+    public float width(TextureRegion region) { return hd.width(region); }
+    public float height(TextureRegion region) { return hd.height(region); }
+    public boolean hasHd(String name) { return hd.contains(name); }
 }
