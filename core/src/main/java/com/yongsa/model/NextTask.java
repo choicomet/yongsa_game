@@ -14,8 +14,8 @@ public final class NextTask {
 
     public static String describe(GameState s, Balance b, boolean leftDungeonVisited) {
         if (s.finalBossDefeated) return "자유롭게 던전을 돌며 무기를 키워 보세요";
-        if (s.unsealed) return "깨어난 성검을 들고 위쪽 던전 끝의 최종 보스를 쓰러뜨리기";
-        if (new AbsorbService(b).canUnseal(s)) return "캠프로 돌아가 성검의 봉인 풀기";
+        if (s.unsealed) return "캠프의 문양에서 심연으로 내려가 마왕 쓰러뜨리기";
+        if (new AbsorbService(b).canUnseal(s)) return "캠프 바닥의 문양에서 성검의 봉인 풀기";
 
         Rules rules = new Rules(b);
         for (DungeonDef d : b.dungeons) {

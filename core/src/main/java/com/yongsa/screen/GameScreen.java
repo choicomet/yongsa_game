@@ -51,6 +51,8 @@ public class GameScreen extends ScreenAdapter {
     private float trauma, hitStop, shakeTime;
     private float fade = 1f, fadeTarget = 0f;
     private boolean warping;
+    /** 화면 전환이 포탈(캠프로)이 아니라 문양에서 심연으로 떨어지는 것. */
+    private boolean falling;
     /** 기본 배율(100%): 한 칸의 그림 픽셀이 화면 3픽셀이 되도록 맵을 1.5배로 확대해서 본다. */
     public static final float ZOOM = 2f / 3f;
     /** 휠 / +,- 로 고르는 확대 단계 (기본 배율 대비 %). 일반 구간과 보스방이 따로 기억된다.
@@ -219,9 +221,16 @@ public class GameScreen extends ScreenAdapter {
         if (fade < fadeTarget) fade = Math.min(fadeTarget, fade + delta * speed);
         else if (fade > fadeTarget) fade = Math.max(fadeTarget, fade - delta * speed);
         if (warping && fade >= 1f) {
-            session.warpToCamp();
+            if (falling) {
+                session.dropToAbyss();
+                hud.banner("심연 · 마왕의 옥좌");
+                shake(0.8f);
+                falling = false;
+            } else {
+                session.warpToCamp();
+                hud.banner("용사의 캠프");
+            }
             follow.snap();
-            hud.banner("용사의 캠프");
             warping = false;
             fadeTarget = 0f;
         }
@@ -287,6 +296,22 @@ public class GameScreen extends ScreenAdapter {
                     warping = true;
                     fadeTarget = 1f;
                     break;
+                case FALL:
+                    startFall();
+                    break;
+                case BOSS_SPEECH: {
+                    // 말풍선이 화면 밖이면 자막으로도 보여 준다
+                    float hw = worldCam.viewportWidth * worldCam.zoom / 2f, hh = worldCam.viewportHeight * worldCam.zoom / 2f;
+                    if (Math.abs(e.x - worldCam.position.x) > hw - 40 || Math.abs(e.y - worldCam.position.y) > hh - 60) {
+                        hud.toast("마왕: “" + e.text + "”");
+                    }
+                    break;
+                }
+                case BOSS_PHASE2:
+                    shake(0.9f);
+                    stop(0.25f);
+                    hud.banner(e.text + " · 진정한 모습");
+                    break;
                 case TOAST:
                     hud.toast(e.text);
                     break;
@@ -317,10 +342,11 @@ public class GameScreen extends ScreenAdapter {
                 case HERO_DIED:
                     game.sfx.play("death");
                     follow.snap();
-                    modals.push(new MessageWindow(game.skin, "쓰러졌다…", Ui.RED, new ConfirmDialog.Line[]{
-                            new ConfirmDialog.Line("캠프로 돌아갑니다.", null),
-                            new ConfirmDialog.Line("무기와 광물은 그대로다. 싸우던 방만 처음 상태로 돌아간다.", Ui.DIM)
-                    }, "확인"));
+                    java.util.List<ConfirmDialog.Line> lines = new java.util.ArrayList<>();
+                    if (e.text != null) lines.add(new ConfirmDialog.Line("마왕: “" + e.text + "”", Ui.PURPLE));
+                    lines.add(new ConfirmDialog.Line("캠프로 돌아갑니다.", null));
+                    lines.add(new ConfirmDialog.Line("무기와 광물은 그대로다. 싸우던 방만 처음 상태로 돌아간다.", Ui.DIM));
+                    modals.push(new MessageWindow(game.skin, "쓰러졌다…", Ui.RED, lines.toArray(new ConfirmDialog.Line[0]), "확인"));
                     break;
                 case UNSEAL_READY:
                     modals.push(new UnsealScene(this));
@@ -356,6 +382,16 @@ public class GameScreen extends ScreenAdapter {
             return "다음에 만들 무기: " + w.name + " (" + com.yongsa.model.OreType.valueOf(d.ore).displayName + " " + w.craftCost + "개)";
         }
         return "이제 캠프로 돌아가면 성검의 봉인을 풀 수 있다";
+    }
+
+    /** 문양이 갈라져 심연으로 떨어진다: 화면이 어두워진 뒤 마왕의 방으로 옮긴다. */
+    public void startFall() {
+        if (warping) return;
+        falling = true;
+        warping = true;
+        fadeTarget = 1f;
+        shake(0.7f);
+        game.sfx.play("slam");
     }
 
     /** 개발용 메뉴 (F1): 보스 부활, 광물 무한, 무적. */

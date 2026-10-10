@@ -16,6 +16,8 @@ public class HeroActor extends Actor {
     public int swingKind;
     public float swingT;
     public float mineSwingT;
+    /** 둔화 남은 시간 (피웅덩이). */
+    public float slowT;
 
     public HeroActor() {
         hw = 9;

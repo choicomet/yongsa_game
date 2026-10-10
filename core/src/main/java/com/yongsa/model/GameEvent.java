@@ -19,11 +19,21 @@ public class GameEvent {
         /** 보스 체력이 절반 아래로 내려가 2페이즈가 됨 (text = 보스 이름). */
         BOSS_ENRAGED,
         /** 마족병이 순간이동한 자리. */
-        BLINK_FX
+        BLINK_FX,
+        /** 보스 방패가 생김 / 깨짐 (size = 크기). */
+        SHIELD_UP, SHIELD_BREAK,
+        /** 바닥 공격이 터짐 (text = 모양 rock·bolt·tentacle·spear, 창은 dirX·dirY 가 끝점). */
+        HAZARD_FX,
+        /** 마왕이 쓰러졌다가 2페이즈로 변신을 시작함. */
+        BOSS_PHASE2,
+        /** 보스 대사 (text). x, y 는 말풍선 자리. */
+        BOSS_SPEECH,
+        /** 캠프 문양에서 심연으로 떨어짐. 화면이 어두워진 뒤 GameSession.dropToAbyss 를 부른다. */
+        FALL
     }
 
     /** 떠오르는 글자 색 구분. */
-    public enum Tone { HERO_HIT, MONSTER_HIT, INFO, ORE, HEAL, BLOCKED }
+    public enum Tone { HERO_HIT, MONSTER_HIT, INFO, ORE, HEAL, BLOCKED, SHIELD }
 
     public final Type type;
     public String text;

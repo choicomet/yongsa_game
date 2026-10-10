@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.Disposable;
 import com.yongsa.YongsaGame;
 import com.yongsa.combat.Facing;
+import com.yongsa.combat.Hazard;
 import com.yongsa.combat.HeroActor;
 import com.yongsa.combat.Monster;
 import com.yongsa.combat.Projectile;
@@ -81,6 +82,14 @@ public class WorldRenderer implements Disposable {
         Color color;
         boolean big;
     }
+
+    /** 보스 말풍선. */
+    private static class Speech {
+        float x, y, t;
+        String text;
+    }
+
+    private final List<Speech> speeches = new ArrayList<>();
 
     private static class Corpse {
         TextureRegion region;
@@ -221,6 +230,36 @@ public class WorldRenderer implements Disposable {
                 particles.smoke(e.x, e.y - 8, 5, new Color(0.3f, 0.15f, 0.4f, 0.6f), 14, 12, 0.5f);
                 flash(e.x, e.y, 90, new Color(0.7f, 0.35f, 1f, 1f), 0.2f);
                 break;
+            case SHIELD_UP:
+                ring(e.x, e.y - 10, e.size * 1.4f, e.size * 0.6f, 0.5f, SHIELD_COLOR);
+                particles.burst(e.x, e.y, 24, SHIELD_COLOR, 160, 0.6f, 3, true);
+                flash(e.x, e.y, e.size * 2.5f, SHIELD_COLOR, 0.4f);
+                break;
+            case SHIELD_BREAK:
+                ring(e.x, e.y - 10, e.size * 0.5f, e.size * 2.2f, 0.6f, SHIELD_COLOR);
+                particles.debris(e.x, e.y, 26, SHIELD_COLOR, 300, 5);
+                particles.burst(e.x, e.y, 30, Color.WHITE, 260, 0.5f, 3, true);
+                flash(e.x, e.y, e.size * 3f, SHIELD_COLOR, 0.5f);
+                break;
+            case HAZARD_FX:
+                hazardFx(e);
+                break;
+            case BOSS_PHASE2:
+                ring(e.x, e.y - 20, 20, 420, 1.2f, PROJ_DARK);
+                ring(e.x, e.y - 20, 10, 260, 0.9f, new Color(1f, 0.3f, 0.6f, 1f));
+                particles.burst(e.x, e.y, 70, PROJ_DARK, 380, 0.9f, 3, true);
+                particles.smoke(e.x, e.y, 30, new Color(0.25f, 0.08f, 0.35f, 0.75f), 80, 28, 1.6f);
+                flash(e.x, e.y, 520, PROJ_DARK, 1.0f);
+                break;
+            case BOSS_SPEECH: {
+                Speech sp = new Speech();
+                sp.x = e.x;
+                sp.y = e.y;
+                sp.text = e.text;
+                speeches.clear();
+                speeches.add(sp);
+                break;
+            }
             case BOSS_ENRAGED:
                 ring(e.x, e.y - 20, 20, 300, 0.8f, new Color(1f, 0.25f, 0.15f, 1f));
                 particles.burst(e.x, e.y, 40, new Color(1f, 0.3f, 0.2f, 1f), 320, 0.7f, 3, true);
@@ -231,6 +270,7 @@ public class WorldRenderer implements Disposable {
                 flash(g.hero.x, g.hero.y, 260, new Color(0.6f, 0.5f, 1f, 1f), 0.6f);
                 break;
             case HERO_DIED:
+                speeches.clear();
                 particles.clear();
                 corpses.clear();
                 ghosts.clear();
@@ -252,6 +292,7 @@ public class WorldRenderer implements Disposable {
             case ORE: f.color = Ui.GOLD; break;
             case HEAL: f.color = Ui.GREEN; f.big = true; break;
             case BLOCKED: f.color = Ui.PURPLE; break;
+            case SHIELD: f.color = SHIELD_COLOR; f.big = true; break;
             default: f.color = Ui.TEXT;
         }
         floats.add(f);
@@ -287,6 +328,18 @@ public class WorldRenderer implements Disposable {
             f.t += dt;
             f.y += (f.t < 0.15f ? 90 : 26) * dt;
             if (f.t > 0.9f) it.remove();
+        }
+        for (Iterator<Speech> it = speeches.iterator(); it.hasNext(); ) {
+            Speech sp = it.next();
+            sp.t += dt;
+            if (sp.t > 3.6f) it.remove();
+        }
+        // 피웅덩이에서 피어오르는 거품
+        for (Hazard h : g.hazards) {
+            if (h.kind == Hazard.Kind.POOL && h.triggered && MathUtils.random() < dt * 6f) {
+                float a = MathUtils.random(MathUtils.PI2), r = MathUtils.random(h.radius * 0.8f);
+                particles.burst(h.x + MathUtils.cos(a) * r, h.y + MathUtils.sin(a) * r * 0.6f, 2, PROJ_BLOOD, 40, 0.5f, 2, false);
+            }
         }
         particles.update(dt);
         for (Iterator<Corpse> it = corpses.iterator(); it.hasNext(); ) {
@@ -477,6 +530,9 @@ public class WorldRenderer implements Disposable {
                 lighting.add(cx, cy, 360 * fl, 1f, 0.62f, 0.3f, 0.95f);
             } else if (p.kind == Prop.Kind.FORGE) {
                 lighting.add(cx - 8, cy + 10, 150, 1f, 0.5f, 0.2f, 0.7f + 0.15f * MathUtils.sin(time * 7f));
+            } else if (p.kind == Prop.Kind.SEAL) {
+                Color c = sealColor();
+                lighting.add(cx, cy, 150 + 60 * sealPower(), c.r, c.g, c.b, 0.35f + 0.4f * sealPower() + 0.08f * MathUtils.sin(time * 3f));
             }
         }
         for (Room r : map.rooms) {
@@ -493,6 +549,12 @@ public class WorldRenderer implements Disposable {
                 float px = g.portalX(r), py = g.portalY(r);
                 if (inView(px, py)) lighting.add(px, py, 230, 0.55f, 0.5f, 1f, 0.8f + 0.1f * MathUtils.sin(time * 3f));
             }
+        }
+        for (Hazard hz : g.hazards) {
+            if (!inView(hz.x, hz.y)) continue;
+            Color c = hazardColor(hz.style);
+            if (hz.kind == Hazard.Kind.POOL) lighting.add(hz.x, hz.y, hz.radius * 1.6f, c.r, c.g, c.b, 0.35f);
+            else lighting.add(hz.x, hz.y, 60 + 60 * hz.progress(), c.r, c.g, c.b, 0.25f + 0.3f * hz.progress());
         }
         for (Link l : map.links) {
             for (Door d : new Door[]{l.doorA, l.doorB}) {
@@ -551,6 +613,7 @@ public class WorldRenderer implements Disposable {
         batch.begin();
         batch.setColor(Color.WHITE);
         drawTiles(tx0, ty0, tx1, ty1);
+        drawFloorProps();
         drawTorches();
         batch.end();
 
@@ -622,6 +685,37 @@ public class WorldRenderer implements Disposable {
         }
     }
 
+    /** 캠프 바닥의 봉인 문양: 힘이 모일수록 밝아지고, 봉인이 풀리면 갈라진 채 보랏빛으로 빛난다. */
+    private void drawFloorProps() {
+        for (Prop p : map.props) {
+            if (p.kind != Prop.Kind.SEAL) continue;
+            float cx = (p.tileX + p.w / 2f) * T, cy = (p.tileY + p.h / 2f) * T;
+            if (!inView(cx, cy)) continue;
+            Color c = sealColor();
+            float pw = sealPower();
+            float size = p.w * T * 1.5f;
+            batch.setColor(0.05f, 0.03f, 0.07f, 0.55f);
+            batch.draw(art.glow, cx - size * 0.6f, cy - size * 0.35f, size * 1.2f, size * 0.7f);
+            batch.setColor(c.r, c.g, c.b, 0.45f + 0.5f * pw);
+            batch.draw(art.world("seal"), cx - size / 2f, cy - size * 0.32f, size / 2f, size * 0.32f, size, size * 0.64f, 1f, 1f,
+                    g.state.unsealed ? time * 12f : 0f);
+            batch.setColor(Color.WHITE);
+        }
+    }
+
+    /** 문양의 밝기 0~1: 흡수한 보스 수, 봉인이 풀리면 1. */
+    private float sealPower() {
+        if (g.state.unsealed) return 1f;
+        int n = 0;
+        for (String id : com.yongsa.model.AbsorbService.BOSS_ORDER) if (g.state.bossDefeated(id)) n++;
+        return n / 3f;
+    }
+
+    private Color sealColor() {
+        if (g.state.unsealed) return PROJ_DARK;
+        return g.absorb.canUnseal(g.state) ? Ui.GOLD : new Color(0.55f, 0.45f, 0.8f, 1f);
+    }
+
     private void drawTorches() {
         for (float[] t : torches) {
             if (!inView(t[0], t[1])) continue;
@@ -646,6 +740,7 @@ public class WorldRenderer implements Disposable {
             shapes.setColor(0.18f, 0.1f, 0.38f, 0.9f);
             shapes.ellipse(px - 34, py - 16, 68, 32, 40);
         }
+        drawHazards();
         for (Monster m : g.monsters) {
             if (m.dead) continue;
             float prog = m.progress();
@@ -697,10 +792,93 @@ public class WorldRenderer implements Disposable {
         shapes.end();
     }
 
+    /** 바닥 공격 예고: 원(낙석·낙뢰·촉수)과 선(창)은 차오르는 예고, 피웅덩이는 넓어지는 웅덩이. */
+    private void drawHazards() {
+        float blink = 0.16f + 0.08f * MathUtils.sin(time * 20f);
+        for (Hazard h : g.hazards) {
+            if (!inView(h.x, h.y) && h.kind != Hazard.Kind.LINE) continue;
+            Color c = hazardColor(h.style);
+            float p = h.progress();
+            switch (h.kind) {
+                case POOL: {
+                    float r = h.radius;
+                    float fade = Math.min(1f, h.life / 0.8f) * Math.min(1f, h.age / 0.35f);
+                    shapes.setColor(0.25f, 0.02f, 0.05f, 0.75f * fade);
+                    shapes.ellipse(h.x - r, h.y - r * 0.6f, r * 2, r * 1.2f, 40);
+                    shapes.setColor(0.6f, 0.05f, 0.1f, (0.45f + 0.1f * MathUtils.sin(time * 4f + h.x)) * fade);
+                    shapes.ellipse(h.x - r * 0.8f, h.y - r * 0.48f, r * 1.6f, r * 0.96f, 40);
+                    break;
+                }
+                case LINE: {
+                    float w = h.radius * 2f;
+                    shapes.setColor(c.r * 0.9f, c.g * 0.3f, c.b * 0.3f, blink + 0.05f);
+                    shapes.rectLine(h.x, h.y, h.x2, h.y2, w);
+                    shapes.setColor(c.r, c.g * 0.5f, c.b * 0.5f, 0.3f);
+                    shapes.rectLine(h.x, h.y, h.x + (h.x2 - h.x) * p, h.y + (h.y2 - h.y) * p, w);
+                    break;
+                }
+                default: {
+                    float r = h.radius;
+                    shapes.setColor(c.r * 0.9f, c.g * 0.35f, c.b * 0.35f, blink);
+                    shapes.ellipse(h.x - r, h.y - r * 0.6f, r * 2, r * 1.2f, 40);
+                    shapes.setColor(c.r, c.g * 0.6f, c.b * 0.6f, 0.32f);
+                    shapes.ellipse(h.x - r * p, h.y - r * 0.6f * p, r * 2 * p, r * 1.2f * p, 40);
+                }
+            }
+        }
+    }
+
+    private void hazardFx(GameEvent e) {
+        String style = e.text == null ? "rock" : e.text;
+        Color c = hazardColor(style);
+        switch (style) {
+            case "bolt":
+                // 하늘에서 내리꽂는 번개 줄기
+                for (int i = 0; i < 6; i++) {
+                    float y = e.y + i * 60;
+                    particles.burst(e.x + MathUtils.random(-6f, 6f), y, 3, c, 60, 0.25f, 2, true);
+                }
+                particles.burst(e.x, e.y, 22, Color.WHITE, 260, 0.35f, 3, true);
+                ring(e.x, e.y, e.size * 0.3f, e.size * 1.1f, 0.35f, c);
+                flash(e.x, e.y + 60, e.size * 4f, c, 0.25f);
+                break;
+            case "tentacle":
+                particles.debris(e.x, e.y, 14, new Color(0.35f, 0.12f, 0.4f, 1f), 240, 5);
+                particles.burst(e.x, e.y + 10, 18, c, 220, 0.5f, 3, true);
+                ring(e.x, e.y, e.size * 0.3f, e.size, 0.4f, c);
+                flash(e.x, e.y, e.size * 2.5f, c, 0.3f);
+                break;
+            case "spear": {
+                float dx = e.dirX - e.x, dy = e.dirY - e.y;
+                for (int i = 0; i <= 10; i++) {
+                    float px = e.x + dx * i / 10f, py = e.y + dy * i / 10f;
+                    if (!inView(px, py)) continue;
+                    particles.burst(px, py, 3, c, 140, 0.35f, 3, true);
+                }
+                break;
+            }
+            default:
+                particles.debris(e.x, e.y + 30, 16, new Color(0.45f, 0.4f, 0.38f, 1f), 220, 5);
+                particles.smoke(e.x, e.y, 10, new Color(0.4f, 0.36f, 0.34f, 0.55f), e.size * 0.8f, 16, 0.7f);
+                ring(e.x, e.y, e.size * 0.3f, e.size * 1.1f, 0.4f, c);
+                flash(e.x, e.y, e.size * 2f, c, 0.25f);
+        }
+    }
+
+    private static Color hazardColor(String style) {
+        switch (style) {
+            case "bolt": return PROJ_SKY;
+            case "tentacle": return PROJ_DARK;
+            case "spear": case "blood": return PROJ_BLOOD;
+            default: return new Color(1f, 0.6f, 0.35f, 1f);
+        }
+    }
+
     // ───────────────────────── 깊이 정렬되는 것들
 
     private void collect(List<Sorted> list, int tx0, int ty0, int tx1, int ty1) {
         for (Prop p : map.props) {
+            if (p.walkable()) continue; // 바닥 문양은 타일과 함께 먼저 그린다
             list.add(new Sorted(p.tileY * T + 2, () -> drawProp(p)));
         }
         for (Room r : map.rooms) {
@@ -855,7 +1033,8 @@ public class WorldRenderer implements Disposable {
 
     private void drawMonster(Monster m) {
         TextureRegion r = art.world(m.def.sprite);
-        float scale = S * (m.finalBoss ? 2.0f : m.boss ? 1.7f : 1f);
+        float scale = S * (m.finalBoss ? (m.phase2 ? 2.3f : 2.0f) : m.boss ? 1.7f : 1f);
+        if (m.state == Monster.State.PHASE_SHIFT) scale = S * (2.0f + 0.3f * m.progress());
         float appear = m.state == Monster.State.SPAWN ? Math.max(0f, (m.progress() - 0.35f) / 0.65f) : 1f;
         if (appear <= 0f) return;
         float w = art.width(r) * scale, hgt = art.height(r) * scale;
@@ -881,11 +1060,19 @@ public class WorldRenderer implements Disposable {
         } else if (m.state == Monster.State.STUNNED) {
             sy = 0.92f;
             jx = MathUtils.sin(time * 14f) * 1.5f;
+        } else if (m.state == Monster.State.PHASE_SHIFT) {
+            jx = MathUtils.sin(time * 50f) * 3f * (1f - m.progress());
+            sy = 1f + 0.05f * MathUtils.sin(time * 9f);
+        } else if (m.state == Monster.State.CHANNEL) {
+            sy = 1f + 0.04f * MathUtils.sin(time * 12f);
+            if ("firespin".equals(m.channelKind)) jx = MathUtils.sin(time * 30f) * 1.5f;
         }
         float dw = w * sx * appear, dh = hgt * sy * appear;
         boolean flip = m.dirX < -0.2f;
         float mx = m.x + jx;
-        if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
+        if (m.state == Monster.State.PHASE_SHIFT) batch.setColor(0.7f + 0.3f * MathUtils.sin(time * 20f), 0.4f, 1f, appear);
+        else if (m.phase2) batch.setColor(0.8f, 0.6f + 0.08f * MathUtils.sin(time * 6f), 1f, appear);
+        else if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
         if (flip) batch.draw(r, mx + dw / 2f, m.y - 2 + bob, -dw, dh);
@@ -954,6 +1141,16 @@ public class WorldRenderer implements Disposable {
                 float fl = 0.7f + 0.3f * MathUtils.sin(time * 7f);
                 batch.setColor(1f, 0.5f, 0.15f, 0.6f * fl);
                 batch.draw(art.glow, px + 6, py + 26, 28, 28);
+            } else if (p.kind == Prop.Kind.SEAL && sealPower() > 0) {
+                Color c = sealColor();
+                float cx = px + p.w * T / 2f, cy = py + p.h * T / 2f;
+                float pulse = 0.75f + 0.25f * MathUtils.sin(time * 3f);
+                batch.setColor(c.r, c.g, c.b, 0.35f * sealPower() * pulse);
+                batch.draw(art.glow, cx - 70, cy - 40, 140, 80);
+                if (g.state.unsealed) {
+                    batch.setColor(c.r, c.g, c.b, 0.3f * pulse);
+                    batch.draw(art.glow, cx - 30, cy - 10, 60, 140);
+                }
             }
         }
         // 광맥 반짝임
@@ -1016,8 +1213,39 @@ public class WorldRenderer implements Disposable {
         // 마왕의 기운
         for (Monster m : g.monsters) {
             if (m.dead || !m.finalBoss) continue;
-            batch.setColor(0.6f, 0.2f, 1f, 0.35f + 0.1f * MathUtils.sin(time * 5f));
-            batch.draw(art.glow, m.x - 90, m.y - 20, 180, 160);
+            float k = m.phase2 || m.state == Monster.State.PHASE_SHIFT ? 1.4f : 1f;
+            batch.setColor(0.6f, 0.2f, 1f, (0.35f + 0.1f * MathUtils.sin(time * 5f)) * k);
+            batch.draw(art.glow, m.x - 90 * k, m.y - 20, 180 * k, 160 * k);
+        }
+        // 방패, 긴 패턴의 기운
+        for (Monster m : g.monsters) {
+            if (m.dead) continue;
+            if (m.shield > 0) {
+                float fr = m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
+                float r = m.hurtRadius * 2.6f;
+                float pulse = 0.8f + 0.2f * MathUtils.sin(time * 4f);
+                batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, (0.18f + 0.25f * fr) * pulse);
+                batch.draw(art.glow, m.x - r, m.y - r * 0.2f, r * 2, r * 1.9f);
+            }
+            if (m.state == Monster.State.CHANNEL) {
+                Color c = "lightning".equals(m.channelKind) ? PROJ_SKY : "firespin".equals(m.channelKind) ? PROJ_FIRE
+                        : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD : new Color(1f, 0.6f, 0.35f, 1f);
+                float r = m.hurtRadius * 2.4f * (0.9f + 0.1f * MathUtils.sin(time * 10f));
+                batch.setColor(c.r, c.g, c.b, 0.4f);
+                batch.draw(art.glow, m.x - r, m.centerY() - r, r * 2, r * 2);
+            }
+        }
+        // 낙뢰가 떨어지기 직전 하늘에서 모이는 빛
+        for (Hazard h : g.hazards) {
+            if (h.kind != Hazard.Kind.CIRCLE || !inView(h.x, h.y)) continue;
+            Color c = hazardColor(h.style);
+            float p = h.progress();
+            if ("bolt".equals(h.style)) {
+                batch.setColor(c.r, c.g, c.b, 0.15f + 0.45f * p);
+                batch.draw(art.glow, h.x - 10, h.y, 20, 260 * p);
+            }
+            batch.setColor(c.r, c.g, c.b, 0.2f * p);
+            batch.draw(art.glow, h.x - h.radius, h.y - h.radius * 0.6f, h.radius * 2, h.radius * 1.2f);
         }
         // 몬스터 투사체와 모으는 빛, 기절 별
         for (Monster m : g.monsters) {
@@ -1184,6 +1412,20 @@ public class WorldRenderer implements Disposable {
             layout.setText(font, ft.text);
             outlined(font, ft.text, sx(cam, ft.x) - layout.width / 2f, sy(cam, ft.y) + layout.height, ft.color, a);
         }
+        for (Speech sp : speeches) {
+            float a = Math.min(1f, sp.t * 4f) * Math.min(1f, (3.6f - sp.t) * 2f);
+            layout.setText(fonts.normal, sp.text);
+            float w = layout.width + 28, hgt = layout.height + 20;
+            float x = sx(cam, sp.x) - w / 2f, y = sy(cam, sp.y);
+            batch.setColor(0.06f, 0.02f, 0.1f, 0.85f * a);
+            batch.draw(art.white(), x, y, w, hgt);
+            batch.draw(art.white(), x + w / 2f - 6, y - 8, 12, 8);
+            batch.setColor(PROJ_DARK.r, PROJ_DARK.g, PROJ_DARK.b, 0.9f * a);
+            batch.draw(art.white(), x, y + hgt - 2, w, 2);
+            batch.setColor(Color.WHITE);
+            fonts.normal.setColor(1f, 0.9f, 1f, a);
+            fonts.normal.draw(batch, sp.text, x + 14, y + hgt - 10);
+        }
         if (g.prompt != null) {
             layout.setText(fonts.normal, g.prompt);
             float w = layout.width + 24, hgt = layout.height + 16;
@@ -1233,7 +1475,7 @@ public class WorldRenderer implements Disposable {
     }
 
     private static Color gateColor(Link l) {
-        return "FINAL".equals(l.gate) ? new Color(1f, 0.8f, 0.3f, 1f) : new Color(0.7f, 0.5f, 1f, 1f);
+        return new Color(0.7f, 0.5f, 1f, 1f);
     }
 
     private static Color deathColor(String sprite) {
@@ -1254,6 +1496,7 @@ public class WorldRenderer implements Disposable {
             case "knight": return PROJ_BLOOD;
             case "warden": return PROJ_SKY;
             case "demonlord": return PROJ_DARK;
+            case "fire": return new Color(1f, 0.42f, 0.12f, 1f);
             default: return PROJ_FIRE;
         }
     }
@@ -1271,6 +1514,7 @@ public class WorldRenderer implements Disposable {
     private static final Color PROJ_SKY = new Color(0.4f, 0.8f, 1f, 1f);
     private static final Color PROJ_DARK = new Color(0.7f, 0.3f, 1f, 1f);
     private static final Color SPAWN_BLUE = new Color(0.4f, 0.6f, 1f, 1f);
+    private static final Color SHIELD_COLOR = new Color(1f, 0.82f, 0.55f, 1f);
 
     @Override
     public void dispose() {
