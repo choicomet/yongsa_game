@@ -26,6 +26,8 @@ import com.yongsa.ui.PauseMenu;
 import com.yongsa.ui.Ui;
 import com.yongsa.ui.UnsealScene;
 import com.yongsa.world.CameraFollow;
+import com.yongsa.world.Room;
+import com.yongsa.world.RoomType;
 
 /**
  * 플레이 화면. 창이 열려 있으면 게임 시간(이동, 전투, 쿨타임)은 멈추고 UI 시간(버튼, 연출)만 흐른다:
@@ -49,8 +51,13 @@ public class GameScreen extends ScreenAdapter {
     private float trauma, hitStop, shakeTime;
     private float fade = 1f, fadeTarget = 0f;
     private boolean warping;
-    /** 한 칸의 그림 픽셀이 화면 3픽셀이 되도록 맵을 1.5배로 확대해서 본다. */
+    /** 기본 배율(100%): 한 칸의 그림 픽셀이 화면 3픽셀이 되도록 맵을 1.5배로 확대해서 본다. */
     public static final float ZOOM = 2f / 3f;
+    /** 휠 / +,- 로 고르는 확대 단계 (기본 배율 대비 %). 일반 구간과 보스방이 따로 기억된다.
+     *  1280×720 기준 100%는 그림 1픽셀 = 화면 3픽셀, 133%는 4픽셀로 딱 떨어진다 (1080p 전체화면이면 133%만 6픽셀로 딱 떨어짐). 나머지는 픽셀 크기가 조금씩 고르지 않다. */
+    public static final int[] ZOOM_STEPS = {80, 90, 100, 108, 115, 125, 133, 150};
+    /** 지금 화면 배율 (카메라 zoom 값, 작을수록 크게 보임). 목표 배율로 부드럽게 따라간다. */
+    private float zoom;
 
     public GameScreen(YongsaGame game, GameState state) {
         this.game = game;
@@ -59,7 +66,8 @@ public class GameScreen extends ScreenAdapter {
         this.modals = new ModalStack(stage);
         this.renderer = new WorldRenderer(session, game.art, game.fonts, game.batch, game.shapes);
         this.hud = new Hud(session, game.art, game.fonts, game.batch, game.shapes);
-        worldCam.zoom = ZOOM;
+        zoom = targetZoom();
+        worldCam.zoom = zoom;
         if (session.inCamp()) hud.banner("용사의 캠프");
     }
 
@@ -101,9 +109,25 @@ public class GameScreen extends ScreenAdapter {
                     case Input.Keys.J:
                         attackPressed = true;
                         return true;
+                    case Input.Keys.EQUALS:
+                    case Input.Keys.PLUS:
+                    case Input.Keys.NUMPAD_ADD:
+                        stepZoom(1);
+                        return true;
+                    case Input.Keys.MINUS:
+                    case Input.Keys.NUMPAD_SUBTRACT:
+                        stepZoom(-1);
+                        return true;
                     default:
                         return false;
                 }
+            }
+
+            @Override
+            public boolean scrolled(float amountX, float amountY) {
+                if (!modals.isEmpty() || endingDelay >= 0 || amountY == 0) return false;
+                stepZoom(amountY < 0 ? 1 : -1);
+                return true;
             }
         };
         Gdx.input.setInputProcessor(new InputMultiplexer(keys, stage));
@@ -139,13 +163,17 @@ public class GameScreen extends ScreenAdapter {
         }
 
         int T = game.balance.tileSize;
-        follow.update(session.hero.x, session.hero.y + 16, dt, worldCam.viewportWidth * ZOOM, worldCam.viewportHeight * ZOOM,
+        float want = targetZoom();
+        zoom += (want - zoom) * Math.min(1f, dt * 6f);
+        if (Math.abs(want - zoom) < 0.0005f) zoom = want;
+        worldCam.zoom = zoom;
+        follow.update(session.hero.x, session.hero.y + 16, dt, worldCam.viewportWidth * zoom, worldCam.viewportHeight * zoom,
                 session.map.width * T, session.map.height * T);
         float shake = trauma * trauma * 12f;
         float ox = shake * (MathUtils.sin(shakeTime * 47f) + MathUtils.sin(shakeTime * 83f) * 0.5f) / 1.5f;
         float oy = shake * (MathUtils.cos(shakeTime * 53f) + MathUtils.sin(shakeTime * 71f) * 0.5f) / 1.5f;
         // 화면 픽셀 단위로 맞춰 그림이 떨리지 않게 한다
-        worldCam.position.set(Math.round((follow.x + ox) / ZOOM) * ZOOM, Math.round((follow.y + oy) / ZOOM) * ZOOM, 0);
+        worldCam.position.set(Math.round((follow.x + ox) / zoom) * zoom, Math.round((follow.y + oy) / zoom) * zoom, 0);
         worldCam.update();
 
         renderer.renderLights(worldCam);
@@ -158,6 +186,32 @@ public class GameScreen extends ScreenAdapter {
         hud.renderFade(fade);
         stage.act(delta);
         stage.draw();
+    }
+
+    /** 보스방(최종 보스방 포함)에 있는지. 확대 배율을 일반 구간과 따로 쓴다. */
+    private boolean inBossArea() {
+        Room r = session.heroRoom();
+        return r != null && (r.type == RoomType.BOSS || r.type == RoomType.FINAL);
+    }
+
+    private float targetZoom() {
+        int pct = inBossArea() ? game.settings.zoomBoss : game.settings.zoomNormal;
+        if (pct == 133) return ZOOM * 0.75f; // 정확히 4/3배라야 픽셀이 딱 떨어진다
+        return ZOOM * 100f / Math.max(50, pct);
+    }
+
+    /** 확대 단계를 한 칸 올리거나(+1) 내린다(-1). 지금 있는 구간(일반/보스방)의 값만 바뀐다. */
+    private void stepZoom(int dir) {
+        boolean boss = inBossArea();
+        int cur = boss ? game.settings.zoomBoss : game.settings.zoomNormal;
+        int i = 0;
+        while (i < ZOOM_STEPS.length - 1 && ZOOM_STEPS[i] < cur) i++;
+        if (ZOOM_STEPS[i] != cur && dir < 0) i++; // 목록에 없는 값이면 가까운 쪽부터
+        int next = ZOOM_STEPS[MathUtils.clamp(i + dir, 0, ZOOM_STEPS.length - 1)];
+        if (boss) game.settings.zoomBoss = next;
+        else game.settings.zoomNormal = next;
+        game.saveSettings();
+        hud.toast("화면 배율 " + next + "% · " + (boss ? "보스방" : "일반 구간"));
     }
 
     private void updateFade(float delta) {
