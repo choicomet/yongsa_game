@@ -2,6 +2,12 @@
 
 uiux 팀 프로젝트 (최해성 · 박지용 · 김선우). Java 17 + libGDX 2D 게임.
 
+## 함께 작업하기
+
+디자인과 구현 변경은 작업별 브랜치와 PR로 공유합니다. 현재 진행 방향은 [디자인 기준](docs/ART_DIRECTION.md), 작업 절차는 [협업 안내](docs/COLLABORATION.md)를 먼저 확인하세요.
+
+[용사·검 도트 시안](design/pixel-v3/README.md)에는 캐릭터 6포즈, 검 8종과 표시 크기 비교가 있습니다. 이 시안은 아직 런타임에 연결하지 않은 검토 자료입니다.
+
 ## 실행
 
 Windows (JDK 17 필요, `JAVA_HOME` 설정):
