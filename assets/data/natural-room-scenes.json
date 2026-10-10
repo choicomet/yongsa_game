@@ -501,17 +501,7 @@
           0.35
         ]
       ],
-      "portals": [
-        {
-          "id": "south",
-          "kind": "open-passage",
-          "foot": [
-            0.515,
-            0.86
-          ],
-          "facing": "DOWN"
-        }
-      ],
+      "portals": [],
       "landmarks": [
         {
           "id": "sealed-monument",
