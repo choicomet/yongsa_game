@@ -35,8 +35,10 @@ public final class HdArt implements Disposable {
         for (Map.Entry<String, Entry> item : manifest.sprites.entrySet()) {
             Entry e = item.getValue();
             Texture texture = textures.computeIfAbsent(e.sheet, path -> {
-                Texture t = new Texture(Gdx.files.internal(path), true);
-                t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+                boolean world = path.startsWith("world/");
+                Texture t = new Texture(Gdx.files.internal(path), !world);
+                t.setFilter(world ? Texture.TextureFilter.Nearest : Texture.TextureFilter.MipMapLinearLinear,
+                        world ? Texture.TextureFilter.Nearest : Texture.TextureFilter.Linear);
                 return t;
             });
             e.validate(texture.getWidth(), texture.getHeight());

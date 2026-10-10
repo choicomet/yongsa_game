@@ -175,7 +175,7 @@ public class WorldRenderer implements Disposable {
                 break;
             case MONSTER_DIED: {
                 Corpse c = new Corpse();
-                c.region = art.get(e.sprite);
+                c.region = art.world(e.sprite);
                 float scale = S * e.size;
                 c.w = art.width(c.region) * scale;
                 c.h = art.height(c.region) * scale;
@@ -596,7 +596,7 @@ public class WorldRenderer implements Disposable {
                 if (t == WorldMap.WALL) {
                     int below = map.tile(x, y - 1);
                     boolean front = below == WorldMap.FLOOR || below == WorldMap.DOOR;
-                    batch.draw(art.get(front ? "wallfront_" + th : "walltop_" + th), px, py, T, T);
+                    batch.draw(art.world(front ? "wallfront_" + th : "walltop_" + th), px, py, T, T);
                     continue;
                 }
                 batch.draw(art.floor(th, x, y), px, py, T, T);
@@ -605,9 +605,9 @@ public class WorldRenderer implements Disposable {
                     if (d != null) batch.draw(d, px, py, T, T);
                 }
                 // 벽 옆 그늘
-                if (map.tile(x, y + 1) == WorldMap.WALL) batch.draw(art.get("ao_top"), px, py, T, T);
-                if (map.tile(x - 1, y) == WorldMap.WALL) batch.draw(art.get("ao_left"), px, py, T, T);
-                if (map.tile(x + 1, y) == WorldMap.WALL) batch.draw(art.get("ao_right"), px, py, T, T);
+                if (map.tile(x, y + 1) == WorldMap.WALL) batch.draw(art.world("ao_top"), px, py, T, T);
+                if (map.tile(x - 1, y) == WorldMap.WALL) batch.draw(art.world("ao_left"), px, py, T, T);
+                if (map.tile(x + 1, y) == WorldMap.WALL) batch.draw(art.world("ao_right"), px, py, T, T);
                 if (t == WorldMap.DOOR) {
                     Door d = map.door(x, y);
                     if (d.link != null && d.link.gateClosed) {
@@ -615,7 +615,7 @@ public class WorldRenderer implements Disposable {
                         batch.draw(art.white(), px, py, T, T);
                         batch.setColor(Color.WHITE);
                     } else if (d.lockedByFight) {
-                        batch.draw(art.get("bars"), px, py, T, T);
+                        batch.draw(art.world("bars"), px, py, T, T);
                     }
                 }
             }
@@ -626,7 +626,7 @@ public class WorldRenderer implements Disposable {
         for (float[] t : torches) {
             if (!inView(t[0], t[1])) continue;
             boolean alt = ((int) (time * 8 + t[2])) % 2 == 0;
-            batch.draw(art.get(alt ? "torch_a" : "torch_b"), t[0] - 8, t[1], 16, 32);
+            batch.draw(art.world(alt ? "torch_a" : "torch_b"), t[0] - 8, t[1], 16, 32);
         }
     }
 
@@ -721,7 +721,7 @@ public class WorldRenderer implements Disposable {
 
     private void drawShadow(float x, float y, float w) {
         batch.setColor(Color.WHITE);
-        batch.draw(art.get("shadow"), x - w / 2f, y - w * 0.18f, w, w * 0.38f);
+        batch.draw(art.world("shadow"), x - w / 2f, y - w * 0.18f, w, w * 0.38f);
     }
 
     private void drawProp(Prop p) {
@@ -729,25 +729,25 @@ public class WorldRenderer implements Disposable {
         float px = p.tileX * T, py = p.tileY * T;
         switch (p.kind) {
             case FORGE: {
-                TextureRegion r = art.get("forge");
+                TextureRegion r = art.world("forge");
                 drawShadow(px + 28, py + 2, 64);
                 batch.draw(r, px - 8, py - 6, art.width(r) * S, art.height(r) * S);
                 break;
             }
             case BED: {
-                TextureRegion r = art.get("bed");
+                TextureRegion r = art.world("bed");
                 batch.draw(r, px - 4, py - 22, art.width(r) * S, art.height(r) * S);
                 break;
             }
             default: {
-                TextureRegion r = art.get(((int) (time * 6)) % 2 == 0 ? "campfire" : "campfire2");
+                TextureRegion r = art.world(((int) (time * 6)) % 2 == 0 ? "campfire" : "campfire2");
                 batch.draw(r, px, py - 4, art.width(r) * S, art.height(r) * S);
             }
         }
     }
 
     private void drawVein(Vein v) {
-        TextureRegion r = art.vein(v.ore);
+        TextureRegion r = art.world("vein_" + v.ore.name());
         float px = v.tileX * T, py = v.tileY * T;
         int maxHits = g.balance.mining.hitsToBreak;
         drawShadow(px + T / 2f, py + 4, 30);
@@ -767,7 +767,7 @@ public class WorldRenderer implements Disposable {
             case RIGHT: name = "hero_side"; break;
             default: name = "hero_down";
         }
-        return art.get(walk ? name + "_walk" : name);
+        return art.world(walk ? name + "_walk" : name);
     }
 
     private void drawHero() {
@@ -806,7 +806,7 @@ public class WorldRenderer implements Disposable {
     /** 구르기: 몸을 한 바퀴 굴리고 살짝 웅크린다. 칼은 그리지 않는다. */
     private void drawRoll(HeroActor h) {
         float p = 1f - h.rollT / h.rollTotal;
-        TextureRegion r = art.get(h.facing == Facing.UP ? "hero_up" : h.facing == Facing.DOWN ? "hero_down" : "hero_side");
+        TextureRegion r = art.world(h.facing == Facing.UP ? "hero_up" : h.facing == Facing.DOWN ? "hero_down" : "hero_side");
         float w = art.width(r) * S, hgt = art.height(r) * S;
         float dir = h.rollX < -0.1f ? 1f : -1f;
         float angle = dir * 360f * p;
@@ -821,7 +821,7 @@ public class WorldRenderer implements Disposable {
     private void drawSword(HeroActor h, float alpha) {
         Weapon w = g.state.equipped();
         if (w == null) return;
-        TextureRegion r = art.sword(w.defId, w.awakened);
+        TextureRegion r = art.worldSword(w.defId, w.awakened);
         float aim = MathUtils.atan2(h.aimY, h.aimX) * MathUtils.radDeg;
         float angle;
         float scale = 1f;
@@ -849,12 +849,12 @@ public class WorldRenderer implements Disposable {
         batch.draw(r, hx - 6, hy - 6, 6, 6, 32, 32, scale, scale, angle - 45);
         if ("holy_sealed".equals(w.defId) && !art.hasHd("sword_holy") && h.swingT <= 0) {
             batch.setColor(1f, 1f, 1f, alpha * 0.8f);
-            batch.draw(art.get("chain"), hx - 4, hy, 4, 4, 18, 18, 1f, 1f, angle - 45);
+            batch.draw(art.world("chain"), hx - 4, hy, 4, 4, 18, 18, 1f, 1f, angle - 45);
         }
     }
 
     private void drawMonster(Monster m) {
-        TextureRegion r = art.get(m.def.sprite);
+        TextureRegion r = art.world(m.def.sprite);
         float scale = S * (m.finalBoss ? 2.0f : m.boss ? 1.7f : 1f);
         float appear = m.state == Monster.State.SPAWN ? Math.max(0f, (m.progress() - 0.35f) / 0.65f) : 1f;
         if (appear <= 0f) return;
@@ -1007,7 +1007,7 @@ public class WorldRenderer implements Disposable {
                     }
                 }
                 batch.setColor(c.r, c.g, c.b, 0.9f * pulse);
-                TextureRegion seal = art.get("seal");
+                TextureRegion seal = art.world("seal");
                 batch.draw(seal, cx - 24, cy - 24, 24, 24, 48, 48, 1f, 1f, time * 20f);
                 batch.setColor(c.r, c.g, c.b, 0.35f * pulse);
                 batch.draw(art.glow, cx - 60, cy - 60, 120, 120);

@@ -27,7 +27,7 @@ PR이 만들어졌다고 Claude가 자동으로 실행되거나 검토를 완료
 | 목적 | 파일 |
 |---|---|
 | 최신 사용자 디자인 방향 | [ART_DIRECTION.md](ART_DIRECTION.md) |
-| 최신 도트 캐릭터·검 원본과 변경안 | [v4 README](../design/pixel-v4/README.md), [연결 기준](../design/pixel-v4/INTEGRATION.md) |
+| 최신 인게임 적용과 대장간 변경 | [런타임 README](../design/style2-runtime/README.md), [검수 기록](../design/style2-runtime/QA.md) |
 | 이전 6포즈·검 8종 형태 참고 | [v3 README](../design/pixel-v3/README.md) |
 | 카메라/캐릭터 크기 제안 | [DISPLAY_SCALE.md](../design/pixel-v3/DISPLAY_SCALE.md) |
 | 현재 게임 규칙 | [GAME_SPEC.md](GAME_SPEC.md), 실제 코드와 데이터 |

@@ -397,6 +397,12 @@ public class Art implements Disposable {
         return get("white");
     }
 
+    /** Gameplay uses the simplified set; menus keep the detailed illustrations. */
+    public TextureRegion world(String name) {
+        TextureRegion r = hd.get("world_" + name);
+        return r != null ? r : get(name);
+    }
+
     public TextureRegion vein(OreType t) {
         return get("vein_" + t.name());
     }
@@ -407,10 +413,18 @@ public class Art implements Disposable {
 
     /** 무기 그림. 성검은 봉인 여부, 다른 검은 각성 여부에 따라 다르다. */
     public TextureRegion sword(String defId, boolean awakened) {
+        return get(swordKey(defId, awakened));
+    }
+
+    public TextureRegion worldSword(String defId, boolean awakened) {
+        return world(swordKey(defId, awakened));
+    }
+
+    private String swordKey(String defId, boolean awakened) {
         switch (defId) {
-            case "holy_sealed": return get("sword_holy");
-            case "holy_awakened": return get("sword_holy_awakened");
-            default: return get("sword_" + defId + (awakened ? "_awakened" : ""));
+            case "holy_sealed": return "sword_holy";
+            case "holy_awakened": return "sword_holy_awakened";
+            default: return "sword_" + defId + (awakened ? "_awakened" : "");
         }
     }
 
@@ -425,7 +439,7 @@ public class Art implements Disposable {
 
     public TextureRegion floor(String theme, int x, int y) {
         if (hd.contains("floor_" + theme + "_hd0"))
-            return get("floor_" + theme + "_hd" + (Math.floorMod(y, 4) * 4 + Math.floorMod(x, 4)));
+            return world("floor_" + theme + "_hd" + (Math.floorMod(y, 4) * 4 + Math.floorMod(x, 4)));
         int v = Math.floorMod(x * 7 + y * 13 + (x * y) % 5, 9);
         return get("floor_" + theme + "_v" + (v < 6 ? 0 : v - 5));
     }

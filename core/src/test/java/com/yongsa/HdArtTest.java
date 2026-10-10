@@ -52,4 +52,37 @@ class HdArtTest {
         e.x = 0; e.drawHeight = Float.NaN;
         assertThrows(IllegalArgumentException.class, () -> e.validate(512, 512));
     }
+
+    @Test void worldArtCoversEveryIllustratedGameplayAssetWithoutReplacingMenuArt() throws Exception {
+        var sprites = new Gson().fromJson(Files.readString(Path.of("assets/data/hd-art.json")), HdArt.Manifest.class).sprites;
+        for (var item : sprites.entrySet()) {
+            String key = item.getKey();
+            if (key.startsWith("world_") || key.equals("title_background")) continue;
+            var world = sprites.get("world_" + key);
+            assertNotNull(world, "Missing gameplay version: " + key);
+            assertTrue(world.sheet.startsWith("world/"), key);
+            assertNotEquals(item.getValue().sheet, world.sheet, "Menus must retain their own illustration");
+            assertEquals(item.getValue().drawWidth, world.drawWidth, key);
+            assertEquals(item.getValue().drawHeight, world.drawHeight, key);
+        }
+        for (int i = 0; i < 6; i++) assertNotNull(sprites.get("world_smith_" + i));
+        var sheets = new HashMap<String, BufferedImage>();
+        for (var item : sprites.entrySet()) {
+            if (!item.getKey().startsWith("world_")) continue;
+            var e = item.getValue();
+            if (e.sheet.endsWith("/terrain.png") || e.sheet.endsWith("/forge-stage.png")) continue;
+            if (!sheets.containsKey(e.sheet)) sheets.put(e.sheet, ImageIO.read(Path.of("assets", e.sheet).toFile()));
+            var im = sheets.get(e.sheet);
+            assertTrue(im.getColorModel().hasAlpha());
+            // A neighboring sprite or cropped limb must never touch the region's outer border.
+            for (int x = e.x; x < e.x + e.width; x++) {
+                assertTrue((im.getRGB(x, e.y) >>> 24) <= 32, item.getKey() + " top");
+                assertTrue((im.getRGB(x, e.y + e.height - 1) >>> 24) <= 32, item.getKey() + " bottom");
+            }
+            for (int y = e.y; y < e.y + e.height; y++) {
+                assertTrue((im.getRGB(e.x, y) >>> 24) <= 32, item.getKey() + " left");
+                assertTrue((im.getRGB(e.x + e.width - 1, y) >>> 24) <= 32, item.getKey() + " right");
+            }
+        }
+    }
 }

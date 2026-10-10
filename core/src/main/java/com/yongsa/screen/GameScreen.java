@@ -360,6 +360,7 @@ public class GameScreen extends ScreenAdapter {
 
     /** 개발용 메뉴 (F1): 보스 부활, 광물 무한, 무적. */
     public void toggleDevMenu() {
+        if (modals.top() instanceof ForgeWindow forge && forge.isWorking()) return;
         if (modals.top() instanceof DevMenu) modals.top().close();
         else modals.push(new DevMenu(this));
         game.sfx.play("select");

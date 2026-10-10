@@ -37,28 +37,35 @@ public final class VisualSmokeLauncher {
     private static final class Capture extends YongsaGame {
         private final FileHandle output;
         private final String[] names = {"01-title", "02-camp", "03-forge-craft", "04-forge-enhance",
-                "05-bag", "06-map", "07-mine", "08-castle", "09-tower-boss", "10-final-boss", "11-small-window", "12-weapon-gallery", "13-awakened-forge", "14-full-inventory"};
+                "05-bag", "06-map", "07-mine", "08-castle", "09-tower-boss", "10-final-boss", "11-small-window", "12-weapon-gallery", "13-awakened-forge", "14-full-inventory",
+                "15-forge-success", "16-forge-keep", "17-forge-down", "18-forge-destroy", "19-forge-awaken", "20-small-forge", "21-world-weapons"};
         private int scenario, frame;
         Capture(String directory) { output = new FileHandle(directory); output.mkdirs(); }
 
         @Override public void render() {
             super.render();
             exerciseInput();
+            if (scenario == 14 && frame == 12) capture("forge-strike");
             if (++frame < 100) return;
-            Pixmap pixels = ScreenUtils.getFrameBufferPixmap(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());
-            PixmapIO.PNG writer = new PixmapIO.PNG();
-            writer.setFlipY(true);
-            try { writer.write(output.child(names[scenario] + ".png"), pixels); }
-            catch (java.io.IOException e) { throw new RuntimeException(e); }
-            finally { writer.dispose(); pixels.dispose(); }
-            System.out.println("CAPTURE_OK " + names[scenario]);
+            capture(names[scenario]);
             frame = 0;
             if (++scenario == names.length) { Gdx.app.exit(); return; }
             setup();
         }
 
+        private void capture(String name) {
+            Pixmap pixels = ScreenUtils.getFrameBufferPixmap(0, 0, Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());
+            PixmapIO.PNG writer = new PixmapIO.PNG();
+            writer.setFlipY(true);
+            try { writer.write(output.child(name + ".png"), pixels); }
+            catch (java.io.IOException e) { throw new RuntimeException(e); }
+            finally { writer.dispose(); pixels.dispose(); }
+            System.out.println("CAPTURE_OK " + name);
+        }
+
         private void exerciseInput() {
             if (!(getScreen() instanceof GameScreen gameScreen)) return;
+            if (scenario >= 14 && scenario <= 18) exerciseSmithing(gameScreen);
             if (scenario == 2 && frame == 10) Gdx.input.getInputProcessor().keyDown(com.badlogic.gdx.Input.Keys.ENTER);
             if (scenario == 2 && frame == 95) {
                 if (gameScreen.session.state.weaponByDef("blackiron") == null || gameScreen.session.state.ore(OreType.BLACKIRON) != 172)
@@ -90,7 +97,7 @@ public final class VisualSmokeLauncher {
         }
 
         private void setup() {
-            if (scenario == 11) {
+            if (scenario == 11 || scenario == 20) {
                 Gdx.graphics.setWindowedMode(1280, 720);
                 Screen previous = getScreen();
                 setScreen(new com.badlogic.gdx.ScreenAdapter() {
@@ -100,14 +107,14 @@ public final class VisualSmokeLauncher {
                         batch.setProjectionMatrix(new com.badlogic.gdx.math.Matrix4().setToOrtho2D(0, 0, 1280, 720));
                         batch.begin();
                         fonts.large.setColor(com.yongsa.ui.Ui.GOLD);
-                        fonts.large.draw(batch, "무기 · 기본형과 각성형", 40, 684);
+                        fonts.large.draw(batch, scenario == 20 ? "인게임용 · 기본형과 각성형" : "상세 그림 · 기본형과 각성형", 40, 684);
                         String[] ids = {"holy_sealed", "blackiron", "bloodmoon", "skyfall", "holy_awakened", "blackiron", "bloodmoon", "skyfall"};
                         for (int i = 0; i < 8; i++) {
                             float x = 48 + i % 4 * 310, y = i < 4 ? 354 : 42;
                             batch.setColor(0.08f, 0.11f, 0.14f, 1);
                             batch.draw(art.white(), x - 8, y - 10, 284, 290);
                             batch.setColor(com.badlogic.gdx.graphics.Color.WHITE);
-                            batch.draw(art.sword(ids[i], i >= 4), x + 15, y + 24, 236, 236);
+                            batch.draw(scenario == 20 ? art.worldSword(ids[i], i >= 4) : art.sword(ids[i], i >= 4), x + 15, y + 24, 236, 236);
                             fonts.normal.setColor(i < 4 ? com.yongsa.ui.Ui.TEXT : com.yongsa.ui.Ui.GOLD);
                             fonts.normal.draw(batch, i < 4 || i == 4 ? balance.weapon(ids[i]).name : balance.weapon(ids[i]).awakenedName, x + 12, y + 14);
                         }
@@ -123,7 +130,8 @@ public final class VisualSmokeLauncher {
                 Weapon iron = state.newWeapon("blackiron"); iron.level = 6; state.equippedUid = iron.uid;
                 Weapon blood = state.newWeapon("bloodmoon"); blood.level = 10; blood.awakened = true;
                 Weapon sky = state.newWeapon("skyfall"); sky.level = 3;
-                if (scenario >= 12) { iron.level = 10; iron.awakened = true; }
+                if (scenario == 12 || scenario == 13) { iron.level = 10; iron.awakened = true; }
+                if (scenario == 18) iron.level = 9;
                 if (scenario == 13) {
                     state.bossesDefeated.addAll(java.util.List.of("LEFT", "RIGHT", "TOP"));
                     state.imprints.addAll(java.util.List.of("blackiron", "bloodmoon", "skyfall"));
@@ -134,6 +142,17 @@ public final class VisualSmokeLauncher {
             Room target = newMap().rooms.stream().filter(r -> r.id.equals(roomId)).findFirst().orElseThrow();
             if (scenario == 9) { state.unsealed = true; state.bossesDefeated.addAll(java.util.List.of("LEFT", "RIGHT", "TOP")); }
             GameScreen next = new GameScreen(this, state);
+            settings.effectSpeed = 1;
+            if (scenario >= 14 && scenario <= 18) {
+                var odds = next.session.enhance.odds(state.equipped().level);
+                int desired = scenario == 18 ? 0 : scenario - 14;
+                for (long seed = 0; ; seed++) {
+                    double roll = new java.util.Random(seed).nextDouble() * 100;
+                    int outcome = roll < odds.success ? 0 : roll < odds.success + odds.keep ? 1
+                            : roll < odds.success + odds.keep + odds.down ? 2 : 3;
+                    if (outcome == desired) { next.session.random.setSeed(seed); break; }
+                }
+            }
             if (!"CAMP".equals(roomId)) {
                 next.session.hero.x = (target.centerTileX() + 0.5f) * balance.tileSize;
                 next.session.hero.y = (target.centerTileY() - 2) * balance.tileSize;
@@ -141,10 +160,69 @@ public final class VisualSmokeLauncher {
             Screen previous = getScreen();
             setScreen(next);
             previous.dispose();
-            if (scenario == 2 || scenario == 3 || scenario == 12) next.modals.push(new ForgeWindow(next));
+            if (scenario == 2 || scenario == 3 || scenario == 12 || scenario >= 14) next.modals.push(new ForgeWindow(next));
             if (scenario == 4 || scenario == 13) next.modals.push(new BagWindow(next));
             if (scenario == 5) next.hud.toggleMap();
             if (scenario == 10) { Gdx.graphics.setWindowedMode(960, 540); next.modals.push(new BagWindow(next)); }
+            if (scenario == 19) Gdx.graphics.setWindowedMode(960, 540);
+        }
+
+        private void exerciseSmithing(GameScreen screen) {
+            var input = Gdx.input.getInputProcessor();
+            if (frame == 10) {
+                input.keyDown(com.badlogic.gdx.Input.Keys.ENTER);
+                if (!(screen.modals.top() instanceof com.yongsa.ui.ConfirmDialog)) throw new AssertionError("Missing risk dialog");
+                input.keyDown(com.badlogic.gdx.Input.Keys.RIGHT);
+                input.keyDown(com.badlogic.gdx.Input.Keys.ENTER);
+                ForgeWindow forge = (ForgeWindow) screen.modals.top();
+                if (!forge.isWorking()) throw new AssertionError("Smithing did not start");
+                input.keyDown(com.badlogic.gdx.Input.Keys.ENTER);
+                input.keyDown(com.badlogic.gdx.Input.Keys.ESCAPE);
+                input.keyDown(com.badlogic.gdx.Input.Keys.F1);
+                if (screen.modals.top() != forge) throw new AssertionError("Busy smithing can be interrupted");
+                var tab = findButton(forge, "제작");
+                var mouse = new com.badlogic.gdx.scenes.scene2d.InputEvent();
+                mouse.setType(com.badlogic.gdx.scenes.scene2d.InputEvent.Type.touchDown);
+                tab.fire(mouse);
+                if (!mouse.isCancelled()) throw new AssertionError("Busy mouse input is not blocked");
+                if (screen.session.state.stats.enhanceTries != 0) throw new AssertionError("Charged before final strike");
+            }
+            if (frame == 11) ((ForgeWindow)screen.modals.top()).act(0.32f);
+            if (frame == 20) {
+                ForgeWindow forge = (ForgeWindow)screen.modals.top();
+                forge.act(2); // dropped-frame path must still commit exactly once
+                forge.keyDown(com.badlogic.gdx.Input.Keys.ENTER);
+                var state = screen.session.state;
+                int expectedOre = scenario == 17 ? 181 : 177;
+                if (state.stats.enhanceTries != 1 || state.ore(OreType.BLACKIRON) != expectedOre)
+                    throw new AssertionError("Smithing charged the wrong number of times");
+                var saved = saves.load();
+                if (saved.corrupt || saved.state == null || saved.state.stats.enhanceTries != 1
+                        || saved.state.ore(OreType.BLACKIRON) != expectedOre
+                        || saved.state.equippedUid != state.equippedUid)
+                    throw new AssertionError("Smithing result was not saved immediately");
+                Weapon iron = state.weaponByDef("blackiron");
+                if (scenario == 17) {
+                    if (iron != null || !"holy_sealed".equals(state.equipped().defId)) throw new AssertionError("Destroy fallback missing");
+                } else {
+                    int level = scenario == 14 ? 7 : scenario == 15 ? 6 : scenario == 16 ? 5 : 10;
+                    if (iron.level != level || (scenario == 18 && !iron.awakened)) throw new AssertionError("Unexpected smithing result");
+                }
+                System.out.println("UI_ACTION_OK " + names[scenario] + " exactly-once, keyboard/mouse/F1 guarded");
+            }
+            if (frame == 95) {
+                ForgeWindow forge = (ForgeWindow)screen.modals.top();
+                forge.act(2);
+                if (forge.isWorking()) throw new AssertionError("Result animation did not unlock");
+                if (screen.session.state.stats.enhanceTries != 1) throw new AssertionError("Result rerolled");
+            }
+        }
+
+        private com.badlogic.gdx.scenes.scene2d.ui.TextButton findButton(com.badlogic.gdx.scenes.scene2d.Actor actor, String text) {
+            if (actor instanceof com.badlogic.gdx.scenes.scene2d.ui.TextButton b && text.contentEquals(b.getText())) return b;
+            if (actor instanceof com.badlogic.gdx.scenes.scene2d.Group group)
+                for (var child : group.getChildren()) { var result = findButton(child, text); if (result != null) return result; }
+            return null;
         }
     }
 }

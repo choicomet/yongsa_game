@@ -6,7 +6,7 @@ uiux 팀 프로젝트 (최해성 · 박지용 · 김선우). Java 17 + libGDX 2D
 
 디자인과 구현 변경은 작업별 브랜치와 PR로 공유합니다. 현재 진행 방향은 [디자인 기준](docs/ART_DIRECTION.md), 작업 절차는 [협업 안내](docs/COLLABORATION.md)를 먼저 확인하세요.
 
-[최신 도트 기준안](design/pixel-v4/README.md)은 질감을 줄인 용사·성검 시안과 **32×48 용사 / 32×32 성검의 고정 격자 원본**입니다. 정수배 확대와 발·손잡이 기준점을 확인할 수 있습니다. 현재 정면 대기 1프레임과 검 1종의 디자인 검토이며 런타임 교체 전입니다. [이전 v3 시안](design/pixel-v3/README.md)의 6포즈·검 8종은 형태 참고 자료로 보존합니다.
+[최신 인게임 적용본](design/style2-runtime/README.md)은 선택한 2번 스타일을 용사·검·적·소품·지형에 연결하고, 직접 망치질하는 대장간과 작은 확률 패널을 적용했습니다. 큰 미리보기는 기존 상세 그림을 유지합니다. [실제 게임 캡처 보기](design/style2-runtime/index.html) · [검수 기록](design/style2-runtime/QA.md). v3·v4 시안은 비교 기록으로 보존합니다.
 
 ## 실행
 
