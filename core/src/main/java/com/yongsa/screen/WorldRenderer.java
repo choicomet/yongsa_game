@@ -432,7 +432,7 @@ public class WorldRenderer implements Disposable {
             emberT = 0.05f;
             for (Prop pr : map.props) {
                 if (pr.kind != Prop.Kind.CAMPFIRE) continue;
-                float cx = (pr.tileX + 0.5f) * T, cy = pr.tileY * T + 12;
+                float cx = pr.centerX(T), cy = pr.centerY(T) + (pr.baked ? 20 : -4);
                 Particles.P p = particles.spawn(cx + MathUtils.random(-8f, 8f), cy, MathUtils.random(0.8f, 1.6f),
                         MathUtils.random(2f, 3f), new Color(1f, MathUtils.random(0.5f, 0.8f), 0.2f, 1f));
                 p.vz = MathUtils.random(30f, 70f);
@@ -484,6 +484,7 @@ public class WorldRenderer implements Disposable {
             // 그림에 이미 빛과 그늘이 그려져 있어서 조금만 어둡게 한다
             if (r.type == RoomType.FINAL) return new Color(0.74f, 0.68f, 0.82f, 1f);
             switch (th) {
+                case "CAMP": return new Color(0.84f, 0.81f, 0.78f, 1f);
                 case "LEFT": return new Color(0.8f, 0.8f, 0.84f, 1f);
                 case "RIGHT": return new Color(0.84f, 0.76f, 0.78f, 1f);
                 default: return new Color(0.78f, 0.76f, 0.88f, 1f);
@@ -529,7 +530,7 @@ public class WorldRenderer implements Disposable {
             lighting.add(t[0], t[1] + 10, 175 * fl, 1f, 0.62f, 0.32f, 0.75f);
         }
         for (Prop p : map.props) {
-            float cx = (p.tileX + p.w / 2f) * T, cy = (p.tileY + p.h / 2f) * T;
+            float cx = p.centerX(T), cy = p.centerY(T);
             if (p.kind == Prop.Kind.CAMPFIRE) {
                 float fl = 1f + 0.06f * MathUtils.sin(time * 9f) + 0.04f * MathUtils.sin(time * 17f);
                 lighting.add(cx, cy, 360 * fl, 1f, 0.62f, 0.3f, 0.95f);
@@ -758,11 +759,11 @@ public class WorldRenderer implements Disposable {
     private void drawFloorProps() {
         for (Prop p : map.props) {
             if (p.kind != Prop.Kind.SEAL) continue;
-            float cx = (p.tileX + p.w / 2f) * T, cy = (p.tileY + p.h / 2f) * T;
+            float cx = p.centerX(T), cy = p.centerY(T);
             if (!inView(cx, cy)) continue;
             Color c = sealColor();
             float pw = sealPower();
-            float size = p.w * T * 1.5f;
+            float size = p.width(T) * 1.5f;
             batch.setColor(0.05f, 0.03f, 0.07f, 0.55f);
             batch.draw(art.glow, cx - size * 0.6f, cy - size * 0.35f, size * 1.2f, size * 0.7f);
             batch.setColor(c.r, c.g, c.b, 0.45f + 0.5f * pw);
@@ -947,8 +948,8 @@ public class WorldRenderer implements Disposable {
 
     private void collect(List<Sorted> list, int tx0, int ty0, int tx1, int ty1) {
         for (Prop p : map.props) {
-            if (p.walkable()) continue; // 바닥 문양은 타일과 함께 먼저 그린다
-            list.add(new Sorted(p.tileY * T + 2, () -> drawProp(p)));
+            if (p.walkable() || p.baked) continue; // 바닥 문양은 타일과 함께 먼저 그린다
+            list.add(new Sorted(p.y(T) + 2, () -> drawProp(p)));
         }
         for (Room r : map.rooms) {
             if (r.type != RoomType.ORE) continue;
@@ -973,7 +974,7 @@ public class WorldRenderer implements Disposable {
 
     private void drawProp(Prop p) {
         batch.setColor(Color.WHITE);
-        float px = p.tileX * T, py = p.tileY * T;
+        float px = p.x(T), py = p.y(T);
         switch (p.kind) {
             case FORGE: {
                 TextureRegion r = art.world("forge");
@@ -1201,18 +1202,18 @@ public class WorldRenderer implements Disposable {
             batch.draw(art.glow, t[0] - 22, t[1] + 2, 44, 44);
         }
         for (Prop p : map.props) {
-            float px = p.tileX * T, py = p.tileY * T;
+            float px = p.x(T), py = p.y(T);
             if (p.kind == Prop.Kind.CAMPFIRE) {
                 float fl = 0.85f + 0.15f * MathUtils.sin(time * 10f);
                 batch.setColor(1f, 0.55f, 0.2f, 0.55f * fl);
-                batch.draw(art.glow, px + 16 - 48, py + 8 - 40, 96, 80);
-            } else if (p.kind == Prop.Kind.FORGE) {
+                batch.draw(art.glow, p.centerX(T) - 48, p.centerY(T) - 32, 96, 80);
+            } else if (p.kind == Prop.Kind.FORGE && !p.baked) {
                 float fl = 0.7f + 0.3f * MathUtils.sin(time * 7f);
                 batch.setColor(1f, 0.5f, 0.15f, 0.6f * fl);
                 batch.draw(art.glow, px + 6, py + 26, 28, 28);
             } else if (p.kind == Prop.Kind.SEAL && sealPower() > 0) {
                 Color c = sealColor();
-                float cx = px + p.w * T / 2f, cy = py + p.h * T / 2f;
+                float cx = p.centerX(T), cy = p.centerY(T);
                 float pulse = 0.75f + 0.25f * MathUtils.sin(time * 3f);
                 batch.setColor(c.r, c.g, c.b, 0.35f * sealPower() * pulse);
                 batch.draw(art.glow, cx - 70, cy - 40, 140, 80);

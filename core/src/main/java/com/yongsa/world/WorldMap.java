@@ -13,7 +13,7 @@ import java.util.Map;
  * 캠프와 던전 3개가 들어 있는 통합 맵 하나 (FR-맵-03, 04).
  * 방은 지도 칸 하나의 가운데에 떨어져 놓이고, 사이 통로 없이 문으로 이어진다:
  * 문(그림 속 계단·갱도 입구)을 지나가면 이어진 방의 짝 문 앞으로 옮겨 간다.
- * 던전 방은 배경 그림 한 장이고 그림의 바닥 경계(다각형)가 벽이다. 캠프만 타일로 짓는다.
+ * 캠프와 던전 방은 배경 그림 한 장이고 그림의 바닥 경계(다각형)가 벽이다.
  */
 public class WorldMap {
     public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3;
@@ -249,6 +249,13 @@ public class WorldMap {
 
     private void buildCampProps() {
         Room camp = byId.get("CAMP");
+        if (camp.scene != null) {
+            for (RoomSceneLayout.Facility f : camp.scene.facilities)
+                props.add(new Prop(f.kind, camp.sceneX(f.center[0]), camp.sceneY(f.center[1]),
+                        f.widthTiles * tileSize, f.heightTiles * tileSize, tileSize, f.baked));
+            // Visible solid bases are already traced in scene.blocked; do not expand to whole tiles.
+            return;
+        }
         // 캠프 가운데 모닥불 가까이에 둬서 들어오자마자 한 화면에 보이게 한다
         int cy = (int) camp.centerTileY();
         props.add(new Prop(Prop.Kind.FORGE, camp.x0 + 5, cy + 1, 2, 2));

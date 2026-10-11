@@ -39,6 +39,13 @@ public final class RoomSceneLayout {
         public float[] foot;
     }
 
+    public static final class Facility {
+        public Prop.Kind kind;
+        public float[] center;
+        public float widthTiles, heightTiles;
+        public boolean baked;
+    }
+
     public static final class Scene {
         public String id, title, image;
         public int pixelWidth, pixelHeight;
@@ -47,6 +54,7 @@ public final class RoomSceneLayout {
         public List<float[]> blocked = new ArrayList<>();
         public List<float[]> enemySpawns;
         public List<Portal> portals;
+        public List<Facility> facilities = new ArrayList<>();
 
         public void validate() {
             if (id == null || image == null || pixelWidth <= 0 || pixelHeight <= 0
@@ -64,6 +72,14 @@ public final class RoomSceneLayout {
             if (enemySpawns == null || portals == null) throw new IllegalArgumentException("Missing anchors");
             for (float[] p : enemySpawns) point(p);
             for (Portal p : portals) point(p.foot);
+            if (facilities == null) throw new IllegalArgumentException("Missing facilities: " + id);
+            java.util.Set<Prop.Kind> kinds = new java.util.HashSet<>();
+            for (Facility f : facilities) {
+                point(f.center);
+                if (f.kind == null || !kinds.add(f.kind) || !Float.isFinite(f.widthTiles)
+                        || !Float.isFinite(f.heightTiles) || f.widthTiles <= 0 || f.heightTiles <= 0)
+                    throw new IllegalArgumentException("Invalid facility: " + id);
+            }
         }
 
         private static void normalized(float n) {

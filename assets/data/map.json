@@ -8,7 +8,7 @@
   "maxCellY": 3,
   "campSize": [20, 14],
   "rooms": [
-    { "id": "CAMP", "type": "CAMP", "cx": 0, "cy": 0 },
+    { "id": "CAMP", "type": "CAMP", "cx": 0, "cy": 0, "scene": "central-camp", "width": 32 },
 
     { "id": "L1", "type": "MOB",  "dungeon": "LEFT", "cx": -1, "cy": 0,  "scene": "mine-mob-c",  "width": 32 },
     { "id": "L2", "type": "ORE",  "dungeon": "LEFT", "cx": -2, "cy": 0,  "scene": "mine-ore-b",  "width": 30, "flip": true },

@@ -21,7 +21,7 @@ import com.yongsa.world.Room;
 /** Explicit developer-only entry point. Saves real GL frames using an isolated save directory. */
 public final class VisualSmokeLauncher {
     public static void main(String[] args) {
-        if (args.length != 1) throw new IllegalArgumentException("Screenshot output directory required");
+        if (args.length < 1 || args.length > 2) throw new IllegalArgumentException("Screenshot output directory required; optional mode: camp");
         System.setProperty("yongsa.saveDir", new java.io.File(args[0], "qa-save").getAbsolutePath());
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setTitle("Yongsa visual verification");
@@ -31,20 +31,32 @@ public final class VisualSmokeLauncher {
         config.setForegroundFPS(60);
         config.setIdleFPS(60);
         config.useVsync(false);
-        new Lwjgl3Application(new Capture(args[0]), config);
+        new Lwjgl3Application(new Capture(args[0], args.length == 2 && "camp".equals(args[1])), config);
     }
 
     private static final class Capture extends YongsaGame {
         private final FileHandle output;
-        private final String[] names = {"01-title", "02-camp", "03-forge-craft", "04-forge-enhance",
+        private final String[] standardNames = {"01-title", "02-camp", "03-forge-craft", "04-forge-enhance",
                 "05-bag", "06-map", "07-mine", "08-castle", "09-tower-boss", "10-final-boss", "11-small-window", "12-weapon-gallery", "13-awakened-forge", "14-full-inventory",
                 "15-forge-success", "16-forge-keep", "17-forge-down", "18-forge-destroy", "19-forge-awaken", "20-small-forge", "21-world-weapons"};
         private int scenario, frame;
-        Capture(String directory) { output = new FileHandle(directory); output.mkdirs(); }
+        private final boolean campOnly;
+        private final String[] names;
+        Capture(String directory, boolean campOnly) {
+            output = new FileHandle(directory); output.mkdirs();
+            this.campOnly = campOnly;
+            names = campOnly ? new String[]{"camp-spawn", "camp-forge", "camp-bed", "camp-left-gate",
+                    "camp-right-locked", "camp-north-locked", "camp-seal", "camp-overview"} : standardNames;
+        }
+
+        @Override public void create() {
+            super.create();
+            if (campOnly) setup();
+        }
 
         @Override public void render() {
             super.render();
-            exerciseInput();
+            if (!campOnly) exerciseInput();
             if (scenario == 14 && frame == 12) capture("forge-strike");
             if (++frame < 100) return;
             capture(names[scenario]);
@@ -97,6 +109,7 @@ public final class VisualSmokeLauncher {
         }
 
         private void setup() {
+            if (campOnly) { setupCamp(); return; }
             if (scenario == 11 || scenario == 20) {
                 Gdx.graphics.setWindowedMode(1280, 720);
                 Screen previous = getScreen();
@@ -138,7 +151,7 @@ public final class VisualSmokeLauncher {
                     for (int i = 0; i < 12; i++) state.newWeapon("blackiron");
                 }
             }
-            String roomId = scenario == 6 ? "L2" : scenario == 7 ? "R1" : scenario == 8 ? "T7" : scenario == 9 ? "F" : "CAMP";
+            String roomId = scenario == 6 ? "L2" : scenario == 7 ? "R1" : scenario == 8 ? "T6" : scenario == 9 ? "F" : "CAMP";
             Room target = newMap().rooms.stream().filter(r -> r.id.equals(roomId)).findFirst().orElseThrow();
             if (scenario == 9) { state.unsealed = true; state.bossesDefeated.addAll(java.util.List.of("LEFT", "RIGHT", "TOP")); }
             GameScreen next = new GameScreen(this, state);
@@ -165,6 +178,26 @@ public final class VisualSmokeLauncher {
             if (scenario == 5) next.hud.toggleMap();
             if (scenario == 10) { Gdx.graphics.setWindowedMode(960, 540); next.modals.push(new BagWindow(next)); }
             if (scenario == 19) Gdx.graphics.setWindowedMode(960, 540);
+        }
+
+        private void setupCamp() {
+            settings.zoomNormal = scenario == 7 ? 65 : 115;
+            GameState state = NewGame.create(balance);
+            if (scenario == 6) state.unsealed = true;
+            GameScreen next = new GameScreen(this, state);
+            Room camp = next.session.map.room("CAMP");
+            float[][] approach = {{.515f,.65f}, {.306f,.434f}, {.745f,.44f}, {.13f,.455f},
+                    {.89f,.57f}, {.508f,.28f}, {.506f,.776f}, {.51f,.59f}};
+            next.session.hero.x = camp.sceneX(approach[scenario][0]);
+            next.session.hero.y = camp.sceneY(approach[scenario][1]);
+            if (scenario >= 3 && scenario <= 5) {
+                String name = new String[]{"LEFT", "RIGHT", "UP"}[scenario - 3];
+                var door = camp.doors.stream().filter(d -> d.name.equals(name)).findFirst().orElseThrow();
+                next.session.hero.x = door.arriveX; next.session.hero.y = door.arriveY;
+            }
+            if (!next.session.map.free(next.session.hero.x, next.session.hero.y, next.session.hero.hw, next.session.hero.hh))
+                throw new AssertionError("Camp capture point is not walkable: " + names[scenario]);
+            Screen previous = getScreen(); setScreen(next); previous.dispose();
         }
 
         private void exerciseSmithing(GameScreen screen) {

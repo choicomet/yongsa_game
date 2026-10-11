@@ -133,8 +133,8 @@ public class GameSession {
 
     public void placeAtCampSpawn() {
         Room camp = map.room("CAMP");
-        hero.x = center((int) camp.centerTileX());
-        hero.y = center((int) camp.centerTileY() - 2);
+        hero.x = camp.scene == null ? center((int) camp.centerTileX()) : camp.spawnX(T);
+        hero.y = camp.scene == null ? center((int) camp.centerTileY() - 2) : camp.spawnY(T);
         hero.facing = Facing.DOWN;
     }
 
@@ -490,7 +490,9 @@ public class GameSession {
      */
     private boolean checkDoors() {
         if (fightRoom != null || doorCd > 0 || pendingDoor != null) return false;
-        Room r = heroRoom != null ? heroRoom : currentRoom;
+        // Developer warps and door arrivals can change coordinates before updateRooms runs.
+        // Never trigger an old room's unbounded exit plane from a different room.
+        Room r = map.roomAt(tileX(hero.x), tileY(hero.y));
         if (r == null) return false;
         for (Door d : r.doors) {
             if (d.isClosed() || !d.triggers(hero.x, hero.y)) continue;
@@ -1527,8 +1529,8 @@ public class GameSession {
             }
         }
         for (Prop p : map.props) {
-            float px = Math.max(p.tileX * T, Math.min(hero.x, (p.tileX + p.w) * T));
-            float py = Math.max(p.tileY * T, Math.min(hero.y, (p.tileY + p.h) * T));
+            float px = Math.max(p.x(T), Math.min(hero.x, p.x(T) + p.width(T)));
+            float py = Math.max(p.y(T), Math.min(hero.y, p.y(T) + p.height(T)));
             float d = (float) Math.hypot(px - hero.x, py - hero.y);
             if (d < 0.9f * T && d < best) {
                 best = d;
@@ -1547,8 +1549,8 @@ public class GameSession {
                     break;
                 default: prompt = "E  모닥불"; break;
             }
-            promptX = (targetProp.tileX + targetProp.w / 2f) * T;
-            promptY = (targetProp.tileY + targetProp.h) * T + 18;
+            promptX = targetProp.centerX(T);
+            promptY = targetProp.y(T) + targetProp.height(T) + 18;
             return;
         }
         if (heroRoom != null && heroRoom.type == RoomType.ORE) {
@@ -1761,8 +1763,8 @@ public class GameSession {
         if (heroRoom != null && heroRoom.type == RoomType.FINAL) {
             // 심연에서는 캠프(문양 옆)에서 이어 한다
             Room camp = map.room("CAMP");
-            state.resumeX = center((int) camp.centerTileX());
-            state.resumeY = center((int) camp.centerTileY() - 2);
+            state.resumeX = camp.scene == null ? center((int) camp.centerTileX()) : camp.spawnX(T);
+            state.resumeY = camp.scene == null ? center((int) camp.centerTileY() - 2) : camp.spawnY(T);
         } else if (inCamp()) {
             state.resumeX = hero.x;
             state.resumeY = hero.y;
