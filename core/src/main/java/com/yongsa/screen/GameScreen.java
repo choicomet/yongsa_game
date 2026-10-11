@@ -55,6 +55,8 @@ public class GameScreen extends ScreenAdapter {
     private boolean falling;
     /** 화면 전환이 문을 지나 옆 방으로 가는 것 (짧게 어두워졌다 밝아진다). */
     private boolean doorWarp;
+    /** 개발 메뉴의 보스방 바로 가기: 화면이 어두워지면 이 던전(또는 FINAL)의 보스방 입구로 옮긴다. */
+    private String devWarpTarget;
     /** 기본 배율(100%): 한 칸의 그림 픽셀이 화면 3픽셀이 되도록 맵을 1.5배로 확대해서 본다. */
     public static final float ZOOM = 2f / 3f;
     /** 휠 / +,- 로 고르는 확대 단계 (기본 배율 대비 %). 일반 구간과 보스방이 따로 기억된다.
@@ -227,6 +229,9 @@ public class GameScreen extends ScreenAdapter {
             if (doorWarp) {
                 session.passPendingDoor();
                 doorWarp = false;
+            } else if (devWarpTarget != null) {
+                session.devWarpToBoss(devWarpTarget);
+                devWarpTarget = null;
             } else if (falling) {
                 session.dropToAbyss();
                 hud.banner("심연 · 마왕의 옥좌");
@@ -406,7 +411,16 @@ public class GameScreen extends ScreenAdapter {
         game.sfx.play("slam");
     }
 
-    /** 개발용 메뉴 (F1): 보스 부활, 광물 무한, 무적. */
+    /** 개발용: 보스방(또는 심연) 입구로 바로 간다. 싸우는 중이거나 다른 이동 중이면 false. */
+    public boolean devWarpToBoss(String dungeonId) {
+        if (warping || session.fighting()) return false;
+        devWarpTarget = dungeonId;
+        warping = true;
+        fadeTarget = 1f;
+        return true;
+    }
+
+    /** 개발용 메뉴 (F1): 보스 부활, 보스방 바로 가기, 광물 무한, 무적. */
     public void toggleDevMenu() {
         if (modals.top() instanceof ForgeWindow forge && forge.isWorking()) return;
         if (modals.top() instanceof DevMenu) modals.top().close();

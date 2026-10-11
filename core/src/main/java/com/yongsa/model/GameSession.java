@@ -1714,6 +1714,36 @@ public class GameSession {
         return revived.contains(dungeonId);
     }
 
+    /**
+     * 개발용: 보스방(dungeonId 가 "FINAL" 이면 심연) 입구로 바로 옮긴다. 조금 걸어 들어가면 싸움이 시작된다.
+     * 싸우는 중이면 옮기지 않는다. 옮겼으면 true.
+     */
+    public boolean devWarpToBoss(String dungeonId) {
+        if (fightRoom != null) return false;
+        Room target = null;
+        for (Room r : map.rooms) {
+            boolean match = "FINAL".equals(dungeonId) ? r.type == RoomType.FINAL
+                    : r.type == RoomType.BOSS && dungeonId.equals(r.dungeonId);
+            if (match) target = r;
+        }
+        if (target == null) return false;
+        Door in = null;
+        for (Door d : target.doors) if (!d.dead()) in = d;
+        hero.x = in != null ? in.arriveX : target.spawnX(T);
+        hero.y = in != null ? in.arriveY : target.spawnY(T);
+        hero.aimX = in != null ? -in.dirX : 0;
+        hero.aimY = in != null ? -in.dirY : 1;
+        hero.facing = Facing.of(hero.aimX, hero.aimY);
+        hero.rollT = 0;
+        hero.kbT = 0;
+        hero.slowT = 0;
+        hazards.clear();
+        projectiles.clear();
+        pendingDoor = null;
+        doorCd = 0.35f;
+        return true;
+    }
+
     /** 광물 무한: 모자라면 채워 둔다. */
     public void devFillOres(int amount) {
         for (OreType t : OreType.values()) if (state.ore(t) < amount) state.ores.put(t, amount);
@@ -1727,7 +1757,7 @@ public class GameSession {
         return center((int) r.centerTileY());
     }
 
-    /** 마왕이 기다리는 심연. 어느 방과도 이어지지 않는다. */
+    /** 마왕이 기다리는 심연. 봉인을 풀면 캠프 아래 계단과도 이어진다. */
     public Room abyss() {
         for (Room r : map.rooms) if (r.type == RoomType.FINAL) return r;
         return null;

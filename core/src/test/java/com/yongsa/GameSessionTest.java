@@ -8,6 +8,7 @@ import com.yongsa.model.GameState;
 import com.yongsa.model.NewGame;
 import com.yongsa.world.Door;
 import com.yongsa.world.Room;
+import com.yongsa.world.RoomType;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -77,7 +78,7 @@ class GameSessionTest {
     }
 
     @Test
-    void closedGateAndUnlinkedExitsBlockTheWay() {
+    void closedGatesBlockTheWayUntilProgressOpensThem() {
         GameState s = NewGame.create(b);
         GameSession g = session(s);
         Door right = door(g.map.room("CAMP"), "RIGHT");
@@ -88,11 +89,28 @@ class GameSessionTest {
         run(g, go, 1.0f);
         assertTrue(g.inCamp(), "오른쪽 던전은 왼쪽 보스를 잡아야 열린다");
 
-        // 이어진 곳이 없는 그림 속 출구 (L1 아래 계단)는 늘 막혀 있다
-        Door dead = door(g.map.room("L1"), "south");
-        assertTrue(dead.dead());
-        float px = dead.footX + dead.dirX * 8, py = dead.footY + dead.dirY * 8;
+        // 캠프 아래 계단은 성검의 봉인을 풀어야 심연으로 이어진다
+        Door down = door(g.map.room("CAMP"), "down");
+        assertEquals("F", down.partner().room.id);
+        float px = down.footX, py = down.footY;
         assertFalse(g.map.free(px, py, g.hero.hw, g.hero.hh));
+        s.unsealed = true;
+        g.map.updateGates(s);
+        assertTrue(g.map.free(px, py, g.hero.hw, g.hero.hh));
+    }
+
+    @Test
+    void devWarpPutsHeroAtTheBossRoomEntrance() {
+        GameState s = NewGame.create(b);
+        GameSession g = session(s);
+        for (String id : new String[]{"LEFT", "RIGHT", "TOP", "FINAL"}) {
+            assertTrue(g.devWarpToBoss(id), id);
+            run(g, new Controls(), 1 / 60f);
+            RoomType want = "FINAL".equals(id) ? RoomType.FINAL : RoomType.BOSS;
+            assertEquals(want, g.heroRoom().type, id);
+            assertFalse(g.fighting(), "입구에 서기만 해서는 싸움이 시작되지 않는다");
+            if (!"FINAL".equals(id)) assertEquals(id, g.heroRoom().dungeonId);
+        }
     }
 
     @Test

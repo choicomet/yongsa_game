@@ -18,7 +18,7 @@ import java.util.Map;
 public class WorldMap {
     public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3;
     /** 방 배치가 바뀌면 올린다. 저장 파일의 방 기록(광맥 자리)·이어하기 위치가 다르면 버린다. */
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
 
     public final int width, height;
     public final int tileSize;
@@ -283,6 +283,7 @@ public class WorldMap {
             case "LEFT": return true;
             case "RIGHT": return s.bossDefeated("LEFT");
             case "TOP": return s.bossDefeated("RIGHT");
+            case "FINAL": return s.unsealed; // 캠프 아래 계단 ↔ 심연
             default: return false;
         }
     }

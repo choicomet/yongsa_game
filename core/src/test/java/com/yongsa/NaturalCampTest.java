@@ -66,7 +66,7 @@ class NaturalCampTest {
         }
         for (float[] point : new float[][]{{.306f,.375f},{.745f,.38f},{.524f,.51f},{.21f,.425f},{.505f,.96f}})
             assertFalse(g.map.free(camp.sceneX(point[0]), camp.sceneY(point[1]), g.hero.hw, g.hero.hh), "Visible solid base / closed front gate");
-        assertEquals(3, camp.doors.size());
+        assertEquals(4, camp.doors.size()); // 던전 입구 셋 + 심연으로 내려가는 아래 계단
     }
 
     @Test void invalidOldCampResumeRelocatesWithoutResettingDungeonProgress() {

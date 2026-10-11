@@ -8,7 +8,7 @@ import com.yongsa.model.GameState;
 import com.yongsa.screen.GameScreen;
 
 /**
- * 개발용 메뉴 (F1). 보스를 다시 싸우게 되살리고, 광물 무한·무적을 켜고 끈다.
+ * 개발용 메뉴 (F1). 보스를 다시 싸우게 되살리고, 보스방으로 바로 가고, 광물 무한·무적을 켜고 끈다.
  * 켜고 끈 값은 설정 파일에 저장되어 다음 실행에도 유지된다.
  */
 public class DevMenu extends Modal {
@@ -26,8 +26,8 @@ public class DevMenu extends Modal {
         GameSession g = screen.session;
         GameState s = g.state;
         Table p = panel();
-        p.add(label("개발용 메뉴", "large", Ui.GOLD)).colspan(2).padBottom(4).row();
-        p.add(label("F1 로 열고 닫는다. 실제 플레이에는 쓰지 않는다.", "small", Ui.DIM)).colspan(2).padBottom(16).row();
+        p.add(label("개발용 메뉴", "large", Ui.GOLD)).colspan(3).padBottom(4).row();
+        p.add(label("F1 로 열고 닫는다. 실제 플레이에는 쓰지 않는다.", "small", Ui.DIM)).colspan(3).padBottom(16).row();
 
         p.add(label("광물 무한", "default", Ui.DIM)).left().padRight(24);
         p.add(nav.add(screen.game.settings.devInfiniteOre ? "켜짐 (" + INFINITE_ORE + "개 유지)" : "꺼짐", () -> {
@@ -45,15 +45,17 @@ public class DevMenu extends Modal {
             rebuild();
         })).width(260).height(46).left().padBottom(16).row();
 
-        p.add(label("보스 부활", "default", Ui.GOLD)).colspan(2).left().padBottom(4).row();
-        p.add(label("흡수한 힘과 열린 길은 그대로. 보스방에 다시 들어가면 싸운다.", "small", Ui.DIM)).colspan(2).left().padBottom(10).row();
+        p.add(label("보스 부활 · 바로 가기", "default", Ui.GOLD)).colspan(3).left().padBottom(4).row();
+        p.add(label("흡수한 힘과 열린 길은 그대로. 보스방 입구로 가서 걸어 들어가면 싸운다.", "small", Ui.DIM)).colspan(3).left().padBottom(10).row();
         for (String id : AbsorbService.BOSS_ORDER) {
             String name = g.balance.dungeon(id).boss.name;
             p.add(label(name, "default", Ui.TEXT)).left().padRight(24);
-            p.add(reviveButton(id, s.bossDefeated(id), g.devRevived(id))).width(260).height(42).left().padBottom(6).row();
+            p.add(reviveButton(id, s.bossDefeated(id), g.devRevived(id))).width(260).height(42).left().padBottom(6);
+            p.add(warpButton(id, name)).width(150).height(42).left().padLeft(8).padBottom(6).row();
         }
         p.add(label(g.balance.finalBoss.name, "default", Ui.TEXT)).left().padRight(24);
-        p.add(reviveButton("FINAL", s.finalBossDefeated, false)).width(260).height(42).left().padBottom(6).row();
+        p.add(reviveButton("FINAL", s.finalBossDefeated, false)).width(260).height(42).left().padBottom(6);
+        p.add(warpButton("FINAL", g.balance.finalBoss.name)).width(150).height(42).left().padLeft(8).padBottom(6).row();
 
         TextButton all = nav.add("모든 보스 부활", () -> {
             int n = 0;
@@ -63,10 +65,21 @@ public class DevMenu extends Modal {
             rebuild();
         });
         all.setDisabled(g.fighting());
-        p.add(all).colspan(2).width(300).height(46).padTop(8).row();
-        if (g.fighting()) p.add(label("싸우는 중에는 되살릴 수 없다", "small", Ui.DIM)).colspan(2).padTop(4).row();
+        p.add(all).colspan(3).width(300).height(46).padTop(8).row();
+        if (g.fighting()) p.add(label("싸우는 중에는 되살리거나 옮길 수 없다", "small", Ui.DIM)).colspan(3).padTop(4).row();
 
-        p.add(nav.add("닫기", this::close)).colspan(2).width(200).height(50).padTop(14);
+        p.add(nav.add("닫기", this::close)).colspan(3).width(200).height(50).padTop(14);
+    }
+
+    private TextButton warpButton(String id, String name) {
+        TextButton b = nav.add("바로 가기", () -> {
+            if (screen.devWarpToBoss(id)) {
+                close();
+                screen.hud.toast(name + "의 방 입구로 간다");
+            }
+        });
+        b.setDisabled(screen.session.fighting());
+        return b;
     }
 
     private TextButton reviveButton(String id, boolean defeated, boolean waiting) {

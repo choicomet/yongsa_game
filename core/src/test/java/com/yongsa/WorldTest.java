@@ -28,7 +28,10 @@ class WorldTest {
         for (Room r : map.rooms) if (r.type == RoomType.BOSS) boss++;
         assertEquals(3, boss);
         assertEquals(RoomType.FINAL, map.room("F").type);
-        assertTrue(map.room("F").doors.stream().allMatch(Door::dead), "마왕의 심연은 어느 방과도 이어지지 않는다 (캠프 문양에서 떨어져서 간다)");
+        for (Door d : map.room("F").doors)
+            assertEquals("FINAL", d.link.gate, "심연은 봉인을 풀어야 열리는 캠프 아래 계단하고만 이어진다");
+        for (Room r : map.rooms)
+            for (Door d : r.doors) assertFalse(d.dead(), "그림 속 출구는 모두 어딘가로 이어진다: " + r.id + "." + d.name);
         Room camp = map.room("CAMP");
         assertTrue(map.room("L1").x1 < camp.x0, "왼쪽 던전은 캠프 왼쪽");
         assertTrue(map.room("R1").x0 > camp.x1, "오른쪽 던전은 캠프 오른쪽");
@@ -73,8 +76,9 @@ class WorldTest {
         WorldMap map = TestData.map();
         GameState all = NewGame.create(TestData.balance());
         for (String id : new String[]{"LEFT", "RIGHT", "TOP"}) all.bossesDefeated.add(id);
+        all.unsealed = true;
         map.updateGates(all);
-        assertEquals(18, map.links.size());
+        assertEquals(24, map.links.size());
         for (Link l : map.links) {
             for (Door d : new Door[]{l.doorA, l.doorB}) {
                 String name = d.room.id + "." + d.name;

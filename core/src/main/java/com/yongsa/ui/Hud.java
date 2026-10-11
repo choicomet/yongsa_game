@@ -339,7 +339,7 @@ public class Hud {
         // 이음 (방 가운데끼리 잇고 그 위에 방을 그린다)
         for (Link l : g.map.links) {
             boolean seen = known(l.a) || known(l.b);
-            if (!seen) continue;
+            if (!seen || "FINAL".equals(l.gate)) continue; // 심연은 땅 밑이라 지도에 잇지 않는다
             float x0 = ox + (l.a.centerTileX() + 0.5f) * k, y0 = oy + (l.a.centerTileY() + 0.5f) * k;
             float x1 = ox + (l.b.centerTileX() + 0.5f) * k, y1 = oy + (l.b.centerTileY() + 0.5f) * k;
             if (l.gateClosed) shapes.setColor(0.65f, 0.45f, 1f, a);

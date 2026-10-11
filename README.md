@@ -10,7 +10,7 @@ uiux 팀 프로젝트 (최해성 · 박지용 · 김선우). Java 17 + libGDX 2D
 
 ## 실행
 
-[자연스러운 던전 구상과 Java 미리보기](design/natural-dungeons/README.md)의 배경 그림 18장은 이제 실제 던전 방으로 쓰입니다 (`assets/scenes/natural-v1/`, 바닥 경계 `assets/data/natural-room-scenes.json`). [구상안 / Java 화면 / 경계 비교](design/natural-dungeons/index.html).
+[자연스러운 던전 구상과 Java 미리보기](design/natural-dungeons/README.md)의 배경 그림 18장과 중앙캠프 그림은 이제 실제 방으로 쓰입니다 (`assets/scenes/natural-v1/`, 바닥 경계 `assets/data/natural-room-scenes.json`). [구상안 / Java 화면 / 경계 비교](design/natural-dungeons/index.html). 더 필요한 그림은 [그림 요청 목록](docs/ART_REQUESTS.md)에 있습니다.
 
 Windows (JDK 17 필요, `JAVA_HOME` 설정):
 
