@@ -51,6 +51,9 @@ import java.util.Map;
  */
 public class WorldRenderer implements Disposable {
     private static final int S = Art.SCALE;
+    // Presentation only: keep feet/collision, attack ranges and camera in world coordinates.
+    private static final float HERO_SCALE = 1.25f;
+    private static final float MOB_SCALE = 1.25f;
 
     private final GameSession g;
     private final Art art;
@@ -181,7 +184,7 @@ public class WorldRenderer implements Disposable {
             case MONSTER_DIED: {
                 Corpse c = new Corpse();
                 c.region = art.world(e.sprite);
-                float scale = S * e.size;
+                float scale = S * e.size * (e.boss ? 1f : MOB_SCALE);
                 c.w = art.width(c.region) * scale;
                 c.h = art.height(c.region) * scale;
                 c.x = e.x;
@@ -375,8 +378,8 @@ public class WorldRenderer implements Disposable {
                 ghostT = 0.06f;
                 Ghost gh = new Ghost();
                 gh.region = heroRegion(h);
-                gh.w = art.width(gh.region) * S;
-                gh.h = art.height(gh.region) * S;
+                gh.w = art.width(gh.region) * S * HERO_SCALE;
+                gh.h = art.height(gh.region) * S * HERO_SCALE;
                 gh.x = h.x;
                 gh.y = h.y;
                 gh.flip = h.facing == Facing.LEFT;
@@ -1020,23 +1023,22 @@ public class WorldRenderer implements Disposable {
 
     private void drawHero() {
         HeroActor h = g.hero;
-        drawShadow(h.x, h.y, 26);
+        drawShadow(h.x, h.y, 26 * HERO_SCALE);
         if (h.rolling()) {
             drawRoll(h);
             return;
         }
         boolean blink = h.invuln > 0 && ((int) (h.invuln * 20)) % 2 == 0;
         float alpha = blink ? 0.35f : 1f;
-        boolean walk = h.moving && ((int) (h.walkTime * 8)) % 2 == 1;
         boolean flip = h.facing == Facing.LEFT;
         TextureRegion r = heroRegion(h);
-        float w = art.width(r) * S, hgt = art.height(r) * S;
+        float w = art.width(r) * S * HERO_SCALE, hgt = art.height(r) * S * HERO_SCALE;
         boolean swordBehind = h.facing == Facing.UP;
         if (swordBehind) drawSword(h, alpha);
         batch.setColor(1f, 1f, 1f, alpha);
         // 휘두를 때 몸을 살짝 찌그러뜨려 힘이 들어간 느낌을 준다
         float squash = h.swingT > 0 && h.swingKind == 0 ? 1f - 0.08f * (h.swingT / 0.18f) : 1f;
-        float bob = h.moving ? (walk ? 2 : 0) : 0;
+        float bob = heroBob(h);
         float dw = w * (2f - squash), dh = hgt * squash;
         if (flip) batch.draw(r, h.x + dw / 2f, h.y - 2 + bob, -dw, dh);
         else batch.draw(r, h.x - dw / 2f, h.y - 2 + bob, dw, dh);
@@ -1055,11 +1057,11 @@ public class WorldRenderer implements Disposable {
     private void drawRoll(HeroActor h) {
         float p = 1f - h.rollT / h.rollTotal;
         TextureRegion r = art.world(h.facing == Facing.UP ? "hero_up" : h.facing == Facing.DOWN ? "hero_down" : "hero_side");
-        float w = art.width(r) * S, hgt = art.height(r) * S;
+        float w = art.width(r) * S * HERO_SCALE, hgt = art.height(r) * S * HERO_SCALE;
         float dir = h.rollX < -0.1f ? 1f : -1f;
         float angle = dir * 360f * p;
         float squash = 0.8f + 0.2f * Math.abs(MathUtils.cos(p * MathUtils.PI));
-        float hop = MathUtils.sin(p * MathUtils.PI) * 6f;
+        float hop = MathUtils.sin(p * MathUtils.PI) * 6f * HERO_SCALE;
         boolean flip = h.facing == Facing.LEFT;
         batch.setColor(Color.WHITE);
         batch.draw(r, h.x - w / 2f, h.y - 2 + hop, w / 2f, hgt / 2f, w, hgt, flip ? -squash : squash, squash, angle);
@@ -1090,51 +1092,76 @@ public class WorldRenderer implements Disposable {
             }
             angle += MathUtils.sin(time * 2.5f) * 3f;
         }
-        float hx = h.x + (h.facing == Facing.LEFT ? -8 : 8), hy = h.y + 16;
-        if (h.facing == Facing.UP) hx = h.x + 8;
+        float hx = h.x + (h.facing == Facing.LEFT ? -8 : 8) * HERO_SCALE;
+        float hy = h.y + 16 * HERO_SCALE + heroBob(h);
+        float grip = 6 * HERO_SCALE;
         batch.setColor(1f, 1f, 1f, alpha);
         // 그림 속 칼날은 45도로 누워 있으므로 그만큼 빼고 돌린다. 손잡이(왼쪽 아래)를 회전 중심으로.
-        batch.draw(r, hx - 6, hy - 6, 6, 6, 32, 32, scale, scale, angle - 45);
+        batch.draw(r, hx - grip, hy - grip, grip, grip, 32 * HERO_SCALE, 32 * HERO_SCALE, scale, scale, angle - 45);
         if ("holy_sealed".equals(w.defId) && !art.hasHd("sword_holy") && h.swingT <= 0) {
             batch.setColor(1f, 1f, 1f, alpha * 0.8f);
-            batch.draw(art.world("chain"), hx - 4, hy, 4, 4, 18, 18, 1f, 1f, angle - 45);
+            batch.draw(art.world("chain"), hx - 4 * HERO_SCALE, hy, 4 * HERO_SCALE, 4 * HERO_SCALE,
+                    18 * HERO_SCALE, 18 * HERO_SCALE, 1f, 1f, angle - 45);
         }
+    }
+
+    private float heroBob(HeroActor h) {
+        return h.moving && ((int) (h.walkTime * 8)) % 2 == 1 ? 2 * HERO_SCALE : 0;
+    }
+
+    private float monsterScale(Monster m) {
+        if (m.state == Monster.State.PHASE_SHIFT) return S * (2f + .3f * m.progress());
+        return S * (m.finalBoss ? (m.phase2 ? 2.3f : 2f) : m.boss ? 1.7f : MOB_SCALE);
+    }
+
+    private float monsterBob(Monster m) {
+        float bob = m.state == Monster.State.CHASE ? Math.abs(MathUtils.sin(m.walkTime * 9f)) * 3f : 0;
+        if ("bat".equals(m.def.sprite)) bob = 6 + MathUtils.sin(time * 8f + m.x) * 4f;
+        if (m.state == Monster.State.SLAM_TELEGRAPH || m.state == Monster.State.CAST_TELEGRAPH)
+            bob += (m.state == Monster.State.SLAM_TELEGRAPH ? 10 : 4) * m.progress();
+        return bob * (m.boss ? 1f : MOB_SCALE);
+    }
+
+    private float monsterStretchY(Monster m) {
+        if (m.state == Monster.State.SLAM_TELEGRAPH || m.state == Monster.State.CAST_TELEGRAPH) return 1f + .12f * m.progress();
+        if (m.warning()) return 1f - .1f * m.progress();
+        if (m.state == Monster.State.CHARGING || m.state == Monster.State.SWOOPING) return .9f;
+        if (m.state == Monster.State.STUNNED) return .92f;
+        if (m.state == Monster.State.PHASE_SHIFT) return 1f + .05f * MathUtils.sin(time * 9f);
+        if (m.state == Monster.State.CHANNEL) return 1f + .04f * MathUtils.sin(time * 12f);
+        return 1f;
+    }
+
+    /** Overhead UI follows the same pose as the sprite, not the lower-body combat circle. */
+    private float monsterTop(Monster m) {
+        return m.y - 2 + monsterBob(m) + art.height(art.world(m.def.sprite)) * monsterScale(m) * monsterStretchY(m);
     }
 
     private void drawMonster(Monster m) {
         TextureRegion r = art.world(m.def.sprite);
-        float scale = S * (m.finalBoss ? (m.phase2 ? 2.3f : 2.0f) : m.boss ? 1.7f : 1f);
-        if (m.state == Monster.State.PHASE_SHIFT) scale = S * (2.0f + 0.3f * m.progress());
+        float scale = monsterScale(m);
         float appear = m.state == Monster.State.SPAWN ? Math.max(0f, (m.progress() - 0.35f) / 0.65f) : 1f;
         if (appear <= 0f) return;
         float w = art.width(r) * scale, hgt = art.height(r) * scale;
         drawShadow(m.x, m.y, w * 0.8f * appear);
-        float bob = m.state == Monster.State.CHASE ? Math.abs(MathUtils.sin(m.walkTime * 9f)) * 3f : 0;
-        if ("bat".equals(m.def.sprite)) bob = 6 + MathUtils.sin(time * 8f + m.x) * 4f;
+        float bob = monsterBob(m);
         // 공격 예고: 뒤로 살짝 움츠렸다가 친다
-        float sx = 1f, sy = 1f;
+        float sx = 1f, sy = monsterStretchY(m);
         float jx = 0;
         if (m.state == Monster.State.SLAM_TELEGRAPH || m.state == Monster.State.CAST_TELEGRAPH) {
             float p = m.progress();
             sx = 1f - 0.08f * p;
-            sy = 1f + 0.12f * p;
-            bob += (m.state == Monster.State.SLAM_TELEGRAPH ? 10 : 4) * p;
         } else if (m.warning()) {
             float p = m.progress();
             sx = 1f + 0.12f * p;
-            sy = 1f - 0.1f * p;
             if (m.state == Monster.State.CHARGE_TELEGRAPH) jx = MathUtils.sin(time * 60f) * 2f * p;
         } else if (m.state == Monster.State.CHARGING || m.state == Monster.State.SWOOPING) {
             sx = 1.15f;
-            sy = 0.9f;
         } else if (m.state == Monster.State.STUNNED) {
-            sy = 0.92f;
             jx = MathUtils.sin(time * 14f) * 1.5f;
         } else if (m.state == Monster.State.PHASE_SHIFT) {
             jx = MathUtils.sin(time * 50f) * 3f * (1f - m.progress());
-            sy = 1f + 0.05f * MathUtils.sin(time * 9f);
         } else if (m.state == Monster.State.CHANNEL) {
-            sy = 1f + 0.04f * MathUtils.sin(time * 12f);
             if ("firespin".equals(m.channelKind)) jx = MathUtils.sin(time * 30f) * 1.5f;
         }
         float dw = w * sx * appear, dh = hgt * sy * appear;
@@ -1323,17 +1350,17 @@ public class WorldRenderer implements Disposable {
             if (m.state == Monster.State.SPAWN) {
                 Color c = spawnColor(m);
                 float p = m.progress();
-                float r = m.hurtRadius * 2.2f;
+                float r = m.hurtRadius * 2.2f * (m.boss ? 1f : MOB_SCALE);
                 batch.setColor(c.r, c.g, c.b, 0.55f * Math.min(1f, p * 2.5f));
                 batch.draw(art.glow, m.x - r, m.y - r * 0.45f, r * 2, r * 0.9f);
             } else if (m.state == Monster.State.CAST_TELEGRAPH) {
                 Color c = projectileColor(m.def.sprite);
                 float p = m.progress();
-                float sz = (m.boss ? 70 : 34) * (0.4f + p);
+                float sz = (m.boss ? 70 : 34 * MOB_SCALE) * (0.4f + p);
                 batch.setColor(c.r, c.g, c.b, 0.35f + 0.5f * p);
                 batch.draw(art.glow, m.x - sz / 2f, m.centerY() + m.hurtRadius * 0.4f - sz / 2f, sz, sz);
             } else if (m.state == Monster.State.STUNNED) {
-                float top = m.y + m.hurtRadius * 2.4f + 4;
+                float top = monsterTop(m) + 4;
                 for (int i = 0; i < 3; i++) {
                     float a = time * 5f + i * MathUtils.PI2 / 3f;
                     float px = m.x + MathUtils.cos(a) * m.hurtRadius * 0.7f, py = top + MathUtils.sin(a) * 5f;
@@ -1447,7 +1474,7 @@ public class WorldRenderer implements Disposable {
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         for (Monster m : g.monsters) {
             if (m.dead || m.boss || m.hp >= m.maxHp) continue;
-            float w = 30, y = m.y + m.hurtRadius * 2.4f + 8;
+            float w = 30 * MOB_SCALE, y = monsterTop(m) + 5;
             shapes.setColor(0, 0, 0, 0.7f);
             shapes.rect(m.x - w / 2 - 1, y - 1, w + 2, 6);
             shapes.setColor(0.9f, 0.25f, 0.2f, 1f);
@@ -1470,7 +1497,7 @@ public class WorldRenderer implements Disposable {
         for (Monster m : g.monsters) {
             if (m.dead) continue;
             if (m.warning()) {
-                float top = m.y + m.hurtRadius * 2.4f + 18;
+                float top = monsterTop(m) + 16;
                 float pop = 1f + 0.15f * MathUtils.sin(time * 30f);
                 layout.setText(fonts.large, "!");
                 outlined(fonts.large, "!", sx(cam, m.x) - layout.width / 2f, sy(cam, top) + layout.height * pop, Ui.RED, 1f);

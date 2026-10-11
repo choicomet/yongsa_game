@@ -1003,7 +1003,8 @@
       "width": 286,
       "height": 226,
       "drawWidth": 27,
-      "drawHeight": 21
+      "drawHeight": 21,
+      "pixelMip": true
     },
     "world_skeleton": {
       "sheet": "world/enemies.png",
@@ -1012,7 +1013,8 @@
       "width": 306,
       "height": 319,
       "drawWidth": 18,
-      "drawHeight": 23
+      "drawHeight": 23,
+      "pixelMip": true
     },
     "world_imp": {
       "sheet": "world/enemies.png",
@@ -1021,7 +1023,8 @@
       "width": 235,
       "height": 265,
       "drawWidth": 21,
-      "drawHeight": 22
+      "drawHeight": 22,
+      "pixelMip": true
     },
     "world_golem": {
       "sheet": "world/enemies.png",
@@ -1030,7 +1033,8 @@
       "width": 324,
       "height": 319,
       "drawWidth": 25,
-      "drawHeight": 27
+      "drawHeight": 27,
+      "pixelMip": true
     },
     "world_knight": {
       "sheet": "world/enemies.png",
@@ -1039,7 +1043,8 @@
       "width": 306,
       "height": 336,
       "drawWidth": 22,
-      "drawHeight": 26
+      "drawHeight": 26,
+      "pixelMip": true
     },
     "world_warden": {
       "sheet": "world/enemies.png",
@@ -1048,7 +1053,8 @@
       "width": 283,
       "height": 320,
       "drawWidth": 22,
-      "drawHeight": 26
+      "drawHeight": 26,
+      "pixelMip": true
     },
     "world_demonlord": {
       "sheet": "world/enemies.png",
@@ -1057,7 +1063,8 @@
       "width": 323,
       "height": 355,
       "drawWidth": 24,
-      "drawHeight": 29
+      "drawHeight": 29,
+      "pixelMip": true
     },
     "world_forge": {
       "sheet": "world/props.png",
@@ -1156,7 +1163,8 @@
       "width": 1254,
       "height": 1254,
       "drawWidth": 16,
-      "drawHeight": 16
+      "drawHeight": 16,
+      "pixelMip": true
     },
     "world_sword_blackiron": {
       "sheet": "world/sword_blackiron.png",
@@ -1165,7 +1173,8 @@
       "width": 1254,
       "height": 1254,
       "drawWidth": 16,
-      "drawHeight": 16
+      "drawHeight": 16,
+      "pixelMip": true
     },
     "world_sword_bloodmoon": {
       "sheet": "world/sword_bloodmoon.png",
@@ -1174,7 +1183,8 @@
       "width": 1254,
       "height": 1254,
       "drawWidth": 16,
-      "drawHeight": 16
+      "drawHeight": 16,
+      "pixelMip": true
     },
     "world_sword_skyfall": {
       "sheet": "world/sword_skyfall.png",
@@ -1183,7 +1193,8 @@
       "width": 1254,
       "height": 1254,
       "drawWidth": 16,
-      "drawHeight": 16
+      "drawHeight": 16,
+      "pixelMip": true
     },
     "world_sword_holy_awakened": {
       "sheet": "world/sword_holy_awakened.png",
@@ -1192,7 +1203,8 @@
       "width": 1254,
       "height": 1254,
       "drawWidth": 16,
-      "drawHeight": 16
+      "drawHeight": 16,
+      "pixelMip": true
     },
     "world_sword_blackiron_awakened": {
       "sheet": "world/sword_blackiron_awakened.png",
@@ -1201,7 +1213,8 @@
       "width": 1254,
       "height": 1254,
       "drawWidth": 16,
-      "drawHeight": 16
+      "drawHeight": 16,
+      "pixelMip": true
     },
     "world_sword_bloodmoon_awakened": {
       "sheet": "world/sword_bloodmoon_awakened.png",
@@ -1210,7 +1223,8 @@
       "width": 1254,
       "height": 1254,
       "drawWidth": 16,
-      "drawHeight": 16
+      "drawHeight": 16,
+      "pixelMip": true
     },
     "world_sword_skyfall_awakened": {
       "sheet": "world/sword_skyfall_awakened.png",
@@ -1219,7 +1233,8 @@
       "width": 1254,
       "height": 1254,
       "drawWidth": 16,
-      "drawHeight": 16
+      "drawHeight": 16,
+      "pixelMip": true
     },
     "world_floor_CAMP_hd0": {
       "sheet": "world/terrain.png",
