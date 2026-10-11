@@ -11,6 +11,31 @@ import java.awt.image.BufferedImage;
 import static org.junit.jupiter.api.Assertions.*;
 
 class HdArtTest {
+    @Test void heroFramesKeepTheSameScaleAndAlignedFeetAcrossDirections() throws Exception {
+        var sprites = new Gson().fromJson(Files.readString(Path.of("assets/data/hd-art.json")), HdArt.Manifest.class).sprites;
+        var image = ImageIO.read(Path.of("assets/world/hero-harmony-v1.png").toFile());
+        float minFoot = Float.MAX_VALUE, maxFoot = -1;
+        for (String facing : new String[]{"down", "up", "side"}) for (String pose : new String[]{"", "_walk"}) {
+            var e = sprites.get("world_hero_" + facing + pose);
+            assertEquals("world/hero-harmony-v1.png", e.sheet);
+            assertTrue(e.pixelMip, "Detailed hero art needs minification without blurring its texels");
+            int lowest = -1, highest = image.getHeight();
+            for (int y=e.y; y<e.y+e.height; y++) for (int x=e.x; x<e.x+e.width; x++)
+                if ((image.getRGB(x,y) >>> 24) > 32) { highest=Math.min(highest,y); lowest=Math.max(lowest,y); }
+            assertTrue(lowest > highest, "A complete pose must be present");
+            float foot = (e.y + e.height - 1 - lowest) * e.drawHeight * 2 / e.height;
+            minFoot=Math.min(minFoot,foot); maxFoot=Math.max(maxFoot,foot);
+            assertEquals(18, e.drawWidth); assertEquals(24, e.drawHeight);
+            assertTrue((lowest-highest+1) * e.drawHeight * 2 / e.height > 45, "Pose must not shrink inside its cell");
+        }
+        assertTrue(maxFoot-minFoot < .5f, "Turning must not move the feet more than half a world pixel");
+        var policies = new HashMap<String, Boolean>();
+        for (var e : sprites.values()) {
+            Boolean prior = policies.putIfAbsent(e.sheet, e.pixelMip);
+            if (prior != null) assertEquals(prior, e.pixelMip, "Shared sheet has conflicting sampling policies: " + e.sheet);
+        }
+    }
+
     @Test void manifestFitsRealImagesAndKeepsWorldScaleIndependent() throws Exception {
         var manifest = new Gson().fromJson(Files.readString(Path.of("assets/data/hd-art.json")), HdArt.Manifest.class);
         var sheets = new HashMap<String, BufferedImage>();

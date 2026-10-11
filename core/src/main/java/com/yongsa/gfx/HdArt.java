@@ -15,6 +15,8 @@ public final class HdArt implements Disposable {
         public String sheet;
         public int x, y, width, height;
         public float drawWidth, drawHeight;
+        /** Blend mip levels while keeping texels crisp inside each level for detailed pixel art. */
+        public boolean pixelMip;
 
         public void validate(int sheetWidth, int sheetHeight) {
             if (sheet == null || x < 0 || y < 0 || width <= 0 || height <= 0
@@ -36,8 +38,9 @@ public final class HdArt implements Disposable {
             Entry e = item.getValue();
             Texture texture = textures.computeIfAbsent(e.sheet, path -> {
                 boolean world = path.startsWith("world/");
-                Texture t = new Texture(Gdx.files.internal(path), !world);
-                t.setFilter(world ? Texture.TextureFilter.Nearest : Texture.TextureFilter.MipMapLinearLinear,
+                Texture t = new Texture(Gdx.files.internal(path), !world || e.pixelMip);
+                t.setFilter(world ? (e.pixelMip ? Texture.TextureFilter.MipMapNearestLinear : Texture.TextureFilter.Nearest)
+                                : Texture.TextureFilter.MipMapLinearLinear,
                         world ? Texture.TextureFilter.Nearest : Texture.TextureFilter.Linear);
                 return t;
             });

@@ -937,58 +937,64 @@
       "drawHeight": 720
     },
     "world_hero_down": {
-      "sheet": "world/hero.png",
+      "sheet": "world/hero-harmony-v1.png",
       "x": 95,
-      "y": 19,
+      "y": 10,
       "width": 360,
-      "height": 490,
+      "height": 500,
       "drawWidth": 18,
-      "drawHeight": 24
+      "drawHeight": 24,
+      "pixelMip": true
     },
     "world_hero_down_walk": {
-      "sheet": "world/hero.png",
+      "sheet": "world/hero-harmony-v1.png",
       "x": 95,
-      "y": 522,
+      "y": 512,
       "width": 360,
-      "height": 490,
+      "height": 500,
       "drawWidth": 18,
-      "drawHeight": 24
+      "drawHeight": 24,
+      "pixelMip": true
     },
     "world_hero_up": {
-      "sheet": "world/hero.png",
+      "sheet": "world/hero-harmony-v1.png",
       "x": 590,
-      "y": 19,
+      "y": 10,
       "width": 360,
-      "height": 490,
+      "height": 500,
       "drawWidth": 18,
-      "drawHeight": 24
+      "drawHeight": 24,
+      "pixelMip": true
     },
     "world_hero_up_walk": {
-      "sheet": "world/hero.png",
+      "sheet": "world/hero-harmony-v1.png",
       "x": 590,
-      "y": 522,
+      "y": 512,
       "width": 360,
-      "height": 490,
+      "height": 500,
       "drawWidth": 18,
-      "drawHeight": 24
+      "drawHeight": 24,
+      "pixelMip": true
     },
     "world_hero_side": {
-      "sheet": "world/hero.png",
+      "sheet": "world/hero-harmony-v1.png",
       "x": 1085,
-      "y": 19,
+      "y": 10,
       "width": 360,
-      "height": 490,
+      "height": 500,
       "drawWidth": 18,
-      "drawHeight": 24
+      "drawHeight": 24,
+      "pixelMip": true
     },
     "world_hero_side_walk": {
-      "sheet": "world/hero.png",
+      "sheet": "world/hero-harmony-v1.png",
       "x": 1085,
-      "y": 522,
+      "y": 512,
       "width": 360,
-      "height": 490,
+      "height": 500,
       "drawWidth": 18,
-      "drawHeight": 24
+      "drawHeight": 24,
+      "pixelMip": true
     },
     "world_bat": {
       "sheet": "world/enemies.png",
