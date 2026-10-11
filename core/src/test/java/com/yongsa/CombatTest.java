@@ -21,13 +21,10 @@ class CombatTest {
     private final Balance b = TestData.balance();
     private final Controls idle = new Controls();
 
-    /** 방 왼쪽 가장자리 근처에 세워 싸움을 시작한다. */
+    /** 방 문 앞에서 걸어 들어가 싸움을 시작한다. */
     private GameSession fightIn(String roomId, GameState s) {
         GameSession g = new GameSession(b, TestData.map(), s, 7);
-        Room r = g.map.room(roomId);
-        g.hero.x = (r.x0 + 3.5f) * b.tileSize;
-        g.hero.y = (r.centerTileY() + 0.5f) * b.tileSize;
-        run(g, idle, 1 / 60f);
+        TestData.walkIn(g, g.map.room(roomId));
         assertTrue(g.fighting());
         return g;
     }
@@ -140,10 +137,10 @@ class CombatTest {
     @Test
     void chargingBossIsStunnedWhenItHitsAWall() {
         GameState s = NewGame.create(b);
-        GameSession g = fightIn("L5", s);
+        GameSession g = fightIn("L6", s);
         Monster m = boss(g);
         run(g, idle, 2.0f);
-        Room r = g.map.room("L5");
+        Room r = g.map.room("L6");
         // 용사는 비켜 서 있고, 보스는 오른쪽 벽을 향해 돌진한다
         g.hero.y = (r.y0 + 2.5f) * b.tileSize;
         g.hero.x = (r.x0 + 2.5f) * b.tileSize;
@@ -164,7 +161,7 @@ class CombatTest {
     @Test
     void bossEntersSecondPhaseAtHalfHealth() {
         GameState s = NewGame.create(b);
-        GameSession g = fightIn("L5", s);
+        GameSession g = fightIn("L6", s);
         Monster m = boss(g);
         run(g, idle, 2.0f);
         m.hp = m.maxHp / 2 + 3;

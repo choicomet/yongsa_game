@@ -45,12 +45,23 @@ public class GameSession {
     private final int T;
     private final List<GameEvent> events = new ArrayList<>();
 
-    /** 마지막으로 들어간 방 (통로에 있으면 직전 방). */
+    /** 마지막으로 들어간 방 (캠프 문 밖에 있으면 직전 방). */
     private Room currentRoom;
-    /** 용사가 지금 서 있는 방, 통로면 null. */
+    /** 용사가 지금 서 있는 방, 캠프 문 밖이면 null. */
     private Room heroRoom;
     private Room fightRoom;
     private float entryX, entryY, outsideX, outsideY;
+    /** 문을 지나 막 옮겨 왔으면 잠깐 다시 넘어가지 않는다. */
+    private float doorCd;
+    /** 화면이 어두워지는 동안 기다리는 문 (deferDoors 일 때). */
+    private Door pendingDoor;
+    /** true 면 문을 지날 때 바로 옮기지 않고 DOOR_ENTER 를 보낸 뒤 passPendingDoor 를 기다린다 (화면 연출용). */
+    public boolean deferDoors;
+    /** 싸우는 방의 길찾기 (용사 칸까지의 거리). */
+    private int[] flow;
+    private int flowHeroX = Integer.MIN_VALUE, flowHeroY;
+    private Room flowRoom;
+    private float pathX, pathY;
     private float hpAcc;
     /** 피웅덩이에서 닳은 체력 (1 이 넘으면 깎는다), 숫자를 띄울 때까지 모은 양. */
     private float poolAcc, poolShown, poolTextCd;
@@ -83,12 +94,19 @@ public class GameSession {
         this.T = balance.tileSize;
 
         map.updateGates(state);
+        if (state.mapVersion != WorldMap.VERSION) {
+            // 방 배치가 바뀐 예전 저장: 광맥 자리와 이어하기 위치는 새 맵에 맞지 않는다
+            for (RoomRecord rec : state.rooms.values()) rec.veins = null;
+            state.resumeX = state.resumeY = 0;
+            state.mapVersion = WorldMap.VERSION;
+        }
         applyVeinOverlay();
         if (state.resumeX == 0 && state.resumeY == 0) {
             placeAtCampSpawn();
         } else {
             hero.x = state.resumeX;
             hero.y = state.resumeY;
+            if (map.roomAt(tileX(hero.x), tileY(hero.y)) == null || !Physics.free(map, hero.x, hero.y, hero, T)) placeAtCampSpawn();
         }
         if (state.hp <= 0) state.hp = rules.maxHp(state);
         heroRoom = map.roomAt(tileX(hero.x), tileY(hero.y));
@@ -161,7 +179,10 @@ public class GameSession {
         state.stats.playSeconds += dt;
         lockedGateMsgCd -= dt;
         justDied = false;
+        if (pendingDoor != null) return; // 화면이 어두워지는 동안은 멈춰 있다
+        doorCd -= dt;
         updateHero(dt, c);
+        if (checkDoors()) return;
         updateRooms();
         updateMonsters(dt);
         if (!justDied) updateProjectiles(dt);
@@ -427,10 +448,22 @@ public class GameSession {
             }
         }
         if (fightRoom == null && heroRoom != null && heroRoom.type.hasFight()
-                && !state.room(heroRoom.id).cleared && !hasPortal(heroRoom)
-                && heroRoom.insideWithMargin(tileX(hero.x), tileY(hero.y), 1)) {
+                && !state.room(heroRoom.id).cleared && !hasPortal(heroRoom) && steppedIn(heroRoom)) {
             startFight(heroRoom);
         }
+    }
+
+    /** 문 앞에서 방 안으로 한 걸음 들어섰나 (그러면 문이 잠기고 싸움이 시작된다). */
+    private boolean steppedIn(Room r) {
+        int tx = tileX(hero.x), ty = tileY(hero.y);
+        if (r.scene == null) return r.insideWithMargin(tx, ty, 1);
+        if (!r.inside(tx, ty)) return false;
+        for (Door d : r.doors) {
+            if (d.dead()) continue;
+            float dx = hero.x - d.footX, dy = hero.y - d.footY;
+            if (dx * dx + dy * dy < (2.6f * T) * (2.6f * T)) return false;
+        }
+        return true;
     }
 
     private void setEntry(Door d) {
@@ -439,17 +472,76 @@ public class GameSession {
             entryY = outsideY = hero.y;
             return;
         }
-        entryX = center(d.insideX);
-        entryY = center(d.insideY);
-        outsideX = center(d.outsideX);
-        outsideY = center(d.outsideY);
+        entryX = d.arriveX;
+        entryY = d.arriveY;
+        Door p = d.partner();
+        if (d.room.scene != null && p != null) {
+            outsideX = p.arriveX; // 그림 방의 '문 밖'은 이어진 방의 문 앞이다
+            outsideY = p.arriveY;
+        } else {
+            outsideX = center(d.outsideX);
+            outsideY = center(d.outsideY);
+        }
+    }
+
+    /**
+     * 열린 문을 지나가면 이어진 방의 짝 문 앞으로 옮긴다 (방 사이 통로는 없다).
+     * deferDoors 면 DOOR_ENTER 를 보내고 화면이 어두워진 뒤 passPendingDoor 로 옮긴다. 옮겼으면(또는 기다리면) true.
+     */
+    private boolean checkDoors() {
+        if (fightRoom != null || doorCd > 0 || pendingDoor != null) return false;
+        Room r = heroRoom != null ? heroRoom : currentRoom;
+        if (r == null) return false;
+        for (Door d : r.doors) {
+            if (d.isClosed() || !d.triggers(hero.x, hero.y)) continue;
+            if (deferDoors) {
+                pendingDoor = d;
+                GameEvent e = new GameEvent(GameEvent.Type.DOOR_ENTER);
+                Room to = d.partner().room;
+                e.text = to.dungeonId == null ? null : to.id;
+                events.add(e);
+                return true;
+            }
+            passDoor(d);
+            return false;
+        }
+        return false;
+    }
+
+    /** 기다리던 문을 지나간다 (화면이 다 어두워졌을 때 부른다). */
+    public void passPendingDoor() {
+        Door d = pendingDoor;
+        pendingDoor = null;
+        if (d != null) passDoor(d);
+    }
+
+    public boolean doorPending() {
+        return pendingDoor != null;
+    }
+
+    /** 문 d 를 지나 이어진 방의 짝 문 앞에 선다. */
+    public void passDoor(Door d) {
+        Door to = d.partner();
+        if (to == null) return;
+        hero.x = to.arriveX;
+        hero.y = to.arriveY;
+        hero.aimX = -to.dirX;
+        hero.aimY = -to.dirY;
+        hero.facing = Facing.of(hero.aimX, hero.aimY);
+        hero.rollT = 0;
+        hero.kbT = 0;
+        hero.slowT = 0;
+        hazards.clear();
+        projectiles.clear();
+        doorCd = 0.35f;
     }
 
     private Door nearestDoor(Room r) {
         Door best = null;
         float bestD = Float.MAX_VALUE;
         for (Door d : r.doors) {
-            float dx = center(d.insideX) - hero.x, dy = center(d.insideY) - hero.y;
+            if (d.dead()) continue;
+            float dx = d.arriveX - hero.x, dy = d.arriveY - hero.y;
             float dd = dx * dx + dy * dy;
             if (dd < bestD) {
                 bestD = dd;
@@ -512,6 +604,7 @@ public class GameSession {
                 tx = r.x0 + 2 + random.nextInt(r.x1 - r.x0 - 3);
                 ty = r.y0 + 2 + random.nextInt(r.y1 - r.y0 - 3);
             }
+            if (!farSide && !r.insideWithMargin(tx, ty, 1)) continue;
             float px = center(tx), py = center(ty);
             float hx = px - hero.x, hy = py - hero.y;
             if (!farSide && hx * hx + hy * hy < (5f * T) * (5f * T)) continue;
@@ -618,6 +711,7 @@ public class GameSession {
                         m.dirX = dx / dist;
                         m.dirY = dy / dist;
                     }
+                    steer(m);
                     if (m.boss) chaseBoss(m, dist, reach, dt, summoned);
                     else chaseMob(m, dist, reach, dt);
                     break;
@@ -796,6 +890,83 @@ public class GameSession {
         return false;
     }
 
+    // ───────────────────────── 길찾기 (그림 방은 오목해서 곧장 가면 벽에 걸린다)
+
+    /** 용사에게 곧장 갈 수 없으면 바닥 칸을 따라 돌아간다. pathX, pathY 에 걸어갈 방향을 넣는다. */
+    private void steer(Monster m) {
+        pathX = m.dirX;
+        pathY = m.dirY;
+        Room r = fightRoom;
+        if (r == null || r.scene == null || clearLine(r, m.x, m.y, hero.x, hero.y)) return;
+        updateFlow(r);
+        int mx = tileX(m.x), my = tileY(m.y);
+        int best = flowAt(r, mx, my);
+        if (best < 0) best = Integer.MAX_VALUE;
+        int bx = mx, by = my;
+        for (int oy = -1; oy <= 1; oy++) {
+            for (int ox = -1; ox <= 1; ox++) {
+                if (ox == 0 && oy == 0) continue;
+                if (ox != 0 && oy != 0 && (flowAt(r, mx + ox, my) < 0 || flowAt(r, mx, my + oy) < 0)) continue;
+                int f = flowAt(r, mx + ox, my + oy);
+                if (f >= 0 && f < best) {
+                    best = f;
+                    bx = mx + ox;
+                    by = my + oy;
+                }
+            }
+        }
+        if (bx == mx && by == my) return;
+        float tx = center(bx) - m.x, ty = center(by) - m.y, l = (float) Math.sqrt(tx * tx + ty * ty);
+        if (l < 0.01f) return;
+        pathX = tx / l;
+        pathY = ty / l;
+    }
+
+    /** 두 점 사이가 벽에서 넉넉히 떨어진 바닥으로만 이어지는가. */
+    private boolean clearLine(Room r, float x0, float y0, float x1, float y1) {
+        float dx = x1 - x0, dy = y1 - y0, len = (float) Math.sqrt(dx * dx + dy * dy);
+        int n = Math.max(1, (int) (len / (T * 0.5f)));
+        for (int i = 1; i < n; i++) {
+            int tx = tileX(x0 + dx * i / n), ty = tileY(y0 + dy * i / n);
+            if (!r.inside(tx, ty) || map.isBlockedOverlay(tx, ty)) return false;
+        }
+        return true;
+    }
+
+    /** 용사 칸에서 넓이 우선으로 퍼진 거리 (용사 칸이 바뀔 때만 다시 계산). */
+    private void updateFlow(Room r) {
+        int hx = tileX(hero.x), hy = tileY(hero.y);
+        if (r == flowRoom && hx == flowHeroX && hy == flowHeroY) return;
+        flowRoom = r;
+        flowHeroX = hx;
+        flowHeroY = hy;
+        int w = r.x1 - r.x0 + 1, h = r.y1 - r.y0 + 1;
+        if (flow == null || flow.length < w * h) flow = new int[w * h];
+        java.util.Arrays.fill(flow, 0, w * h, -1);
+        if (!r.contains(hx, hy)) return;
+        java.util.ArrayDeque<int[]> q = new java.util.ArrayDeque<>();
+        flow[(hx - r.x0) + (hy - r.y0) * w] = 0;
+        q.add(new int[]{hx, hy});
+        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        while (!q.isEmpty()) {
+            int[] p = q.poll();
+            int d0 = flow[(p[0] - r.x0) + (p[1] - r.y0) * w];
+            for (int[] d : dirs) {
+                int nx = p[0] + d[0], ny = p[1] + d[1];
+                if (!r.floor(nx, ny) || map.isBlockedOverlay(nx, ny)) continue;
+                int i = (nx - r.x0) + (ny - r.y0) * w;
+                if (flow[i] >= 0) continue;
+                flow[i] = d0 + 1;
+                q.add(new int[]{nx, ny});
+            }
+        }
+    }
+
+    private int flowAt(Room r, int x, int y) {
+        if (r != flowRoom || !r.contains(x, y)) return -1;
+        return flow[(x - r.x0) + (y - r.y0) * (r.x1 - r.x0 + 1)];
+    }
+
     /** 잡몹: 종류마다 다르게 다가오고 공격한다. */
     private void chaseMob(Monster m, float dist, float reach, float dt) {
         Balance.MonsterCfg mc = balance.monster;
@@ -827,7 +998,8 @@ public class GameSession {
                 }
                 float dir = dist < keep ? -1f : dist > keep * 1.4f ? 1f : 0f;
                 if (dir != 0) {
-                    Physics.move(map, m, m.dirX * dir * m.speed * dt, m.dirY * dir * m.speed * dt, T);
+                    float sx = dir > 0 ? pathX : -m.dirX, sy = dir > 0 ? pathY : -m.dirY;
+                    Physics.move(map, m, sx * m.speed * dt, sy * m.speed * dt, T);
                     m.walkTime += dt;
                 }
                 return;
@@ -837,7 +1009,7 @@ public class GameSession {
                 if (dist <= reach * ("brute".equals(m.ai()) ? 1.6f : 1f) && m.attackCd <= 0) {
                     m.enter(Monster.State.TELEGRAPH, m.telegraph(mc.telegraphSeconds));
                 } else if (dist > reach * 0.7f) {
-                    Physics.move(map, m, m.dirX * m.speed * dt, m.dirY * m.speed * dt, T);
+                    Physics.move(map, m, pathX * m.speed * dt, pathY * m.speed * dt, T);
                     m.walkTime += dt;
                 }
         }
@@ -855,7 +1027,8 @@ public class GameSession {
         if (dist <= reach && m.attackCd <= 0) {
             m.enter(Monster.State.TELEGRAPH, mc.telegraphSeconds);
         } else if (dist > reach * 0.7f) {
-            Physics.move(map, m, m.dirX * m.speed * dt * (m.enraged ? 1.15f : 1f), m.dirY * m.speed * dt * (m.enraged ? 1.15f : 1f), T);
+            float k = m.speed * dt * (m.enraged ? 1.15f : 1f);
+            Physics.move(map, m, pathX * k, pathY * k, T);
             m.walkTime += dt;
         }
     }
@@ -1400,12 +1573,11 @@ public class GameSession {
         for (com.yongsa.world.Link l : map.links) {
             if (!l.gateClosed) continue;
             for (Door d : new Door[]{l.doorA, l.doorB}) {
-                float dist = (float) Math.hypot(center(d.outsideX) - hero.x, center(d.outsideY) - hero.y);
-                float dist2 = (float) Math.hypot(center(d.insideX) - hero.x, center(d.insideY) - hero.y);
-                if (Math.min(dist, dist2) < 2.2f * T) {
+                float dist = (float) Math.hypot(d.footX - hero.x, d.footY - hero.y);
+                if (dist < 2.4f * T) {
                     prompt = "FINAL".equals(l.gate) ? "성검의 봉인을 풀어야 열립니다" : "앞 던전의 보스를 잡아야 열립니다";
-                    promptX = center(d.tilesX[1]);
-                    promptY = center(d.tilesY[1]) + T;
+                    promptX = d.footX;
+                    promptY = d.footY + T;
                     return;
                 }
             }
@@ -1563,8 +1735,8 @@ public class GameSession {
     public void dropToAbyss() {
         Room f = abyss();
         if (f == null || fightRoom != null) return;
-        hero.x = center((int) f.centerTileX());
-        hero.y = center(f.y0 + 3);
+        hero.x = f.spawnX(T);
+        hero.y = f.spawnY(T);
         hero.facing = Facing.UP;
         hero.aimX = 0;
         hero.aimY = 1;

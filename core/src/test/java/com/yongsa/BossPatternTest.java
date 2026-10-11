@@ -25,10 +25,7 @@ class BossPatternTest {
 
     private GameSession fightIn(String roomId, GameState s) {
         GameSession g = new GameSession(b, TestData.map(), s, 7);
-        Room r = g.map.room(roomId);
-        g.hero.x = (r.x0 + 3.5f) * b.tileSize;
-        g.hero.y = (r.centerTileY() + 0.5f) * b.tileSize;
-        run(g, idle, 1 / 60f);
+        TestData.walkIn(g, g.map.room(roomId));
         assertTrue(g.fighting());
         return g;
     }
@@ -86,7 +83,7 @@ class BossPatternTest {
     @Test
     void groundAttackHitsOnlyIfHeroStaysInIt() {
         GameState s = strongHero();
-        GameSession g = fightIn("L5", s);
+        GameSession g = fightIn("L6", s);
         Monster m = g.activeBoss();
         m.enter(Monster.State.SPAWN, 99f); // 보스는 가만히
         s.hp = 100;
@@ -122,7 +119,7 @@ class BossPatternTest {
     @Test
     void bloodPoolSlowsAndDrains() {
         GameState s = strongHero();
-        GameSession g = fightIn("L5", s);
+        GameSession g = fightIn("L6", s);
         g.activeBoss().enter(Monster.State.SPAWN, 99f);
         s.hp = 100;
         Hazard pool = new Hazard(Hazard.Kind.POOL, "blood");
@@ -142,10 +139,10 @@ class BossPatternTest {
     @Test
     void golemRushesThreeTimesReAimingEachTime() {
         GameState s = strongHero();
-        GameSession g = fightIn("L5", s);
+        GameSession g = fightIn("L6", s);
         Monster m = g.activeBoss();
         run(g, idle, 2.0f);
-        Room r = g.map.room("L5");
+        Room r = g.map.room("L6");
         m.x = (r.centerTileX() + 0.5f) * b.tileSize;
         m.y = (r.centerTileY() + 0.5f) * b.tileSize;
         m.rushLeft = b.monster.rushCount;

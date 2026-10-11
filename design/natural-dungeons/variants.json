@@ -12,7 +12,7 @@
       "gameplay": "광차를 돌아 교전하는 넓은 바닥. 기존 Java 미리보기와 이동 경계가 있는 대표안.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/mine-mob-a.png",
+      "image": "../../assets/scenes/natural-v1/mine.png",
       "source": "existing-runtime-preview"
     },
     {
@@ -25,7 +25,7 @@
       "gameplay": "동선의 꺾임은 넓게 두고 박쥐 돌진을 옆으로 피할 공간 확보.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/mine-mob-b.png",
+      "image": "../../assets/scenes/natural-v1/mine-mob-b.png",
       "source": "generated-variant"
     },
     {
@@ -38,7 +38,7 @@
       "gameplay": "양옆 출입구 사이에 넓은 교전 공간을 확보한 운반 작업장.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/mine-mob-c.png",
+      "image": "../../assets/scenes/natural-v1/mine-mob-c.png",
       "source": "generated-variant"
     },
     {
@@ -51,7 +51,7 @@
       "gameplay": "광맥 세 곳 앞을 돌아다니며 접근하는 채굴 공간.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/mine-ore-a.png",
+      "image": "../../assets/scenes/natural-v1/mine-ore-a.png",
       "source": "generated-variant"
     },
     {
@@ -64,7 +64,7 @@
       "gameplay": "광맥 군집 사이로 여러 접근 경로가 이어지는 채굴장.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/mine-ore-b.png",
+      "image": "../../assets/scenes/natural-v1/mine-ore-b.png",
       "source": "generated-variant"
     },
     {
@@ -77,7 +77,7 @@
       "gameplay": "연속 돌진·낙석을 피할 공간과 충돌할 암벽이 명확한 보스방.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/mine-boss-a.png",
+      "image": "../../assets/scenes/natural-v1/mine-boss-a.png",
       "source": "generated-variant"
     },
     {
@@ -90,7 +90,7 @@
       "gameplay": "기둥 잔해와 열린 바닥을 함께 쓰는 대표안. 기존 Java 미리보기 포함.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/citadel-mob-a.png",
+      "image": "../../assets/scenes/natural-v1/citadel.png",
       "source": "existing-runtime-preview"
     },
     {
@@ -103,7 +103,7 @@
       "gameplay": "건축의 직각 구조를 남기되 회피할 수 있게 회랑 폭 확보.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/citadel-mob-b.png",
+      "image": "../../assets/scenes/natural-v1/citadel-mob-b.png",
       "source": "generated-variant"
     },
     {
@@ -116,7 +116,7 @@
       "gameplay": "빈 중앙과 벽에 붙은 병영 흔적으로 구분되는 잡몹방.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/citadel-mob-c.png",
+      "image": "../../assets/scenes/natural-v1/citadel-mob-c.png",
       "source": "generated-variant"
     },
     {
@@ -129,7 +129,7 @@
       "gameplay": "낮은 벽 틈과 바닥 광맥에 접근할 수 있는 저장고.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/citadel-ore-a.png",
+      "image": "../../assets/scenes/natural-v1/citadel-ore-a.png",
       "source": "generated-variant"
     },
     {
@@ -142,7 +142,7 @@
       "gameplay": "낮은 기초석 주변을 돌아 채굴 지점에 접근.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/citadel-ore-b.png",
+      "image": "../../assets/scenes/natural-v1/citadel-ore-b.png",
       "source": "generated-variant"
     },
     {
@@ -155,7 +155,7 @@
       "gameplay": "3연속 베기·피웅덩이·창 예고가 잘 보이는 단순한 바닥.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/citadel-boss-a.png",
+      "image": "../../assets/scenes/natural-v1/citadel-boss-a.png",
       "source": "generated-variant"
     },
     {
@@ -168,7 +168,7 @@
       "gameplay": "외곽 깊이와 곁계단이 있는 대표안. 기존 Java 미리보기 포함.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/tower-mob-a.png",
+      "image": "../../assets/scenes/natural-v1/tower.png",
       "source": "existing-runtime-preview"
     },
     {
@@ -181,7 +181,7 @@
       "gameplay": "시야를 가리지 않는 낮은 장식과 마족병 교전 공간.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/tower-mob-b.png",
+      "image": "../../assets/scenes/natural-v1/tower-mob-b.png",
       "source": "generated-variant"
     },
     {
@@ -194,7 +194,7 @@
       "gameplay": "벽 돌출부와 주변 설비로 다른 실루엣을 가진 전투방.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/tower-mob-c.png",
+      "image": "../../assets/scenes/natural-v1/tower-mob-c.png",
       "source": "generated-variant"
     },
     {
@@ -207,7 +207,7 @@
       "gameplay": "채굴할 결정은 낮고 분리된 덩어리로 배치.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/tower-ore-a.png",
+      "image": "../../assets/scenes/natural-v1/tower-ore-a.png",
       "source": "generated-variant",
       "reviewNote": "결정이 크게 강조된 안입니다. 채택한다면 광맥 크기·발광을 줄이는 후보로 검토하세요."
     },
@@ -221,7 +221,7 @@
       "gameplay": "둘로 나뉜 광맥 군집과 분명한 출입 동선.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/tower-ore-b.png",
+      "image": "../../assets/scenes/natural-v1/tower-ore-b.png",
       "source": "generated-variant"
     },
     {
@@ -234,7 +234,7 @@
       "gameplay": "낙뢰·회전 화염을 피하며 계속 움직일 수 있는 보스방.",
       "status": "candidate",
       "usedInGame": false,
-      "image": "candidates/tower-boss-a.png",
+      "image": "../../assets/scenes/natural-v1/tower-boss-a.png",
       "source": "generated-variant"
     }
   ]

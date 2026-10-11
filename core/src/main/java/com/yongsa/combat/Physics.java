@@ -27,13 +27,6 @@ public final class Physics {
     }
 
     public static boolean free(WorldMap map, float x, float y, Actor a, int tileSize) {
-        int tx0 = (int) Math.floor((x - a.hw) / tileSize);
-        int tx1 = (int) Math.floor((x + a.hw - 0.01f) / tileSize);
-        int ty0 = (int) Math.floor((y - a.hh) / tileSize);
-        int ty1 = (int) Math.floor((y + a.hh - 0.01f) / tileSize);
-        for (int ty = ty0; ty <= ty1; ty++)
-            for (int tx = tx0; tx <= tx1; tx++)
-                if (map.solid(tx, ty)) return false;
-        return true;
+        return map.free(x, y, a.hw, a.hh);
     }
 }

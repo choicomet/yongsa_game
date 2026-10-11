@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Opt-in room artwork coordinate contract. Does not change WorldMap or progression.
+ * Room artwork coordinate contract. WorldMap places these scenes as dungeon rooms.
  * Source points are normalized image coordinates (top left, y down).
  * All world coordinates use the game's existing bottom-left/y-up convention.
  */
@@ -26,6 +26,12 @@ public final class RoomSceneLayout {
             if (!ids.add(scene.id)) throw new IllegalArgumentException("Duplicate scene: " + scene.id);
         }
         return data;
+    }
+
+    /** id 로 장면을 찾는다 (없으면 null). */
+    public Scene scene(String id) {
+        for (Scene s : scenes) if (s.id.equals(id)) return s;
+        return null;
     }
 
     public static final class Portal {

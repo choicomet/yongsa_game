@@ -29,7 +29,9 @@ public class GameEvent {
         /** 보스 대사 (text). x, y 는 말풍선 자리. */
         BOSS_SPEECH,
         /** 캠프 문양에서 심연으로 떨어짐. 화면이 어두워진 뒤 GameSession.dropToAbyss 를 부른다. */
-        FALL
+        FALL,
+        /** 문을 지나 다른 방으로 넘어감 (deferDoors 일 때). 화면이 어두워진 뒤 GameSession.passPendingDoor 를 부른다. */
+        DOOR_ENTER
     }
 
     /** 떠오르는 글자 색 구분. */

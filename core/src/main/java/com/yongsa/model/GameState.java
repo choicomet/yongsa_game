@@ -30,6 +30,8 @@ public class GameState {
 
     /** 이어하기 위치. */
     public float resumeX, resumeY;
+    /** 저장할 때의 맵 버전 (WorldMap.VERSION). 다르면 이어하기 위치와 광맥 자리를 버린다. */
+    public int mapVersion;
 
     public List<String> enhanceLog = new ArrayList<>();
     public Stats stats = new Stats();

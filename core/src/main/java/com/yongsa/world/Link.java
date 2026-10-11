@@ -1,6 +1,6 @@
 package com.yongsa.world;
 
-/** 두 방을 잇는 문 한 쌍과 그 사이 통로. gate 가 있으면 조건을 채워야 열린다. */
+/** 두 방을 잇는 문 한 쌍 (한쪽 문을 지나면 다른 쪽 문 앞에 선다). gate 가 있으면 조건을 채워야 열린다. */
 public class Link {
     public final Room a, b;
     /** null, 또는 열리는 조건: 던전 ID(LEFT/RIGHT/TOP)  */

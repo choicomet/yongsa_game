@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -36,6 +37,7 @@ import com.yongsa.world.RoomType;
 import com.yongsa.world.WorldMap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -70,6 +72,9 @@ public class WorldRenderer implements Disposable {
     private final List<Ring> rings = new ArrayList<>();
     private final List<Flash> flashes = new ArrayList<>();
     private final Map<Monster, Float> ages = new IdentityHashMap<>();
+    /** 던전 방 배경 그림 (보이는 방만 읽어 두고, 오래 안 쓴 것은 버린다). */
+    private final Map<String, Texture> sceneTex = new HashMap<>();
+    private final Map<String, Float> sceneUsed = new HashMap<>();
     private final Color ambient = new Color(0.6f, 0.55f, 0.5f, 1f);
     private boolean ambientSet;
     private float time, ghostT, moteT, emberT;
@@ -141,18 +146,9 @@ public class WorldRenderer implements Disposable {
             String th = r.dungeonId == null ? "CAMP" : r.dungeonId;
             for (int y = r.y0; y <= r.y1; y++) for (int x = r.x0; x <= r.x1; x++) theme[x + y * map.width] = th;
         }
-        for (Link l : map.links) {
-            String th = l.b.dungeonId != null ? l.b.dungeonId : (l.a.dungeonId != null ? l.a.dungeonId : "CAMP");
-            Door a = l.doorA, b = l.doorB;
-            int x0 = Math.min(a.tilesX[0], b.tilesX[0]) - 1, x1 = Math.max(a.tilesX[2], b.tilesX[2]) + 1;
-            int y0 = Math.min(a.tilesY[0], b.tilesY[0]) - 1, y1 = Math.max(a.tilesY[2], b.tilesY[2]) + 1;
-            for (int y = y0; y <= y1; y++)
-                for (int x = x0; x <= x1; x++)
-                    if (x >= 0 && y >= 0 && x < map.width && y < map.height && theme[x + y * map.width] == null)
-                        theme[x + y * map.width] = th;
-        }
-        // 방 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다.
+        // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
+            if (r.scene != null) continue;
             int y = r.y1;
             for (int x = r.x0 + 3; x <= r.x1 - 3; x += 5) {
                 if (map.tile(x, y) != WorldMap.WALL || map.tile(x, y - 1) != WorldMap.FLOOR) continue;
@@ -484,6 +480,15 @@ public class WorldRenderer implements Disposable {
 
     private Color ambientFor(Room r) {
         String th = r == null || r.dungeonId == null ? "CAMP" : r.dungeonId;
+        if (r != null && r.scene != null) {
+            // 그림에 이미 빛과 그늘이 그려져 있어서 조금만 어둡게 한다
+            if (r.type == RoomType.FINAL) return new Color(0.74f, 0.68f, 0.82f, 1f);
+            switch (th) {
+                case "LEFT": return new Color(0.8f, 0.8f, 0.84f, 1f);
+                case "RIGHT": return new Color(0.84f, 0.76f, 0.78f, 1f);
+                default: return new Color(0.78f, 0.76f, 0.88f, 1f);
+            }
+        }
         switch (th) {
             case "LEFT": return new Color(0.30f, 0.32f, 0.38f, 1f);
             case "RIGHT": return new Color(0.34f, 0.24f, 0.27f, 1f);
@@ -558,7 +563,7 @@ public class WorldRenderer implements Disposable {
         }
         for (Link l : map.links) {
             for (Door d : new Door[]{l.doorA, l.doorB}) {
-                float cx = d.tilesX[1] * T + T / 2f, cy = d.tilesY[1] * T + T / 2f;
+                float cx = d.footX, cy = d.footY;
                 if (!inView(cx, cy)) continue;
                 if (l.gateClosed) {
                     Color c = gateColor(l);
@@ -612,7 +617,9 @@ public class WorldRenderer implements Disposable {
 
         batch.begin();
         batch.setColor(Color.WHITE);
+        drawScenes();
         drawTiles(tx0, ty0, tx1, ty1);
+        drawSceneDoors();
         drawFloorProps();
         drawTorches();
         batch.end();
@@ -654,6 +661,8 @@ public class WorldRenderer implements Disposable {
             for (int x = tx0; x <= tx1; x++) {
                 int t = map.tile(x, y);
                 if (t == WorldMap.VOID) continue;
+                Room tr = map.roomAt(x, y);
+                if (tr != null && tr.scene != null) continue; // 배경 그림이 바닥과 벽이다
                 String th = themeAt(x, y);
                 float px = x * T, py = y * T;
                 if (t == WorldMap.WALL) {
@@ -679,6 +688,66 @@ public class WorldRenderer implements Disposable {
                         batch.setColor(Color.WHITE);
                     } else if (d.lockedByFight) {
                         batch.draw(art.world("bars"), px, py, T, T);
+                    }
+                }
+            }
+        }
+    }
+
+    // ───────────────────────── 던전 방 배경 그림
+
+    private void drawScenes() {
+        for (Room r : map.rooms) {
+            if (r.scene == null) continue;
+            if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            Texture tex = sceneTexture(r);
+            batch.draw(tex, r.originX, r.originY, r.widthPx, r.heightPx, 0, 0, tex.getWidth(), tex.getHeight(), r.flip, false);
+        }
+        // 오래 안 보인 그림은 메모리에서 내린다
+        if (sceneTex.size() > 5) {
+            for (Iterator<Map.Entry<String, Texture>> it = sceneTex.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Texture> en = it.next();
+                if (time - sceneUsed.getOrDefault(en.getKey(), 0f) < 20f) continue;
+                en.getValue().dispose();
+                sceneUsed.remove(en.getKey());
+                it.remove();
+            }
+        }
+    }
+
+    private Texture sceneTexture(Room r) {
+        String key = r.scene.image;
+        sceneUsed.put(key, time);
+        Texture t = sceneTex.get(key);
+        if (t == null) {
+            t = new Texture(Gdx.files.internal(key), true);
+            t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+            sceneTex.put(key, t);
+        }
+        return t;
+    }
+
+    /** 그림 방의 출구: 잠기면 창살, 이어진 곳이 없으면 어둠으로 막혀 있다. */
+    private void drawSceneDoors() {
+        for (Room r : map.rooms) {
+            if (r.scene == null) continue;
+            for (Door d : r.doors) {
+                if (!inView(d.footX, d.footY)) continue;
+                float px = -d.dirY, py = d.dirX;
+                if (d.dead()) {
+                    float size = d.halfWidth * 2f + 2.5f * T;
+                    for (int k = 0; k < 3; k++) {
+                        float cx = d.footX + d.dirX * T * (0.6f + k * 0.9f), cy = d.footY + d.dirY * T * (0.6f + k * 0.9f);
+                        batch.setColor(0.01f, 0.01f, 0.02f, 0.8f);
+                        batch.draw(art.glow, cx - size / 2f, cy - size / 2f, size, size);
+                    }
+                    batch.setColor(Color.WHITE);
+                } else if (d.lockedByFight || (d.link != null && d.link.gateClosed)) {
+                    int n = Math.max(2, Math.round(d.halfWidth * 2f / T));
+                    for (int i = 0; i < n; i++) {
+                        float o = -d.halfWidth + (i + 0.5f) * (d.halfWidth * 2f / n);
+                        float cx = d.footX + px * o, cy = d.footY + py * o;
+                        batch.draw(art.world("bars"), cx - T / 2f, cy - T / 2f, T, T);
                     }
                 }
             }
@@ -1188,10 +1257,10 @@ public class WorldRenderer implements Disposable {
             if (!l.gateClosed) continue;
             Color c = gateColor(l);
             for (Door d : new Door[]{l.doorA, l.doorB}) {
-                float cx = d.tilesX[1] * T + T / 2f, cy = d.tilesY[1] * T + T / 2f;
+                float cx = d.footX, cy = d.footY;
                 if (!inView(cx, cy)) continue;
                 float pulse = 0.7f + 0.3f * MathUtils.sin(time * 3f);
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < d.tilesX.length; i++) {
                     float x = d.tilesX[i] * T, y = d.tilesY[i] * T;
                     batch.setColor(c.r, c.g, c.b, 0.22f * pulse);
                     batch.draw(art.white(), x, y, T, T);
@@ -1519,5 +1588,7 @@ public class WorldRenderer implements Disposable {
     @Override
     public void dispose() {
         lighting.dispose();
+        for (Texture t : sceneTex.values()) t.dispose();
+        sceneTex.clear();
     }
 }

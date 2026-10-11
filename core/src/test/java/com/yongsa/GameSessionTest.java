@@ -36,23 +36,73 @@ class GameSessionTest {
         return false;
     }
 
-    /** 왼쪽 첫 방의 오른쪽 문(캠프 쪽) 안쪽에 세운다. */
-    private void standAtL1Entrance(GameSession g) {
-        Room l1 = g.map.room("L1");
-        Door d = null;
-        for (Door x : l1.doors) if (x.side == Door.Side.RIGHT) d = x;
-        g.hero.x = (d.outsideX + 0.5f) * b.tileSize;
-        g.hero.y = (d.outsideY + 0.5f) * b.tileSize;
+    /** 캠프 왼쪽 문(왼쪽 던전 입구) 바로 안쪽에 세운다. */
+    private Door standAtCampLeftDoor(GameSession g) {
+        Door d = door(g.map.room("CAMP"), "LEFT");
+        g.hero.x = d.arriveX;
+        g.hero.y = d.arriveY;
+        return d;
+    }
+
+    private static Door door(Room r, String name) {
+        for (Door x : r.doors) if (x.name.equals(name)) return x;
+        throw new AssertionError(r.id + "." + name);
+    }
+
+    @Test
+    void walkingThroughADoorMovesToTheLinkedRoom() {
+        GameState s = NewGame.create(b);
+        GameSession g = session(s);
+        Door d = standAtCampLeftDoor(g);
+        Controls left = new Controls();
+        left.moveX = -1;
+        for (int i = 0; i < 60 && !g.inDungeon(); i++) run(g, left, 1 / 60f);
+        assertEquals("L1", g.heroRoom().id, "캠프 왼쪽 문을 지나면 왼쪽 던전 첫 방");
+        Door to = d.partner();
+        assertTrue(Math.hypot(g.hero.x - to.arriveX, g.hero.y - to.arriveY) < 0.5f * b.tileSize, "짝 문 앞에 선다");
+        assertTrue(s.room("L1").visited);
+
+        // 지연 모드(화면 연출)에서는 신호만 보내고 기다린다
+        GameState s2 = NewGame.create(b);
+        GameSession g2 = session(s2);
+        g2.deferDoors = true;
+        standAtCampLeftDoor(g2);
+        List<GameEvent> ev = run(g2, left, 0.8f);
+        assertTrue(has(ev, GameEvent.Type.DOOR_ENTER));
+        assertTrue(g2.currentRoom().id.equals("CAMP"), "화면이 어두워질 때까지 아직 캠프");
+        assertTrue(g2.doorPending());
+        g2.passPendingDoor();
+        run(g2, new Controls(), 1 / 60f);
+        assertEquals("L1", g2.heroRoom().id);
+    }
+
+    @Test
+    void closedGateAndUnlinkedExitsBlockTheWay() {
+        GameState s = NewGame.create(b);
+        GameSession g = session(s);
+        Door right = door(g.map.room("CAMP"), "RIGHT");
+        g.hero.x = right.arriveX;
+        g.hero.y = right.arriveY;
+        Controls go = new Controls();
+        go.moveX = 1;
+        run(g, go, 1.0f);
+        assertTrue(g.inCamp(), "오른쪽 던전은 왼쪽 보스를 잡아야 열린다");
+
+        // 이어진 곳이 없는 그림 속 출구 (L1 아래 계단)는 늘 막혀 있다
+        Door dead = door(g.map.room("L1"), "south");
+        assertTrue(dead.dead());
+        float px = dead.footX + dead.dirX * 8, py = dead.footY + dead.dirY * 8;
+        assertFalse(g.map.free(px, py, g.hero.hw, g.hero.hh));
     }
 
     @Test
     void enteringMobRoomLocksDoorsAndClearingOpensThem() {
         GameState s = NewGame.create(b);
         GameSession g = session(s);
-        standAtL1Entrance(g);
+        standAtCampLeftDoor(g);
         Controls left = new Controls();
         left.moveX = -1;
-        List<GameEvent> ev = run(g, left, 1.0f);
+        List<GameEvent> ev = run(g, left, 1.6f);
         assertTrue(has(ev, GameEvent.Type.ROOM_LOCKED));
         assertTrue(g.fighting());
         assertEquals(b.dungeon("LEFT").mobsPerRoom, g.monsters.size());
@@ -70,14 +120,14 @@ class GameSessionTest {
     void savingDuringFightResumesOutsideTheDoor() {
         GameState s = NewGame.create(b);
         GameSession g = session(s);
-        standAtL1Entrance(g);
-        float outX = g.hero.x;
+        Door d = standAtCampLeftDoor(g);
         Controls left = new Controls();
         left.moveX = -1;
-        run(g, left, 1.0f);
+        run(g, left, 1.6f);
         assertTrue(g.fighting());
         g.prepareSave();
-        assertEquals(outX, s.resumeX, 1e-3);
+        assertEquals(d.arriveX, s.resumeX, 1e-3, "잠긴 방은 처음 상태로 돌아가고 들어오기 전 문 앞에서 이어 한다");
+        assertEquals(d.arriveY, s.resumeY, 1e-3);
         assertFalse(s.room("L1").cleared);
     }
 
@@ -85,13 +135,13 @@ class GameSessionTest {
     void bedResetsRoomsButNotDefeatedBoss() {
         GameState s = NewGame.create(b);
         s.room("L1").cleared = true;
-        s.room("L5").cleared = true;
+        s.room("L6").cleared = true;
         s.bossesDefeated.add("LEFT");
         s.hp = 10;
         GameSession g = session(s);
         g.useBed();
         assertFalse(s.room("L1").cleared);
-        assertTrue(s.room("L5").cleared, "잡은 보스는 다시 나오지 않는다");
+        assertTrue(s.room("L6").cleared, "잡은 보스는 다시 나오지 않는다");
         assertEquals(250, s.hp);
         assertTrue(has(g.pollEvents(), GameEvent.Type.AUTOSAVE));
     }
@@ -101,14 +151,30 @@ class GameSessionTest {
         GameState s = NewGame.create(b);
         s.room("L1").cleared = true;
         GameSession g = session(s);
-        standAtL1Entrance(g);
+        Door west = door(g.map.room("L1"), "west");
+        g.hero.x = west.arriveX;
+        g.hero.y = west.arriveY;
         Controls left = new Controls();
         left.moveX = -1;
         assertNull(g.veinsOf(g.map.room("L2")));
-        run(g, left, 10f); // L1 을 지나 L2 로
+        run(g, left, 1.5f); // L1 왼쪽 문을 지나 L2 로
+        assertEquals("L2", g.heroRoom().id);
         assertNotNull(g.veinsOf(g.map.room("L2")));
         int total = g.veinsOf(g.map.room("L2")).stream().mapToInt(v -> v.amount).sum();
         assertTrue(total >= 8);
+    }
+
+    @Test
+    void oldSaveFromBeforeTheRoomPaintingsResumesInCamp() {
+        GameState s = NewGame.create(b);
+        s.mapVersion = 0; // 그림 방 이전 저장
+        s.resumeX = 30 * b.tileSize;
+        s.resumeY = 40 * b.tileSize;
+        s.room("L2").veins = new ArrayList<>(List.of(new com.yongsa.model.Vein(3, 3, com.yongsa.model.OreType.BLACKIRON, 1, 3)));
+        GameSession g = session(s);
+        assertTrue(g.inCamp(), "예전 위치는 새 맵에 맞지 않아 캠프에서 시작");
+        assertNull(s.room("L2").veins, "예전 광맥 자리는 버린다");
+        assertEquals(com.yongsa.world.WorldMap.VERSION, s.mapVersion);
     }
 
     @Test
@@ -146,7 +212,7 @@ class GameSessionTest {
         GameState s = NewGame.create(b);
         s.bossesDefeated.add("LEFT");
         GameSession g = session(s);
-        Room boss = g.map.room("L5");
+        Room boss = g.map.room("L6");
         assertTrue(g.hasPortal(boss));
         assertFalse(g.hasPortal(g.map.room("R6")));
         g.hero.x = g.portalX(boss);

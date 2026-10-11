@@ -28,10 +28,10 @@ class DevToolsTest {
     void revivedBossFightsAgainWithoutLosingAbsorbedPower() {
         GameState s = NewGame.create(b);
         s.bossesDefeated.add("LEFT");
-        s.room("L5").cleared = true;
+        s.room("L6").cleared = true;
         GameSession g = new GameSession(b, TestData.map(), s, 3);
         int maxHp = g.rules.maxHp(s);
-        Room boss = g.map.room("L5");
+        Room boss = g.map.room("L6");
         assertTrue(g.hasPortal(boss));
 
         assertTrue(g.devReviveBoss("LEFT"));
@@ -42,9 +42,7 @@ class DevToolsTest {
         assertFalse(g.map.links.stream().filter(l -> "RIGHT".equals(l.gate)).findFirst().get().gateClosed,
                 "열린 다음 던전도 그대로");
 
-        g.hero.x = (boss.x0 + 3.5f) * b.tileSize;
-        g.hero.y = (boss.centerTileY() + 0.5f) * b.tileSize;
-        step(g, 1);
+        TestData.walkIn(g, boss);
         assertTrue(g.fighting());
         assertNotNull(g.activeBoss());
 

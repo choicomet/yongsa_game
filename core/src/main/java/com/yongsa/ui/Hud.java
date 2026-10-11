@@ -204,7 +204,7 @@ public class Hud {
         text(fonts.small, "I  가방     M  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
 
         Room room = g.heroRoom();
-        String zone = room == null ? "연결 통로" : room.dungeonId == null ? "용사의 캠프"
+        String zone = room == null ? "던전 입구" : room.dungeonId == null ? "용사의 캠프"
                 : g.balance.dungeon(room.dungeonId).name;
         if (boss == null) {
             centered(fonts.small, banner == null ? zone : banner, w / 2, h - 35, Ui.GOLD);
@@ -311,6 +311,7 @@ public class Hud {
         float a = mapAnim;
         int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
         for (Room r : g.map.rooms) {
+            if (r.type == RoomType.FINAL && r != g.heroRoom()) continue;
             minX = Math.min(minX, r.x0);
             maxX = Math.max(maxX, r.x1);
             minY = Math.min(minY, r.y0);
@@ -335,13 +336,12 @@ public class Hud {
         shapes.rect(px, py, 2, ph);
         shapes.rect(px + pw - 2, py, 2, ph);
 
-        // 통로
+        // 이음 (방 가운데끼리 잇고 그 위에 방을 그린다)
         for (Link l : g.map.links) {
             boolean seen = known(l.a) || known(l.b);
             if (!seen) continue;
-            Door da = l.doorA, db = l.doorB;
-            float x0 = ox + (da.tilesX[1] + 0.5f) * k, y0 = oy + (da.tilesY[1] + 0.5f) * k;
-            float x1 = ox + (db.tilesX[1] + 0.5f) * k, y1 = oy + (db.tilesY[1] + 0.5f) * k;
+            float x0 = ox + (l.a.centerTileX() + 0.5f) * k, y0 = oy + (l.a.centerTileY() + 0.5f) * k;
+            float x1 = ox + (l.b.centerTileX() + 0.5f) * k, y1 = oy + (l.b.centerTileY() + 0.5f) * k;
             if (l.gateClosed) shapes.setColor(0.65f, 0.45f, 1f, a);
             else shapes.setColor(0.42f, 0.4f, 0.46f, a);
             shapes.rectLine(x0, y0, x1, y1, Math.max(4f, k * 2.2f));
@@ -352,30 +352,48 @@ public class Hud {
             boolean boss = r.type == RoomType.BOSS || r.type == RoomType.FINAL;
             if (!visited && !boss) continue;
             if (r.type == RoomType.FINAL && r != here) continue; // 심연은 길로 이어지지 않아 지도에 없다
-            float rx = ox + r.x0 * k, ry = oy + r.y0 * k, rw = (r.x1 - r.x0 + 1) * k, rh = (r.y1 - r.y0 + 1) * k;
             Color c = roomColor(r, visited);
-            if (r == here) {
-                float pulse = 0.5f + 0.5f * MathUtils.sin(time * 5f);
-                shapes.setColor(1f, 0.85f, 0.35f, (0.6f + 0.4f * pulse) * a);
-                shapes.rect(rx - 4, ry - 4, rw + 8, rh + 8);
+            float rx = ox + r.x0 * k, ry = oy + r.y0 * k, rw = (r.x1 - r.x0 + 1) * k, rh = (r.y1 - r.y0 + 1) * k;
+            if (r.scene == null) {
+                if (r == here) {
+                    float pulse = 0.5f + 0.5f * MathUtils.sin(time * 5f);
+                    shapes.setColor(1f, 0.85f, 0.35f, (0.6f + 0.4f * pulse) * a);
+                    shapes.rect(rx - 4, ry - 4, rw + 8, rh + 8);
+                }
+                shapes.setColor(0.03f, 0.03f, 0.05f, a);
+                shapes.rect(rx - 1, ry - 1, rw + 2, rh + 2);
+                shapes.setColor(c.r, c.g, c.b, c.a * a);
+                shapes.rect(rx, ry, rw, rh);
+                shapes.setColor(1f, 1f, 1f, 0.07f * a);
+                shapes.rect(rx, ry + rh - 4, rw, 4);
+            } else {
+                // 그림 방은 실제 바닥 모양대로 칸을 칠한다
+                float pad = r == here ? 3f : 1.2f;
+                if (r == here) {
+                    float pulse = 0.5f + 0.5f * MathUtils.sin(time * 5f);
+                    shapes.setColor(1f, 0.85f, 0.35f, (0.6f + 0.4f * pulse) * a);
+                } else {
+                    shapes.setColor(0.03f, 0.03f, 0.05f, a);
+                }
+                for (int ty = r.y0; ty <= r.y1; ty++)
+                    for (int tx = r.x0; tx <= r.x1; tx++)
+                        if (r.floor(tx, ty)) shapes.rect(ox + tx * k - pad, oy + ty * k - pad, k + pad * 2, k + pad * 2);
+                shapes.setColor(c.r, c.g, c.b, c.a * a);
+                for (int ty = r.y0; ty <= r.y1; ty++)
+                    for (int tx = r.x0; tx <= r.x1; tx++)
+                        if (r.floor(tx, ty)) shapes.rect(ox + tx * k, oy + ty * k, k + 0.6f, k + 0.6f);
             }
-            shapes.setColor(0.03f, 0.03f, 0.05f, a);
-            shapes.rect(rx - 1, ry - 1, rw + 2, rh + 2);
-            shapes.setColor(c.r, c.g, c.b, c.a * a);
-            shapes.rect(rx, ry, rw, rh);
-            shapes.setColor(1f, 1f, 1f, 0.07f * a);
-            shapes.rect(rx, ry + rh - 4, rw, 4);
             if (r.type == RoomType.ORE && visited) {
                 List<Vein> veins = g.veinsOf(r);
                 if (veins != null) {
                     for (Vein v : veins) {
                         shapes.setColor(oreColor(v.ore).r, oreColor(v.ore).g, oreColor(v.ore).b, a);
-                        shapes.rect(ox + v.tileX * k, oy + v.tileY * k, Math.max(3, k), Math.max(3, k));
+                        shapes.rect(ox + v.tileX * k - 1, oy + v.tileY * k - 1, Math.max(3, k) + 2, Math.max(3, k) + 2);
                     }
                 }
             }
             if (g.hasPortal(r)) {
-                float cx = rx + rw / 2f, cy = ry + rh / 2f;
+                float cx = ox + (r.centerTileX() + 0.5f) * k, cy = oy + (r.centerTileY() + 0.5f) * k;
                 shapes.setColor(0.55f, 0.45f, 1f, a);
                 shapes.ellipse(cx - 12, cy - 7, 24, 14, 20);
                 shapes.setColor(0.85f, 0.8f, 1f, a);
