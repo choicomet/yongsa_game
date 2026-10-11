@@ -180,13 +180,10 @@ public final class RoomScenePreviewLauncher {
             lines.setProjectionMatrix(camera.combined);
             lines.begin(ShapeRenderer.ShapeType.Line);
             lines.setColor(.3f, 1f, .6f, 1);
-            int count = scene.walkable.length / 2;
-            for (int i = 0; i < count; i++) {
-                int j = (i + 1) % count;
-                lines.line(scene.x(scene.walkable[2*i], 0, worldWidth), scene.y(scene.walkable[2*i+1], 0, worldWidth),
-                        scene.x(scene.walkable[2*j], 0, worldWidth), scene.y(scene.walkable[2*j+1], 0, worldWidth));
-            }
+            drawPolygon(scene.walkable);
             lines.circle(x, y, layouts.footRadiusWorld, 24);
+            lines.setColor(1f, .25f, .35f, 1);
+            for (float[] polygon : scene.blocked) drawPolygon(polygon);
             lines.setColor(.25f, .8f, 1, 1);
             for (RoomSceneLayout.Portal p : scene.portals)
                 lines.circle(scene.x(p.foot[0], 0, worldWidth), scene.y(p.foot[1], 0, worldWidth), 8, 20);
@@ -194,6 +191,15 @@ public final class RoomScenePreviewLauncher {
             for (float[] p : scene.enemySpawns)
                 lines.circle(scene.x(p[0], 0, worldWidth), scene.y(p[1], 0, worldWidth), 8, 20);
             lines.end();
+        }
+
+        private void drawPolygon(float[] polygon) {
+            int count = polygon.length / 2;
+            for (int i = 0; i < count; i++) {
+                int j = (i + 1) % count;
+                lines.line(scene.x(polygon[2*i], 0, worldWidth), scene.y(polygon[2*i+1], 0, worldWidth),
+                        scene.x(polygon[2*j], 0, worldWidth), scene.y(polygon[2*j+1], 0, worldWidth));
+            }
         }
 
         private void capture(String name) {

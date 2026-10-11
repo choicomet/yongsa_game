@@ -1,6 +1,7 @@
 package com.yongsa.world;
 
 import com.google.gson.Gson;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -37,6 +38,7 @@ public final class RoomSceneLayout {
         public int pixelWidth, pixelHeight;
         public float suggestedWidthTiles;
         public float[] walkable, playerSpawn;
+        public List<float[]> blocked = new ArrayList<>();
         public List<float[]> enemySpawns;
         public List<Portal> portals;
 
@@ -46,6 +48,12 @@ public final class RoomSceneLayout {
                     || walkable == null || walkable.length < 6 || walkable.length % 2 != 0)
                 throw new IllegalArgumentException("Invalid room scene: " + id);
             for (float p : walkable) normalized(p);
+            if (blocked == null) throw new IllegalArgumentException("Missing obstacle footprints");
+            for (float[] polygon : blocked) {
+                if (polygon == null || polygon.length < 6 || polygon.length % 2 != 0)
+                    throw new IllegalArgumentException("Invalid obstacle footprint: " + id);
+                for (float p : polygon) normalized(p);
+            }
             point(playerSpawn);
             if (enemySpawns == null || portals == null) throw new IllegalArgumentException("Missing anchors");
             for (float[] p : enemySpawns) point(p);
@@ -67,18 +75,27 @@ public final class RoomSceneLayout {
         public float u(float worldX, float originX, float width) { return (worldX - originX) / width; }
         public float v(float worldY, float originY, float width) { return 1f - (worldY - originY) / height(width); }
 
-        /** A circle representing feet must fit fully inside the polygon, including concave corners. */
+        /** Feet fit inside visible ground and outside solid footprints, including concave corners. */
         public boolean allowsFoot(float worldX, float worldY, float radius,
                                   float originX, float originY, float width) {
             if (!Float.isFinite(worldX) || !Float.isFinite(worldY) || !Float.isFinite(radius)
+                    || !Float.isFinite(originX) || !Float.isFinite(originY)
                     || radius < 0 || !Float.isFinite(width) || width <= 0) return false;
             float px = worldX - originX, py = worldY - originY, h = height(width);
+            if (!fitsPolygon(walkable, px, py, radius, width, h, true)) return false;
+            for (float[] polygon : blocked)
+                if (!fitsPolygon(polygon, px, py, radius, width, h, false)) return false;
+            return true;
+        }
+
+        private static boolean fitsPolygon(float[] polygon, float px, float py, float radius,
+                                           float width, float h, boolean mustBeInside) {
             boolean inside = false;
             float radius2 = radius * radius;
-            int count = walkable.length / 2;
+            int count = polygon.length / 2;
             for (int i = 0, j = count - 1; i < count; j = i++) {
-                float ax = walkable[j * 2] * width, ay = (1 - walkable[j * 2 + 1]) * h;
-                float bx = walkable[i * 2] * width, by = (1 - walkable[i * 2 + 1]) * h;
+                float ax = polygon[j * 2] * width, ay = (1 - polygon[j * 2 + 1]) * h;
+                float bx = polygon[i * 2] * width, by = (1 - polygon[i * 2 + 1]) * h;
                 if ((ay > py) != (by > py) && px < (bx - ax) * (py - ay) / (by - ay) + ax)
                     inside = !inside;
                 float dx = bx - ax, dy = by - ay;
@@ -87,7 +104,7 @@ public final class RoomSceneLayout {
                 float ex = px - ax - t * dx, ey = py - ay - t * dy;
                 if (ex * ex + ey * ey < radius2) return false;
             }
-            return inside;
+            return inside == mustBeInside;
         }
     }
 }

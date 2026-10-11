@@ -83,7 +83,36 @@ class RoomSceneLayoutTest {
             }
             for (var p : s.portals) assertReachable(s, p.foot, w, step, nx, seen, p.id);
             for (var p : s.enemySpawns) assertReachable(s, p, w, step, nx, seen, "enemy");
+            // These visible floors/stairs were excluded by the earlier conservative outlines.
+            float[] openFloor = switch (s.id) {
+                case "mine" -> new float[]{.32f, .675f};
+                case "citadel" -> new float[]{.5f, .13f};
+                case "tower" -> new float[]{.10f, .28f};
+                case "seal-hall" -> new float[]{.5f, .21f};
+                default -> throw new AssertionError(s.id);
+            };
+            assertReachable(s, openFloor, w, step, nx, seen, "visible floor/stair");
         }
+    }
+
+    @Test void solidFootprintsBlockFeetWithoutBlockingTheSurroundingFloor() {
+        var s = new RoomSceneLayout.Scene();
+        s.pixelWidth = s.pixelHeight = 100;
+        s.walkable = new float[]{0,0, 1,0, 1,1, 0,1};
+        s.blocked.add(new float[]{.4f,.4f, .6f,.4f, .6f,.6f, .4f,.6f});
+        assertFalse(s.allowsFoot(50, 50, 5, 0, 0, 100));
+        assertFalse(s.allowsFoot(37, 50, 5, 0, 0, 100));
+        assertTrue(s.allowsFoot(34, 50, 5, 0, 0, 100));
+        assertFalse(s.allowsFoot(137, 250, 5, 100, 200, 100));
+        assertTrue(s.allowsFoot(134, 250, 5, 100, 200, 100));
+    }
+
+    @Test void mineCartHasASolidFootprint() throws Exception {
+        var data = data();
+        var mine = data.scenes.stream().filter(s -> s.id.equals("mine")).findFirst().orElseThrow();
+        float w = mine.suggestedWidthTiles * data.referenceTileSize;
+        assertFalse(mine.allowsFoot(mine.x(.216f, 0, w), mine.y(.59f, 0, w), data.footRadiusWorld, 0, 0, w));
+        assertFits(mine, new float[]{.29f,.59f}, w, data.footRadiusWorld, "floor beside cart");
     }
 
     private void assertReachable(RoomSceneLayout.Scene s, float[] p, float w, float step, int nx, boolean[] seen, String name) {

@@ -6,11 +6,12 @@
 </style>
 <main>
 <header><div><div class="kicker">THE HERO DOES IT ALL / ENVIRONMENT STUDY</div><h1>시안의 분위기를 실제 게임 화면으로</h1><p>갱도 · 성채 · 탑 · 최종 전당 — 같은 폐허 안에서 이어지는 네 공간</p></div><span class="badge">배경·좌표 준비 / 본 게임 연결 전</span></header>
+<p><a href="variants.html">방 후보 18개 비교·선택하기 →</a> · 던전별 잡몹방 3종 / 광물방 2종 / 보스방 1종</p>
 <nav id="rooms" aria-label="지역 선택"></nav>
 <div class="viewbar"><nav id="views" aria-label="보기 선택"></nav><span id="sceneNote"></span></div>
 <figure><img id="art" alt=""><figcaption id="caption"></figcaption></figure>
 <div class="notes"><div><strong>시안을 유지하는 방식</strong><p>캐릭터를 뺀 배경 PNG 위에 기존 게임의 용사와 검을 따로 그립니다. Java 미리보기는 실제 libGDX 렌더링 캡처입니다.</p></div><div><strong>클로드가 연결할 부분</strong><p>이동 경계는 초안입니다. 실제 방 연결, 문 개폐, 전투·채굴, 추적 카메라는 구현과 함께 맞춰야 합니다. <a href="README.md">연결 안내와 실행법</a></p></div></div>
-<p class="small">원본 1672×941 · 경계의 초록 선: 발 이동 범위 / 파랑 원: 출입구 후보 / 주황 원: 적 배치 후보 · <a href="PROMPTS.json">내장 image_gen 제작 프롬프트</a></p>
+<p class="small">원본 1672×941 · 초록 선: 바닥·계단의 외곽 / 빨강 선: 장애물 바닥 면적 / 파랑 원: 출입구 후보 / 주황 원: 적 배치 후보. 선에서 발 반경만큼 떨어져 이동합니다. · <a href="PROMPTS.json">내장 image_gen 제작 프롬프트</a></p>
 </main>
 <script>
 const scenes=[
