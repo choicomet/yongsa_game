@@ -353,22 +353,22 @@ public class Hud {
         shapes.rect(px, py, 2, ph);
         shapes.rect(px + pw - 2, py, 2, ph);
 
-        // 이음 (방 가운데끼리 잇고 그 위에 방을 그린다)
+        // 이음 (방 가운데끼리 잇고 그 위에 방을 그린다). 지도는 처음부터 한눈에 다 보인다 (지용 버전):
+        // 안 가 본 길은 흐리게.
         for (Link l : g.map.links) {
             boolean seen = known(l.a) || known(l.b);
-            if (!seen || l.a.type == RoomType.FINAL || l.b.type == RoomType.FINAL) continue; // 심연은 땅 밑이라 지도에 잇지 않는다
+            if (l.a.type == RoomType.FINAL || l.b.type == RoomType.FINAL) continue; // 심연은 땅 밑이라 지도에 잇지 않는다
             if (l.a.type == RoomType.VILLAGE || l.b.type == RoomType.VILLAGE) continue; // 마을은 던전 밖
             float x0 = ox + (l.a.centerTileX() + 0.5f) * k, y0 = oy + (l.a.centerTileY() + 0.5f) * k;
             float x1 = ox + (l.b.centerTileX() + 0.5f) * k, y1 = oy + (l.b.centerTileY() + 0.5f) * k;
             if (l.gateClosed) shapes.setColor(0.65f, 0.45f, 1f, a);
+            else if (!seen) shapes.setColor(0.24f, 0.23f, 0.28f, a);
             else shapes.setColor(0.42f, 0.4f, 0.46f, a);
             shapes.rectLine(x0, y0, x1, y1, Math.max(4f, k * 2.2f));
         }
         // 방
         for (Room r : g.map.rooms) {
             boolean visited = known(r);
-            boolean boss = r.type == RoomType.BOSS || r.type == RoomType.FINAL;
-            if (!visited && !boss) continue;
             if (hiddenOnMap(r, inVillage)) continue; // 심연은 길로 이어지지 않고, 마을은 던전 밖이라 따로 보인다
             Color c = roomColor(r, visited);
             float rx = ox + r.x0 * k, ry = oy + r.y0 * k, rw = (r.x1 - r.x0 + 1) * k, rh = (r.y1 - r.y0 + 1) * k;
@@ -410,8 +410,23 @@ public class Hud {
                     }
                 }
             }
+            float mcx = ox + (r.centerTileX() + 0.5f) * k, mcy = oy + (r.centerTileY() + 0.5f) * k;
+            if (r.type == RoomType.BOSS && !g.state.bossDefeated(r.dungeonId)) {
+                // 아직 살아 있는 보스: 굵은 X
+                shapes.setColor(1f, 0.85f, 0.8f, a);
+                shapes.rectLine(mcx - 9, mcy - 9, mcx + 9, mcy + 9, 4);
+                shapes.rectLine(mcx - 9, mcy + 9, mcx + 9, mcy - 9, 4);
+            } else if (g.hasChest(r)) {
+                // 열지 않은 보물상자
+                shapes.setColor(0.2f, 0.12f, 0.04f, a);
+                shapes.rect(mcx - 10, mcy - 8, 20, 16);
+                shapes.setColor(1f, 0.8f, 0.3f, a);
+                shapes.rect(mcx - 8, mcy - 6, 16, 12);
+                shapes.setColor(0.45f, 0.28f, 0.1f, a);
+                shapes.rect(mcx - 8, mcy, 16, 2);
+            }
             if (g.hasPortal(r)) {
-                float cx = ox + (r.centerTileX() + 0.5f) * k, cy = oy + (r.centerTileY() + 0.5f) * k;
+                float cx = mcx, cy = mcy;
                 shapes.setColor(0.55f, 0.45f, 1f, a);
                 shapes.ellipse(cx - 12, cy - 7, 24, 14, 20);
                 shapes.setColor(0.85f, 0.8f, 1f, a);
@@ -429,9 +444,9 @@ public class Hud {
         shapes.circle(hx, hy, 4.5f, 16);
 
         // 범례
-        String[] labels = {"캠프", "방", "광물방", "보스방", "귀환 포탈", "봉인된 길"};
-        Color[] colors = {new Color(0.85f, 0.6f, 0.3f, 1f), new Color(0.5f, 0.48f, 0.56f, 1f), new Color(0.35f, 0.5f, 0.75f, 1f),
-                new Color(0.8f, 0.25f, 0.2f, 1f), new Color(0.55f, 0.45f, 1f, 1f), new Color(0.65f, 0.45f, 1f, 1f)};
+        String[] labels = {"캠프", "방", "안 가 본 방", "광물방", "보스방", "보물상자", "봉인된 길"};
+        Color[] colors = {new Color(0.85f, 0.6f, 0.3f, 1f), new Color(0.5f, 0.48f, 0.56f, 1f), UNSEEN, new Color(0.35f, 0.5f, 0.75f, 1f),
+                new Color(0.8f, 0.25f, 0.2f, 1f), new Color(1f, 0.8f, 0.3f, 1f), new Color(0.65f, 0.45f, 1f, 1f)};
         float lx = px + 40;
         for (int i = 0; i < labels.length; i++) {
             shapes.setColor(colors[i].r, colors[i].g, colors[i].b, a);
@@ -453,7 +468,7 @@ public class Hud {
             float sx = 0, sy = 0;
             int n = 0;
             for (Room r : g.map.rooms) {
-                if (!id.equals(r.dungeonId) || !known(r)) continue;
+                if (!id.equals(r.dungeonId) || r.type == RoomType.FINAL) continue;
                 sx += ox + (r.x0 + r.x1) / 2f * k;
                 sy += oy + r.y1 * k;
                 n++;
@@ -486,7 +501,10 @@ public class Hud {
         return r.type == RoomType.CAMP || g.state.room(r.id).visited;
     }
 
+    private static final Color UNSEEN = new Color(0.2f, 0.2f, 0.25f, 0.9f);
+
     private Color roomColor(Room r, boolean visited) {
+        if (!visited && r.type != RoomType.BOSS && r.type != RoomType.FINAL) return UNSEEN;
         switch (r.type) {
             case CAMP: return new Color(0.85f, 0.6f, 0.3f, 1f);
             case ORE: return new Color(0.35f, 0.5f, 0.75f, 1f);
