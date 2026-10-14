@@ -362,7 +362,7 @@ public class GameSession {
             state.stats.monstersKilled++;
             GameEvent died = GameEvent.fx(GameEvent.Type.MONSTER_DIED, m.x, m.y);
             died.sprite = m.def.sprite;
-            died.size = m.finalBoss ? 2.0f : m.boss ? 1.7f : 1f;
+            died.size = m.finalBoss ? (m.phase2 ? 2.3f : 2.0f) : m.boss ? 1.7f : 1f;
             died.boss = m.boss;
             died.flip = m.dirX < -0.2f;
             events.add(died);

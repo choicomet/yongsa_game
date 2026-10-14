@@ -174,7 +174,8 @@ public class GameScreen extends ScreenAdapter {
         zoom += (want - zoom) * Math.min(1f, dt * 6f);
         if (Math.abs(want - zoom) < 0.0005f) zoom = want;
         worldCam.zoom = zoom;
-        follow.update(session.hero.x, session.hero.y + 16, dt, worldCam.viewportWidth * zoom, worldCam.viewportHeight * zoom,
+        float cameraY = renderer.cameraTargetY(session.hero.y + 16, worldCam.viewportHeight * zoom, zoom);
+        follow.update(session.hero.x, cameraY, dt, worldCam.viewportWidth * zoom, worldCam.viewportHeight * zoom,
                 session.map.width * T, session.map.height * T);
         float shake = trauma * trauma * 12f;
         float ox = shake * (MathUtils.sin(shakeTime * 47f) + MathUtils.sin(shakeTime * 83f) * 0.5f) / 1.5f;
