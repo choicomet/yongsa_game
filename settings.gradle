@@ -1,0 +1,2 @@
+rootProject.name = 'yongsa'
+include 'core', 'lwjgl3'
