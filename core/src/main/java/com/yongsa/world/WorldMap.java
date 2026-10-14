@@ -145,6 +145,7 @@ public class WorldMap {
         int y0 = (int) Math.floor(oy / T), y1 = (int) Math.ceil((oy + h) / T) - 1;
         Room room = new Room(rd.id, RoomType.valueOf(rd.type), rd.dungeon, rd.cx, rd.cy, x0, y0, x1, y1,
                 sc, ox, oy, w, h, rd.flip);
+        room.waves = Math.max(1, rd.waves);
         room.buildMasks(T);
         addRoom(room);
         for (int y = y0; y <= y1; y++) {

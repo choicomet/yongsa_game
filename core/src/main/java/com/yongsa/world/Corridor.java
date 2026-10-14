@@ -21,6 +21,11 @@ public class Corridor {
         this.theme = theme;
     }
 
+    /** 저장용 이름: 이은 두 출구 (예: "CAMP.left>L1.east"). */
+    public String key() {
+        return link.a.id + "." + link.doorA.name + ">" + link.b.id + "." + link.doorB.name;
+    }
+
     public boolean closed() {
         return link.doorA.isClosed() || link.doorB.isClosed();
     }

@@ -45,7 +45,9 @@ public class GameScreen extends ScreenAdapter {
     private final WorldRenderer renderer;
     private final CameraFollow follow = new CameraFollow();
     private final Controls controls = new Controls();
-    private boolean interactPressed, rollPressed, attackPressed, skillPressed, potionPressed;
+    private boolean interactPressed, rollPressed, attackPressed;
+    /** 누른 스킬 칸 (0=L, 1=U, 2=I, 3=O), 없으면 -1. */
+    private int skillPressed = -1;
     private float endingDelay = -1;
     /** 화면 흔들림 세기 (0~1), 타격 순간 잠깐 멈추는 시간, 화면 전환용 검은 막. */
     private float trauma, hitStop, shakeTime;
@@ -97,7 +99,7 @@ public class GameScreen extends ScreenAdapter {
                     case Input.Keys.ESCAPE:
                         openPause();
                         return true;
-                    case Input.Keys.I:
+                    case Input.Keys.B:
                         openBag();
                         return true;
                     case Input.Keys.M:
@@ -116,12 +118,17 @@ public class GameScreen extends ScreenAdapter {
                     case Input.Keys.J:
                         attackPressed = true;
                         return true;
-                    case Input.Keys.Q:
                     case Input.Keys.L:
-                        skillPressed = true;
+                        skillPressed = 0;
                         return true;
-                    case Input.Keys.R:
-                        potionPressed = true;
+                    case Input.Keys.U:
+                        skillPressed = 1;
+                        return true;
+                    case Input.Keys.I:
+                        skillPressed = 2;
+                        return true;
+                    case Input.Keys.O:
+                        skillPressed = 3;
                         return true;
                     case Input.Keys.EQUALS:
                     case Input.Keys.PLUS:
@@ -159,7 +166,10 @@ public class GameScreen extends ScreenAdapter {
             readControls();
             session.update(dt, controls);
         }
-        if (!frozen) interactPressed = rollPressed = attackPressed = skillPressed = potionPressed = false;
+        if (!frozen) {
+            interactPressed = rollPressed = attackPressed = false;
+            skillPressed = -1;
+        }
         handleEvents();
         if (!paused) renderer.update(frozen ? dt * 0.15f : dt);
         hud.update(dt);
@@ -277,7 +287,6 @@ public class GameScreen extends ScreenAdapter {
         controls.attack = attackPressed || Gdx.input.isKeyPressed(Input.Keys.J);
         controls.roll = rollPressed;
         controls.skill = skillPressed;
-        controls.potion = potionPressed;
         controls.interact = interactPressed;
     }
 
@@ -384,10 +393,14 @@ public class GameScreen extends ScreenAdapter {
                 case ENTERED_DUNGEON:
                     hud.banner(e.text);
                     break;
+                case WAVE_STARTED:
+                    hud.banner(e.text);
+                    trauma = Math.min(1f, trauma + 0.25f);
+                    break;
                 case CHEST_OPENED:
                     game.sfx.play("awaken");
                     hud.toast("보물상자에서 " + e.ore.displayName + " " + e.amount + "개"
-                            + (e.potions > 0 ? ", 포션 " + e.potions + "개" : "") + "를 얻었다");
+                            + "를 얻었다" + (e.potions > 0 ? " · 포션 " + e.potions + "개가 바닥에 떨어졌다" : ""));
                     break;
                 default:
                     break;

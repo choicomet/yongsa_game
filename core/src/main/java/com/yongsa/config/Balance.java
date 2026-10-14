@@ -85,9 +85,9 @@ public class Balance {
     }
 
     /** 회복 포션 (던전 상자에서만 나온다). */
+    /** 회복 포션: 상자에서 바닥에 떨어지고, 지나가며 주우면 바로 회복한다 (들고 다니지 않는다). */
     public static class PotionCfg {
-        public float healRatio, cooldown;
-        public int max;
+        public float healRatio, pickupRadiusTiles;
     }
 
     public static class WeaponDef {
@@ -95,7 +95,7 @@ public class Balance {
         public int baseAttack, perLevel, craftCost;
         public boolean enhanceable, holy;
         public String awakenedName, abilityName, abilityDesc;
-        /** 검마다 하나 있는 액티브 스킬 (Q). 없으면 null (봉인된 성검). */
+        /** 검마다 하나 있는 액티브 스킬 (L·U·I 칸, 성검은 O). 없으면 null (봉인된 성검). */
         public SkillDef skill;
     }
 
@@ -122,7 +122,7 @@ public class Balance {
         public float destroyRefundRatio;
         public int dismantleRefund;
         public float hammerSeconds, awakenSeconds;
-        /** 이 강화 단계부터 검 스킬(Q)을 쓸 수 있다. 성검은 깨어나면 바로. */
+        /** 이 강화 단계부터 검 스킬 칸이 열린다. 성검은 깨어나면 바로. */
         public int skillUnlockLevel;
     }
 

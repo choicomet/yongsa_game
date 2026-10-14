@@ -31,6 +31,8 @@ public class MapDef {
         public float width;
         /** 그림을 좌우로 뒤집어 쓴다. */
         public boolean flip;
+        /** 잡몹방 웨이브 수 (지용 버전): 한 무리를 다 잡으면 다음 무리가 나온다. 없으면 1. */
+        public int waves = 1;
     }
 
     public static class LinkDef {

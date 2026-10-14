@@ -44,7 +44,7 @@ public class EndingScreen extends MenuScreen {
             row(t, "캔 광물", s.oreMined + "개");
             row(t, "쓰러뜨린 몬스터", s.monstersKilled + "마리");
             row(t, "쓰러진 횟수", s.deaths + "번");
-            row(t, "흡수한 각성 무기", state.imprints.size() + "자루");
+            row(t, "흡수해 익힌 검 스킬", state.learnedSkills.size() + "개");
             p.add(t).padBottom(20).row();
             Table b = new Table();
             b.add(nav.add("계속하기", () -> {

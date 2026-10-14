@@ -31,7 +31,7 @@ public final class NextTask {
                         + s.ore(ore) + "/" + wd.craftCost;
             }
             if (s.equippedUid != owned.uid && rules.attack(s, owned) > rules.attack(s)) {
-                return "가방(I)에서 " + wd.name + " 장착";
+                return "가방(B)에서 " + wd.name + " 장착";
             }
             return where + " 던전 보스 잡기 (" + d.boss.name + ")";
         }

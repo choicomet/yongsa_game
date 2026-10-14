@@ -49,9 +49,10 @@ public class Hud {
     private boolean mapOpen;
     private float mapAnim;
     private float introT = -1;
-    private static final int SLOTS = 4;
+    /** 공격 J, 구르기 K, 스킬 칸 넷 (L, U, I, O). 스킬 칸은 열렸을 때만 보인다. */
+    private static final int SLOTS = 2 + com.yongsa.model.Rules.SKILL_SLOTS;
     private final float[] readyFlash = new float[SLOTS];
-    private final boolean[] wasReady = {true, true, true, true};
+    private final boolean[] wasReady = {true, true, true, true, true, true};
     private Matrix4 projection;
     private float w, h;
 
@@ -157,7 +158,11 @@ public class Hud {
     }
 
     private float[] cooldowns() {
-        return new float[]{Math.max(0, g.hero.attackCd), Math.max(0, g.hero.rollCd), Math.max(0, g.hero.skillCd), Math.max(0, g.hero.potionCd)};
+        float[] out = new float[SLOTS];
+        out[0] = Math.max(0, g.hero.attackCd);
+        out[1] = Math.max(0, g.hero.rollCd);
+        for (int i = 2; i < SLOTS; i++) out[i] = Math.max(0, g.hero.skillCd[i - 2]);
+        return out;
     }
 
     public void render(Matrix4 projection, float w, float h) {
@@ -202,7 +207,7 @@ public class Hud {
             text(fonts.small, String.valueOf(s.ore(type)), ox + 43, h - 49, Ui.TEXT);
             ox += 94;
         }
-        text(fonts.small, "I  가방     M  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
+        text(fonts.small, "B  가방     M  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
 
         Room room = g.heroRoom();
         boolean village = room != null && room.type == RoomType.VILLAGE;
@@ -238,34 +243,40 @@ public class Hud {
         text(fonts.small, "W A S D  이동    ·    E  상호작용", 24, 136, Ui.DIM);
 
         float[] left = cooldowns();
-        com.yongsa.config.Balance.SkillDef skill = g.rules.skill(g.state);
-        boolean skillOpen = g.rules.skillUnlocked(g.state);
-        String[] keys = {"J", "Space", "Q", "R"};
-        String[] names = {"베기", "구르기", skill == null ? "스킬 없음" : skillOpen ? skill.name : "+" + g.balance.enhance.skillUnlockLevel + " 에 열림",
-                "포션 " + s.potions + "/" + g.balance.potion.max};
-        for (int i = 0; i < SLOTS; i++) {
-            float x = w - 492 + i * 120;
+        com.yongsa.model.Rules.SkillSlot[] skills = g.rules.skillSlots(g.state);
+        java.util.List<Integer> shown = new java.util.ArrayList<>();
+        shown.add(0);
+        shown.add(1);
+        for (int i = 0; i < skills.length; i++) if (skills[i] != null) shown.add(2 + i);
+        for (int k = 0; k < shown.size(); k++) {
+            int i = shown.get(k);
+            float x = w - 132 - (shown.size() - 1 - k) * 120;
+            com.yongsa.model.Rules.SkillSlot sk = i >= 2 ? skills[i - 2] : null;
             card(x, 24, 108, 88);
             if (readyFlash[i] > 0) rect(x, 111, 108, 2, Ui.GOLD);
             float total = i == 0 ? g.balance.attack.basicCooldown : i == 1 ? g.balance.attack.rollTime + g.balance.attack.rollCooldown
-                    : i == 3 ? g.balance.potion.cooldown : skill == null ? 1 : skill.cooldown;
+                    : sk.def.cooldown;
             if (left[i] > 0) rect(x + 1, 25, 106, 86 * Math.min(1, left[i] / total), new Color(0, 0, 0, 0.5f));
             batch.setColor(Color.WHITE);
             if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
             if (i == 1) batch.draw(art.get("hero_side_walk"), x + 48, 51, 34, 48);
-            if (i == 2 && weapon != null) {
-                // 스킬 칸: 검 그림 뒤로 빛 (잠겨 있으면 어둡게). 스킬 아이콘 그림이 오면 바꾼다 (docs/ART_REQUESTS.md)
-                if (skillOpen) {
-                    batch.setColor(1f, 0.85f, 0.5f, 0.5f + 0.2f * MathUtils.sin(time * 4f));
+            if (sk != null) {
+                // 스킬 칸: 그 검 그림 뒤로 빛 (지금 못 쓰면 어둡게). 스킬 아이콘 그림이 오면 바꾼다 (docs/ART_REQUESTS.md)
+                if (sk.usable) {
+                    batch.setColor(sk.awakened ? new Color(0.85f, 0.6f, 1f, 0.55f + 0.2f * MathUtils.sin(time * 4f))
+                            : new Color(1f, 0.85f, 0.5f, 0.5f + 0.2f * MathUtils.sin(time * 4f)));
                     batch.draw(art.glow, x + 24, 38, 72, 72);
                 }
-                batch.setColor(skillOpen ? Color.WHITE : new Color(0.35f, 0.35f, 0.4f, 1f));
-                batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
+                batch.setColor(sk.usable ? Color.WHITE : new Color(0.35f, 0.35f, 0.4f, 1f));
+                batch.draw(art.sword(sk.weaponId, sk.awakened), x + 35, 47, 58, 58);
                 batch.setColor(Color.WHITE);
             }
-            if (i == 3) drawPotion(x + 54, 52, s.potions > 0);
-            text(fonts.small, keys[i], x + 10, 100, Ui.GOLD);
-            text(fonts.small, names[i], x + 12, 47, Ui.DIM);
+            String key = i == 0 ? "J" : i == 1 ? "K" : com.yongsa.model.GameSession.SKILL_KEYS[i - 2];
+            String name = i == 0 ? "베기" : i == 1 ? "구르기" : sk.def.name;
+            text(fonts.small, key, x + 10, 100, Ui.GOLD);
+            if (sk != null && sk.learned) text(fonts.small, "익힘", x + 62, 100, Ui.PURPLE);
+            else if (sk != null && !sk.usable) text(fonts.small, "검 필요", x + 50, 100, Ui.DIM);
+            text(fonts.small, name, x + 12, 47, sk != null && !sk.usable ? Ui.DIM : Ui.DIM);
             if (i >= 1 && left[i] > 0.1f) centered(fonts.small, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 71, 77, Ui.TEXT);
         }
         for (Toast toast : toasts) {
@@ -280,17 +291,6 @@ public class Hud {
         if (mapAnim > 0.01f) drawMap();
         fonts.normal.setColor(Color.WHITE);
         fonts.small.setColor(Color.WHITE);
-    }
-
-    /** 포션 칸: 임시로 코드로 그린 붉은 병 (아이콘 그림이 오면 바꾼다, docs/ART_REQUESTS.md). */
-    private void drawPotion(float cx, float y, boolean have) {
-        float k = have ? 1f : 0.4f;
-        rect(cx - 5, y + 38, 10, 6, new Color(0.55f * k, 0.38f * k, 0.22f * k, 1f));
-        rect(cx - 4, y + 30, 8, 9, new Color(0.75f * k, 0.8f * k, 0.85f * k, 0.9f));
-        rect(cx - 13, y, 26, 31, new Color(0.75f * k, 0.8f * k, 0.85f * k, 0.9f));
-        rect(cx - 11, y + 2, 22, 18, new Color(0.85f * k, 0.12f * k, 0.18f * k, 1f));
-        rect(cx - 8, y + 22, 3, 6, new Color(1f, 1f, 1f, 0.5f * k));
-        batch.setColor(Color.WHITE);
     }
 
     private void rect(float x, float y, float width, float height, Color color) {
@@ -376,13 +376,12 @@ public class Hud {
         shapes.rect(px, py, 2, ph);
         shapes.rect(px + pw - 2, py, 2, ph);
 
-        // 통로. 지도는 처음부터 한눈에 다 보인다 (지용 버전): 안 가 본 길은 흐리게, 봉인된 길은 보랏빛.
+        // 통로: 지나가 본 길만 보인다 (2026-10-14 해성: 가 본 곳만 지도에). 봉인된 길은 보랏빛.
         for (Corridor c : g.map.corridors) {
             Link l = c.link;
             if (hiddenOnMap(l.a, inVillage) || hiddenOnMap(l.b, inVillage)) continue;
-            boolean seen = known(l.a) || known(l.b);
+            if (!g.state.seenCorridors.contains(c.key())) continue;
             if (l.gateClosed) shapes.setColor(0.65f, 0.45f, 1f, a);
-            else if (!seen) shapes.setColor(0.24f, 0.23f, 0.28f, a);
             else shapes.setColor(0.42f, 0.4f, 0.46f, a);
             for (int[] t : c.tiles) shapes.rect(ox + t[0] * k, oy + t[1] * k, k + 0.6f, k + 0.6f);
         }
@@ -390,6 +389,7 @@ public class Hud {
         for (Room r : g.map.rooms) {
             boolean visited = known(r);
             if (hiddenOnMap(r, inVillage)) continue; // 심연은 길로 이어지지 않는다
+            if (!visited) continue; // 가 본 방만 보인다
             Color c = roomColor(r, visited);
             float rx = ox + r.x0 * k, ry = oy + r.y0 * k, rw = (r.x1 - r.x0 + 1) * k, rh = (r.y1 - r.y0 + 1) * k;
             if (r.scene == null) {
@@ -464,8 +464,8 @@ public class Hud {
         shapes.circle(hx, hy, 4.5f, 16);
 
         // 범례
-        String[] labels = {"캠프", "방", "안 가 본 방", "광물방", "보스방", "보물상자", "봉인된 길"};
-        Color[] colors = {new Color(0.85f, 0.6f, 0.3f, 1f), new Color(0.5f, 0.48f, 0.56f, 1f), UNSEEN, new Color(0.35f, 0.5f, 0.75f, 1f),
+        String[] labels = {"캠프", "방", "광물방", "보스방", "보물상자", "봉인된 길"};
+        Color[] colors = {new Color(0.85f, 0.6f, 0.3f, 1f), new Color(0.5f, 0.48f, 0.56f, 1f), new Color(0.35f, 0.5f, 0.75f, 1f),
                 new Color(0.8f, 0.25f, 0.2f, 1f), new Color(1f, 0.8f, 0.3f, 1f), new Color(0.65f, 0.45f, 1f, 1f)};
         float lx = px + 40;
         for (int i = 0; i < labels.length; i++) {

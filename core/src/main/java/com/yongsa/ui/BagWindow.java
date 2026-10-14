@@ -27,7 +27,7 @@ public class BagWindow extends Modal {
             detailPane.updateVisualScroll();
             return true;
         }
-        if (keycode == com.badlogic.gdx.Input.Keys.I) {
+        if (keycode == com.badlogic.gdx.Input.Keys.B) {
             close();
             return true;
         }
@@ -88,6 +88,20 @@ public class BagWindow extends Modal {
         for (String id : s.bossesDefeated) {
             side.add(wrapped("· " + g.balance.dungeon(id).boss.name + "의 힘 (최대 체력)", Ui.GREEN)).width(280).left().colspan(2).padBottom(8).row();
         }
+        side.add(label("스킬 칸", "default", Ui.DIM)).left().colspan(2).padTop(18).padBottom(8).row();
+        com.yongsa.model.Rules.SkillSlot[] slots = g.rules.skillSlots(s);
+        boolean any = false;
+        for (int i = 0; i < slots.length; i++) {
+            com.yongsa.model.Rules.SkillSlot k = slots[i];
+            if (k == null) continue;
+            any = true;
+            String how = k.learned ? "흡수해서 익힘 · 어떤 검이든" : i == com.yongsa.model.Rules.HOLY_SLOT ? "깨어난 성검을 들면"
+                    : g.balance.weapon(k.weaponId).name + "을 들면";
+            side.add(wrapped(GameSession.SKILL_KEYS[i] + "  " + k.def.name + (k.awakened ? " (각성)" : "") + "\n   " + how,
+                    k.usable ? Ui.GOLD : Ui.DIM)).width(280).left().colspan(2).padBottom(8).row();
+        }
+        if (!any) side.add(wrapped("검을 +" + g.balance.enhance.skillUnlockLevel + " 까지 강화하면 스킬 칸이 열린다", Ui.DIM))
+                .width(280).left().colspan(2).row();
         com.badlogic.gdx.scenes.scene2d.ui.ScrollPane details = new com.badlogic.gdx.scenes.scene2d.ui.ScrollPane(side);
         details.setScrollingDisabled(true, false);
         detailPane = details;

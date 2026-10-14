@@ -49,7 +49,7 @@ class PotionChestTest {
     }
 
     @Test
-    void chestGivesOreAndPotionAndPotionHeals() {
+    void chestDropsPotionOnFloorAndWalkingOverItHeals() {
         GameState s = NewGame.create(b);
         GameSession g = new GameSession(b, TestData.map(), s, 1);
         Room r = g.map.room("L1");
@@ -58,34 +58,36 @@ class PotionChestTest {
         g.hero.x = g.chestX(r);
         g.hero.y = g.chestY(r) - 30;
         assertTrue(g.map.free(g.chestX(r), g.chestY(r), 4, 4), "상자는 바닥 위에 놓인다");
+        int max = g.rules.maxHp(s);
+        s.hp = 10;
         run(g, new Controls(), 0.05f);
         int ore = s.ore(OreType.BLACKIRON);
         g.openChest(r);
         assertTrue(s.ore(OreType.BLACKIRON) - ore >= b.reward.mobChestOreMin);
-        assertEquals(b.reward.mobChestPotions, s.potions);
+        assertEquals(b.reward.mobChestPotions, s.potionDrops.size(), "포션은 바닥에 떨어진다 (들고 다니지 않는다)");
+        assertEquals(10, s.hp, "떨어지기만 해서는 회복하지 않는다");
 
-        int max = g.rules.maxHp(s);
-        s.hp = 10;
-        Controls drink = new Controls();
-        drink.potion = true;
-        run(g, drink, 1 / 60f);
-        assertEquals(0, s.potions);
-        assertEquals(10 + Math.round(max * b.potion.healRatio), s.hp);
-        List<GameEvent> ev = run(g, drink, 1.2f);
-        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.TOAST && e.text.contains("포션이 없다")));
+        float[] p = s.potionDrops.get(0);
+        g.hero.x = p[0];
+        g.hero.y = p[1];
+        run(g, new Controls(), 1 / 60f);
+        assertTrue(s.potionDrops.isEmpty(), "지나가면 줍는다");
+        assertEquals(10 + Math.round(max * b.potion.healRatio), s.hp, "주우면 바로 회복");
     }
 
     @Test
-    void potionsAreCappedAndNotWastedAtFullHp() {
+    void potionStaysOnFloorAtFullHp() {
         GameState s = NewGame.create(b);
-        s.potions = b.potion.max;
         GameSession g = new GameSession(b, TestData.map(), s, 1);
-        Controls drink = new Controls();
-        drink.potion = true;
-        run(g, drink, 1 / 60f);
-        assertEquals(b.potion.max, s.potions, "체력이 가득하면 마시지 않는다");
         s.chests.add("L6");
         g.openChest(g.map.room("L6"));
-        assertEquals(b.potion.max, s.potions, "최대 개수를 넘지 않는다");
+        assertEquals(b.reward.bossChestPotions, s.potionDrops.size());
+        float[] p = s.potionDrops.get(0);
+        g.hero.x = p[0];
+        g.hero.y = p[1];
+        s.hp = g.rules.maxHp(s);
+        List<GameEvent> ev = run(g, new Controls(), 0.1f);
+        assertEquals(b.reward.bossChestPotions, s.potionDrops.size(), "체력이 가득하면 남겨 둔다");
+        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.TOAST && e.text.contains("남겨 둔다")));
     }
 }
