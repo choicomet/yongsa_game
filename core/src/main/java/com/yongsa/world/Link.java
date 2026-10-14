@@ -7,6 +7,8 @@ public class Link {
     public final String gate;
     public Door doorA, doorB;
     public boolean gateClosed;
+    /** 한쪽 길: doorA 로만 지나 doorB 앞에 선다. doorB 는 다른 이음에 속한다. */
+    public boolean oneWay;
 
     Link(Room a, Room b, String gate) {
         this.a = a;

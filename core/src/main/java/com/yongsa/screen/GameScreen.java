@@ -322,10 +322,11 @@ public class GameScreen extends ScreenAdapter {
                     startFall();
                     break;
                 case BOSS_SPEECH: {
-                    // 말풍선이 화면 밖이면 자막으로도 보여 준다
+                    // 말풍선이 화면 밖이면 자막으로도 보여 준다 (용사는 늘 화면 가운데라 필요 없다)
+                    if ("용사".equals(e.speaker)) break;
                     float hw = worldCam.viewportWidth * worldCam.zoom / 2f, hh = worldCam.viewportHeight * worldCam.zoom / 2f;
                     if (Math.abs(e.x - worldCam.position.x) > hw - 40 || Math.abs(e.y - worldCam.position.y) > hh - 60) {
-                        hud.toast("마왕: “" + e.text + "”");
+                        hud.toast((e.speaker == null ? "마왕" : e.speaker) + ": “" + e.text + "”");
                     }
                     break;
                 }

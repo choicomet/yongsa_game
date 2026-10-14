@@ -89,14 +89,10 @@ class GameSessionTest {
         run(g, go, 1.0f);
         assertTrue(g.inCamp(), "오른쪽 던전은 왼쪽 보스를 잡아야 열린다");
 
-        // 캠프 아래 계단은 성검의 봉인을 풀어야 심연으로 이어진다
+        // 캠프 아래 문은 마을로 나간다 (잠기지 않지만 용사가 처음엔 나가려 하지 않는다)
         Door down = door(g.map.room("CAMP"), "down");
-        assertEquals("F", down.partner().room.id);
-        float px = down.footX, py = down.footY;
-        assertFalse(g.map.free(px, py, g.hero.hw, g.hero.hh));
-        s.unsealed = true;
-        g.map.updateGates(s);
-        assertTrue(g.map.free(px, py, g.hero.hw, g.hero.hh));
+        assertEquals("V", down.partner().room.id);
+        assertTrue(g.map.free(down.footX, down.footY, g.hero.hw, g.hero.hh));
     }
 
     @Test

@@ -35,5 +35,7 @@ public class MapDef {
 
     public static class LinkDef {
         public String a, b, gate;
+        /** a 문으로만 b 문 앞에 나간다 (b 문은 원래 이음을 그대로 쓴다). */
+        public boolean oneWay;
     }
 }

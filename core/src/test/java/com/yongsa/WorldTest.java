@@ -28,8 +28,12 @@ class WorldTest {
         for (Room r : map.rooms) if (r.type == RoomType.BOSS) boss++;
         assertEquals(3, boss);
         assertEquals(RoomType.FINAL, map.room("F").type);
-        for (Door d : map.room("F").doors)
-            assertEquals("FINAL", d.link.gate, "심연은 봉인을 풀어야 열리는 캠프 아래 계단하고만 이어진다");
+        for (Door d : map.room("F").doors) {
+            assertTrue(d.link.oneWay, "심연 계단은 캠프로 올라가기만 한다 (내려오는 길은 봉인 문양)");
+            assertEquals("CAMP", d.partner().room.id);
+        }
+        assertEquals(RoomType.VILLAGE, map.room("CAMP").doors.stream()
+                .filter(d -> d.name.equals("down")).findFirst().get().partner().room.type, "캠프 아래 문은 마을로 나간다");
         for (Room r : map.rooms)
             for (Door d : r.doors) assertFalse(d.dead(), "그림 속 출구는 모두 어딘가로 이어진다: " + r.id + "." + d.name);
         Room camp = map.room("CAMP");
@@ -78,7 +82,7 @@ class WorldTest {
         for (String id : new String[]{"LEFT", "RIGHT", "TOP"}) all.bossesDefeated.add(id);
         all.unsealed = true;
         map.updateGates(all);
-        assertEquals(24, map.links.size());
+        assertEquals(25, map.links.size());
         for (Link l : map.links) {
             for (Door d : new Door[]{l.doorA, l.doorB}) {
                 String name = d.room.id + "." + d.name;

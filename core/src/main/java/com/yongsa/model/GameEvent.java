@@ -49,6 +49,8 @@ public class GameEvent {
     public int amount;
     public String dungeonId;
     public int hpGain;
+    /** BOSS_SPEECH: 말하는 사람 (null 이면 보스). 용사·마을 사람이면 이름이 붙는다. */
+    public String speaker;
     /** BOSS_DEFEATED: 처음 잡았나 (다시 생긴 보스면 false, 힘은 오르지 않는다). */
     public boolean first;
     public String opened;

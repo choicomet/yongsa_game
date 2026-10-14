@@ -95,7 +95,7 @@ public class WorldRenderer implements Disposable {
     /** 보스 말풍선. */
     private static class Speech {
         float x, y, t;
-        String text;
+        String text, speaker;
     }
 
     private final List<Speech> speeches = new ArrayList<>();
@@ -300,6 +300,7 @@ public class WorldRenderer implements Disposable {
                 sp.x = e.x;
                 sp.y = e.y;
                 sp.text = e.text;
+                sp.speaker = e.speaker;
                 speeches.clear();
                 speeches.add(sp);
                 break;
@@ -533,6 +534,8 @@ public class WorldRenderer implements Disposable {
         if (r != null && r.scene != null) {
             // 그림에 이미 빛과 그늘이 그려져 있어서 조금만 어둡게 한다
             if (r.type == RoomType.FINAL) return new Color(0.74f, 0.68f, 0.82f, 1f);
+            // 마을: 마왕 전에는 보랏빛 저녁, 뒤에는 한낮
+            if (r.type == RoomType.VILLAGE) return g.villagersFree() ? new Color(1f, 0.98f, 0.94f, 1f) : new Color(0.62f, 0.52f, 0.82f, 1f);
             switch (th) {
                 case "CAMP": return new Color(0.84f, 0.81f, 0.78f, 1f);
                 case "LEFT": return new Color(0.8f, 0.8f, 0.84f, 1f);
@@ -1012,6 +1015,12 @@ public class WorldRenderer implements Disposable {
             if (veins == null) continue;
             for (Vein v : veins) list.add(new Sorted(v.tileY * T + 4, () -> drawVein(v)));
         }
+        if (g.inVillage()) {
+            for (com.yongsa.config.Balance.Villager v : g.balance.village.villagers) {
+                float vx = g.villagerX(v), vy = g.villagerY(v);
+                list.add(new Sorted(vy, () -> drawVillager(v, vx, vy)));
+            }
+        }
         for (Room r : map.rooms) {
             if (!g.hasChest(r) || g.fighting()) continue;
             float cx = g.chestX(r), cy = g.chestY(r);
@@ -1024,6 +1033,38 @@ public class WorldRenderer implements Disposable {
             list.add(new Sorted(m.y, () -> drawMonster(m)));
         }
         for (Corpse c : corpses) list.add(new Sorted(c.y, () -> drawCorpse(c)));
+    }
+
+    /**
+     * 마을 사람 (선우 버전 그림 team/sunwoo/villager_*.png: 웃음, 환호, 수정 속).
+     * 마왕 전에는 눈을 감은 채 보랏빛 수정 속에 갇혀 있고, 뒤에는 수정이 사라지고 웃다가 팔을 들고 뛴다.
+     */
+    private void drawVillager(com.yongsa.config.Balance.Villager v, float x, float y) {
+        String path = "team/sunwoo/villager_" + v.kind + ".png";
+        float phase = x * 0.031f;
+        drawShadow(x, y, 22);
+        if (!g.villagersFree()) {
+            TextureRegion f = art.frame(path, 3, 2);
+            if (f != null) {
+                batch.setColor(0.82f, 0.78f, 1f, 1f);
+                batch.draw(f, Math.round(x - f.getRegionWidth() / 2f), Math.round(y - 2));
+            }
+            TextureRegion c = art.frame("team/sunwoo/crystal_prison.png", 2, (int) ((time + phase) / 0.6f));
+            if (c != null) {
+                batch.setColor(1, 1, 1, 0.9f + 0.1f * MathUtils.sin(time * 2f + phase * 10));
+                batch.draw(c, Math.round(x - c.getRegionWidth() / 2f), Math.round(y - 6));
+            }
+        } else {
+            float t = (time + phase * 7) % 1.6f;
+            boolean cheer = t > 0.8f;
+            float hop = cheer ? Math.abs(MathUtils.sin((t - 0.8f) / 0.8f * MathUtils.PI * 2)) * 5 : 0;
+            TextureRegion f = art.frame(path, 3, cheer ? 1 : 0);
+            if (f != null) {
+                batch.setColor(Color.WHITE);
+                batch.draw(f, Math.round(x - f.getRegionWidth() / 2f), Math.round(y - 2 + hop));
+            }
+        }
+        batch.setColor(Color.WHITE);
     }
 
     /** 보스 보물상자 (선우 버전 그림 team/sunwoo/chest_*.png 의 닫힌 칸). 살짝 반짝인다. */
@@ -1644,13 +1685,20 @@ public class WorldRenderer implements Disposable {
             layout.setText(fonts.normal, sp.text);
             float w = layout.width + 28, hgt = layout.height + 20;
             float x = sx(cam, sp.x) - w / 2f, y = sy(cam, sp.y);
-            batch.setColor(0.06f, 0.02f, 0.1f, 0.85f * a);
+            boolean friend = sp.speaker != null; // 용사·마을 사람은 금빛 테두리와 이름
+            batch.setColor(friend ? 0.05f : 0.06f, friend ? 0.04f : 0.02f, friend ? 0.07f : 0.1f, 0.85f * a);
             batch.draw(art.white(), x, y, w, hgt);
             batch.draw(art.white(), x + w / 2f - 6, y - 8, 12, 8);
-            batch.setColor(PROJ_DARK.r, PROJ_DARK.g, PROJ_DARK.b, 0.9f * a);
+            Color edge = friend ? Ui.GOLD : PROJ_DARK;
+            batch.setColor(edge.r, edge.g, edge.b, 0.9f * a);
             batch.draw(art.white(), x, y + hgt - 2, w, 2);
             batch.setColor(Color.WHITE);
-            fonts.normal.setColor(1f, 0.9f, 1f, a);
+            if (friend) {
+                fonts.small.setColor(Ui.GOLD.r, Ui.GOLD.g, Ui.GOLD.b, a);
+                fonts.small.draw(batch, sp.speaker, x + 10, y + hgt + 20);
+                fonts.small.setColor(Color.WHITE);
+            }
+            fonts.normal.setColor(friend ? 1f : 1f, friend ? 0.97f : 0.9f, friend ? 0.9f : 1f, a);
             fonts.normal.draw(batch, sp.text, x + 14, y + hgt - 10);
         }
         if (g.prompt != null) {

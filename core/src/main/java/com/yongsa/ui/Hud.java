@@ -204,11 +204,14 @@ public class Hud {
         text(fonts.small, "I  가방     M  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
 
         Room room = g.heroRoom();
-        String zone = room == null ? "던전 입구" : room.dungeonId == null ? "용사의 캠프"
-                : g.balance.dungeon(room.dungeonId).name;
+        boolean village = room != null && room.type == RoomType.VILLAGE;
+        String zone = room == null ? "던전 입구" : village ? g.balance.village.name
+                : room.dungeonId == null ? "용사의 캠프" : g.balance.dungeon(room.dungeonId).name;
         if (boss == null) {
             centered(fonts.small, banner == null ? zone : banner, w / 2, h - 35, Ui.GOLD);
-            centered(fonts.small, g.inCamp() ? "정비하고, 다음 여정을 준비하세요" : "탐험 중", w / 2, h - 59, Ui.DIM);
+            String sub = village ? (g.villagersFree() ? "모두가 돌아왔다" : "던전 밖 · 모두 수정 속에 잠들어 있다")
+                    : g.inCamp() ? "정비하고, 다음 여정을 준비하세요" : "탐험 중";
+            centered(fonts.small, sub, w / 2, h - 59, Ui.DIM);
         } else {
             float bx = w / 2 - 210;
             card(bx - 16, h - 100, 452, 76);
@@ -323,8 +326,9 @@ public class Hud {
     private void drawMap() {
         float a = mapAnim;
         int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+        boolean inVillage = g.inVillage();
         for (Room r : g.map.rooms) {
-            if (r.type == RoomType.FINAL && r != g.heroRoom()) continue;
+            if (hiddenOnMap(r, inVillage)) continue;
             minX = Math.min(minX, r.x0);
             maxX = Math.max(maxX, r.x1);
             minY = Math.min(minY, r.y0);
@@ -352,7 +356,8 @@ public class Hud {
         // 이음 (방 가운데끼리 잇고 그 위에 방을 그린다)
         for (Link l : g.map.links) {
             boolean seen = known(l.a) || known(l.b);
-            if (!seen || "FINAL".equals(l.gate)) continue; // 심연은 땅 밑이라 지도에 잇지 않는다
+            if (!seen || l.a.type == RoomType.FINAL || l.b.type == RoomType.FINAL) continue; // 심연은 땅 밑이라 지도에 잇지 않는다
+            if (l.a.type == RoomType.VILLAGE || l.b.type == RoomType.VILLAGE) continue; // 마을은 던전 밖
             float x0 = ox + (l.a.centerTileX() + 0.5f) * k, y0 = oy + (l.a.centerTileY() + 0.5f) * k;
             float x1 = ox + (l.b.centerTileX() + 0.5f) * k, y1 = oy + (l.b.centerTileY() + 0.5f) * k;
             if (l.gateClosed) shapes.setColor(0.65f, 0.45f, 1f, a);
@@ -364,7 +369,7 @@ public class Hud {
             boolean visited = known(r);
             boolean boss = r.type == RoomType.BOSS || r.type == RoomType.FINAL;
             if (!visited && !boss) continue;
-            if (r.type == RoomType.FINAL && r != here) continue; // 심연은 길로 이어지지 않아 지도에 없다
+            if (hiddenOnMap(r, inVillage)) continue; // 심연은 길로 이어지지 않고, 마을은 던전 밖이라 따로 보인다
             Color c = roomColor(r, visited);
             float rx = ox + r.x0 * k, ry = oy + r.y0 * k, rw = (r.x1 - r.x0 + 1) * k, rh = (r.y1 - r.y0 + 1) * k;
             if (r.scene == null) {
@@ -469,6 +474,12 @@ public class Hud {
         batch.end();
         fonts.large.setColor(Color.WHITE);
         fonts.small.setColor(Color.WHITE);
+    }
+
+    /** 심연은 그 안에 있을 때만, 마을은 마을에 있을 때만 (그때는 마을만) 지도에 나온다. */
+    private boolean hiddenOnMap(Room r, boolean inVillage) {
+        if (inVillage) return r.type != RoomType.VILLAGE;
+        return (r.type == RoomType.FINAL && r != g.heroRoom()) || r.type == RoomType.VILLAGE;
     }
 
     private boolean known(Room r) {

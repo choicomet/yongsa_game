@@ -20,6 +20,7 @@ public class Balance {
     public List<DungeonDef> dungeons;
     public MonsterDef finalBoss;
     public RewardCfg reward;
+    public VillageCfg village;
 
     public static Balance parse(String json) {
         return new Gson().fromJson(json, Balance.class);
@@ -57,6 +58,22 @@ public class Balance {
         public float damageSpreadMin, damageSpreadMax;
         /** 이 거리 안에 몬스터가 있으면 용사가 가장 가까운 몬스터를 자동으로 바라본다 (0 이면 끔). */
         public float autoFaceTiles;
+    }
+
+    /** 던전 밖 마을 (선우 버전). 마을 사람 자리는 마을 그림 기준 (0~1). */
+    public static class VillageCfg {
+        public String name;
+        /** 마왕 전에는 이만큼 독백하며 되돌아선 다음에야 나갈 수 있다. */
+        public int exitRefusals;
+        public List<String> exitLines;
+        public String giveUpLine, arriveTrappedLine, trappedLine;
+        public List<Villager> villagers;
+    }
+
+    public static class Villager {
+        public String kind, name;
+        public float[] at;
+        public List<String> freeLines;
     }
 
     /** 보스 보물상자: 잡을 때마다 그 던전 광물을 chestOreMin~chestOreMax 개. */

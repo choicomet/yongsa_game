@@ -85,6 +85,11 @@ public class GameSession {
     private Vein targetVein;
     private boolean targetPortal;
     private boolean targetChest;
+    private Balance.Villager targetVillager;
+    /** 다섯 번 되돌아선 뒤 체념하고 나가는 중 (마을에 닿으면 독백). */
+    private boolean giveUpPending;
+    /** 마을 사람마다 몇 번째 대사까지 했는지. */
+    private final java.util.Map<String, Integer> talkCount = new java.util.HashMap<>();
 
     public GameSession(Balance balance, WorldMap map, GameState state, long seed) {
         this.balance = balance;
@@ -193,7 +198,7 @@ public class GameSession {
         if (!justDied) updateProjectiles(dt);
         if (!justDied) updateHazards(dt);
         if (!justDied) resolveFight();
-        if (inCamp()) {
+        if (inCamp() || inVillage()) {
             hpAcc += rules.maxHp(state) * balance.hero.campRegenFractionPerSec * dt;
             int add = (int) hpAcc;
             if (add > 0) {
@@ -606,6 +611,11 @@ public class GameSession {
                     e.text = NextTask.dungeonWord(d.id) + " 던전 · " + d.name;
                     events.add(e);
                 }
+                if (r.type == RoomType.VILLAGE) {
+                    if (giveUpPending) heroSpeech(balance.village.giveUpLine);
+                    else if (!villagersFree()) heroSpeech(balance.village.arriveTrappedLine);
+                    giveUpPending = false;
+                }
                 if (r.type == RoomType.BOSS && !state.bossDefeated(r.dungeonId)) {
                     events.add(GameEvent.toast("보스방이다. 권장 무기: " + balance.dungeon(r.dungeonId).recommended));
                 }
@@ -660,6 +670,7 @@ public class GameSession {
         if (r == null) return false;
         for (Door d : r.doors) {
             if (d.isClosed() || !d.triggers(hero.x, hero.y)) continue;
+            if (d.partner().room.type == RoomType.VILLAGE && refuseVillageExit(d)) return false;
             if (deferDoors) {
                 pendingDoor = d;
                 GameEvent e = new GameEvent(GameEvent.Type.DOOR_ENTER);
@@ -1687,7 +1698,26 @@ public class GameSession {
         targetVein = null;
         targetPortal = false;
         targetChest = false;
+        targetVillager = null;
         float best = Float.MAX_VALUE;
+        if (inVillage()) {
+            Balance.Villager near = null;
+            float bestV = 1.4f * T;
+            for (Balance.Villager v : balance.village.villagers) {
+                float d = (float) Math.hypot(villagerX(v) - hero.x, villagerY(v) - hero.y);
+                if (d < bestV) {
+                    bestV = d;
+                    near = v;
+                }
+            }
+            if (near != null) {
+                targetVillager = near;
+                prompt = villagersFree() ? "E  " + near.name + "와(과) 이야기하기" : "E  " + near.name + " 살펴보기";
+                promptX = villagerX(near);
+                promptY = villagerY(near) + 2.2f * T;
+                return;
+            }
+        }
         if (heroRoom != null && hasChest(heroRoom) && fightRoom == null) {
             float d = (float) Math.hypot(chestX(heroRoom) - hero.x, chestY(heroRoom) - hero.y);
             if (d < 1.3f * T) {
@@ -1767,6 +1797,10 @@ public class GameSession {
     }
 
     private void interact() {
+        if (targetVillager != null) {
+            talk(targetVillager);
+            return;
+        }
         if (targetChest) {
             openChest(heroRoom);
             return;
@@ -1829,6 +1863,93 @@ public class GameSession {
         events.add(e);
         events.add(GameEvent.floatText(e.x, e.y, v.ore.displayName + " +" + v.amount, GameEvent.Tone.ORE));
         events.add(GameEvent.sound("ore"));
+    }
+
+    // ───────────────────────── 던전 밖 마을 (선우 버전)
+
+    public boolean inVillage() {
+        return heroRoom != null && heroRoom.type == RoomType.VILLAGE;
+    }
+
+    /** 마을 사람들은 마왕을 쓰러뜨리면 수정에서 풀려난다. */
+    public boolean villagersFree() {
+        return state.finalBossDefeated;
+    }
+
+    public Room village() {
+        for (Room r : map.rooms) if (r.type == RoomType.VILLAGE) return r;
+        return null;
+    }
+
+    public float villagerX(Balance.Villager v) {
+        return village().sceneX(v.at[0]);
+    }
+
+    public float villagerY(Balance.Villager v) {
+        return village().sceneY(v.at[1]);
+    }
+
+    /**
+     * 캠프 아래 계단으로 마을에 나가려 할 때: 마왕을 쓰러뜨렸으면 그냥 나간다.
+     * 아니면 다섯 번까지는 독백하며 되돌아서고, 여섯 번째에는 체념하고 나간다 (그 뒤로는 그냥 나간다).
+     * 되돌아섰으면 true.
+     */
+    private boolean refuseVillageExit(Door d) {
+        Balance.VillageCfg v = balance.village;
+        if (state.finalBossDefeated || state.exitRefusals > v.exitRefusals) return false;
+        if (state.exitRefusals == v.exitRefusals) {
+            state.exitRefusals++;
+            giveUpPending = true;
+            return false;
+        }
+        heroSpeech(v.exitLines.get(Math.min(state.exitRefusals, v.exitLines.size() - 1)));
+        state.exitRefusals++;
+        // 계단에서 한 걸음 물러선다
+        float bx = hero.x - d.dirX * 1.3f * T, by = hero.y - d.dirY * 1.3f * T;
+        if (Physics.free(map, bx, by, hero, T)) {
+            hero.x = bx;
+            hero.y = by;
+        }
+        hero.aimX = -d.dirX;
+        hero.aimY = -d.dirY;
+        hero.facing = Facing.of(hero.aimX, hero.aimY);
+        hero.rollT = 0;
+        hero.kbT = 0;
+        doorCd = 0.5f;
+        events.add(GameEvent.sound("block"));
+        return true;
+    }
+
+    private void heroSpeech(String text) {
+        if (text == null) return;
+        GameEvent e = new GameEvent(GameEvent.Type.BOSS_SPEECH);
+        e.text = text;
+        e.speaker = "용사";
+        e.x = hero.x;
+        e.y = hero.y + 2.4f * T;
+        events.add(e);
+    }
+
+    private void talk(Balance.Villager v) {
+        float dx = villagerX(v) - hero.x, dy = villagerY(v) - hero.y;
+        if (Math.abs(dx) + Math.abs(dy) > 1) {
+            hero.facing = Facing.of(dx, dy);
+            float l = (float) Math.sqrt(dx * dx + dy * dy);
+            hero.aimX = dx / l;
+            hero.aimY = dy / l;
+        }
+        if (!villagersFree()) {
+            heroSpeech(String.format(balance.village.trappedLine, v.name));
+            return;
+        }
+        int n = talkCount.merge(v.kind, 1, Integer::sum) - 1;
+        GameEvent e = new GameEvent(GameEvent.Type.BOSS_SPEECH);
+        e.text = v.freeLines.get(n % v.freeLines.size());
+        e.speaker = v.name;
+        e.x = villagerX(v);
+        e.y = villagerY(v) + 2.2f * T;
+        events.add(e);
+        events.add(GameEvent.sound("select"));
     }
 
     // ───────────────────────── 보물상자 (선우·지용 버전의 보스 보상)
@@ -2016,7 +2137,7 @@ public class GameSession {
             Room camp = map.room("CAMP");
             state.resumeX = camp.scene == null ? center((int) camp.centerTileX()) : camp.spawnX(T);
             state.resumeY = camp.scene == null ? center((int) camp.centerTileY() - 2) : camp.spawnY(T);
-        } else if (inCamp()) {
+        } else if (inCamp() || inVillage()) {
             state.resumeX = hero.x;
             state.resumeY = hero.y;
         } else if (fightRoom != null) {

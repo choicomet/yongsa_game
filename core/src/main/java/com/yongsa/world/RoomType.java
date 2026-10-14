@@ -1,7 +1,9 @@
 package com.yongsa.world;
 
 public enum RoomType {
-    CAMP, MOB, ORE, BOSS, FINAL;
+    CAMP, MOB, ORE, BOSS, FINAL,
+    /** 던전 밖 마을 (선우 버전): 몬스터가 없고 캠프처럼 체력이 찬다. */
+    VILLAGE;
 
     /** 들어가면 문이 잠기고 몬스터가 나오는 방. */
     public boolean hasFight() {

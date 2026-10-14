@@ -18,7 +18,7 @@ import java.util.Map;
 public class WorldMap {
     public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3;
     /** 방 배치가 바뀌면 올린다. 저장 파일의 방 기록(광맥 자리)·이어하기 위치가 다르면 버린다. */
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
 
     public final int width, height;
     public final int tileSize;
@@ -214,25 +214,26 @@ public class WorldMap {
     // ───────────────────────── 이음
 
     private void buildLink(LinkDef ld) {
-        Door da = doorFor(ld.a), db = doorFor(ld.b);
+        Door da = doorFor(ld.a, false), db = doorFor(ld.b, ld.oneWay);
         Link link = new Link(da.room, db.room, ld.gate);
         link.doorA = da;
         link.doorB = db;
+        link.oneWay = ld.oneWay;
         da.link = link;
-        db.link = link;
+        if (!ld.oneWay) db.link = link;
         links.add(link);
         // 그림 문의 '바깥'은 이어진 방에서 서는 칸이다 (잠긴 방에서 저장하면 거기서 이어 한다)
         if (da.room.scene != null) {
             da.outsideX = (int) Math.floor(db.arriveX / tileSize);
             da.outsideY = (int) Math.floor(db.arriveY / tileSize);
         }
-        if (db.room.scene != null) {
+        if (db.room.scene != null && !ld.oneWay) {
             db.outsideX = (int) Math.floor(da.arriveX / tileSize);
             db.outsideY = (int) Math.floor(da.arriveY / tileSize);
         }
     }
 
-    private Door doorFor(String ref) {
+    private Door doorFor(String ref, boolean shared) {
         int dot = ref.indexOf('.');
         if (dot < 0) throw new IllegalArgumentException("이음은 '방.출구' 꼴이어야 한다: " + ref);
         Room r = byId.get(ref.substring(0, dot));
@@ -241,7 +242,7 @@ public class WorldMap {
         if (r.scene == null) return makeTileDoor(r, Door.Side.valueOf(name));
         for (Door d : r.doors) {
             if (!d.name.equals(name)) continue;
-            if (d.link != null) throw new IllegalArgumentException("이미 이어진 출구: " + ref);
+            if (d.link != null && !shared) throw new IllegalArgumentException("이미 이어진 출구: " + ref);
             return d;
         }
         throw new IllegalArgumentException("그림에 없는 출구: " + ref);

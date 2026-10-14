@@ -39,8 +39,11 @@
       "_note": "임시 그림: 오른쪽·위 출구가 있는 탑 방 그림이 오면 바꾼다" },
     { "id": "T6", "type": "BOSS", "dungeon": "TOP", "cx": -1, "cy": 3, "scene": "tower-boss-a", "width": 39 },
 
+    { "id": "V", "type": "VILLAGE", "cx": 0, "cy": -3, "scene": "village", "width": 24,
+      "_note": "던전 밖 마을 (선우 버전). 캠프 아래 계단으로 나간다. 그림은 임시 (docs/ART_REQUESTS.md)" },
+
     { "id": "F", "type": "FINAL", "dungeon": "TOP", "cx": -3, "cy": 3, "scene": "seal-hall", "width": 39,
-      "_note": "심연: 캠프 문양에서 떨어져 오고, 아래 계단은 캠프 아래 계단과 이어진다 (봉인을 푼 뒤에만 열림)" }
+      "_note": "심연: 캠프 문양에서 떨어져 오고, 아래 계단으로 캠프에 돌아간다" }
   ],
   "links": [
     { "a": "CAMP.LEFT", "b": "L1.east", "gate": "LEFT" },
@@ -69,6 +72,8 @@
     { "a": "T5.west", "b": "T7.west" },
     { "a": "T7.north", "b": "T6.south" },
 
-    { "a": "CAMP.down", "b": "F.south", "gate": "FINAL" }
+    { "a": "CAMP.down", "b": "V.north" },
+    { "a": "F.south", "b": "CAMP.down", "oneWay": true,
+      "_note": "심연 계단으로 올라오면 캠프 아래 문 앞에 선다 (내려가는 길은 봉인 문양에서 떨어지는 것뿐)" }
   ]
 }
