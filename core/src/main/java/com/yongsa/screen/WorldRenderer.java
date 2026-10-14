@@ -1078,6 +1078,7 @@ public class WorldRenderer implements Disposable {
                     }
                     batch.setColor(Color.WHITE);
                 } else if (d.lockedByFight || (d.link != null && d.link.gateClosed)) {
+                    if (drawGateArt(r, d)) continue;
                     int n = Math.max(2, Math.round(d.halfWidth * 2f / T));
                     for (int i = 0; i < n; i++) {
                         float o = -d.halfWidth + (i + 0.5f) * (d.halfWidth * 2f / n);
@@ -1087,6 +1088,40 @@ public class WorldRenderer implements Disposable {
                 }
             }
         }
+    }
+
+    private final Map<String, Texture> gateTex = new HashMap<>();
+
+    /**
+     * 던전별 닫힌 출구 그림 (GPT 요청: sprites/gate_<던전>.png 정면, gate_<던전>_side.png 옆면).
+     * 캠프의 던전 입구는 그 던전 것을 쓴다. 그림이 없으면 false (코드로 그린 창살).
+     */
+    private boolean drawGateArt(Room r, Door d) {
+        String dungeon = r.dungeonId;
+        if (r.type == RoomType.CAMP && d.link != null) dungeon = d.link.other(r).dungeonId;
+        if (dungeon == null) return false;
+        boolean side = !d.horizontal();
+        String key = "sprites/gate_" + dungeon + (side ? "_side" : "") + ".png";
+        Texture t = gateTex.get(key);
+        if (t == null && !gateTex.containsKey(key)) {
+            if (Gdx.files.internal(key).exists()) {
+                t = new Texture(Gdx.files.internal(key));
+                t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            }
+            gateTex.put(key, t);
+        }
+        if (t == null) return false;
+        float span = d.halfWidth * 2f + T * 0.5f;
+        if (!side) {
+            // 정면: 출구 폭에 맞춰 가로로 늘이고, 아래 끝이 출구 발 자리에 온다
+            float w = span, h = w * t.getHeight() / t.getWidth();
+            batch.draw(t, d.footX - w / 2f, d.footY - T * 0.35f, w, h);
+        } else {
+            // 옆면: 출구 폭이 세로 길이, 왼쪽 출구면 좌우를 뒤집어 그린다
+            float h = span + T, w = h * t.getWidth() / t.getHeight();
+            batch.draw(t, d.footX - w / 2f, d.footY - span / 2f, w, h, 0, 0, t.getWidth(), t.getHeight(), d.dirX < 0, false);
+        }
+        return true;
     }
 
     /** 캠프 바닥의 봉인 문양: 힘이 모일수록 밝아지고, 봉인이 풀리면 갈라진 채 보랏빛으로 빛난다. */
@@ -2247,6 +2282,8 @@ public class WorldRenderer implements Disposable {
         sceneTex.clear();
         for (Texture t : frontTex.values()) if (t != null) t.dispose();
         frontTex.clear();
+        for (Texture t : gateTex.values()) if (t != null) t.dispose();
+        gateTex.clear();
         for (Texture[] ts : corridorSkin.values()) for (Texture t : ts) t.dispose();
         if (potionTex != null) potionTex.dispose();
         corridorSkin.clear();

@@ -261,14 +261,16 @@ public class Hud {
             if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
             if (i == 1) batch.draw(art.get("hero_side_walk"), x + 48, 51, 34, 48);
             if (sk != null) {
-                // 스킬 칸: 그 검 그림 뒤로 빛 (지금 못 쓰면 어둡게). 스킬 아이콘 그림이 오면 바꾼다 (docs/ART_REQUESTS.md)
+                // 스킬 칸: 스킬 아이콘(sprites/skill/icon_<kind>.png, 없으면 그 검 그림) 뒤로 빛, 지금 못 쓰면 어둡게
                 if (sk.usable) {
                     batch.setColor(sk.awakened ? new Color(0.85f, 0.6f, 1f, 0.55f + 0.2f * MathUtils.sin(time * 4f))
                             : new Color(1f, 0.85f, 0.5f, 0.5f + 0.2f * MathUtils.sin(time * 4f)));
                     batch.draw(art.glow, x + 24, 38, 72, 72);
                 }
                 batch.setColor(sk.usable ? Color.WHITE : new Color(0.35f, 0.35f, 0.4f, 1f));
-                batch.draw(art.sword(sk.weaponId, sk.awakened), x + 35, 47, 58, 58);
+                com.badlogic.gdx.graphics.Texture icon = skillIcon(sk.def.kind);
+                if (icon != null) batch.draw(icon, x + 32, 44, 64, 64);
+                else batch.draw(art.sword(sk.weaponId, sk.awakened), x + 35, 47, 58, 58);
                 batch.setColor(Color.WHITE);
             }
             String key = i == 0 ? "J" : i == 1 ? "K" : com.yongsa.model.GameSession.SKILL_KEYS[i - 2];
@@ -552,5 +554,21 @@ public class Hud {
             case BLOODMOON: return new Color(1f, 0.4f, 0.5f, 1f);
             default: return new Color(0.55f, 0.9f, 1f, 1f);
         }
+    }
+
+    /** 스킬 아이콘 그림 (GPT 요청, docs/ART_REQUESTS.md 0-5). 없으면 null 이고 검 그림을 쓴다. 게임 내내 쓰므로 한 번만 읽는다. */
+    private static final java.util.Map<String, com.badlogic.gdx.graphics.Texture> SKILL_ICONS = new java.util.HashMap<>();
+
+    private static com.badlogic.gdx.graphics.Texture skillIcon(String kind) {
+        if (kind == null) return null;
+        if (SKILL_ICONS.containsKey(kind)) return SKILL_ICONS.get(kind);
+        com.badlogic.gdx.files.FileHandle f = com.badlogic.gdx.Gdx.files.internal("sprites/skill/icon_" + kind + ".png");
+        com.badlogic.gdx.graphics.Texture t = null;
+        if (f.exists()) {
+            t = new com.badlogic.gdx.graphics.Texture(f);
+            t.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.Linear, com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
+        }
+        SKILL_ICONS.put(kind, t);
+        return t;
     }
 }
