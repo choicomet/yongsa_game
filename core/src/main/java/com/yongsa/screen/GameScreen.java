@@ -45,7 +45,7 @@ public class GameScreen extends ScreenAdapter {
     private final WorldRenderer renderer;
     private final CameraFollow follow = new CameraFollow();
     private final Controls controls = new Controls();
-    private boolean interactPressed, rollPressed, attackPressed, skillPressed;
+    private boolean interactPressed, rollPressed, attackPressed, skillPressed, potionPressed;
     private float endingDelay = -1;
     /** 화면 흔들림 세기 (0~1), 타격 순간 잠깐 멈추는 시간, 화면 전환용 검은 막. */
     private float trauma, hitStop, shakeTime;
@@ -120,6 +120,9 @@ public class GameScreen extends ScreenAdapter {
                     case Input.Keys.L:
                         skillPressed = true;
                         return true;
+                    case Input.Keys.R:
+                        potionPressed = true;
+                        return true;
                     case Input.Keys.EQUALS:
                     case Input.Keys.PLUS:
                     case Input.Keys.NUMPAD_ADD:
@@ -156,7 +159,7 @@ public class GameScreen extends ScreenAdapter {
             readControls();
             session.update(dt, controls);
         }
-        if (!frozen) interactPressed = rollPressed = attackPressed = skillPressed = false;
+        if (!frozen) interactPressed = rollPressed = attackPressed = skillPressed = potionPressed = false;
         handleEvents();
         if (!paused) renderer.update(frozen ? dt * 0.15f : dt);
         hud.update(dt);
@@ -271,6 +274,7 @@ public class GameScreen extends ScreenAdapter {
         controls.attack = attackPressed || Gdx.input.isKeyPressed(Input.Keys.J);
         controls.roll = rollPressed;
         controls.skill = skillPressed;
+        controls.potion = potionPressed;
         controls.interact = interactPressed;
     }
 
@@ -379,7 +383,8 @@ public class GameScreen extends ScreenAdapter {
                     break;
                 case CHEST_OPENED:
                     game.sfx.play("awaken");
-                    hud.toast("보물상자에서 " + e.ore.displayName + " " + e.amount + "개를 얻었다");
+                    hud.toast("보물상자에서 " + e.ore.displayName + " " + e.amount + "개"
+                            + (e.potions > 0 ? ", 포션 " + e.potions + "개" : "") + "를 얻었다");
                     break;
                 default:
                     break;

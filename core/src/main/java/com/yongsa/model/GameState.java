@@ -25,6 +25,8 @@ public class GameState {
     public boolean unsealed;
     /** 마왕 전에 마을로 나가려다 되돌아선 횟수 (선우 버전: 다섯 번 뒤에는 체념하고 나간다). */
     public int exitRefusals;
+    /** 들고 있는 회복 포션 수. */
+    public int potions;
     public boolean finalBossDefeated;
 
     public int hp;

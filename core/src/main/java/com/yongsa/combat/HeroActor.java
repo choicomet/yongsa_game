@@ -8,6 +8,7 @@ public class HeroActor extends Actor {
     public float attackCd, rollCd, mineCd;
     /** 검 스킬 (Q) 쿨타임. */
     public float skillCd;
+    public float potionCd;
     public float invuln;
     /** 구르기 남은 시간과 방향, 전체 시간 (그리기용). */
     public float rollT, rollTotal = 0.32f;

@@ -6,9 +6,11 @@ public class Controls {
     public boolean attack, roll, interact;
     /** 검 스킬 (Q). */
     public boolean skill;
+    /** 포션 마시기 (R). */
+    public boolean potion;
 
     public void clear() {
         moveX = moveY = 0;
-        attack = roll = interact = skill = false;
+        attack = roll = interact = skill = potion = false;
     }
 }

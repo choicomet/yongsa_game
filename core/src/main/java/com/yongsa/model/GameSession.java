@@ -244,6 +244,7 @@ public class GameSession {
     private void updateHero(float dt, Controls c) {
         hero.attackCd -= dt;
         hero.skillCd -= dt;
+        hero.potionCd -= dt;
         hero.rollCd -= dt;
         hero.mineCd -= dt;
         hero.invuln -= dt;
@@ -290,6 +291,7 @@ public class GameSession {
         }
         autoFace();
 
+        if (c.potion) drinkPotion();
         if (c.roll && hero.rollCd <= 0) roll(mx, my);
         else if (c.skill) useSkill();
         else if (c.attack && hero.attackCd <= 0) basic();
@@ -894,9 +896,37 @@ public class GameSession {
             state.finalBossDefeated = true;
             events.add(new GameEvent(GameEvent.Type.FINAL_DEFEATED));
             events.add(new GameEvent(GameEvent.Type.AUTOSAVE));
+        } else if (r.type == RoomType.MOB && !state.chests.contains(r.id)
+                && random.nextFloat() < balance.reward.mobChestChance) {
+            // 잡몹방 상자는 가끔만 (지용 버전은 늘 나왔다, 2026-10-14 줄임)
+            state.chests.add(r.id);
+            events.add(GameEvent.toast("방을 비웠다! 보물상자가 나타났다"));
+            events.add(GameEvent.sound("ore"));
         } else {
             events.add(GameEvent.toast("방을 비웠다! 문이 열렸다"));
         }
+    }
+
+    /** 포션을 마신다 (R): 최대 체력의 일부를 채운다. */
+    private void drinkPotion() {
+        if (hero.potionCd > 0) return;
+        int max = rules.maxHp(state);
+        if (state.potions <= 0) {
+            events.add(GameEvent.toast("포션이 없다. 던전의 보물상자에서 얻을 수 있다"));
+            hero.potionCd = 0.5f;
+            return;
+        }
+        if (state.hp >= max) {
+            events.add(GameEvent.toast("체력이 가득하다"));
+            hero.potionCd = 0.5f;
+            return;
+        }
+        state.potions--;
+        int heal = Math.min(max - state.hp, Math.max(1, Math.round(max * balance.potion.healRatio)));
+        state.hp += heal;
+        hero.potionCd = balance.potion.cooldown;
+        events.add(GameEvent.floatText(hero.x, hero.y + 40, "+" + heal, GameEvent.Tone.HEAL));
+        events.add(GameEvent.sound("potion"));
     }
 
     private static int indexOf(String dungeonId) {
@@ -2118,27 +2148,45 @@ public class GameSession {
         return r != null && state.chests.contains(r.id);
     }
 
-    /** 상자는 귀환 포탈 오른쪽 옆에 놓인다 (바닥이 아니면 왼쪽). */
+    /** 보스방 상자는 귀환 포탈 오른쪽 옆 (바닥이 아니면 왼쪽), 잡몹방 상자는 방 가운데에서 가장 가까운 넓은 바닥. */
     public float chestX(Room r) {
-        int cx = (int) r.centerTileX(), cy = (int) r.centerTileY();
-        int dx = r.floor(cx + 3, cy) ? 3 : -3;
-        return center(cx + dx);
+        return center(chestTile(r)[0]);
     }
 
     public float chestY(Room r) {
-        return center((int) r.centerTileY());
+        return center(chestTile(r)[1]);
     }
 
-    /** 상자를 열면 그 던전 광물을 무작위로 받는다. */
+    private int[] chestTile(Room r) {
+        int cx = (int) r.centerTileX(), cy = (int) r.centerTileY();
+        if (r.type == RoomType.BOSS) return new int[]{cx + (r.floor(cx + 3, cy) ? 3 : -3), cy};
+        for (int rad = 0; rad < 12; rad++)
+            for (int dy = -rad; dy <= rad; dy++)
+                for (int dx = -rad; dx <= rad; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) != rad) continue;
+                    int tx = cx + dx, ty = cy + dy;
+                    if (r.floor(tx, ty) && r.floor(tx - 1, ty) && r.floor(tx + 1, ty) && r.floor(tx, ty - 1) && r.floor(tx, ty + 1)
+                            && !map.solid(tx, ty)) return new int[]{tx, ty};
+                }
+        return new int[]{cx, cy};
+    }
+
+    /** 상자를 열면 그 던전 광물과 포션을 받는다 (보스방은 광물이 많고, 잡몹방은 조금). */
     public void openChest(Room r) {
         if (!hasChest(r)) return;
         state.chests.remove(r.id);
+        Balance.RewardCfg rw = balance.reward;
+        boolean boss = r.type == RoomType.BOSS;
         OreType ore = OreType.valueOf(balance.dungeon(r.dungeonId).ore);
-        int n = balance.reward.chestOreMin + random.nextInt(balance.reward.chestOreMax - balance.reward.chestOreMin + 1);
+        int lo = boss ? rw.chestOreMin : rw.mobChestOreMin, hi = boss ? rw.chestOreMax : rw.mobChestOreMax;
+        int n = lo + random.nextInt(Math.max(1, hi - lo + 1));
         state.addOre(ore, n);
+        int potions = Math.max(0, Math.min(boss ? rw.bossChestPotions : rw.mobChestPotions, balance.potion.max - state.potions));
+        state.potions += potions;
         GameEvent e = new GameEvent(GameEvent.Type.CHEST_OPENED);
         e.ore = ore;
         e.amount = n;
+        e.potions = potions;
         e.x = chestX(r);
         e.y = chestY(r) + T;
         events.add(e);

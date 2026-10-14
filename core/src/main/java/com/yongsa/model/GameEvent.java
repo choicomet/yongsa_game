@@ -53,6 +53,8 @@ public class GameEvent {
     public String speaker;
     /** BOSS_DEFEATED: 처음 잡았나 (다시 생긴 보스면 false, 힘은 오르지 않는다). */
     public boolean first;
+    /** CHEST_OPENED: 얻은 포션 수. */
+    public int potions;
     public String opened;
     /** 연출용 값: 방향, 크기, 그림 이름. */
     public float dirX, dirY, size;

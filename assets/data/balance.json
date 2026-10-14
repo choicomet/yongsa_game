@@ -24,8 +24,12 @@
     "autoFaceTiles": 6.0
   },
 
-  "_reward": "보스를 잡을 때마다(침대 뒤 다시 생긴 보스 포함) 보스방에 보물상자. E 로 열면 그 던전 광물 30~40개 (선우 버전)",
-  "reward": { "chestOreMin": 30, "chestOreMax": 40 },
+  "_reward": "보스를 잡을 때마다(침대 뒤 다시 생긴 보스 포함) 보스방에 보물상자: 그 던전 광물 30~40개 + 포션 (선우 버전). 잡몹방은 비우면 mobChestChance 확률로만 상자 (지용 버전은 늘 나옴, 2026-10-14 줄임): 광물 조금 + 포션",
+  "reward": { "chestOreMin": 30, "chestOreMax": 40, "bossChestPotions": 1,
+              "mobChestChance": 0.3, "mobChestOreMin": 3, "mobChestOreMax": 6, "mobChestPotions": 1 },
+
+  "_potion": "던전 상자에서 얻는 회복 포션. R 로 마신다. 최대 체력의 healRatio 만큼 회복, 최대 max 개까지 들 수 있다",
+  "potion": { "healRatio": 0.4, "max": 5, "cooldown": 1.0 },
 
   "weapons": [
     { "id": "holy_sealed", "name": "봉인된 성검", "baseAttack": 10, "perLevel": 0, "craftCost": 0, "enhanceable": false, "holy": true },

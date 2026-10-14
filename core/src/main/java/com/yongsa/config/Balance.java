@@ -19,6 +19,7 @@ public class Balance {
     public List<DungeonDef> dungeons;
     public MonsterDef finalBoss;
     public RewardCfg reward;
+    public PotionCfg potion;
     public VillageCfg village;
 
     public static Balance parse(String json) {
@@ -77,7 +78,16 @@ public class Balance {
 
     /** 보스 보물상자: 잡을 때마다 그 던전 광물을 chestOreMin~chestOreMax 개. */
     public static class RewardCfg {
-        public int chestOreMin, chestOreMax;
+        public int chestOreMin, chestOreMax, bossChestPotions;
+        /** 잡몹방을 비웠을 때 상자가 나올 확률과 그 안의 광물·포션. */
+        public float mobChestChance;
+        public int mobChestOreMin, mobChestOreMax, mobChestPotions;
+    }
+
+    /** 회복 포션 (던전 상자에서만 나온다). */
+    public static class PotionCfg {
+        public float healRatio, cooldown;
+        public int max;
     }
 
     public static class WeaponDef {

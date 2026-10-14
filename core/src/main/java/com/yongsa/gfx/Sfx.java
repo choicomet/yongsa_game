@@ -41,6 +41,7 @@ public class Sfx implements Disposable {
             add("slam", mix(sweep(90, 30, 0.45f, 0.7f, 0), noise(0.35f, 0.5f, 0.12f)));
             add("monsterAttack", mix(noise(0.12f, 0.25f, 0.2f), sweep(200, 120, 0.12f, 0.2f, 2)));
             add("select", sweep(660, 880, 0.05f, 0.25f, 0));
+            add("potion", mix(seq(new float[]{392, 494, 587, 784}, 0.06f, 0.25f, 0), noise(0.2f, 0.08f, 0.2f)));
             add("craft", seq(new float[]{392, 523, 659}, 0.08f, 0.35f, 2));
             add("unseal", mix(seq(new float[]{262, 330, 392, 523, 659, 784, 1046}, 0.16f, 0.3f, 0), sweep(131, 131, 1.2f, 0.2f, 0)));
             add("warp", mix(sweep(200, 1600, 0.7f, 0.18f, 0), mix(sweep(300, 2400, 0.7f, 0.08f, 0), noise(0.5f, 0.12f, 0.3f))));

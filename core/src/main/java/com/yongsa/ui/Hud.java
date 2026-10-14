@@ -48,9 +48,9 @@ public class Hud {
     private boolean mapOpen;
     private float mapAnim;
     private float introT = -1;
-    private static final int SLOTS = 3;
+    private static final int SLOTS = 4;
     private final float[] readyFlash = new float[SLOTS];
-    private final boolean[] wasReady = {true, true, true};
+    private final boolean[] wasReady = {true, true, true, true};
     private Matrix4 projection;
     private float w, h;
 
@@ -156,7 +156,7 @@ public class Hud {
     }
 
     private float[] cooldowns() {
-        return new float[]{Math.max(0, g.hero.attackCd), Math.max(0, g.hero.rollCd), Math.max(0, g.hero.skillCd)};
+        return new float[]{Math.max(0, g.hero.attackCd), Math.max(0, g.hero.rollCd), Math.max(0, g.hero.skillCd), Math.max(0, g.hero.potionCd)};
     }
 
     public void render(Matrix4 projection, float w, float h) {
@@ -239,14 +239,15 @@ public class Hud {
         float[] left = cooldowns();
         com.yongsa.config.Balance.SkillDef skill = g.rules.skill(g.state);
         boolean skillOpen = g.rules.skillUnlocked(g.state);
-        String[] keys = {"J", "Space", "Q"};
-        String[] names = {"베기", "구르기", skill == null ? "스킬 없음" : skillOpen ? skill.name : "+" + g.balance.enhance.skillUnlockLevel + " 에 열림"};
+        String[] keys = {"J", "Space", "Q", "R"};
+        String[] names = {"베기", "구르기", skill == null ? "스킬 없음" : skillOpen ? skill.name : "+" + g.balance.enhance.skillUnlockLevel + " 에 열림",
+                "포션 " + s.potions + "/" + g.balance.potion.max};
         for (int i = 0; i < SLOTS; i++) {
-            float x = w - 372 + i * 120;
+            float x = w - 492 + i * 120;
             card(x, 24, 108, 88);
             if (readyFlash[i] > 0) rect(x, 111, 108, 2, Ui.GOLD);
             float total = i == 0 ? g.balance.attack.basicCooldown : i == 1 ? g.balance.attack.rollTime + g.balance.attack.rollCooldown
-                    : skill == null ? 1 : skill.cooldown;
+                    : i == 3 ? g.balance.potion.cooldown : skill == null ? 1 : skill.cooldown;
             if (left[i] > 0) rect(x + 1, 25, 106, 86 * Math.min(1, left[i] / total), new Color(0, 0, 0, 0.5f));
             batch.setColor(Color.WHITE);
             if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
@@ -261,6 +262,7 @@ public class Hud {
                 batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
                 batch.setColor(Color.WHITE);
             }
+            if (i == 3) drawPotion(x + 54, 52, s.potions > 0);
             text(fonts.small, keys[i], x + 10, 100, Ui.GOLD);
             text(fonts.small, names[i], x + 12, 47, Ui.DIM);
             if (i >= 1 && left[i] > 0.1f) centered(fonts.small, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 71, 77, Ui.TEXT);
@@ -277,6 +279,17 @@ public class Hud {
         if (mapAnim > 0.01f) drawMap();
         fonts.normal.setColor(Color.WHITE);
         fonts.small.setColor(Color.WHITE);
+    }
+
+    /** 포션 칸: 임시로 코드로 그린 붉은 병 (아이콘 그림이 오면 바꾼다, docs/ART_REQUESTS.md). */
+    private void drawPotion(float cx, float y, boolean have) {
+        float k = have ? 1f : 0.4f;
+        rect(cx - 5, y + 38, 10, 6, new Color(0.55f * k, 0.38f * k, 0.22f * k, 1f));
+        rect(cx - 4, y + 30, 8, 9, new Color(0.75f * k, 0.8f * k, 0.85f * k, 0.9f));
+        rect(cx - 13, y, 26, 31, new Color(0.75f * k, 0.8f * k, 0.85f * k, 0.9f));
+        rect(cx - 11, y + 2, 22, 18, new Color(0.85f * k, 0.12f * k, 0.18f * k, 1f));
+        rect(cx - 8, y + 22, 3, 6, new Color(1f, 1f, 1f, 0.5f * k));
+        batch.setColor(Color.WHITE);
     }
 
     private void rect(float x, float y, float width, float height, Color color) {
