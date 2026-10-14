@@ -170,7 +170,9 @@ public class GameScreen extends ScreenAdapter {
             endingDelay -= delta;
             renderer.update(dt);
             if (endingDelay < 0) {
-                game.setScreen(new EndingScreen(game, session.state));
+                // 엔딩 이야기 그림 3장 → 기록 화면
+                GameState done = session.state;
+                game.setScreen(new StoryScreen(game, game.story.ending, () -> game.setScreen(new EndingScreen(game, done))));
                 dispose();
                 return;
             }

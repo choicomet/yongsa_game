@@ -77,7 +77,8 @@ public class TitleScreen extends MenuScreen {
     private void start(GameState s, boolean intro) {
         if (intro) {
             game.save(s);
-            game.setScreen(new IntroScreen(game, s));
+            // 이야기 그림 3장 → 소개 글 → 게임
+            game.setScreen(new StoryScreen(game, game.story.opening, () -> game.setScreen(new IntroScreen(game, s))));
         } else {
             game.setScreen(new GameScreen(game, s));
         }
