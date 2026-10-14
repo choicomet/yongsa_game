@@ -1136,6 +1136,10 @@ public class WorldRenderer implements Disposable {
 
     private void drawHero() {
         HeroActor h = g.hero;
+        if (g.sleeping()) {
+            drawSleepingHero(g.sleepBed());
+            return;
+        }
         drawShadow(h.x, h.y, 26 * HERO_SCALE);
         if (h.rolling()) {
             drawRoll(h);
@@ -1163,6 +1167,34 @@ public class WorldRenderer implements Disposable {
             Particles.normal(batch);
         }
         if (!swordBehind) drawSword(h, alpha);
+        batch.setColor(Color.WHITE);
+    }
+
+    /**
+     * 침대에 누운 용사. 그림(sprites/hero_sleep.png)이 오면 그걸 침대 가운데에 그리고,
+     * 없으면 옆모습을 눕혀 이불을 덮어 둔다 (docs/ART_REQUESTS.md).
+     */
+    private void drawSleepingHero(com.yongsa.world.Prop bed) {
+        float cx = Float.isNaN(bed.sleepX) ? bed.centerX(T) : bed.sleepX;
+        float cy = Float.isNaN(bed.sleepY) ? bed.centerY(T) : bed.sleepY;
+        if (Gdx.files.internal("sprites/hero_sleep.png").exists()) {
+            TextureRegion r = art.frame("sprites/hero_sleep.png", 1, 0);
+            float w = r.getRegionWidth() * HERO_SCALE, hgt = r.getRegionHeight() * HERO_SCALE;
+            batch.setColor(Color.WHITE);
+            batch.draw(r, cx - w / 2f, cy - hgt / 2f, w, hgt);
+            return;
+        }
+        // 임시: 앞모습을 베개에 눕히고 그림 속 이불 색으로 가슴 아래를 덮는다
+        TextureRegion r = art.world("hero_down");
+        float w = art.width(r) * S * HERO_SCALE, hgt = art.height(r) * S * HERO_SCALE;
+        float breathe = 0.03f * MathUtils.sin(time * 2.4f);
+        batch.setColor(Color.WHITE);
+        batch.draw(r, cx - w / 2f, cy - hgt / 2f, w, hgt);
+        float bw = w * 1.15f, bh = hgt * (0.55f + breathe);
+        batch.setColor(62 / 255f, 88 / 255f, 172 / 255f, 1f);
+        batch.draw(art.white(), cx - bw / 2f, cy - hgt / 2f - 2, bw, bh);
+        batch.setColor(225 / 255f, 225 / 255f, 235 / 255f, 1f);
+        batch.draw(art.white(), cx - bw / 2f, cy - hgt / 2f - 2 + bh - 3, bw, 3);
         batch.setColor(Color.WHITE);
     }
 
@@ -1654,6 +1686,24 @@ public class WorldRenderer implements Disposable {
         shapes.end();
     }
 
+    /** 잠 (선우 버전): 천천히 어두워졌다가 밝아지고, 침대 위로 Zzz 가 올라간다. */
+    private void drawSleepOverlay(OrthographicCamera cam) {
+        float p = g.sleepProgress();
+        batch.setColor(0.01f, 0.01f, 0.04f, MathUtils.sin(p * MathUtils.PI) * 0.85f);
+        batch.draw(art.white(), 0, 0, cam.viewportWidth, cam.viewportHeight);
+        batch.setColor(Color.WHITE);
+        com.yongsa.world.Prop bed = g.sleepBed();
+        float bx = Float.isNaN(bed.sleepX) ? bed.centerX(T) : bed.sleepX;
+        float by = (Float.isNaN(bed.sleepY) ? bed.centerY(T) : bed.sleepY) + 20;
+        for (int i = 0; i < 3; i++) {
+            float ph = (p * 3 + i / 3f) % 1f;
+            BitmapFont f = i == 0 ? fonts.large : fonts.normal;
+            outlined(f, i == 0 ? "Z" : "z", sx(cam, bx + 14 + ph * 22), sy(cam, by + 10 + ph * 40), SLEEP_Z, 1f - ph);
+        }
+    }
+
+    private static final Color SLEEP_Z = new Color(0.85f, 0.9f, 1f, 1f);
+
     // ───────────────────────── 글자 (화면 좌표로 그려 글자가 흐려지지 않게 한다)
 
     private float sx(OrthographicCamera cam, float wx) {
@@ -1665,6 +1715,7 @@ public class WorldRenderer implements Disposable {
     }
 
     private void drawTexts(OrthographicCamera cam) {
+        if (g.sleeping()) drawSleepOverlay(cam);
         for (Monster m : g.monsters) {
             if (m.dead) continue;
             if (m.warning()) {

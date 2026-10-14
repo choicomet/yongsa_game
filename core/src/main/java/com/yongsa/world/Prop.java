@@ -8,6 +8,8 @@ public class Prop {
     public final int tileX, tileY, w, h;
     /** Artwork already contains this facility; scene polygons own its collision. */
     public final boolean baked;
+    /** 침대: 누운 용사를 그릴 자리 (월드 좌표). NaN 이면 가운데. */
+    public float sleepX = Float.NaN, sleepY = Float.NaN;
     private final float exactX, exactY, exactW, exactH;
 
     /** 바닥에 그려진 것이라 밟고 지나갈 수 있는가. */

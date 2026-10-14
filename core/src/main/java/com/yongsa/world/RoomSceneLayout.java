@@ -44,6 +44,8 @@ public final class RoomSceneLayout {
         public float[] center;
         public float widthTiles, heightTiles;
         public boolean baked;
+        /** 침대: 누운 용사의 가운데 (그림 기준 0~1). 없으면 시설 가운데. */
+        public float[] sleepAt;
     }
 
     public static final class Scene {

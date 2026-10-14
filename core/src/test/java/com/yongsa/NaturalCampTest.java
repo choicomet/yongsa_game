@@ -32,7 +32,9 @@ class NaturalCampTest {
         assertEquals(3, g.map.props.stream().filter(p -> p.baked).count());
         assertEvent(interact(g, .306f, .434f), GameEvent.Type.OPEN_FORGE);
         g.state.hp = 10;
-        assertEvent(interact(g, .745f, .440f), GameEvent.Type.AUTOSAVE);
+        interact(g, .745f, .440f);
+        assertTrue(g.sleeping(), "침대에서 잠든다");
+        for (int i = 0; i < 240; i++) g.update(1 / 60f, new Controls());
         assertEquals(g.rules.maxHp(g.state), g.state.hp);
         interact(g, .524f, .582f);
         assertEquals("E  모닥불", g.prompt);

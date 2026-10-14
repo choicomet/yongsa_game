@@ -7,6 +7,7 @@ import com.yongsa.model.GameSession;
 import com.yongsa.model.GameState;
 import com.yongsa.model.NewGame;
 import com.yongsa.world.Door;
+import com.yongsa.world.Prop;
 import com.yongsa.world.Room;
 import com.yongsa.world.RoomType;
 import org.junit.jupiter.api.Test;
@@ -243,5 +244,34 @@ class GameSessionTest {
         assertTrue(has(ev, GameEvent.Type.WARP));
         g.warpToCamp();
         assertTrue(g.inCamp());
+    }
+
+    @Test
+    void sleepingInTheBedRestsHalfwayAndWakesUp() {
+        GameState s = NewGame.create(b);
+        GameSession g = session(s);
+        Prop bed = g.map.props.stream().filter(p -> p.kind == Prop.Kind.BED).findFirst().orElseThrow();
+        Room camp = g.map.room("CAMP");
+        g.hero.x = camp.sceneX(0.745f);
+        g.hero.y = camp.sceneY(0.44f);
+        s.hp = 10;
+        run(g, new Controls(), 0.05f);
+        assertNotNull(g.prompt, "침대 앞에서 E 안내가 뜬다");
+        Controls e = new Controls();
+        e.interact = true;
+        g.update(1 / 60f, e);
+        assertTrue(g.sleeping());
+        assertEquals(bed, g.sleepBed());
+        Controls go = new Controls();
+        go.moveX = 1;
+        float x0 = g.hero.x;
+        List<GameEvent> ev = run(g, go, 1.0f);
+        assertEquals(x0, g.hero.x, 0.01f, "자는 동안은 움직이지 않는다");
+        assertFalse(has(ev, GameEvent.Type.BED_USED));
+        ev = run(g, new Controls(), 1.0f);
+        assertTrue(has(ev, GameEvent.Type.BED_USED), "중간쯤 푹 쉰다");
+        assertEquals(g.rules.maxHp(s), s.hp);
+        run(g, new Controls(), 1.3f);
+        assertFalse(g.sleeping(), "끝나면 일어난다");
     }
 }

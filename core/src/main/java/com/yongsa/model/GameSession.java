@@ -88,6 +88,11 @@ public class GameSession {
     private Balance.Villager targetVillager;
     /** 다섯 번 되돌아선 뒤 체념하고 나가는 중 (마을에 닿으면 독백). */
     private boolean giveUpPending;
+    /** 침대에서 자는 중 (선우 버전 잠 모션): 0 이면 깨어 있다. 중간에 푹 쉬고(useBed) 끝에 일어난다. */
+    private float sleepTime;
+    private boolean slept;
+    private Prop sleepBed;
+    public static final float SLEEP_TIME = 3.2f, SLEEP_REST_AT = 1.5f;
     /** 마을 사람마다 몇 번째 대사까지 했는지. */
     private final java.util.Map<String, Integer> talkCount = new java.util.HashMap<>();
 
@@ -190,6 +195,21 @@ public class GameSession {
         justDied = false;
         if (pendingDoor != null) return; // 화면이 어두워지는 동안은 멈춰 있다
         doorCd -= dt;
+        if (sleepTime > 0) {
+            // 자는 동안은 조작을 받지 않는다
+            sleepTime += dt;
+            if (!slept && sleepTime >= SLEEP_REST_AT) {
+                slept = true;
+                useBed();
+            }
+            if (sleepTime >= SLEEP_TIME) {
+                sleepTime = 0;
+                hero.facing = Facing.DOWN;
+                hero.aimX = 0;
+                hero.aimY = -1;
+            }
+            c = new Controls();
+        }
         updateHero(dt, c);
         if (checkDoors()) return;
         updateRooms();
@@ -209,6 +229,10 @@ public class GameSession {
                 unsealOffered = true;
                 events.add(GameEvent.toast("세 보스의 힘이 모였다. 캠프 바닥의 문양에서 성검의 봉인을 풀 수 있다"));
             }
+        }
+        if (sleepTime > 0) {
+            prompt = null;
+            return;
         }
         findInteraction();
         if (c.interact) interact();
@@ -1816,7 +1840,7 @@ public class GameSession {
                     events.add(new GameEvent(GameEvent.Type.OPEN_FORGE));
                     break;
                 case BED:
-                    useBed();
+                    startSleep(targetProp);
                     break;
                 case SEAL:
                     if (absorb.canUnseal(state)) {
@@ -1985,6 +2009,29 @@ public class GameSession {
         events.add(GameEvent.floatText(e.x, e.y, ore.displayName + " +" + n, GameEvent.Tone.ORE));
         events.add(GameEvent.sound("ore"));
         events.add(new GameEvent(GameEvent.Type.AUTOSAVE));
+    }
+
+    /** 침대에 눕는다: 화면이 어두워지는 동안 쉬고 (useBed) 다시 밝아지면 일어난다. */
+    public void startSleep(Prop bed) {
+        if (sleepTime > 0) return;
+        sleepTime = 0.0001f;
+        slept = false;
+        sleepBed = bed;
+        events.add(GameEvent.sound("select"));
+    }
+
+    public boolean sleeping() {
+        return sleepTime > 0;
+    }
+
+    /** 0~1: 잠든 정도의 진행 (그리는 쪽에서 어둡게 하고 Zzz 를 띄운다). */
+    public float sleepProgress() {
+        return sleepTime > 0 ? Math.min(1f, sleepTime / SLEEP_TIME) : 0f;
+    }
+
+    /** 자고 있는 침대 (자고 있지 않으면 null). */
+    public Prop sleepBed() {
+        return sleepTime > 0 ? sleepBed : null;
     }
 
     /**

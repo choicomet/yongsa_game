@@ -251,9 +251,15 @@ public class WorldMap {
     private void buildCampProps() {
         Room camp = byId.get("CAMP");
         if (camp.scene != null) {
-            for (RoomSceneLayout.Facility f : camp.scene.facilities)
-                props.add(new Prop(f.kind, camp.sceneX(f.center[0]), camp.sceneY(f.center[1]),
-                        f.widthTiles * tileSize, f.heightTiles * tileSize, tileSize, f.baked));
+            for (RoomSceneLayout.Facility f : camp.scene.facilities) {
+                Prop p = new Prop(f.kind, camp.sceneX(f.center[0]), camp.sceneY(f.center[1]),
+                        f.widthTiles * tileSize, f.heightTiles * tileSize, tileSize, f.baked);
+                if (f.sleepAt != null) {
+                    p.sleepX = camp.sceneX(f.sleepAt[0]);
+                    p.sleepY = camp.sceneY(f.sleepAt[1]);
+                }
+                props.add(p);
+            }
             // Visible solid bases are already traced in scene.blocked; do not expand to whole tiles.
             return;
         }

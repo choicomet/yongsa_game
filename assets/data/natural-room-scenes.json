@@ -61,7 +61,8 @@
           "center": [0.745, 0.381],
           "widthTiles": 2.7,
           "heightTiles": 0.8,
-          "baked": true
+          "baked": true,
+          "sleepAt": [0.748, 0.278]
         },
         {
           "kind": "CAMPFIRE",
