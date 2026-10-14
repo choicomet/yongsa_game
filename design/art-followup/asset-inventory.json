@@ -1,0 +1,208 @@
+[
+  {
+    "path": "assets/scenes/natural-v1/mine-antechamber.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGB",
+    "alphaExtrema": null,
+    "bytes": 2922663,
+    "sha256": "3cd5a88edfa4ca709873c39701d8f06368ea79021eb782a7a9b44af4c6498de1"
+  },
+  {
+    "path": "assets/scenes/natural-v1/citadel-corner.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGB",
+    "alphaExtrema": null,
+    "bytes": 2934330,
+    "sha256": "c79d00d8aba237d14d7747d1557b2d7808ebdbae4430d0820c823f17c4173a18"
+  },
+  {
+    "path": "assets/scenes/natural-v1/tower-antechamber.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGB",
+    "alphaExtrema": null,
+    "bytes": 2742341,
+    "sha256": "18789b36036a36326bf540dd4a9ef897d1031fc57e457f1f945a6c331a604295"
+  },
+  {
+    "path": "assets/scenes/natural-v1/citadel-ore-north.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGB",
+    "alphaExtrema": null,
+    "bytes": 2743588,
+    "sha256": "046ac83d34c19dc9ffa171a1817f4f5886de0731e0a09c38cc69080d34b51ed6"
+  },
+  {
+    "path": "assets/scenes/natural-v1/mine-boss-a-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 885241,
+    "sha256": "d682da3773bda2368cedebdda3bb234fcaf9f32fd0a2eb088e410a5cdecb74c2"
+  },
+  {
+    "path": "assets/scenes/natural-v1/citadel-boss-a-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 801880,
+    "sha256": "3d8bc0f7c6c4bef5c1ae3dfe58ce9b729ca6f9e838d87da09f223d9c423ce5ac"
+  },
+  {
+    "path": "assets/scenes/natural-v1/tower-boss-a-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 996737,
+    "sha256": "221ee91ffa291b3b4db677f18d36a5f92b0f0347be53d6023f116d40eef9d4a0"
+  },
+  {
+    "path": "assets/scenes/natural-v1/seal-hall-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 950747,
+    "sha256": "c14c6a46cd4f4a02ecf1499e8b4a86af9e5d25a408734e10edf32ad9519de415"
+  },
+  {
+    "path": "assets/scenes/natural-v1/mine-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 784094,
+    "sha256": "899282b594e273be8b3d697a345b60442c06de0ba1e9dc131aa573c5bbffbdf1"
+  },
+  {
+    "path": "assets/scenes/natural-v1/citadel-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 1007510,
+    "sha256": "2c5f66d5929d6bda5d9f1aadd753dfce693d7de6464d8158bb33f95c1a642cb6"
+  },
+  {
+    "path": "assets/scenes/natural-v1/tower-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 1166311,
+    "sha256": "f859f5e77dea6312d80924a9f987ad69f9931335cf3d2de93c44146afce82966"
+  },
+  {
+    "path": "assets/scenes/natural-v1/mine-mob-b-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 862334,
+    "sha256": "df8e98b7766d22394f4c1faf38464ee3afc283c370dff5cf0bdc177f8ded1c1d"
+  },
+  {
+    "path": "assets/scenes/natural-v1/mine-mob-c-front.png",
+    "width": 1671,
+    "height": 941,
+    "sizeMatchesContract": false,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 1093697,
+    "sha256": "d542ea352eabe204e22d706df2fd609fd4919f760c269b613da2a06c3ec6facc"
+  },
+  {
+    "path": "assets/scenes/natural-v1/mine-ore-a-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 994059,
+    "sha256": "b0fc9ebb855e60dffb9f65dc6b414a348016336e73dd291b2978342e7eac0f7a"
+  },
+  {
+    "path": "assets/scenes/natural-v1/mine-ore-b-front.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 707027,
+    "sha256": "a6c10cbf46e851745be789f767e4eb1fda09fcd51365bb49b53bd082d185bc96"
+  },
+  {
+    "path": "design/art-followup/archive/mine-junction.png",
+    "width": 1671,
+    "height": 941,
+    "sizeMatchesContract": false,
+    "mode": "RGB",
+    "alphaExtrema": null,
+    "bytes": 2435706,
+    "sha256": "9d68c6f68ed860715f72f7c99e79f541dad835c25bb0dc995bfab090d149d575"
+  },
+  {
+    "path": "design/art-followup/archive/central-camp-open.png",
+    "width": 1672,
+    "height": 941,
+    "sizeMatchesContract": true,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "bytes": 322010,
+    "sha256": "0227c72b1690f807e1fa29d1e9e87bc7b48f33777274dae01c23d84344ae70d8"
+  }
+]
