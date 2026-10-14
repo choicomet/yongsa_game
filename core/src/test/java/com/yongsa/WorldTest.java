@@ -183,28 +183,48 @@ class WorldTest {
     }
 
     @Test
-    void veinsAreSpreadReachableAndGuaranteed() {
+    void veinsSitInFrontOfThePaintedOreAndShareTheRoomTotal() {
         WorldMap map = TestData.map();
         for (String id : new String[]{"L2", "L4", "R2", "R4", "T2", "T4"}) {
             Room r = map.room(id);
-            for (int seed = 0; seed < 300; seed++) {
+            assertFalse(r.scene.oreSpots.isEmpty(), id + " 그림 속 광석 자리");
+            for (int seed = 0; seed < 100; seed++) {
                 Random rnd = new Random(seed);
-                int count = 6 + rnd.nextInt(5);
-                List<Vein> veins = VeinGenerator.generate(r, rnd, count, OreType.BLACKIRON, 1, 2, 3, 8);
-                assertTrue(veins.size() >= Math.min(count, 6), id + " 광맥 " + veins.size() + "/" + count);
-                int total = 0;
+                int count = 3 + seed % 2, total = 10 + seed % 8;
+                List<Vein> veins = VeinGenerator.generateAtSpots(r, rnd, count, OreType.BLACKIRON, total, 5, map.tileSize);
+                assertEquals(Math.min(count, r.scene.oreSpots.size()), veins.size(), id + " 광맥 수");
+                int sum = 0;
                 List<int[]> cells = new ArrayList<>();
                 for (Vein v : veins) {
-                    assertTrue(r.insideWithMargin(v.tileX, v.tileY, 1));
-                    total += v.amount;
+                    assertTrue(v.painted());
+                    assertTrue(r.inside(v.tileX, v.tileY), id + " 광맥은 바닥 위");
+                    float d = (float) Math.hypot((v.tileX + 0.5f) * map.tileSize - v.spotX, (v.tileY + 0.5f) * map.tileSize - v.spotY);
+                    assertTrue(d <= 5.5f * map.tileSize, id + " 광석 덩어리 바로 앞");
+                    assertTrue(v.amount >= total / veins.size(), "한 곳에서 많이 나온다");
+                    sum += v.amount;
                     for (int[] c : cells) {
                         assertFalse(Math.abs(c[0] - v.tileX) <= 1 && Math.abs(c[1] - v.tileY) <= 1, "광맥끼리 붙지 않는다");
                     }
                     cells.add(new int[]{v.tileX, v.tileY});
                 }
-                assertTrue(total >= 8, "첫 광물방 보장");
-                assertTrue(VeinGenerator.reachable(r, cells));
+                assertEquals(total, sum, id + " 방 합계");
             }
+        }
+    }
+
+    @Test
+    void randomVeinsStillWorkForRoomsWithoutPaintedOre() {
+        WorldMap map = TestData.map();
+        Room r = map.room("L2");
+        for (int seed = 0; seed < 100; seed++) {
+            Random rnd = new Random(seed);
+            List<Vein> veins = VeinGenerator.generate(r, rnd, 3, OreType.BLACKIRON, 1, 1, 5, 0);
+            VeinGenerator.spread(veins, 12, rnd);
+            assertEquals(3, veins.size());
+            assertEquals(12, veins.stream().mapToInt(v -> v.amount).sum());
+            List<int[]> cells = new ArrayList<>();
+            for (Vein v : veins) cells.add(new int[]{v.tileX, v.tileY});
+            assertTrue(VeinGenerator.reachable(r, cells));
         }
     }
 }

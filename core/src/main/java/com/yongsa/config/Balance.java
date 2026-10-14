@@ -132,8 +132,11 @@ public class Balance {
     }
 
     public static class MiningCfg {
-        public int hitsToBreak, orePerVeinMin, orePerVeinMax;
-        public int veinsMin, veinsMax, veinsMinCleared, veinsMaxCleared;
+        public int hitsToBreak;
+        /** 방 하나의 광맥 수 (그림 속 광석 자리 수를 넘지 않는다). 보스를 잡은 던전은 cleared 값. */
+        public int veins, veinsCleared;
+        /** 방 하나에서 나오는 광석 합계. 광맥 수로 나눠 담는다. */
+        public int oreTotalMin, oreTotalMax, oreTotalMinCleared, oreTotalMaxCleared;
         public int firstOreRoomGuarantee;
     }
 

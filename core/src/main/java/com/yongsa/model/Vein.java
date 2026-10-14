@@ -6,6 +6,8 @@ public class Vein {
     public OreType ore;
     public int amount;
     public int hitsLeft;
+    /** 그림 속 광석 덩어리 자리 (월드 좌표). 0 이면 칸 위에 광석 덩어리를 그린다. */
+    public float spotX, spotY;
 
     public Vein() {
     }
@@ -16,5 +18,9 @@ public class Vein {
         this.ore = ore;
         this.amount = amount;
         this.hitsLeft = hits;
+    }
+
+    public boolean painted() {
+        return spotX != 0 || spotY != 0;
     }
 }

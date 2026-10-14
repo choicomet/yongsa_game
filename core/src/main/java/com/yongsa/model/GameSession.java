@@ -1903,15 +1903,21 @@ public class GameSession {
         if (rec.veins != null) return;
         Balance.MiningCfg mc = balance.mining;
         boolean cleared = state.bossDefeated(r.dungeonId);
-        int min = cleared ? mc.veinsMinCleared : mc.veinsMin;
-        int max = cleared ? mc.veinsMaxCleared : mc.veinsMax;
-        int count = min + random.nextInt(max - min + 1);
-        int guarantee = state.firstOreRoomDone ? 0 : mc.firstOreRoomGuarantee;
+        int count = cleared ? mc.veinsCleared : mc.veins;
+        int min = cleared ? mc.oreTotalMinCleared : mc.oreTotalMin;
+        int max = cleared ? mc.oreTotalMaxCleared : mc.oreTotalMax;
+        int total = min + random.nextInt(max - min + 1);
+        if (!state.firstOreRoomDone) total = Math.max(total, mc.firstOreRoomGuarantee);
         OreType ore = OreType.valueOf(balance.dungeon(r.dungeonId).ore);
-        rec.veins = VeinGenerator.generate(r, random, count, ore, mc.orePerVeinMin, mc.orePerVeinMax,
-                mc.hitsToBreak, guarantee);
+        if (r.scene != null && !r.scene.oreSpots.isEmpty()) {
+            // 그림 속 광석 덩어리 앞에 몇 개만, 대신 한 곳에서 많이 나온다
+            rec.veins = VeinGenerator.generateAtSpots(r, random, count, ore, total, mc.hitsToBreak, T);
+        } else {
+            rec.veins = VeinGenerator.generate(r, random, count, ore, 1, 1, mc.hitsToBreak, 0);
+            VeinGenerator.spread(rec.veins, total, random);
+        }
         state.firstOreRoomDone = true;
-        for (Vein v : rec.veins) map.setBlocked(v.tileX, v.tileY, true);
+        for (Vein v : rec.veins) if (!v.painted()) map.setBlocked(v.tileX, v.tileY, true);
     }
 
     private void applyVeinOverlay() {
@@ -1920,7 +1926,7 @@ public class GameSession {
             clearOverlay(r);
             RoomRecord rec = state.rooms.get(r.id);
             if (rec != null && rec.veins != null) {
-                for (Vein v : rec.veins) map.setBlocked(v.tileX, v.tileY, true);
+                for (Vein v : rec.veins) if (!v.painted()) map.setBlocked(v.tileX, v.tileY, true);
             }
         }
     }
@@ -2087,11 +2093,12 @@ public class GameSession {
         if (hero.mineCd > 0) return;
         hero.mineCd = 0.28f;
         hero.mineSwingT = 0.22f;
-        float dx = center(v.tileX) - hero.x, dy = center(v.tileY) - hero.y;
+        float vx = v.painted() ? v.spotX : center(v.tileX), vy = v.painted() ? v.spotY : center(v.tileY);
+        float dx = vx - hero.x, dy = vy - hero.y;
         if (Math.abs(dx) + Math.abs(dy) > 1) hero.facing = Facing.of(dx, dy);
         v.hitsLeft--;
         events.add(GameEvent.sound("mine"));
-        GameEvent fx = GameEvent.fx(GameEvent.Type.MINE_FX, center(v.tileX), center(v.tileY));
+        GameEvent fx = GameEvent.fx(GameEvent.Type.MINE_FX, vx, vy);
         fx.ore = v.ore;
         fx.size = v.hitsLeft;
         events.add(fx);
@@ -2099,7 +2106,7 @@ public class GameSession {
         state.addOre(v.ore, v.amount);
         state.stats.oreMined += v.amount;
         veinsOf(heroRoom).remove(v);
-        map.setBlocked(v.tileX, v.tileY, false);
+        if (!v.painted()) map.setBlocked(v.tileX, v.tileY, false);
         GameEvent e = new GameEvent(GameEvent.Type.ORE_GAINED);
         e.ore = v.ore;
         e.amount = v.amount;

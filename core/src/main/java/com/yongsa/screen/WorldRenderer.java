@@ -740,9 +740,12 @@ public class WorldRenderer implements Disposable {
                 if (veins == null) continue;
                 for (Vein v : veins) {
                     Color c = oreColor(v.ore);
-                    float px = (v.tileX + 0.5f) * T, py = (v.tileY + 0.5f) * T;
+                    float px = veinX(v), py = veinY(v);
                     if (!inView(px, py)) continue;
-                    lighting.add(px, py, 70, c.r, c.g, c.b, 0.45f + 0.1f * MathUtils.sin(time * 3f + v.tileX));
+                    // 그림 속 광석 덩어리는 더 넓게, 캐면 캘수록 빛이 줄어든다
+                    float left = v.hitsLeft / (float) g.balance.mining.hitsToBreak;
+                    float rad = v.painted() ? 80 + 40 * left : 70;
+                    lighting.add(px, py, rad, c.r, c.g, c.b, (0.45f + 0.1f * MathUtils.sin(time * 3f + v.tileX)) * (0.6f + 0.4f * left));
                 }
             } else if (g.hasPortal(r)) {
                 float px = g.portalX(r), py = g.portalY(r);
@@ -1244,7 +1247,8 @@ public class WorldRenderer implements Disposable {
             if (r.x1 < tx0 || r.x0 > tx1 || r.y1 < ty0 || r.y0 > ty1) continue;
             List<Vein> veins = g.veinsOf(r);
             if (veins == null) continue;
-            for (Vein v : veins) list.add(new Sorted(v.tileY * T + 4, () -> drawVein(v)));
+            // 그림 속 광석 덩어리 앞 광맥은 그림이 곧 광석이라 따로 그리지 않는다
+            for (Vein v : veins) if (!v.painted()) list.add(new Sorted(v.tileY * T + 4, () -> drawVein(v)));
         }
         if (g.inVillage()) {
             for (com.yongsa.config.Balance.Villager v : g.balance.village.villagers) {
@@ -1388,6 +1392,14 @@ public class WorldRenderer implements Disposable {
                 batch.draw(r, px, py - 4, art.width(r) * S, art.height(r) * S);
             }
         }
+    }
+
+    private float veinX(Vein v) {
+        return v.painted() ? v.spotX : (v.tileX + 0.5f) * T;
+    }
+
+    private float veinY(Vein v) {
+        return v.painted() ? v.spotY : (v.tileY + 0.5f) * T;
     }
 
     private void drawVein(Vein v) {
@@ -1719,12 +1731,13 @@ public class WorldRenderer implements Disposable {
             List<Vein> veins = g.veinsOf(r);
             if (veins == null) continue;
             for (Vein v : veins) {
-                float px = (v.tileX + 0.5f) * T, py = (v.tileY + 0.5f) * T;
+                float px = veinX(v), py = veinY(v);
                 if (!inView(px, py)) continue;
                 Color c = oreColor(v.ore);
                 float tw = MathUtils.sin(time * 4f + v.tileX * 1.7f + v.tileY);
+                float gs = v.painted() ? 84 : 52;
                 batch.setColor(c.r, c.g, c.b, 0.25f + 0.15f * tw);
-                batch.draw(art.glow, px - 26, py - 22, 52, 52);
+                batch.draw(art.glow, px - gs / 2, py - gs * 0.42f, gs, gs);
                 if (tw > 0.85f) {
                     batch.setColor(1f, 1f, 1f, (tw - 0.85f) * 5f);
                     batch.draw(art.white(), px - 1 + (v.tileX % 3) * 4 - 4, py + 8, 2, 6);

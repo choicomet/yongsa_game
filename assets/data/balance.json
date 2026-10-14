@@ -76,14 +76,15 @@
     "skillUnlockLevel": 10
   },
 
+  "_mining": "광맥은 광물방 그림 속 광석 덩어리 앞에만 몇 개 놓이고, 한 곳에서 많이 나온다. oreTotal = 방 하나에서 나오는 광석 합계 (예전 6~10개 x 1~2개와 비슷)",
   "mining": {
-    "hitsToBreak": 3,
-    "orePerVeinMin": 1,
-    "orePerVeinMax": 2,
-    "veinsMin": 6,
-    "veinsMax": 10,
-    "veinsMinCleared": 8,
-    "veinsMaxCleared": 12,
+    "hitsToBreak": 5,
+    "veins": 3,
+    "veinsCleared": 4,
+    "oreTotalMin": 10,
+    "oreTotalMax": 14,
+    "oreTotalMinCleared": 13,
+    "oreTotalMaxCleared": 17,
     "firstOreRoomGuarantee": 8
   },
 

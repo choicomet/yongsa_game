@@ -57,6 +57,8 @@ public final class RoomSceneLayout {
         public List<float[]> enemySpawns;
         public List<Portal> portals;
         public List<Facility> facilities = new ArrayList<>();
+        /** 광물방: 그림 속 광석 덩어리 자리. 광맥은 이 앞 바닥에만 놓인다. */
+        public List<float[]> oreSpots = new ArrayList<>();
 
         public void validate() {
             if (id == null || image == null || pixelWidth <= 0 || pixelHeight <= 0

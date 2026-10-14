@@ -20,7 +20,7 @@ import java.util.PriorityQueue;
 public class WorldMap {
     public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3, CORRIDOR = 4;
     /** 방 배치가 바뀌면 올린다. 저장 파일의 방 기록(광맥 자리)·이어하기 위치가 다르면 버린다. */
-    public static final int VERSION = 5;
+    public static final int VERSION = 6;
 
     public final int width, height;
     public final int tileSize;
