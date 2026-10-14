@@ -1,0 +1,51 @@
+{
+  "assets": [
+    {
+      "path": "assets/world/hero-harmony-v1.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode": "RGBA",
+      "sha256": "e5c40d838283e84cc3dd271bd267febd6efffbbab6d978cd828674015ec1c338",
+      "alphaExtrema": [
+        0,
+        254
+      ]
+    },
+    {
+      "path": "assets/hd/hero.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode": "RGBA",
+      "sha256": "3638e8c96cd698346965eb2197b3b75edc0a4820dbfda79f3c162baf18e1a02e",
+      "alphaExtrema": [
+        0,
+        254
+      ]
+    },
+    {
+      "path": "assets/scenes/team/village.png",
+      "size": [
+        1340,
+        1174
+      ],
+      "mode": "RGB",
+      "sha256": "1aae4799029786e6436ade66ffa9bca6374b2752eade1113494fd254dde75b0b",
+      "alphaExtrema": null
+    }
+  ],
+  "bossFilesUnchanged": true,
+  "coreTests": 84,
+  "pathChecks": [
+    "baker",
+    "redhood",
+    "child",
+    "elder",
+    "maid",
+    "boy",
+    "north"
+  ]
+}
