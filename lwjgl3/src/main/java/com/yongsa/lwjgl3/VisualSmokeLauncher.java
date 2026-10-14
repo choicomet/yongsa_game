@@ -159,6 +159,7 @@ public final class VisualSmokeLauncher {
             if (scenario >= 14 && scenario <= 18) {
                 var odds = next.session.enhance.odds(state.equipped().level);
                 int desired = scenario == 18 ? 0 : scenario - 14;
+                if (desired == 2 && odds.down <= 0) desired = 1; // 하락이 없어져서 '그대로'로 대신 찍는다
                 for (long seed = 0; ; seed++) {
                     double roll = new java.util.Random(seed).nextDouble() * 100;
                     int outcome = roll < odds.success ? 0 : roll < odds.success + odds.keep ? 1
@@ -238,7 +239,7 @@ public final class VisualSmokeLauncher {
                 if (scenario == 17) {
                     if (iron != null || !"holy_sealed".equals(state.equipped().defId)) throw new AssertionError("Destroy fallback missing");
                 } else {
-                    int level = scenario == 14 ? 7 : scenario == 15 ? 6 : scenario == 16 ? 5 : 10;
+                    int level = scenario == 14 ? 7 : scenario == 15 || scenario == 16 ? 6 : 10;
                     if (iron.level != level || (scenario == 18 && !iron.awakened)) throw new AssertionError("Unexpected smithing result");
                 }
                 System.out.println("UI_ACTION_OK " + names[scenario] + " exactly-once, keyboard/mouse/F1 guarded");
