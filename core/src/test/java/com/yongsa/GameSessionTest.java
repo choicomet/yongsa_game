@@ -212,6 +212,10 @@ class GameSessionTest {
         assertNotNull(g.veinsOf(g.map.room("L2")));
         int total = g.veinsOf(g.map.room("L2")).stream().mapToInt(v -> v.amount).sum();
         assertTrue(total >= 8);
+        for (var v : g.veinsOf(g.map.room("L2"))) {
+            assertTrue(v.painted(), "그림 속 광석 덩어리 앞에 놓인다");
+            assertFalse(g.map.isBlockedOverlay(v.tileX, v.tileY), "그림이 광석이라 바닥 칸은 막지 않는다");
+        }
     }
 
     @Test

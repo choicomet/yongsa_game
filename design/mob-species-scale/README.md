@@ -44,4 +44,14 @@ javac -encoding UTF-8 -cp lwjgl3/build/libs/yongsa-game-0.1.0.jar -d <QA classes
 java -cp "lwjgl3/build/libs/yongsa-game-0.1.0.jar;<QA classes>" MobScaleCapture <출력 폴더>
 ```
 
-마을 주민은 사용자가 추후 올릴 팀원 스토리와 인물 참고 사진을 확인한 뒤 외형·복장을 맞춘다. 이 작업에서는 주민 그림을 제작하지 않는다.
+## 최신 팀 통합 검증 (2026-10-15)
+
+`claude/team-integration-m9u9aa`의 `99766c1`을 작업 브랜치에 통합했다. 위의 기존 전후 비교는 이전 main 기준 기록이고, 아래 그림은 흰머리 용사·웨이브·광맥 좌표·가림 레이어·출구 그림 연결이 포함된 최신 팀 버전이다.
+
+![최신 팀 버전에서 체격 비교](latest-team/idle.png)
+
+WorldRenderer 충돌 6곳을 해결하면서 최신 보스 확대(`bossScale`), 마왕 변신/사망 크기, 통로·가림 레이어·문·포션 코드는 그대로 유지했다. 최신 코드에서 이미 1.25배로 그리던 잡몹 보호막·채널링 효과는 종별 배율로 대체한다. 이전 main 버전의 보정 나눗셈을 중복 적용하지 않는다.
+
+Java17 `:core:test :lwjgl3:dist` 성공, 테스트 91개 통과. 최신 버전에서도 대기·걷기·예고·기절·사망·등장·반전 7장 실제 렌더 캡처를 검수했다. PR 대상은 최신 게임 변경이 있는 팀 브랜치이며, main에는 PR #10이 아직 합쳐지지 않았다.
+
+주민 참고는 새 `assets/story/05-release.jpg`, `06-homecoming.jpg`에서 확인했다. 주민 디자인은 B 묶음 작업에서 다루며 이 PR에는 포함하지 않는다.

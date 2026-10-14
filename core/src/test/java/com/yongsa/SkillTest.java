@@ -15,7 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 검 스킬 (Q): 강화 단계에서 열리고, 검마다 모양이 다르고, 각성하면 강해진다. */
+/** 검 스킬 (L·U·I 칸): 강화 단계에서 열리고, 검마다 모양이 다르고, 각성하면 강해지고, 흡수하면 어떤 검으로도 쓴다. */
 class SkillTest {
     private final Balance b = TestData.balance();
 
@@ -37,7 +37,7 @@ class SkillTest {
         for (float t = 0; t < seconds; t += 1 / 60f) {
             g.update(1 / 60f, c);
             all.addAll(g.pollEvents());
-            c.skill = false;
+            c.skill = -1;
         }
         return all;
     }
@@ -60,8 +60,12 @@ class SkillTest {
     }
 
     private Controls skill() {
+        return skill(0);
+    }
+
+    private Controls skill(int slot) {
         Controls c = new Controls();
-        c.skill = true;
+        c.skill = slot;
         return c;
     }
 
@@ -80,7 +84,7 @@ class SkillTest {
         Monster m = lineUp(g, 70);
         run(g, skill(), 0.02f);
         assertEquals(1, g.shots.size());
-        assertTrue(g.hero.skillCd > 0);
+        assertTrue(g.hero.skillCd[0] > 0);
         run(g, new Controls(), 0.4f);
         assertTrue(m.hp < m.maxHp, "충격파에 맞는다");
         assertEquals(Monster.State.STUNNED, m.state);
@@ -114,5 +118,55 @@ class SkillTest {
         assertFalse(g.shots.isEmpty());
         run(g, new Controls(), 0.6f);
         assertTrue(m.hp < m.maxHp);
+    }
+
+    @Test
+    void openedSkillsFillSlotsInOrderAndStayAfterAbsorbing() {
+        GameState s = NewGame.create(b);
+        Weapon black = s.newWeapon("blackiron");
+        black.level = b.enhance.skillUnlockLevel;
+        Weapon blood = s.newWeapon("bloodmoon");
+        blood.level = b.enhance.skillUnlockLevel;
+        s.equippedUid = blood.uid;
+        GameSession g = new GameSession(b, TestData.map(), s, 3);
+        run(g, new Controls(), 0.05f);
+        assertEquals(java.util.List.of("blackiron", "bloodmoon"), s.skillOrder, "열린 차례대로 L, U 칸");
+        com.yongsa.model.Rules.SkillSlot[] slots = g.rules.skillSlots(s);
+        assertFalse(slots[0].usable, "흑철검을 들지 않으면 L 칸은 못 쓴다");
+        assertTrue(slots[1].usable);
+        assertNull(slots[2]);
+
+        g.absorb.absorbSkill(s, black);
+        assertFalse(s.weapons.contains(black), "흡수한 검은 사라진다");
+        slots = g.rules.skillSlots(s);
+        assertTrue(slots[0].usable && slots[0].learned, "흡수한 스킬은 어떤 검을 들어도 쓴다");
+        assertEquals("blackiron", slots[0].weaponId, "칸 자리는 그대로");
+    }
+
+    @Test
+    void absorbedSkillWorksWithAnotherSword() {
+        GameState s = NewGame.create(b);
+        Weapon black = s.newWeapon("blackiron");
+        black.level = b.enhance.skillUnlockLevel;
+        GameSession g0 = new GameSession(b, TestData.map(), s, 3);
+        assertNotNull(g0.absorb.skillAbsorbBlockReason(s, s.weaponByDef(com.yongsa.model.Rules.HOLY_SEALED)), "성검은 흡수할 수 없다");
+        g0.absorb.absorbSkill(s, black);
+        assertEquals(com.yongsa.model.Rules.HOLY_SEALED, s.equipped().defId, "들고 있던 검이 사라지면 남은 검을 든다");
+        GameSession g = new GameSession(b, TestData.map(), s, 11);
+        TestData.walkIn(g, g.map.room("L1"));
+        run(g, new Controls(), 1.5f);
+        lineUp(g, 70);
+        run(g, skill(0), 0.02f);
+        assertEquals(1, g.shots.size(), "봉인된 성검을 들고도 익힌 대지 가르기를 쓴다");
+    }
+
+    @Test
+    void lowLevelSwordCannotBeAbsorbed() {
+        GameState s = NewGame.create(b);
+        Weapon w = s.newWeapon("blackiron");
+        w.level = b.enhance.skillUnlockLevel - 1;
+        GameSession g = new GameSession(b, TestData.map(), s, 3);
+        assertNotNull(g.absorb.skillAbsorbBlockReason(s, w));
+        assertThrows(IllegalStateException.class, () -> g.absorb.absorbSkill(s, w));
     }
 }

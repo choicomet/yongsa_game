@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.yongsa.config.Balance;
+import com.yongsa.config.Story;
 import com.yongsa.gfx.Art;
 import com.yongsa.gfx.Fonts;
 import com.yongsa.gfx.Sfx;
@@ -27,6 +28,7 @@ public class YongsaGame extends Game {
     public Balance balance;
     public MapDef mapDef;
     public RoomSceneLayout scenes;
+    public Story story;
     public Fonts fonts;
     public Art art;
     public Sfx sfx;
@@ -41,6 +43,7 @@ public class YongsaGame extends Game {
         balance = Balance.parse(Gdx.files.internal("data/balance.json").readString("UTF-8"));
         mapDef = MapDef.parse(Gdx.files.internal("data/map.json").readString("UTF-8"));
         scenes = RoomSceneLayout.parse(Gdx.files.internal("data/natural-room-scenes.json").readString("UTF-8"));
+        story = Story.parse(Gdx.files.internal("data/story.json").readString("UTF-8"));
         fonts = new Fonts();
         art = new Art();
         sfx = new Sfx();

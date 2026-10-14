@@ -34,6 +34,8 @@ public class GameEvent {
         DOOR_ENTER,
         /** 보스 보물상자를 열었다 (ore, amount). */
         CHEST_OPENED,
+        /** 잡몹방의 다음 웨이브가 나왔다. text = 알림 글. */
+        WAVE_STARTED,
         /** 검 스킬을 씀 (text = 종류, dirX·dirY = 방향) / 검 스킬이 맞음·낙뢰가 떨어짐 (size = 크기). */
         SKILL_CAST, SKILL_HIT
     }

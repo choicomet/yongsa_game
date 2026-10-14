@@ -95,7 +95,7 @@ public class ForgeWindow extends Modal {
         head.add(label("대장간", "large", Ui.GOLD)).padRight(40);
         tabButton(head, "제작", Tab.CRAFT);
         tabButton(head, "강화", Tab.ENHANCE);
-        tabButton(head, "분해", Tab.DISMANTLE);
+        tabButton(head, "분해 · 흡수", Tab.DISMANTLE);
         head.add(label("불꽃에서 깨어나는 힘", "small", Ui.DIM)).padLeft(24);
         p.add(head).left().padBottom(24).row();
 
@@ -267,7 +267,7 @@ public class ForgeWindow extends Modal {
             com.yongsa.config.Balance.SkillDef sk = d.skill;
             if (sk != null) {
                 int lv = g.balance.enhance.skillUnlockLevel;
-                right.add(label(w.level >= lv ? "Q 스킬 「" + sk.name + "」 사용 가능" : "+" + lv + " 에 Q 스킬 「" + sk.name + "」 열림",
+                right.add(label(w.level >= lv ? "스킬 「" + sk.name + "」 열림 · 흡수 가능" : "+" + lv + " 에 스킬 「" + sk.name + "」 열림",
                         "small", w.level >= lv ? Ui.GOLD : Ui.DIM)).left().padBottom(8).row();
             }
             boolean risk = es.canDestroy(w);
@@ -388,7 +388,45 @@ public class ForgeWindow extends Modal {
                     })))).width(120).height(46).padBottom(10).row();
         }
         if (!any) body.add(label("분해할 수 있는 무기가 없다", "default", Ui.DIM)).colspan(3).padTop(30).row();
+
+        // 흡수: 스킬이 열린 검(+5 이상)을 흡수하면 검은 사라지고 스킬은 어떤 검을 들어도 쓴다
+        body.add(label("흡수 · 스킬이 열린 검(+" + g.balance.enhance.skillUnlockLevel + " 이상)을 흡수하면 검은 사라지고, 그 스킬은 어떤 검을 들어도 쓸 수 있다.",
+                "small", Ui.PURPLE)).colspan(3).left().padTop(22).padBottom(10).row();
+        boolean anyAbsorb = false;
+        for (Weapon w : s.weapons) {
+            if (g.rules.isHoly(w) || g.balance.weapon(w.defId).skill == null) continue;
+            String why = g.absorb.skillAbsorbBlockReason(s, w);
+            if (why != null && !why.startsWith("이미")) continue;
+            anyAbsorb = true;
+            com.yongsa.config.Balance.SkillDef sk = g.balance.weapon(w.defId).skill;
+            body.add(new Image(art.sword(w.defId, w.awakened))).size(48).padRight(12);
+            body.add(label(g.rules.weaponName(w) + "  →  스킬 「" + sk.name + "」" + (w.awakened ? " (각성)" : "")
+                    + (why != null ? "  · " + why : ""), "default", why == null ? Ui.TEXT : Ui.DIM)).width(520).left();
+            TextButton absorbButton = nav.add("흡수", () -> confirmAbsorb(w));
+            absorbButton.setDisabled(why != null);
+            body.add(absorbButton).width(120).height(46).padBottom(10).row();
+        }
+        if (!anyAbsorb) body.add(label("흡수할 수 있는 검이 없다 (검을 +" + g.balance.enhance.skillUnlockLevel + " 까지 강화하자)",
+                "default", Ui.DIM)).colspan(3).padTop(6).row();
         if (resultText != null) body.add(label(resultText, "default", resultColor)).colspan(3).padTop(14).row();
+    }
+
+    private void confirmAbsorb(Weapon w) {
+        com.yongsa.config.Balance.SkillDef sk = g.balance.weapon(w.defId).skill;
+        ConfirmDialog.Line[] lines = {
+                new ConfirmDialog.Line(g.rules.weaponName(w) + "을 흡수합니다.", null),
+                new ConfirmDialog.Line("검은 사라지고, 「" + sk.name + "」" + (w.awakened ? " (각성)" : "") + "을 어떤 검을 들어도 쓸 수 있다.", Ui.PURPLE),
+                new ConfirmDialog.Line("공격력은 오르지 않는다. 되돌릴 수 없다.", Ui.DIM),
+        };
+        screen.modals.push(new ConfirmDialog(skin, "검 흡수", lines, "흡수하기", true, () -> {
+            g.absorb.absorbSkill(g.state, w);
+            g.onWeaponsChanged();
+            resultText = "「" + sk.name + "」을 익혔다! 이제 어떤 검을 들어도 쓸 수 있다";
+            resultColor = Ui.PURPLE;
+            screen.game.sfx.play("awaken");
+            screen.save(false);
+            rebuild();
+        }));
     }
 
     // ───────────────────────── 연출

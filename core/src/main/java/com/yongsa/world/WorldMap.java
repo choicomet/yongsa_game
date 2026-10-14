@@ -20,7 +20,7 @@ import java.util.PriorityQueue;
 public class WorldMap {
     public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3, CORRIDOR = 4;
     /** 방 배치가 바뀌면 올린다. 저장 파일의 방 기록(광맥 자리)·이어하기 위치가 다르면 버린다. */
-    public static final int VERSION = 5;
+    public static final int VERSION = 6;
 
     public final int width, height;
     public final int tileSize;
@@ -145,6 +145,7 @@ public class WorldMap {
         int y0 = (int) Math.floor(oy / T), y1 = (int) Math.ceil((oy + h) / T) - 1;
         Room room = new Room(rd.id, RoomType.valueOf(rd.type), rd.dungeon, rd.cx, rd.cy, x0, y0, x1, y1,
                 sc, ox, oy, w, h, rd.flip);
+        room.waves = Math.max(1, rd.waves);
         room.buildMasks(T);
         addRoom(room);
         for (int y = y0; y <= y1; y++) {

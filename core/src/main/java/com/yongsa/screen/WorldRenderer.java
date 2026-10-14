@@ -79,6 +79,8 @@ public class WorldRenderer implements Disposable {
     /** 던전 방 배경 그림 (보이는 방만 읽어 두고, 오래 안 쓴 것은 버린다). */
     private final Map<String, Texture> sceneTex = new HashMap<>();
     private final Map<String, Float> sceneUsed = new HashMap<>();
+    /** GPT 가 준 앞쪽 가림 레이어 (<장면>-front.png). 없는 장면은 null 로 기억한다. */
+    private final Map<String, Texture> frontTex = new HashMap<>();
     private final Color ambient = new Color(0.6f, 0.55f, 0.5f, 1f);
     private boolean ambientSet;
     private float time, ghostT, moteT, emberT;
@@ -134,7 +136,8 @@ public class WorldRenderer implements Disposable {
         switch (sprite) {
             case "golem": path = "team/jiyong/boss_golem.png"; break;
             case "knight": path = "team/jiyong/boss_knight.png"; break;
-            case "warden": path = "team/jiyong/boss_lich.png"; break;
+            // 지용 버전 리치(해골 사제) 그림은 마왕으로 쓴다 (2026-10-14 해성 결정). 탑 보스는 원래 그림.
+            case "demonlord": path = "team/jiyong/boss_lich.png"; break;
             default: return null;
         }
         return SHEET_EXISTS.computeIfAbsent(path, k -> Gdx.files.internal(k).exists()) ? path : null;
@@ -180,12 +183,18 @@ public class WorldRenderer implements Disposable {
         }
     }
 
+    /** 동작 시트 크기: 마왕은 다른 보스보다 크고, 2페이즈(본모습)에서 더 커진다. */
+    private float sheetScale(Monster m) {
+        if (!m.finalBoss) return BOSS_SHEET_SCALE;
+        return BOSS_SHEET_SCALE * (m.phase2 ? 1.35f : 1.18f);
+    }
+
     private void drawBossSheet(Monster m, String sheet) {
         int[] pose = bossPose(m);
         TextureRegion r = bossCell(sheet, pose[0], pose[1]);
         float appear = m.state == Monster.State.SPAWN ? Math.max(0f, (m.progress() - 0.35f) / 0.65f) : 1f;
         if (appear <= 0f) return;
-        float k = BOSS_SHEET_SCALE * appear;
+        float k = sheetScale(m) * appear;
         float size = BOSS_CELL * k;
         drawShadow(m.x, m.y, BOSS_BODY * k * 0.8f);
         float jx = m.state == Monster.State.STUNNED ? MathUtils.sin(time * 14f) * 1.5f
@@ -193,6 +202,7 @@ public class WorldRenderer implements Disposable {
         boolean faceRight = m.dirX > 0.2f;
         float x0 = m.x + jx - size / 2f, y0 = m.y - (BOSS_CELL - BOSS_FOOT) * k;
         if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
+        else if (m.finalBoss && m.phase2) batch.setColor(0.95f, 0.62f + 0.08f * MathUtils.sin(time * 6f), 0.95f, appear); // 본모습: 붉은 보랏빛
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
         if (faceRight) batch.draw(r, x0 + size, y0, -size, size);
@@ -330,7 +340,7 @@ public class WorldRenderer implements Disposable {
             case MONSTER_DIED: {
                 Corpse c = new Corpse();
                 c.region = art.world(e.sprite);
-                float scale = S * e.size * (e.boss ? 1f : mobScale(e.sprite));
+                float scale = S * e.size * (e.boss ? bossScale(e.sprite) : mobScale(e.sprite));
                 c.w = art.width(c.region) * scale;
                 c.h = art.height(c.region) * scale;
                 c.x = e.x;
@@ -406,6 +416,10 @@ public class WorldRenderer implements Disposable {
                 Speech sp = new Speech();
                 sp.x = e.x;
                 sp.y = e.y;
+                for (Monster m : g.monsters) {
+                    if (m.boss && Math.abs(m.x - e.x) < .01f)
+                        sp.y = Math.max(sp.y, monsterTop(m) + 16);
+                }
                 sp.text = e.text;
                 sp.speaker = e.speaker;
                 speeches.clear();
@@ -728,9 +742,12 @@ public class WorldRenderer implements Disposable {
                 if (veins == null) continue;
                 for (Vein v : veins) {
                     Color c = oreColor(v.ore);
-                    float px = (v.tileX + 0.5f) * T, py = (v.tileY + 0.5f) * T;
+                    float px = veinX(v), py = veinY(v);
                     if (!inView(px, py)) continue;
-                    lighting.add(px, py, 70, c.r, c.g, c.b, 0.45f + 0.1f * MathUtils.sin(time * 3f + v.tileX));
+                    // 그림 속 광석 덩어리는 더 넓게, 캐면 캘수록 빛이 줄어든다
+                    float left = v.hitsLeft / (float) g.balance.mining.hitsToBreak;
+                    float rad = v.painted() ? 80 + 40 * left : 70;
+                    lighting.add(px, py, rad, c.r, c.g, c.b, (0.45f + 0.1f * MathUtils.sin(time * 3f + v.tileX)) * (0.6f + 0.4f * left));
                 }
             } else if (g.hasPortal(r)) {
                 float px = g.portalX(r), py = g.portalY(r);
@@ -818,6 +835,7 @@ public class WorldRenderer implements Disposable {
         collect(list, tx0, ty0, tx1, ty1);
         list.sort((a, b) -> Float.compare(b.y, a.y));
         for (Sorted s : list) s.call.draw();
+        drawSceneFronts();
         particles.drawNormal(batch);
         batch.setColor(Color.WHITE);
         batch.end();
@@ -851,6 +869,7 @@ public class WorldRenderer implements Disposable {
                 if (tr != null && tr.scene != null && t != WorldMap.CORRIDOR) continue; // 배경 그림이 바닥과 벽이다 (통로 입구만 덧그린다)
                 String th = themeAt(x, y);
                 float px = x * T, py = y * T;
+                if (map.corridorAt(x, y) != null && drawCorridorTile(t, th, x, y, px, py)) continue;
                 if (t == WorldMap.WALL) {
                     int below = map.tile(x, y - 1);
                     boolean front = below == WorldMap.FLOOR || below == WorldMap.DOOR || below == WorldMap.CORRIDOR;
@@ -880,6 +899,70 @@ public class WorldRenderer implements Disposable {
         }
     }
 
+    // ───────────────────────── 통로: 방 그림의 바닥과 바위를 잘라 이어 붙인다
+
+    /**
+     * 테마별 통로 질감: 그 던전 방 그림에서 바닥 한 조각과 바위 벽 한 조각을 잘라 거울 반복으로 깐다
+     * (u0, v0, u1, v1: 그림 왼쪽 위 기준 0~1). 통로 타일 그림(docs/ART_REQUESTS.md 0-9)이 오면 바꾼다.
+     */
+    private static final String[][] CORRIDOR_SKIN = {
+            {"CAMP", "scenes/natural-v1/central-camp.png", ".30,.50,.45,.68", ".25,.88,.42,.99"},
+            {"LEFT", "scenes/natural-v1/mine.png", ".30,.33,.50,.58", ".20,.85,.40,.99"},
+            {"RIGHT", "scenes/natural-v1/citadel.png", ".62,.32,.78,.58", ".05,.82,.25,.98"},
+            {"TOP", "scenes/natural-v1/tower.png", ".24,.40,.38,.62", ".26,.88,.44,.99"},
+    };
+    /** 방 그림 한 칸이 월드에서 차지하는 크기 (30칸 방 = 그림 1672 칸). */
+    private static final float SKIN_SCALE = 30f * 32f / 1672f;
+    private final Map<String, Texture[]> corridorSkin = new HashMap<>();
+
+    private Texture[] corridorSkin(String th) {
+        Texture[] t = corridorSkin.get(th);
+        if (t != null) return t;
+        String[] def = CORRIDOR_SKIN[0];
+        for (String[] d : CORRIDOR_SKIN) if (d[0].equals(th)) def = d;
+        com.badlogic.gdx.graphics.Pixmap src = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(def[1]));
+        t = new Texture[]{crop(src, def[2]), crop(src, def[3])};
+        src.dispose();
+        corridorSkin.put(th, t);
+        return t;
+    }
+
+    private static Texture crop(com.badlogic.gdx.graphics.Pixmap src, String rect) {
+        String[] r = rect.split(",");
+        int x0 = Math.round(Float.parseFloat(r[0]) * src.getWidth()), y0 = Math.round(Float.parseFloat(r[1]) * src.getHeight());
+        int x1 = Math.round(Float.parseFloat(r[2]) * src.getWidth()), y1 = Math.round(Float.parseFloat(r[3]) * src.getHeight());
+        com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(x1 - x0, y1 - y0, src.getFormat());
+        p.drawPixmap(src, 0, 0, x0, y0, x1 - x0, y1 - y0);
+        Texture t = new Texture(p);
+        p.dispose();
+        t.setWrap(Texture.TextureWrap.MirroredRepeat, Texture.TextureWrap.MirroredRepeat);
+        t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        return t;
+    }
+
+    /** 통로 칸 하나: 바닥은 그림 바닥, 벽은 바위 (앞벽은 조금 밝게, 윗면은 어둡게). 월드 좌표에 맞춰 이어진다. */
+    private boolean drawCorridorTile(int t, String th, int x, int y, float px, float py) {
+        if (t != WorldMap.WALL && t != WorldMap.CORRIDOR) return false;
+        Texture[] skin = corridorSkin(th);
+        boolean wall = t == WorldMap.WALL;
+        Texture tex = wall ? skin[1] : skin[0];
+        float pw = tex.getWidth() * SKIN_SCALE, ph = tex.getHeight() * SKIN_SCALE;
+        if (wall) {
+            int below = map.tile(x, y - 1);
+            boolean front = below == WorldMap.FLOOR || below == WorldMap.DOOR || below == WorldMap.CORRIDOR;
+            float k = front ? 0.8f : 0.5f;
+            batch.setColor(k, k, k, 1f);
+        }
+        batch.draw(tex, px, py, T, T, px / pw, -(py + T) / ph, (px + T) / pw, -py / ph);
+        batch.setColor(Color.WHITE);
+        if (!wall) {
+            if (map.tile(x, y + 1) == WorldMap.WALL) batch.draw(art.world("ao_top"), px, py, T, T);
+            if (map.tile(x - 1, y) == WorldMap.WALL) batch.draw(art.world("ao_left"), px, py, T, T);
+            if (map.tile(x + 1, y) == WorldMap.WALL) batch.draw(art.world("ao_right"), px, py, T, T);
+        }
+        return true;
+    }
+
     // ───────────────────────── 던전 방 배경 그림
 
     private void drawScenes() {
@@ -897,6 +980,72 @@ public class WorldRenderer implements Disposable {
                 en.getValue().dispose();
                 sceneUsed.remove(en.getKey());
                 it.remove();
+            }
+        }
+    }
+
+    /**
+     * 앞쪽 가림 레이어: 그림 아래쪽 바위 테두리·난간·기둥을 용사와 몬스터 위에 한 번 더 그린다.
+     * 걸을 수 있는 바닥(계단 포함) 위의 픽셀은 불러올 때 지워서, 서 있는 자리를 가리지 않는다.
+     */
+    private void drawSceneFronts() {
+        for (Room r : map.rooms) {
+            if (r.scene == null) continue;
+            if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            Texture tex = frontTexture(r);
+            if (tex == null) continue;
+            batch.setColor(Color.WHITE);
+            batch.draw(tex, r.originX, r.originY, r.widthPx, r.heightPx, 0, 0, tex.getWidth(), tex.getHeight(), r.flip, false);
+        }
+        if (frontTex.size() > 4) {
+            for (Iterator<Map.Entry<String, Texture>> it = frontTex.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Texture> en = it.next();
+                if (en.getValue() == null || time - sceneUsed.getOrDefault(en.getKey(), 0f) < 20f) continue;
+                en.getValue().dispose();
+                it.remove();
+            }
+        }
+    }
+
+    private Texture frontTexture(Room r) {
+        String key = r.scene.image.replace(".png", "-front.png");
+        if (frontTex.containsKey(key)) {
+            sceneUsed.put(key, time);
+            return frontTex.get(key);
+        }
+        Texture t = null;
+        if (Gdx.files.internal(key).exists()) {
+            com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(key));
+            eraseWalkable(p, r.scene.walkable);
+            t = new Texture(p);
+            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            p.dispose();
+        }
+        frontTex.put(key, t);
+        sceneUsed.put(key, time);
+        return t;
+    }
+
+    /** 바닥 다각형(0~1 좌표) 안쪽 픽셀을 투명하게: 줄마다 다각형과 만나는 구간을 지운다. */
+    private static void eraseWalkable(com.badlogic.gdx.graphics.Pixmap p, float[] poly) {
+        int w = p.getWidth(), h = p.getHeight(), n = poly.length / 2;
+        p.setBlending(com.badlogic.gdx.graphics.Pixmap.Blending.None);
+        p.setColor(0, 0, 0, 0);
+        float[] xs = new float[n];
+        for (int y = 0; y < h; y++) {
+            float v = (y + 0.5f) / h;
+            int k = 0;
+            for (int i = 0, j = n - 1; i < n; j = i++) {
+                float vi = poly[i * 2 + 1], vj = poly[j * 2 + 1];
+                if ((vi > v) != (vj > v)) {
+                    float u = poly[j * 2] + (v - vj) / (vi - vj) * (poly[i * 2] - poly[j * 2]);
+                    xs[k++] = u * w;
+                }
+            }
+            java.util.Arrays.sort(xs, 0, k);
+            for (int i = 0; i + 1 < k; i += 2) {
+                int x0 = Math.max(0, Math.round(xs[i])), x1 = Math.min(w, Math.round(xs[i + 1]));
+                if (x1 > x0) p.fillRectangle(x0, y, x1 - x0, 1);
             }
         }
     }
@@ -929,6 +1078,7 @@ public class WorldRenderer implements Disposable {
                     }
                     batch.setColor(Color.WHITE);
                 } else if (d.lockedByFight || (d.link != null && d.link.gateClosed)) {
+                    if (drawGateArt(r, d)) continue;
                     int n = Math.max(2, Math.round(d.halfWidth * 2f / T));
                     for (int i = 0; i < n; i++) {
                         float o = -d.halfWidth + (i + 0.5f) * (d.halfWidth * 2f / n);
@@ -938,6 +1088,40 @@ public class WorldRenderer implements Disposable {
                 }
             }
         }
+    }
+
+    private final Map<String, Texture> gateTex = new HashMap<>();
+
+    /**
+     * 던전별 닫힌 출구 그림 (GPT 요청: sprites/gate_<던전>.png 정면, gate_<던전>_side.png 옆면).
+     * 캠프의 던전 입구는 그 던전 것을 쓴다. 그림이 없으면 false (코드로 그린 창살).
+     */
+    private boolean drawGateArt(Room r, Door d) {
+        String dungeon = r.dungeonId;
+        if (r.type == RoomType.CAMP && d.link != null) dungeon = d.link.other(r).dungeonId;
+        if (dungeon == null) return false;
+        boolean side = !d.horizontal();
+        String key = "sprites/gate_" + dungeon + (side ? "_side" : "") + ".png";
+        Texture t = gateTex.get(key);
+        if (t == null && !gateTex.containsKey(key)) {
+            if (Gdx.files.internal(key).exists()) {
+                t = new Texture(Gdx.files.internal(key));
+                t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            }
+            gateTex.put(key, t);
+        }
+        if (t == null) return false;
+        float span = d.halfWidth * 2f + T * 0.5f;
+        if (!side) {
+            // 정면: 출구 폭에 맞춰 가로로 늘이고, 아래 끝이 출구 발 자리에 온다
+            float w = span, h = w * t.getHeight() / t.getWidth();
+            batch.draw(t, d.footX - w / 2f, d.footY - T * 0.35f, w, h);
+        } else {
+            // 옆면: 출구 폭이 세로 길이, 왼쪽 출구면 좌우를 뒤집어 그린다
+            float h = span + T, w = h * t.getWidth() / t.getHeight();
+            batch.draw(t, d.footX - w / 2f, d.footY - span / 2f, w, h, 0, 0, t.getWidth(), t.getHeight(), d.dirX < 0, false);
+        }
+        return true;
     }
 
     /** 캠프 바닥의 봉인 문양: 힘이 모일수록 밝아지고, 봉인이 풀리면 갈라진 채 보랏빛으로 빛난다. */
@@ -1167,7 +1351,8 @@ public class WorldRenderer implements Disposable {
             if (r.x1 < tx0 || r.x0 > tx1 || r.y1 < ty0 || r.y0 > ty1) continue;
             List<Vein> veins = g.veinsOf(r);
             if (veins == null) continue;
-            for (Vein v : veins) list.add(new Sorted(v.tileY * T + 4, () -> drawVein(v)));
+            // 그림 속 광석 덩어리 앞 광맥은 그림이 곧 광석이라 따로 그리지 않는다
+            for (Vein v : veins) if (!v.painted()) list.add(new Sorted(v.tileY * T + 4, () -> drawVein(v)));
         }
         if (g.inVillage()) {
             for (com.yongsa.config.Balance.Villager v : g.balance.village.villagers) {
@@ -1179,6 +1364,10 @@ public class WorldRenderer implements Disposable {
             if (!g.hasChest(r) || g.fighting()) continue;
             float cx = g.chestX(r), cy = g.chestY(r);
             list.add(new Sorted(cy, () -> drawChest(r, cx, cy)));
+        }
+        for (float[] pd : g.state.potionDrops) {
+            if (!inView(pd[0], pd[1])) continue;
+            list.add(new Sorted(pd[1], () -> drawPotionDrop(pd[0], pd[1])));
         }
         HeroActor h = g.hero;
         list.add(new Sorted(h.y, this::drawHero));
@@ -1219,6 +1408,51 @@ public class WorldRenderer implements Disposable {
             }
         }
         batch.setColor(Color.WHITE);
+    }
+
+    /**
+     * 바닥에 떨어진 회복 포션: 붉은 빛 위에 둥실 떠 있는 병. sprites/potion.png 그림이 있으면 그것을 쓰고,
+     * 없으면 임시로 코드로 그린 병 (docs/ART_REQUESTS.md 0-7).
+     */
+    private void drawPotionDrop(float x, float y) {
+        float bob = 3f * MathUtils.sin(time * 3f + x * 0.05f);
+        batch.setColor(1f, 0.25f, 0.3f, 0.35f + 0.1f * MathUtils.sin(time * 4f));
+        batch.draw(art.glow, x - 26, y - 14, 52, 40);
+        batch.setColor(0, 0, 0, 0.35f);
+        batch.draw(art.glow, x - 10, y - 5, 20, 8);
+        float by = y + 4 + bob;
+        Texture pic = potionArt();
+        if (pic != null) {
+            batch.setColor(Color.WHITE);
+            float h = 30, w = h * pic.getWidth() / pic.getHeight();
+            batch.draw(pic, x - w / 2, by, w, h);
+        } else {
+            rectW(x - 3, by + 22, 6, 4, new Color(0.55f, 0.38f, 0.22f, 1f));
+            rectW(x - 2.5f, by + 17, 5, 6, new Color(0.75f, 0.8f, 0.85f, 0.9f));
+            rectW(x - 8, by, 16, 18, new Color(0.75f, 0.8f, 0.85f, 0.9f));
+            rectW(x - 7, by + 1, 14, 11, new Color(0.85f, 0.12f, 0.18f, 1f));
+            rectW(x - 5, by + 13, 2, 4, new Color(1f, 1f, 1f, 0.5f));
+        }
+        batch.setColor(Color.WHITE);
+    }
+
+    private Texture potionTex;
+    private boolean potionChecked;
+
+    private Texture potionArt() {
+        if (!potionChecked) {
+            potionChecked = true;
+            if (Gdx.files.internal("sprites/potion.png").exists()) {
+                potionTex = new Texture(Gdx.files.internal("sprites/potion.png"));
+                potionTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            }
+        }
+        return potionTex;
+    }
+
+    private void rectW(float x, float y, float w, float h, Color c) {
+        batch.setColor(c);
+        batch.draw(art.white(), x, y, w, h);
     }
 
     /** 보스 보물상자 (선우 버전 그림 team/sunwoo/chest_*.png 의 닫힌 칸). 살짝 반짝인다. */
@@ -1262,6 +1496,14 @@ public class WorldRenderer implements Disposable {
                 batch.draw(r, px, py - 4, art.width(r) * S, art.height(r) * S);
             }
         }
+    }
+
+    private float veinX(Vein v) {
+        return v.painted() ? v.spotX : (v.tileX + 0.5f) * T;
+    }
+
+    private float veinY(Vein v) {
+        return v.painted() ? v.spotY : (v.tileY + 0.5f) * T;
     }
 
     private void drawVein(Vein v) {
@@ -1422,9 +1664,14 @@ public class WorldRenderer implements Disposable {
         return DEFAULT_MOB_SCALE;
     }
 
+    private float bossScale(String sprite) {
+        return "golem".equals(sprite) ? 1.25f : 1.15f;
+    }
+
     private float monsterScale(Monster m) {
-        if (m.state == Monster.State.PHASE_SHIFT) return S * (2f + .3f * m.progress());
-        return S * (m.finalBoss ? (m.phase2 ? 2.3f : 2f) : m.boss ? 1.7f : mobScale(m.def.sprite));
+        float presence = bossScale(m.def.sprite);
+        if (m.state == Monster.State.PHASE_SHIFT) return S * (2f + .3f * m.progress()) * presence;
+        return S * (m.finalBoss ? (m.phase2 ? 2.3f : 2f) * presence : m.boss ? 1.7f * presence : mobScale(m.def.sprite));
     }
 
     private float monsterBob(Monster m) {
@@ -1447,12 +1694,22 @@ public class WorldRenderer implements Disposable {
 
     /** Overhead UI follows the same pose as the sprite, not the lower-body combat circle. */
     private float monsterTop(Monster m) {
-        if (m.boss && !m.finalBoss && bossSheet(m.def.sprite) != null) return m.y + BOSS_BODY * BOSS_SHEET_SCALE;
+        if (m.boss && bossSheet(m.def.sprite) != null) return m.y + BOSS_BODY * sheetScale(m);
         return m.y - 2 + monsterBob(m) + art.height(art.world(m.def.sprite)) * monsterScale(m) * monsterStretchY(m);
     }
 
+    /** Reserve the top HUD strip for a large boss, without zooming or losing the hero below. */
+    public float cameraTargetY(float normalY, float viewHeight, float zoom) {
+        Monster boss = g.activeBoss();
+        if (boss == null || boss.dead) return normalY;
+        // A steady envelope avoids making the camera bob with each animation frame.
+        float top = boss.y + art.height(art.world(boss.def.sprite)) * monsterScale(boss) * 1.12f + 10;
+        float required = top + 120 * zoom - viewHeight / 2;
+        return MathUtils.clamp(required, normalY, normalY + viewHeight * .23f);
+    }
+
     private void drawMonster(Monster m) {
-        String sheet = m.boss && !m.finalBoss ? bossSheet(m.def.sprite) : null;
+        String sheet = m.boss ? bossSheet(m.def.sprite) : null;
         if (sheet != null) {
             drawBossSheet(m, sheet);
             return;
@@ -1586,12 +1843,13 @@ public class WorldRenderer implements Disposable {
             List<Vein> veins = g.veinsOf(r);
             if (veins == null) continue;
             for (Vein v : veins) {
-                float px = (v.tileX + 0.5f) * T, py = (v.tileY + 0.5f) * T;
+                float px = veinX(v), py = veinY(v);
                 if (!inView(px, py)) continue;
                 Color c = oreColor(v.ore);
                 float tw = MathUtils.sin(time * 4f + v.tileX * 1.7f + v.tileY);
+                float gs = v.painted() ? 84 : 52;
                 batch.setColor(c.r, c.g, c.b, 0.25f + 0.15f * tw);
-                batch.draw(art.glow, px - 26, py - 22, 52, 52);
+                batch.draw(art.glow, px - gs / 2, py - gs * 0.42f, gs, gs);
                 if (tw > 0.85f) {
                     batch.setColor(1f, 1f, 1f, (tw - 0.85f) * 5f);
                     batch.draw(art.white(), px - 1 + (v.tileX % 3) * 4 - 4, py + 8, 2, 6);
@@ -1640,7 +1898,7 @@ public class WorldRenderer implements Disposable {
         // 마왕의 기운
         for (Monster m : g.monsters) {
             if (m.dead || !m.finalBoss) continue;
-            float k = m.phase2 || m.state == Monster.State.PHASE_SHIFT ? 1.4f : 1f;
+            float k = (m.phase2 || m.state == Monster.State.PHASE_SHIFT ? 1.4f : 1f) * bossScale(m.def.sprite);
             batch.setColor(0.6f, 0.2f, 1f, (0.35f + 0.1f * MathUtils.sin(time * 5f)) * k);
             batch.draw(art.glow, m.x - 90 * k, m.y - 20, 180 * k, 160 * k);
         }
@@ -1649,7 +1907,7 @@ public class WorldRenderer implements Disposable {
             if (m.dead) continue;
             if (m.shield > 0) {
                 float fr = m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
-                float r = m.hurtRadius * 2.6f * (m.boss ? 1f : mobScale(m.def.sprite) / DEFAULT_MOB_SCALE);
+                float r = m.hurtRadius * 2.6f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite));
                 float pulse = 0.8f + 0.2f * MathUtils.sin(time * 4f);
                 batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, (0.18f + 0.25f * fr) * pulse);
                 batch.draw(art.glow, m.x - r, m.y - r * 0.2f, r * 2, r * 1.9f);
@@ -1657,8 +1915,7 @@ public class WorldRenderer implements Disposable {
             if (m.state == Monster.State.CHANNEL) {
                 Color c = "lightning".equals(m.channelKind) ? PROJ_SKY : "firespin".equals(m.channelKind) ? PROJ_FIRE
                         : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD : new Color(1f, 0.6f, 0.35f, 1f);
-                float r = m.hurtRadius * 2.4f * (m.boss ? 1f : mobScale(m.def.sprite) / DEFAULT_MOB_SCALE)
-                        * (0.9f + 0.1f * MathUtils.sin(time * 10f));
+                float r = m.hurtRadius * 2.4f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite)) * (0.9f + 0.1f * MathUtils.sin(time * 10f));
                 batch.setColor(c.r, c.g, c.b, 0.4f);
                 batch.draw(art.glow, m.x - r, m.centerY() - r, r * 2, r * 2);
             }
@@ -1681,13 +1938,13 @@ public class WorldRenderer implements Disposable {
             if (m.state == Monster.State.SPAWN) {
                 Color c = spawnColor(m);
                 float p = m.progress();
-                float r = m.hurtRadius * 2.2f * (m.boss ? 1f : mobScale(m.def.sprite));
+                float r = m.hurtRadius * 2.2f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite));
                 batch.setColor(c.r, c.g, c.b, 0.55f * Math.min(1f, p * 2.5f));
                 batch.draw(art.glow, m.x - r, m.y - r * 0.45f, r * 2, r * 0.9f);
             } else if (m.state == Monster.State.CAST_TELEGRAPH) {
                 Color c = projectileColor(m.def.sprite);
                 float p = m.progress();
-                float sz = (m.boss ? 70 : 34 * mobScale(m.def.sprite)) * (0.4f + p);
+                float sz = (m.boss ? 70 * bossScale(m.def.sprite) : 34 * mobScale(m.def.sprite)) * (0.4f + p);
                 batch.setColor(c.r, c.g, c.b, 0.35f + 0.5f * p);
                 batch.draw(art.glow, m.x - sz / 2f, m.centerY() + m.hurtRadius * 0.4f - sz / 2f, sz, sz);
             } else if (m.state == Monster.State.STUNNED) {
@@ -2031,5 +2288,12 @@ public class WorldRenderer implements Disposable {
         lighting.dispose();
         for (Texture t : sceneTex.values()) t.dispose();
         sceneTex.clear();
+        for (Texture t : frontTex.values()) if (t != null) t.dispose();
+        frontTex.clear();
+        for (Texture t : gateTex.values()) if (t != null) t.dispose();
+        gateTex.clear();
+        for (Texture[] ts : corridorSkin.values()) for (Texture t : ts) t.dispose();
+        if (potionTex != null) potionTex.dispose();
+        corridorSkin.clear();
     }
 }
