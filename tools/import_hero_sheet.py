@@ -7,7 +7,7 @@
 
 출력:
   assets/sprites/hero/hero.png      한 칸 FW x FH, 행 = 방향(아래, 왼쪽, 오른쪽, 위), 열 = 프레임 0~2
-  assets/sprites/items/<이름>.png   sword, hammer, pickaxe, lantern
+  assets/sprites/items/<이름>.png   sword, hammer, pickaxe (랜턴 칸은 쓰지 않는다)
 사용법: python3 tools/import_hero_sheet.py [원본 경로]
 """
 import os
@@ -90,10 +90,10 @@ def main():
     sheet.save(os.path.join(ROOT, "assets", "sprites", "hero", "hero.png"))
 
     os.makedirs(os.path.join(ROOT, "assets", "sprites", "items"), exist_ok=True)
-    for name, box in zip(("sword", "hammer", "pickaxe", "lantern"), cells[3]):
+    for name, box in zip(("sword", "hammer", "pickaxe"), cells[3]):
         crop(box).save(os.path.join(ROOT, "assets", "sprites", "items", name + ".png"))
     print(f"hero.png 프레임 {fw}x{fh}, 아이템 4개")
-    for name, box in zip(("sword", "hammer", "pickaxe", "lantern"), cells[3]):
+    for name, box in zip(("sword", "hammer", "pickaxe"), cells[3]):
         print(" ", name, crop(box).size)
 
 

@@ -28,9 +28,41 @@ public class Effects {
     /** 공중에 떠다니는 먼지 (분위기). */
     private final List<Particle> dust = new ArrayList<>();
     private final List<FloatText> texts = new ArrayList<>();
+
+    static class FloatIcon {
+        float x, y, life, maxLife, size;
+        com.badlogic.gdx.graphics.g2d.TextureRegion region;
+    }
+
+    private final List<FloatIcon> icons = new ArrayList<>();
+
+    /** 그 자리에서 떠오르는 그림 (상자에서 나온 회복약 등). */
+    public void icon(com.badlogic.gdx.graphics.g2d.TextureRegion region, float x, float y, float size) {
+        if (region == null) return;
+        FloatIcon i = new FloatIcon();
+        i.region = region;
+        i.x = x;
+        i.y = y;
+        i.size = size;
+        i.maxLife = i.life = 1.3f;
+        icons.add(i);
+    }
+
+    public void drawIcons(SpriteBatch batch) {
+        for (FloatIcon i : icons) {
+            float k = 1f - i.life / i.maxLife;
+            float pop = k < 0.2f ? k / 0.2f : 1f;
+            float w = i.size * pop, h = w * i.region.getRegionHeight() / i.region.getRegionWidth();
+            batch.setColor(1, 1, 1, Math.min(1, i.life * 3));
+            batch.draw(i.region, i.x - w / 2f, i.y + k * 34, w, h);
+        }
+        batch.setColor(Color.WHITE);
+    }
     private final Random rnd = new Random();
     private final GlyphLayout layout = new GlyphLayout();
     public float shake;
+    /** 화면 전체 흰 번쩍임의 남은 시간. */
+    public float flash;
 
     public void burst(float x, float y, Color color, int count, float speed) {
         for (int i = 0; i < count; i++) {
@@ -93,6 +125,7 @@ public class Effects {
 
     public void update(float dt) {
         if (shake > 0) shake = Math.max(0, shake - dt);
+        if (flash > 0) flash = Math.max(0, flash - dt);
         for (Iterator<Particle> it = particles.iterator(); it.hasNext(); ) {
             Particle p = it.next();
             p.life -= dt;
@@ -104,6 +137,7 @@ public class Effects {
             p.x += p.vx * dt;
             p.y += p.vy * dt;
         }
+        icons.removeIf(i -> (i.life -= dt) <= 0);
         for (Iterator<FloatText> it = texts.iterator(); it.hasNext(); ) {
             FloatText t = it.next();
             t.life -= dt;

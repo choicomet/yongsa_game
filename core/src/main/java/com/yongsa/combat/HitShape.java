@@ -5,13 +5,14 @@ package com.yongsa.combat;
  * 경고 표시와 실제 판정이 같은 객체를 사용하므로 보이는 영역과 판정이 어긋나지 않는다.
  */
 public class HitShape {
-    public enum Type { BOX, CIRCLE }
+    public enum Type { BOX, CIRCLE, SECTOR }
 
     public Type type;
     // BOX: 시작점(ox, oy)에서 방향(dx, dy)으로 length 만큼, 폭 width
     public float ox, oy, dx, dy, length, width;
     // CIRCLE
     public float cx, cy, radius;
+    public float halfAngle = 70;
 
     public static HitShape box(float ox, float oy, float dx, float dy, float length, float width) {
         HitShape s = new HitShape();
@@ -50,6 +51,21 @@ public class HitShape {
             float ddx = px - cx, ddy = py - cy;
             float rr = radius + pr;
             return ddx * ddx + ddy * ddy <= rr * rr;
+        }
+        if (type == Type.SECTOR) {
+            float rx=px-ox, ry=py-oy;
+            float distance=(float)Math.sqrt(rx*rx+ry*ry);
+            if(distance>length+pr)return false;
+            if(distance<=pr)return true;
+            float along=rx*dx+ry*dy, across=Math.abs(-rx*dy+ry*dx);
+            double angle=Math.atan2(across,along);
+            if(angle<=Math.toRadians(halfAngle))return true;
+            // Circle intersects one of the two finite radial edges.
+            double edge=Math.toRadians(halfAngle);
+            float ex=(float)Math.cos(edge),ey=(float)Math.sin(edge);
+            float projection=Math.max(0,Math.min(length,along*ex+across*ey));
+            float ax=along-projection*ex,ay=across-projection*ey;
+            return ax*ax+ay*ay<=pr*pr;
         }
         float rx = px - ox, ry = py - oy;
         float along = rx * dx + ry * dy;

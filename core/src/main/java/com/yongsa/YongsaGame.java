@@ -55,6 +55,7 @@ public class YongsaGame extends Game {
         textures = new Textures();
         sprites = new SpriteLibrary(Gdx.files.internal("data/placeholder_art.txt"),
                 Gdx.files.internal("data/sprites_generated.json"), Gdx.files.internal("data/sprites_craftpix.json"),
+                Gdx.files.internal("data/sprites_bosses.json"),
                 Gdx.files.internal("data/sprites.json"));
         audio = new Audio(settings);
         applyDisplay();

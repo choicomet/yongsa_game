@@ -15,6 +15,8 @@ public class Lwjgl3Launcher {
         YongsaGame game = new YongsaGame(saveDirectory());
         String showcase = System.getProperty("yongsa.showcase");
         if (showcase != null && !showcase.isEmpty()) game.afterRender = new Showcase(game, showcase);
+        String playtest = System.getProperty("yongsa.playtest");
+        if (playtest != null && !playtest.isEmpty()) game.afterRender = new KeyboardPlaytest(game, playtest);
         Lwjgl3ApplicationConfiguration cfg = new Lwjgl3ApplicationConfiguration();
         cfg.setTitle("용사가 다한다");
         cfg.setWindowedMode(1280, 720);

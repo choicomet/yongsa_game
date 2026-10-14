@@ -58,21 +58,26 @@ public final class Progress {
 
     // ---- 영구 진행 변경 (한 번만 적용되도록 모두 멱등) ----
 
-    /** 일반 방 클리어. 처음일 때만 보상을 지급하고 지급한 광물 수를 돌려준다. */
     public static int onRoomCleared(Balance b, GameState s, String roomId, String zoneId) {
+        return onRoomCleared(b, s, roomId, zoneId, 0);
+    }
+
+    /** 일반 방 클리어. 처음일 때만 보상(+ 강화 개체 처치 몫)을 지급하고 지급한 광물 수를 돌려준다. */
+    public static int onRoomCleared(Balance b, GameState s, String roomId, String zoneId, int bonus) {
         if (s.isRoomCleared(roomId)) return 0;
-        int reward = b.zone(zoneId).roomReward;
+        int reward = b.zone(zoneId).roomReward + bonus;
         s.clearedRooms.add(roomId);
-        s.minerals += reward;
+        s.addOre(b.zoneIndex(zoneId), reward);
         return reward;
     }
 
     /** 보스 최초 처치. 보상과 해금이 같은 상태 변경 안에서 확정된다. */
     public static int onBossDefeated(Balance b, GameState s, String bossId) {
         if (s.isBossDefeated(bossId)) return 0;
-        int reward = b.zoneOfBoss(bossId).bossReward;
+        Balance.ZoneDef zone = b.zoneOfBoss(bossId);
+        int reward = zone.bossReward;
         s.defeatedBosses.add(bossId);
-        s.minerals += reward;
+        s.addOre(b.zoneIndex(zone.id), reward);
         return reward;
     }
 
@@ -83,8 +88,25 @@ public final class Progress {
         return true;
     }
 
-    /** 침대 사용: 채굴 회차를 1 올리고 이전 회차의 광맥 상태를 지운다. 영구 진행은 그대로다. */
-    public static void onBedUsed(GameState s) {
+    /** 방을 돌파하고 나타난 상자를 연다. 방마다 한 번만 골드를 지급한다. */
+    public static int onChestOpened(GameState s, String roomId, int gold) {
+        if (s.openedChests.contains(roomId)) return 0;
+        s.openedChests.add(roomId);
+        s.gold += gold;
+        return gold;
+    }
+
+    /** 사망: 이번 목숨에 받은 축복과 제단 사용 기록을 지운다. 영구 진행은 그대로다. */
+    public static void onDeath(GameState s) {
+        s.blessings.clear();
+        s.usedShrines.clear();
+    }
+
+    /**
+     * 광맥이 새로 자란다: 채굴 회차를 1 올리고 이전 회차의 광맥 상태를 지운다. 영구 진행은 그대로다.
+     * 캠프에서 쉬는 기능이 없으므로, 쓰러져 다시 일어날 때와 보스를 처치했을 때 부른다.
+     */
+    public static void onVeinsRegrow(GameState s) {
         s.miningCycle++;
         s.mineRooms.clear();
     }
@@ -99,8 +121,8 @@ public final class Progress {
         Balance.ZoneDef first = b.zones[0];
         if (!s.hasAnyWeapon()) {
             int need = b.weapon(Ids.SWORD).craftCost;
-            if (s.minerals < need) return first.direction + " " + first.name + " 입구 광물방에서 광물 " + need + "개 모으기";
-            return "캠프 대장간에서 " + b.weapon(Ids.SWORD).name + " 제작하기";
+            if (s.ore(b.oreIndex(Ids.SWORD)) < need) return first.direction + " " + first.name + " 입구 광물방에서 광물 " + need + "개 모으기";
+            return "I 로 대장간을 꺼내 " + b.weapon(Ids.SWORD).name + " 제작하기";
         }
         Balance.ZoneDef zone = currentZone(b, s);
         if (zone == null) return "모든 봉인을 해제했습니다";

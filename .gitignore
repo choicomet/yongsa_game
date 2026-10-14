@@ -10,3 +10,4 @@ bin/
 local.properties
 /saves/
 art_source/craftpix/
+__pycache__/

@@ -1,6 +1,6 @@
 """
 간단한 픽셀 아트 도구: 색 단계(ramp), 노이즈, 음영, 외곽선.
-gen_art.py 가 타일·소품·몬스터 그림을 만들 때 쓴다.
+gen_sprites.py 가 그림을 만들 때 쓴다.
 """
 import math
 import random

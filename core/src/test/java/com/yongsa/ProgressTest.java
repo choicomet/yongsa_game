@@ -32,12 +32,13 @@ class ProgressTest {
     @Test
     void T10_duplicateClearAppliesOnce() {
         GameState s = TestData.newGame();
-        assertEquals(3, Progress.onRoomCleared(b, s, "mine_battle_a", "mine"));
+        int room = b.zone("mine").roomReward, boss = b.zone("mine").bossReward;
+        assertEquals(room, Progress.onRoomCleared(b, s, "mine_battle_a", "mine"));
         assertEquals(0, Progress.onRoomCleared(b, s, "mine_battle_a", "mine"));
-        assertEquals(3, s.minerals);
-        assertEquals(12, Progress.onBossDefeated(b, s, "boss_mine"));
+        assertEquals(room, s.ore[0]);
+        assertEquals(boss, Progress.onBossDefeated(b, s, "boss_mine"));
         assertEquals(0, Progress.onBossDefeated(b, s, "boss_mine"));
-        assertEquals(15, s.minerals);
+        assertEquals(room + boss, s.ore[0]);
         assertEquals(1, s.defeatedBosses.size());
     }
 
@@ -45,8 +46,8 @@ class ProgressTest {
     void objectivesFollowPriority() {
         GameState s = TestData.newGame();
         assertEquals("왼쪽 폐광 입구 광물방에서 광물 6개 모으기", Progress.objective(b, s, "mine_01"));
-        s.minerals = 6;
-        assertEquals("캠프 대장간에서 철검 제작하기", Progress.objective(b, s, "mine_01"));
+        s.ore[0] = 6;
+        assertEquals("I 로 대장간을 꺼내 철검 제작하기", Progress.objective(b, s, "mine_01"));
         CraftService.craft(b, s, "sword");
         assertEquals("폐광의 첫 전투방 돌파하기", Progress.objective(b, s, "mine_01"));
         Progress.onRoomCleared(b, s, "mine_01", "mine");
@@ -68,7 +69,7 @@ class ProgressTest {
         GameState s = TestData.newGame();
         Progress.onRoomCleared(b, s, "mine_battle_a", "mine");
         s.mineRooms.add(new com.yongsa.model.MineRoomState("mine_ore"));
-        Progress.onBedUsed(s);
+        Progress.onVeinsRegrow(s);
         assertEquals(1, s.miningCycle);
         assertTrue(s.mineRooms.isEmpty());
         assertTrue(s.isRoomCleared("mine_battle_a"));

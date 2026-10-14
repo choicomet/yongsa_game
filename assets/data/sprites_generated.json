@@ -1,184 +1,4 @@
 {
- "barrel": {
-  "originX": 11.0,
-  "originY": 2,
-  "file": "sprites/gen/barrel.png",
-  "frameWidth": 22,
-  "frameHeight": 26,
-  "frames": 1,
-  "fps": 1
- },
- "crate": {
-  "originX": 12.0,
-  "originY": 2,
-  "file": "sprites/gen/crate.png",
-  "frameWidth": 24,
-  "frameHeight": 24,
-  "frames": 1,
-  "fps": 1
- },
- "pot": {
-  "originX": 9.0,
-  "originY": 2,
-  "file": "sprites/gen/pot.png",
-  "frameWidth": 18,
-  "frameHeight": 20,
-  "frames": 1,
-  "fps": 1
- },
- "bones": {
-  "originX": 12.0,
-  "originY": 2,
-  "file": "sprites/gen/bones.png",
-  "frameWidth": 24,
-  "frameHeight": 12,
-  "frames": 1,
-  "fps": 1
- },
- "skull": {
-  "originX": 7.0,
-  "originY": 2,
-  "file": "sprites/gen/skull.png",
-  "frameWidth": 14,
-  "frameHeight": 12,
-  "frames": 1,
-  "fps": 1
- },
- "rubble": {
-  "originX": 13.0,
-  "originY": 2,
-  "file": "sprites/gen/rubble.png",
-  "frameWidth": 26,
-  "frameHeight": 14,
-  "frames": 1,
-  "fps": 1
- },
- "minecart": {
-  "originX": 16.0,
-  "originY": 2,
-  "file": "sprites/gen/minecart.png",
-  "frameWidth": 32,
-  "frameHeight": 26,
-  "frames": 1,
-  "fps": 1
- },
- "weapon_rack": {
-  "originX": 14.0,
-  "originY": 2,
-  "file": "sprites/gen/weapon_rack.png",
-  "frameWidth": 28,
-  "frameHeight": 32,
-  "frames": 1,
-  "fps": 1
- },
- "statue": {
-  "originX": 12.0,
-  "originY": 2,
-  "file": "sprites/gen/statue.png",
-  "frameWidth": 24,
-  "frameHeight": 44,
-  "frames": 1,
-  "fps": 1
- },
- "candles": {
-  "originX": 9.0,
-  "originY": 2,
-  "file": "sprites/gen/candles.png",
-  "frameWidth": 18,
-  "frameHeight": 16,
-  "frames": 1,
-  "fps": 1
- },
- "rug": {
-  "originX": 48.0,
-  "originY": 2,
-  "file": "sprites/gen/rug.png",
-  "frameWidth": 96,
-  "frameHeight": 56,
-  "frames": 1,
-  "fps": 1
- },
- "bedroll": {
-  "originX": 30.0,
-  "originY": 2,
-  "file": "sprites/gen/bedroll.png",
-  "frameWidth": 60,
-  "frameHeight": 30,
-  "frames": 1,
-  "fps": 1
- },
- "furnace": {
-  "originX": 26.0,
-  "originY": 2,
-  "file": "sprites/gen/furnace.png",
-  "frameWidth": 52,
-  "frameHeight": 62,
-  "frames": 1,
-  "fps": 1
- },
- "anvil": {
-  "originX": 16.0,
-  "originY": 2,
-  "file": "sprites/gen/anvil.png",
-  "frameWidth": 32,
-  "frameHeight": 28,
-  "frames": 1,
-  "fps": 1
- },
- "workbench": {
-  "originX": 23.0,
-  "originY": 2,
-  "file": "sprites/gen/workbench.png",
-  "frameWidth": 46,
-  "frameHeight": 32,
-  "frames": 1,
-  "fps": 1
- },
- "lantern_table": {
-  "originX": 14.0,
-  "originY": 2,
-  "file": "sprites/gen/lantern_table.png",
-  "frameWidth": 28,
-  "frameHeight": 30,
-  "frames": 1,
-  "fps": 1
- },
- "pillar": {
-  "originX": 15.0,
-  "originY": 2,
-  "file": "sprites/gen/pillar.png",
-  "frameWidth": 30,
-  "frameHeight": 70,
-  "frames": 1,
-  "fps": 1
- },
- "brazier": {
-  "originX": 12.0,
-  "originY": 2,
-  "file": "sprites/gen/brazier.png",
-  "frameWidth": 24,
-  "frameHeight": 28,
-  "frames": 1,
-  "fps": 1
- },
- "torch": {
-  "originX": 6.0,
-  "originY": 2,
-  "file": "sprites/gen/torch.png",
-  "frameWidth": 12,
-  "frameHeight": 24,
-  "frames": 1,
-  "fps": 1
- },
- "campfire_log": {
-  "originX": 22.0,
-  "originY": 2,
-  "file": "sprites/gen/campfire_log.png",
-  "frameWidth": 44,
-  "frameHeight": 26,
-  "frames": 1,
-  "fps": 1
- },
  "gate_h": {
   "originX": 16.0,
   "originY": 2,
@@ -194,42 +14,6 @@
   "file": "sprites/gen/gate_v.png",
   "frameWidth": 14,
   "frameHeight": 32,
-  "frames": 1,
-  "fps": 1
- },
- "shortcut_door": {
-  "originX": 26.0,
-  "originY": 2,
-  "file": "sprites/gen/shortcut_door.png",
-  "frameWidth": 52,
-  "frameHeight": 60,
-  "frames": 1,
-  "fps": 1
- },
- "cobweb": {
-  "originX": 0,
-  "originY": 20,
-  "file": "sprites/gen/cobweb.png",
-  "frameWidth": 20,
-  "frameHeight": 20,
-  "frames": 1,
-  "fps": 1
- },
- "cobweb_r": {
-  "originX": 20,
-  "originY": 20,
-  "file": "sprites/gen/cobweb_r.png",
-  "frameWidth": 20,
-  "frameHeight": 20,
-  "frames": 1,
-  "fps": 1
- },
- "banner": {
-  "originX": 9,
-  "originY": 34,
-  "file": "sprites/gen/banner.png",
-  "frameWidth": 18,
-  "frameHeight": 34,
   "frames": 1,
   "fps": 1
  },
@@ -251,39 +35,79 @@
   "frames": 1,
   "fps": 1
  },
- "vein_mine": {
-  "originX": 16,
+ "campfire_log": {
+  "originX": 24,
+  "originY": 6,
+  "scale": 1.5,
+  "file": "sprites/gen/campfire_log.png",
+  "frameWidth": 48,
+  "frameHeight": 26,
+  "frames": 1,
+  "fps": 1
+ },
+ "camp_pillar": {
+  "originX": 13,
   "originY": 4,
-  "file": "sprites/gen/vein_mine.png",
-  "frameWidth": 32,
+  "scale": 1.5,
+  "file": "sprites/gen/camp_pillar.png",
+  "frameWidth": 26,
+  "frameHeight": 56,
+  "frames": 1,
+  "fps": 1
+ },
+ "daggers": {
+  "originX": 4.5,
+  "originY": 2,
+  "file": "sprites/gen/daggers.png",
+  "frameWidth": 9,
+  "frameHeight": 15,
+  "frames": 1,
+  "fps": 1,
+  "pointAngle": 90
+ },
+ "daggers_icon": {
+  "originX": 10.0,
+  "originY": 2,
+  "file": "sprites/gen/daggers_icon.png",
+  "frameWidth": 20,
+  "frameHeight": 20,
+  "frames": 1,
+  "fps": 1
+ },
+ "anvil": {
+  "originX": 15,
+  "originY": 2,
+  "scale": 1.5,
+  "file": "sprites/gen/anvil.png",
+  "frameWidth": 30,
   "frameHeight": 24,
   "frames": 1,
   "fps": 1
  },
- "vein_fortress": {
-  "originX": 16,
-  "originY": 4,
-  "file": "sprites/gen/vein_fortress.png",
-  "frameWidth": 32,
-  "frameHeight": 24,
+ "potion_small": {
+  "originX": 6.0,
+  "originY": 2,
+  "file": "sprites/gen/potion_small.png",
+  "frameWidth": 12,
+  "frameHeight": 15,
   "frames": 1,
   "fps": 1
  },
- "vein_temple": {
-  "originX": 16,
-  "originY": 4,
-  "file": "sprites/gen/vein_temple.png",
-  "frameWidth": 32,
-  "frameHeight": 24,
+ "potion_half": {
+  "originX": 7.0,
+  "originY": 2,
+  "file": "sprites/gen/potion_half.png",
+  "frameWidth": 14,
+  "frameHeight": 17,
   "frames": 1,
   "fps": 1
  },
- "vein": {
-  "originX": 16,
-  "originY": 4,
-  "file": "sprites/gen/vein.png",
-  "frameWidth": 32,
-  "frameHeight": 24,
+ "potion_big": {
+  "originX": 9.0,
+  "originY": 2,
+  "file": "sprites/gen/potion_big.png",
+  "frameWidth": 18,
+  "frameHeight": 20,
   "frames": 1,
   "fps": 1
  },
@@ -349,14 +173,15 @@
    }
   }
  },
- "watcher": {
-  "originX": 17,
-  "originY": 1,
+ "turret": {
+  "originX": 15,
+  "originY": 3,
+  "scale": 1.5,
   "anims": {
    "idle": {
-    "file": "sprites/gen/watcher.png",
-    "frameWidth": 34,
-    "frameHeight": 36,
+    "file": "sprites/gen/turret.png",
+    "frameWidth": 30,
+    "frameHeight": 40,
     "frames": 4,
     "frameOrder": [
      0,
@@ -365,92 +190,6 @@
      3
     ],
     "fps": 6
-   }
-  }
- },
- "boss_mine": {
-  "originX": 36,
-  "originY": 2,
-  "scale": 1.25,
-  "anims": {
-   "idle": {
-    "file": "sprites/gen/boss_mine.png",
-    "frameWidth": 72,
-    "frameHeight": 70,
-    "frames": 4,
-    "frameOrder": [
-     0,
-     1,
-     2,
-     3
-    ],
-    "fps": 3
-   },
-   "move": {
-    "file": "sprites/gen/boss_mine.png",
-    "frameWidth": 72,
-    "frameHeight": 70,
-    "frames": 4,
-    "frameOrder": [
-     0,
-     1,
-     2,
-     3
-    ],
-    "fps": 6
-   }
-  }
- },
- "boss_fortress": {
-  "originX": 36,
-  "originY": 2,
-  "scale": 1.25,
-  "anims": {
-   "idle": {
-    "file": "sprites/gen/boss_fortress.png",
-    "frameWidth": 72,
-    "frameHeight": 76,
-    "frames": 4,
-    "frameOrder": [
-     0,
-     1,
-     2,
-     3
-    ],
-    "fps": 3
-   },
-   "move": {
-    "file": "sprites/gen/boss_fortress.png",
-    "frameWidth": 72,
-    "frameHeight": 76,
-    "frames": 4,
-    "frameOrder": [
-     0,
-     1,
-     2,
-     3
-    ],
-    "fps": 6
-   }
-  }
- },
- "boss_temple": {
-  "originX": 36,
-  "originY": 2,
-  "scale": 1.25,
-  "anims": {
-   "idle": {
-    "file": "sprites/gen/boss_temple.png",
-    "frameWidth": 72,
-    "frameHeight": 80,
-    "frames": 4,
-    "frameOrder": [
-     0,
-     1,
-     2,
-     3
-    ],
-    "fps": 4
    }
   }
  }

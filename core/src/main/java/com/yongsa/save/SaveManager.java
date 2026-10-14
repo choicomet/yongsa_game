@@ -104,6 +104,10 @@ public class SaveManager {
         j.setElementType(GameState.class, "defeatedBosses", String.class);
         j.setElementType(GameState.class, "shortcuts", String.class);
         j.setElementType(GameState.class, "visitedRooms", String.class);
+        j.setElementType(GameState.class, "openedChests", String.class);
+        j.setElementType(GameState.class, "takenHeals", String.class);
+        j.setElementType(GameState.class, "blessings", String.class);
+        j.setElementType(GameState.class, "usedShrines", String.class);
         j.setElementType(GameState.class, "mineRooms", MineRoomState.class);
         j.setElementType(MineRoomState.class, "veins", VeinState.class);
         return j;
@@ -143,7 +147,14 @@ public class SaveManager {
     /** 필수 필드와 범위 검증. */
     public void validate(GameState s) throws InvalidSaveException {
         if (s.saveVersion < 1) fail("saveVersion 범위 오류");
-        if (s.minerals < 0) fail("광물 수 범위 오류");
+        if (s.minerals < 0 || s.gold < 0) fail("광물 수 범위 오류");
+        if (s.ore == null) s.ore = new int[balance.zones.length];
+        for (int n : s.ore) if (n < 0) fail("광물 수 범위 오류");
+        // 광물이 한 종류이던 예전 저장: 첫 구역 광물로 옮긴다
+        if (s.minerals > 0) {
+            s.addOre(0, s.minerals);
+            s.minerals = 0;
+        }
         if (s.weapons == null || s.clearedRooms == null || s.defeatedBosses == null
                 || s.shortcuts == null || s.mineRooms == null) fail("목록 항목 누락");
         Set<String> types = new HashSet<>();
@@ -165,6 +176,11 @@ public class SaveManager {
         }
         if (s.equipped == null) s.equipped = "";
         if (s.visitedRooms == null) s.visitedRooms = new java.util.ArrayList<>();
+        // 이전 버전 저장에는 없는 항목
+        if (s.openedChests == null) s.openedChests = new java.util.ArrayList<>();
+        if (s.takenHeals == null) s.takenHeals = new java.util.ArrayList<>();
+        if (s.blessings == null) s.blessings = new java.util.ArrayList<>();
+        if (s.usedShrines == null) s.usedShrines = new java.util.ArrayList<>();
         if (s.weapons.isEmpty() && !s.equipped.isEmpty()) fail("장착 무기 오류");
         if (!s.weapons.isEmpty() && s.weapon(s.equipped) == null) fail("장착 무기 오류");
         for (String boss : s.defeatedBosses) {

@@ -20,7 +20,7 @@ class SaveManagerTest {
 
     GameState sample() {
         GameState s = TestData.newGame();
-        s.minerals = 40;
+        s.ore[0] = 40;
         CraftService.craft(b, s, "sword");
         s.weapon("sword").level = 3;
         s.weapon("sword").failCount = 1;
@@ -40,6 +40,11 @@ class SaveManagerTest {
         return s;
     }
 
+    /** sample() 의 폐광 광석: 시작 40 - 철검 제작 + 방 보상 + 보스 보상. */
+    int sampleOre() {
+        return 40 - b.weapon("sword").craftCost + b.zone("mine").roomReward + b.zone("mine").bossReward;
+    }
+
     @Test
     void T17_roundTripKeepsEverything() throws Exception {
         Path dir = Files.createTempDirectory("ys");
@@ -50,7 +55,7 @@ class SaveManagerTest {
         assertEquals(SaveManager.LoadStatus.OK, r.status);
         GameState l = r.state;
         assertEquals(sm.serialize(s), sm.serialize(l));
-        assertEquals(s.minerals, l.minerals);
+        assertEquals(s.ore[0], l.ore[0]);
         assertEquals(3, l.weapon("sword").level);
         assertEquals(1, l.weapon("sword").failCount);
         assertTrue(l.isRoomCleared("mine_battle_a"));
@@ -67,11 +72,11 @@ class SaveManagerTest {
         SaveManager sm = new SaveManager(dir, b);
         GameState s = sample();
         assertTrue(sm.save(s));
-        s.minerals = 99;
+        s.ore[0] = 99;
         assertTrue(sm.save(s));
         String bak = new String(Files.readAllBytes(dir.resolve("save.bak.json")), StandardCharsets.UTF_8);
-        assertEquals(40 - 6 + 3 + 12, sm.parse(bak).minerals);
-        assertEquals(99, sm.load().state.minerals);
+        assertEquals(sampleOre(), sm.parse(bak).ore[0]);
+        assertEquals(99, sm.load().state.ore[0]);
     }
 
     @Test
@@ -80,7 +85,7 @@ class SaveManagerTest {
         SaveManager sm = new SaveManager(dir, b);
         GameState s = sample();
         assertTrue(sm.save(s));
-        s.minerals = 77;
+        s.ore[0] = 77;
         sm.beforeReplaceHook = () -> {
             throw new RuntimeException("프로세스 중단");
         };
@@ -89,14 +94,14 @@ class SaveManagerTest {
         SaveManager fresh = new SaveManager(dir, b);
         SaveManager.LoadResult r = fresh.load();
         assertEquals(SaveManager.LoadStatus.OK, r.status);
-        assertEquals(49, r.state.minerals);
+        assertEquals(sampleOre(), r.state.ore[0]);
 
         // 주 저장이 반쯤 쓰인 채 손상된 경우 → 백업에서 복원
         Files.write(dir.resolve("save.json"), "{\"saveVersion\":1,\"miner".getBytes(StandardCharsets.UTF_8));
         SaveManager.LoadResult r2 = fresh.load();
         assertEquals(SaveManager.LoadStatus.RESTORED_FROM_BACKUP, r2.status);
         assertNotNull(r2.message);
-        assertEquals(49, r2.state.minerals);
+        assertEquals(sampleOre(), r2.state.ore[0]);
     }
 
     @Test
@@ -125,10 +130,10 @@ class SaveManagerTest {
         // 폴더 자리에 파일이 있어 저장 폴더를 만들 수 없음
         SaveManager sm = new SaveManager(file.resolve("sub"), b);
         GameState s = sample();
-        int before = s.minerals;
+        int before = s.ore[0];
         assertFalse(sm.save(s));
         assertNotNull(sm.lastError());
-        assertEquals(before, s.minerals);
+        assertEquals(before, s.ore[0]);
     }
 
     @Test

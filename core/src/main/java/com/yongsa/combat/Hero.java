@@ -22,6 +22,14 @@ public class Hero {
     public boolean moving;
     public float animTime;
     public float hurtFlash;
+    public int moveDir = 6;
+    public float walkTime;
+    public float dodgeTime, dodgeCooldown, dodgeDx, dodgeDy;
+    /** 구르기 무적이 남은 시간. 이동(dodgeTime)이 끝난 뒤에도 잠깐 이어진다. */
+    public float dodgeSafe;
+    public float attackBuffer, shockBuffer, comboTimer;
+    public int combo;
+    public Enemy target;
 
     private final float bodyW, bodyH, hurtRadius;
     private final Rectangle body = new Rectangle();

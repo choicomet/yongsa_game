@@ -2,13 +2,10 @@ package com.yongsa.screen;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
-import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
@@ -19,12 +16,13 @@ import com.yongsa.gfx.Effects;
 import com.yongsa.gfx.WorldRenderer;
 import com.yongsa.model.GameState;
 import com.yongsa.model.Progress;
-import com.yongsa.ui.BagWindow;
 import com.yongsa.ui.ForgeWindow;
 import com.yongsa.ui.GameActions;
 import com.yongsa.ui.Hud;
 import com.yongsa.ui.SettingsWindow;
 import com.yongsa.ui.Windows;
+import com.yongsa.ui.KeyboardInput;
+import com.yongsa.model.CraftService;
 import com.yongsa.world.DungeonGenerator;
 import com.yongsa.world.DungeonMap;
 import com.yongsa.world.FixedStepper;
@@ -47,15 +45,17 @@ public class GameScreen extends ScreenAdapter implements GameActions {
     private final Windows windows;
     private final FixedStepper stepper = new FixedStepper(GameWorld.STEP, 0.25f);
     private final PlayerInput input = new PlayerInput();
-    private final Vector2 mouse = new Vector2();
     private String startMessage;
 
     private boolean attackLatch = true;
     private boolean interactLatch = true;
-    private boolean pendingInteract, pendingShock;
+    private boolean pendingInteract, pendingShock, pendingAttack, pendingDodge;
+    private final KeyboardInput keyboard = new KeyboardInput(this::onKey);
     private boolean lastSaveOk = true;
     private float endingTimer = -1;
     private boolean disposed;
+    /** 개발용: 타이틀 배경 등을 찍을 때 화면 정보를 숨긴다. */
+    public boolean hideHud;
     /** 개발용: 설정되면 키보드/마우스 대신 이 입력을 쓴다. */
     public PlayerInput scriptedInput;
 
@@ -67,21 +67,17 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         this.world = new GameWorld(g.balance, map, state);
         this.renderer = new WorldRenderer(g.batch, g.shapes, map, g.sprites, g.textures, g.fonts);
         this.hud = new Hud(g.fonts, g.textures, g.sprites);
+        this.hud.noticeTime = g.balance.feel.noticeTime;
         this.stage = new Stage(new FitViewport(960, 540), g.batch);
         this.windows = new Windows(stage, g.skin);
         windows.onAnyClosed = this::clearActionInput;
         windows.onClick = () -> g.audio.play("ui_click");
+        this.dev = new DevMenu(this, windows);
     }
 
     @Override
     public void show() {
-        InputMultiplexer mux = new InputMultiplexer(stage, new InputAdapter() {
-            @Override
-            public boolean keyDown(int keycode) {
-                return onKey(keycode);
-            }
-        });
-        Gdx.input.setInputProcessor(mux);
+        Gdx.input.setInputProcessor(keyboard);
         renderer.snap();
         clearActionInput();
         g.audio.music("bgm_dungeon");
@@ -98,23 +94,47 @@ public class GameScreen extends ScreenAdapter implements GameActions {
     // =====================================================================
 
     private boolean onKey(int key) {
+        if (windows.anyOpen()) {
+            if (key == Input.Keys.I && "forge".equals(windows.top().tag)) windows.close(windows.top());
+            else if (key == Input.Keys.F1 && "dev".equals(windows.top().tag)) windows.close(windows.top());
+            else windows.keyDown(key);
+            return true;
+        }
         switch (key) {
             case Input.Keys.ESCAPE:
                 if (!windows.escape()) openPause();
                 return true;
             case Input.Keys.I:
-                if (windows.anyOpen()) {
-                    if ("bag".equals(windows.top().tag)) windows.close(windows.top());
-                } else {
-                    new BagWindow(windows, this).open();
-                    g.audio.play("ui_open");
-                }
+                takeOutForge();
                 return true;
-            case Input.Keys.E:
+            case Input.Keys.F1:
+                dev.open();
+                return true;
+            case Input.Keys.J:
+                pendingAttack = true;
+                return true;
+            case Input.Keys.K:
+                pendingDodge = true;
+                return true;
+            case Input.Keys.L:
                 if (!windows.anyOpen()) pendingInteract = true;
                 return true;
-            case Input.Keys.Q:
+            case Input.Keys.U:
                 if (!windows.anyOpen()) pendingShock = true;
+                return true;
+            case Input.Keys.O:
+                if (windows.anyOpen() || world.hero.dead) return true;
+                if (state.weapons.size() > 1) {
+                    // 가진 무기를 차례로 바꿔 든다
+                    int at = 0;
+                    for (int i = 0; i < state.weapons.size(); i++) if (state.weapons.get(i).type.equals(state.equipped)) at = i;
+                    String next = state.weapons.get((at + 1) % state.weapons.size()).type;
+                    CraftService.equip(state, next, false);
+                    world.hero.attack = null;
+                    world.hero.combo = 0;
+                    if (!world.inCombat()) save(); // 전투 중에는 저장하지 않는다 (방을 돌파하면 저장된다)
+                    hud.toast(g.balance.weapon(next).name + " 장착");
+                } else hud.toast("바꿔 들 무기가 없습니다 · I 로 대장간을 꺼내 제작");
                 return true;
             case Input.Keys.F3:
                 renderer.debug = !renderer.debug;
@@ -124,15 +144,48 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         }
     }
 
+    /** 주머니에서 대장간을 꺼내는 중이면 0 이상 (다 꺼내면 창이 열린다). */
+    private float forgeTimer = -1;
+    private final DevMenu dev;
+
+    /** I: 주머니에서 휴대용 대장간을 꺼낸다. 전투 중에는 꺼낼 수 없다. */
+    private void takeOutForge() {
+        if (world.hero.dead || forgeTimer >= 0) return;
+        if (world.inCombat()) {
+            hud.toast("전투 중에는 대장간을 꺼낼 수 없습니다");
+            return;
+        }
+        forgeTimer = 0.36f;
+        world.hero.attack = null;
+        clearActionInput();
+        g.audio.play("ui_open");
+        fx.burst(world.hero.x, world.hero.y + 14, new Color(0.85f, 0.8f, 0.7f, 1), 8, 70);
+    }
+
+    @Override
+    public com.badlogic.gdx.graphics.g2d.TextureRegion weaponIcon(String type) {
+        return Hud.icon(g.sprites, type);
+    }
+
     /** 창을 닫을 때 공격·상호작용 입력을 비운다. 다시 누르기 전까지 공격을 시작하지 않는다. */
     private void clearActionInput() {
         attackLatch = true;
         interactLatch = true;
         pendingInteract = false;
         pendingShock = false;
+        pendingAttack = pendingDodge = false;
+        input.clearEdges();
+        input.attackHeld = input.interactHeld = false;
+        world.clearBufferedActions();
     }
 
     private void fillInput() {
+        if (forgeTimer >= 0) {
+            // 대장간을 꺼내는 짧은 동안은 가만히 선다
+            input.moveX = input.moveY = 0;
+            input.attackHeld = input.interactHeld = false;
+            return;
+        }
         if (scriptedInput != null) {
             input.moveX = scriptedInput.moveX;
             input.moveY = scriptedInput.moveY;
@@ -140,6 +193,12 @@ public class GameScreen extends ScreenAdapter implements GameActions {
             input.aimY = scriptedInput.aimY;
             input.attackHeld = scriptedInput.attackHeld;
             input.interactHeld = scriptedInput.interactHeld;
+            input.keyboardAim = scriptedInput.keyboardAim;
+            if (scriptedInput.attackPressed) pendingAttack = true;
+            if (scriptedInput.dodgePressed) pendingDodge = true;
+            if (scriptedInput.interactPressed) pendingInteract = true;
+            if (scriptedInput.shockwavePressed) pendingShock = true;
+            scriptedInput.clearEdges();
             return;
         }
         float mx = 0, my = 0;
@@ -149,13 +208,11 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) my += 1;
         input.moveX = mx;
         input.moveY = my;
-        renderer.unproject(Gdx.input.getX(), Gdx.input.getY(), mouse);
-        input.aimX = mouse.x;
-        input.aimY = mouse.y;
-        boolean lmb = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
+        input.keyboardAim = true;
+        boolean lmb = Gdx.input.isKeyPressed(Input.Keys.J);
         if (!lmb) attackLatch = false;
         input.attackHeld = lmb && !attackLatch;
-        boolean e = Gdx.input.isKeyPressed(Input.Keys.E);
+        boolean e = Gdx.input.isKeyPressed(Input.Keys.L);
         if (!e) interactLatch = false;
         input.interactHeld = e && !interactLatch;
     }
@@ -169,10 +226,23 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         if (disposed) return;
         boolean paused = windows.anyOpen();
         float simDelta = 0;
+        dev.apply();
+        hud.devOn = dev.anyOn();
+        if (forgeTimer >= 0 && !paused) {
+            forgeTimer -= delta;
+            if (forgeTimer < 0) {
+                forgeTimer = -1;
+                if (!world.inCombat() && !world.hero.dead) new ForgeWindow(windows, this).open();
+            }
+        }
+        renderer.forgeShown = forgeTimer >= 0 || windows.isOpen("forge");
         if (!paused) {
             fillInput();
             int steps = stepper.advance(delta);
             for (int i = 0; i < steps; i++) {
+                input.attackPressed = pendingAttack;
+                input.dodgePressed = pendingDodge;
+                pendingAttack = pendingDodge = false;
                 if (pendingInteract) {
                     input.interactPressed = true;
                     pendingInteract = false;
@@ -196,6 +266,13 @@ public class GameScreen extends ScreenAdapter implements GameActions {
             stepper.reset();
         }
 
+        // 보스 사망 연출: 쓰러지는 동안 몸에서 파편이 계속 튄다
+        if (!paused && world.combat != null && world.combat.dying && world.combat.outro > 0) {
+            com.yongsa.combat.Enemy boss = world.combat.bossEnemy();
+            if (boss != null && MathUtils.random() < delta * 22f) {
+                fx.burst(boss.x + MathUtils.random(-26f, 26f), boss.y + MathUtils.random(4f, 60f), new Color(1f, 0.95f, 0.8f, 1), 6, 170);
+            }
+        }
         fx.update(simDelta);
         fx.updateDust(renderer.cam.position.x, renderer.cam.position.y, paused ? 0 : delta);
         hud.update(paused ? 0 : delta);
@@ -219,13 +296,18 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         stage.getViewport().apply();
         g.batch.setProjectionMatrix(stage.getCamera().combined);
         g.batch.begin();
+        if (fx.flash > 0) {
+            g.batch.setColor(1, 1, 1, Math.min(1f, fx.flash / Math.max(0.001f, g.balance.feel.bossDeathFlash)));
+            g.batch.draw(g.textures.white, 0, 0, 960, 540);
+        }
         g.batch.setColor(Color.WHITE);
         g.batch.draw(g.textures.vignette, 0, 0, 960, 540);
-        hud.draw(g.batch, world, g.balance);
+        if (!hideHud) hud.draw(g.batch, world, g.balance);
         g.batch.end();
 
         stage.act(delta); // 창 애니메이션은 일시정지 중에도 동작
         stage.draw();
+        windows.drawKeyboardFocus(g.batch, g.textures, g.fonts);
     }
 
     private void handleEvents() {
@@ -241,29 +323,71 @@ public class GameScreen extends ScreenAdapter implements GameActions {
                 case DAMAGE_NUMBER:
                     fx.text(e.x, e.y, e.text, e.amount >= 30 ? new Color(1f, 0.8f, 0.3f, 1) : Color.WHITE, 1f);
                     fx.burst(e.x, e.y - 10, new Color(1f, 0.9f, 0.7f, 1), 5, 90);
+                    shake(e.amount >= b.feel.heavyHitDamage ? b.feel.shakeMedium : b.feel.shakeLight);
                     break;
                 case HERO_HURT:
                     fx.text(e.x, e.y, "-" + e.text, new Color(1f, 0.35f, 0.3f, 1), 1.1f);
-                    fx.shake = 0.18f;
+                    shake(b.feel.shakeMedium);
                     break;
-                case ENEMY_DIED:
-                    fx.burst(e.x, e.y + 12, enemyColor(e.text), 16, 160);
+                case ENEMY_DIED: {
+                    boolean elite = e.amount > 0;
+                    fx.burst(e.x, e.y + 12, enemyColor(b, e.text), elite ? 30 : 16, elite ? 210 : 160);
+                    if (elite) shake(b.feel.shakeMedium);
                     break;
+                }
+                case ENEMY_SPAWNED:
+                    fx.burst(e.x, e.y + 10, new Color(1f, 0.6f, 0.55f, 1), e.amount > 0 ? 14 : 8, 110);
+                    break;
+                case WAVE_STARTED:
+                    hud.toast(e.amount > 0 ? "적이 더 몰려옵니다 · 남은 무리 " + e.amount : "마지막 무리가 몰려옵니다");
+                    break;
+                case STATUS_APPLIED: {
+                    Balance.StatusDef sd = b.statusOrNull(e.text);
+                    if (sd == null) break;
+                    Color c = new Color(sd.color[0], sd.color[1], sd.color[2], 1);
+                    fx.text(e.x, e.y, sd.name, c, 1f);
+                    fx.burst(e.x, e.y - 14, c, 10, 120);
+                    break;
+                }
+                case PROJECTILE_BROKEN:
+                    fx.burst(e.x, e.y, new Color(1f, 0.5f, 0.65f, 1), 6, 90);
+                    break;
+                case DODGE:
+                    fx.burst(e.x, e.y + 3, new Color(0.78f, 0.74f, 0.68f, 1), 5, 55);
+                    break;
+                case BOSS_DYING:
+                    shake(b.feel.shakeHeavy);
+                    fx.burst(e.x, e.y + 30, new Color(1f, 0.95f, 0.8f, 1), 30, 240);
+                    g.audio.play("enemy_die");
+                    break;
+                case CHEST_OPENED:
+                    fx.text(e.x, e.y, "골드 " + e.text, new Color(1f, 0.85f, 0.4f, 1), 1.2f);
+                    fx.burst(e.x, e.y - 10, new Color(1f, 0.8f, 0.3f, 1), 22, 190);
+                    break;
+                case BLESSING: {
+                    Balance.BlessingDef bd = b.blessingOrNull(e.text);
+                    if (bd != null) hud.notice("icon_heart", "축복 · " + bd.name, bd.desc + " (쓰러지면 사라집니다)");
+                    break;
+                }
                 case ROOM_CLEARED:
-                    hud.banner("전투방 돌파!  광물 +" + e.amount, 2.2f);
+                    hud.banner("전투방 돌파!  " + b.zone(e.text).oreName + " +" + e.amount, 2.2f);
+                    break;
+                case CHEST_APPEARED:
+                    fx.burst(e.x, e.y + 8, new Color(1f, 0.85f, 0.4f, 1), 14, 150);
                     break;
                 case BOSS_INTRO:
                     hud.banner(e.text, 1.6f);
                     break;
                 case BOSS_DEFEATED: {
-                    hud.banner(e.text + " 처치!  광물 +" + e.amount, 3f);
-                    fx.shake = 0.4f;
+                    hud.banner(e.text + " 처치!  " + b.zone(world.lastZone).oreName + " +" + e.amount, 3f);
+                    shake(b.feel.shakeHeavy);
+                    fx.flash = b.feel.bossDeathFlash;
                     int n = Progress.bossCount(state);
                     if (n == 1) {
-                        hud.toast("망치 제작과 각성 충격파가 해금되었습니다");
-                        hud.toast("오른쪽 지하 요새의 봉인이 풀렸습니다 · 강화 상한 +" + Progress.enhanceCap(b, state));
+                        hud.notice("icon_shock", "각성 충격파 해금", "U 로 정면에 충격파를 쏜다");
+                        hud.notice("hammer", "지하 요새의 봉인이 풀렸습니다", "청광석으로 망치 제작 · 강화 상한 +" + Progress.enhanceCap(b, state));
                     } else if (n == 2) {
-                        hud.toast("위쪽 봉인의 신전이 열렸습니다 · 강화 상한 +" + Progress.enhanceCap(b, state));
+                        hud.notice("daggers", "봉인의 신전이 열렸습니다", "자광석으로 쌍단검 제작 · 강화 상한 +" + Progress.enhanceCap(b, state));
                     }
                     break;
                 }
@@ -274,19 +398,28 @@ public class GameScreen extends ScreenAdapter implements GameActions {
                     // 보상과 완료 상태는 이미 저장 요청됨. 저장이 끝난 뒤 엔딩을 재생한다.
                     endingTimer = 3f;
                     break;
-                case OPEN_FORGE:
-                    g.audio.play("ui_open");
-                    new ForgeWindow(windows, this).open();
+                case CHEST_HEAL:
+                    for (Balance.ChestHealDef heal : b.chestHeals) {
+                        if (!heal.id.equals(e.text) || e.amount <= 0) continue;
+                        fx.icon(Hud.icon(g.sprites, heal.sprite), e.x, e.y + 6, 30);
+                        fx.text(e.x, e.y + 40, "체력 +" + e.amount, new Color(0.5f, 1f, 0.6f, 1), 1.1f);
+                        hud.notice(heal.sprite, heal.name, "체력 +" + e.amount);
+                    }
                     break;
                 case RESPAWNED:
-                    hud.toast("중앙 캠프에서 다시 일어났습니다 · 장비와 진행은 그대로입니다");
+                    hud.toast("중앙 캠프에서 다시 일어났습니다 · 장비와 진행은 그대로, 광맥은 새로 자랐습니다");
                     break;
                 case MINED:
-                    fx.text(e.x, e.y, "광물 " + e.text, new Color(1f, 0.85f, 0.4f, 1), 1.1f);
-                    fx.burst(e.x, e.y - 14, new Color(0.7f, 0.68f, 0.65f, 1), 12, 140);
+                    {
+                        Balance.ZoneDef mz = b.zone(e.text);
+                        Color oc = new Color(mz.oreColor[0], mz.oreColor[1], mz.oreColor[2], 1);
+                        fx.text(e.x, e.y, mz.oreName + " +" + e.amount, oc, 1.1f);
+                        fx.burst(e.x, e.y - 14, oc, 12, 140);
+                    }
                     break;
                 case SHORTCUT_UNLOCKED:
                     hud.banner(e.text + " 지름길 개방", 2f);
+                    hud.notice("icon_shock", e.text + " 지름길 개방", "중앙 캠프에서 보스 앞으로 바로 이동");
                     break;
                 case TELEPORT:
                     renderer.snap();
@@ -295,7 +428,7 @@ public class GameScreen extends ScreenAdapter implements GameActions {
                     hud.toast("문이 잠겼습니다 · 적을 모두 쓰러뜨리세요");
                     break;
                 case DIED:
-                    fx.shake = 0.3f;
+                    shake(b.feel.shakeHeavy);
                     break;
                 default:
                     break;
@@ -304,13 +437,16 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         world.events.clear();
     }
 
-    private static Color enemyColor(String id) {
-        switch (id) {
-            case "slime": return new Color(0.5f, 0.85f, 0.35f, 1);
-            case "charger": return new Color(0.7f, 0.7f, 0.75f, 1);
-            case "watcher": return new Color(0.7f, 0.45f, 0.95f, 1);
-            default: return new Color(0.9f, 0.7f, 0.4f, 1);
-        }
+    /** 화면 흔들림은 balance.json 의 약·중·강 세 값만 쓴다. 더 센 흔들림이 진행 중이면 덮어쓰지 않는다. */
+    private void shake(float amount) {
+        fx.shake = Math.max(fx.shake, amount);
+    }
+
+    /** 처치 파편 색은 적 정의에 적혀 있다. */
+    private static Color enemyColor(Balance b, String id) {
+        Balance.EnemyDef d = b.enemyOrNull(id);
+        float[] c = d != null ? d.color : new float[]{0.9f, 0.7f, 0.4f};
+        return new Color(c[0], c[1], c[2], 1);
     }
 
     // =====================================================================
@@ -319,6 +455,9 @@ public class GameScreen extends ScreenAdapter implements GameActions {
 
     /** 포커스를 잃으면 자동 일시정지. */
     public void autoPause() {
+        keyboard.clear();
+        clearActionInput();
+        stepper.reset();
         if (!windows.anyOpen() && endingTimer < 0) openPause();
     }
 
@@ -327,7 +466,10 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         p.add(windows.label("일시정지", "large")).left().padBottom(10).row();
         Windows.Modal[] holder = new Windows.Modal[1];
         p.add(windows.button("계속하기", () -> windows.close(holder[0]))).width(260).padBottom(6).row();
-        p.add(windows.button("가방 (I)", () -> new BagWindow(windows, this).open())).width(260).padBottom(6).row();
+        p.add(windows.button("대장간 꺼내기 (I)", () -> {
+            windows.close(holder[0]);
+            takeOutForge();
+        })).width(260).padBottom(6).row();
         p.add(windows.button("설정", () -> SettingsWindow.open(windows, g.settings, s -> {
             g.applySettings(s);
             save(); // 설정 적용 직후 저장
@@ -340,7 +482,7 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         });
         camp.setDisabled(!world.canReturnToCamp());
         p.add(camp).width(260).padBottom(2).row();
-        p.add(windows.label(world.inCombat() ? "전투 중에는 귀환할 수 없습니다" : "위치만 옮깁니다 · 회복은 침대에서", "dim"))
+        p.add(windows.label(world.inCombat() ? "전투 중에는 귀환할 수 없습니다" : "위치만 옮깁니다 · 캠프에서는 회복되지 않습니다", "dim"))
                 .padBottom(8).row();
         if (Progress.isComplete(g.balance, state)) {
             p.add(windows.button("엔딩 다시 보기", this::replayEnding)).width(260).padBottom(6).row();
@@ -393,11 +535,9 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         Table p = windows.panel();
         p.add(windows.label("각성 · 충격파", "large")).left().row();
         String text = "첫 수호자를 쓰러뜨려 각성했습니다.\n\n"
-                + "Q 키: 마우스가 가리키는 방향(8방향)으로 직선 충격파를 날립니다.\n"
-                + "범위 정면 " + (int) b.shockwave.length + "px · 폭 " + (int) b.shockwave.width + "px · 여러 적을 관통\n"
-                + "피해 장착 무기 피해 × " + b.shockwave.damageMultiplier + " · 재사용 " + (int) b.shockwave.cooldown + "초\n"
-                + "벽과 닫힌 문은 통과하지 못합니다. 보스방에 들어가면 즉시 다시 사용할 수 있습니다.\n\n"
-                + "망치 제작이 해금되었습니다. 오른쪽 지하 요새의 봉인이 풀렸습니다.";
+                + "U 키로 몸에서 충격파를 터뜨립니다.\n"
+                + "방 안의 모든 적이 무기 피해의 " + b.shockwave.damageMultiplier + "배를 한 번씩 맞고 밀려나며, 날아오던 탄이 사라집니다. (재사용 " + (int) b.shockwave.cooldown + "초)\n\n"
+                + "오른쪽 지하 요새로 가는 길이 열렸습니다.";
         p.add(windows.wrap(text, "default", 440)).width(440).padTop(10).padBottom(12).row();
         Windows.Modal[] holder = new Windows.Modal[1];
         p.add(windows.button("확인", () -> windows.close(holder[0]))).right();
@@ -458,6 +598,10 @@ public class GameScreen extends ScreenAdapter implements GameActions {
 
     // ---- 개발용 접근 ----
 
+    public WorldRenderer view() {
+        return renderer;
+    }
+
     public GameWorld world() {
         return world;
     }
@@ -466,16 +610,17 @@ public class GameScreen extends ScreenAdapter implements GameActions {
         return windows;
     }
 
+    /** 개발용: 키 입력을 흉내 낸다. */
+    public void keyForTest(int key) {
+        onKey(key);
+    }
+
     public void debugOpenForge() {
         new ForgeWindow(windows, this).open();
     }
 
     public void debugOpenPause() {
         openPause();
-    }
-
-    public void debugOpenBag() {
-        new BagWindow(windows, this).open();
     }
 
     public void debugShock() {

@@ -19,9 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 스프라이트 묶음. data/sprites.json 에 적힌 CraftPix 시트가 실제로 있으면 그것을 쓰고,
- * 없으면 placeholder_art.txt 로 만든 임시 그림을 쓴다.
- * 그래서 에셋 파일을 넣고 sprites.json 의 크기·프레임 수만 맞추면 코드 수정 없이 교체된다.
+ * 스프라이트 묶음. 매니페스트(sprites_generated → sprites_craftpix → sprites.json, 뒤가 우선)에 적힌
+ * 그림을 쓰고, 어디에도 없는 키만 placeholder_art.txt 의 임시 그림(와 UI 아이콘)을 쓴다.
+ * 그래서 에셋 파일을 넣고 매니페스트의 크기·프레임 수만 맞추면 코드 수정 없이 교체된다.
  */
 public class SpriteLibrary implements Disposable {
 

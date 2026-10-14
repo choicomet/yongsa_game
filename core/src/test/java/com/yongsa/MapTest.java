@@ -36,12 +36,9 @@ class MapTest {
         assertEquals(28 * 32, camp.bounds.width, 0.01);
         assertEquals(14 * 32, camp.bounds.height, 0.01);
         Vector2 sp = map.point("camp_spawn");
-        MapObject bed = map.interact("bed");
-        MapObject forge = map.interact("forge");
-        // 리스폰에서 침대와 대장간까지 걸어서 2초 이내 (직선 거리 기준)
-        assertTrue(sp.dst(bed.x(), bed.y()) / b.hero.moveSpeed < 2f);
-        assertTrue(sp.dst(forge.x(), forge.y()) / b.hero.moveSpeed < 2f);
-        assertTrue(bed.x() < sp.x && forge.x() > sp.x, "침대는 왼쪽, 대장간은 오른쪽");
+        // 캠프는 다시 일어나는 곳일 뿐: 상호작용할 것은 구역 지름길 문 셋뿐이다
+        assertEquals(3, map.interacts.stream().filter(o -> camp.bounds.contains(o.x(), o.y()) || o.type.equals("shortcut")).count());
+        assertTrue(camp.bounds.contains(sp.x, sp.y));
     }
 
     @Test
@@ -110,7 +107,7 @@ class MapTest {
         GameState s = TestData.newGame();
         String ore = TestData.oreRoom().id;
         MineRoomState m = VeinGenerator.ensure(b, s, map, ore);
-        assertEquals(4, m.veins.size());
+        assertEquals(b.mining.firstRoomVeins, m.veins.size());
         Set<String> ids = new HashSet<>();
         boolean visible = false;
         for (VeinState v : m.veins) {

@@ -15,10 +15,10 @@ class EnhanceTest {
 
     GameState withSword(int level, int minerals) {
         GameState s = TestData.newGame();
-        s.minerals = 6;
+        s.ore[0] = 6;
         assertTrue(CraftService.craft(b, s, "sword").executed);
         s.weapon("sword").level = level;
-        s.minerals = minerals;
+        s.ore[0] = minerals;
         return s;
     }
 
@@ -28,15 +28,15 @@ class EnhanceTest {
         EnhanceService.Result r = EnhanceService.enhance(b, s, "sword", TestData.forbidden());
         assertFalse(r.executed);
         assertEquals(EnhanceService.Block.NOT_ENOUGH, r.block);
-        assertEquals(1, s.minerals);
+        assertEquals(1, s.ore[0]);
         assertEquals(0, s.weapon("sword").level);
         assertEquals(0, s.weapon("sword").failCount);
 
         GameState c = TestData.newGame();
-        c.minerals = 5;
+        c.ore[0] = 5;
         CraftService.Result cr = CraftService.craft(b, c, "sword");
         assertFalse(cr.executed);
-        assertEquals(5, c.minerals);
+        assertEquals(5, c.ore[0]);
         assertTrue(c.weapons.isEmpty());
     }
 
@@ -48,14 +48,14 @@ class EnhanceTest {
         assertTrue(fail.executed);
         assertFalse(fail.success, "경계값 0.90 은 실패");
         assertEquals(1, s.weapon("sword").failCount);
-        assertEquals(96, s.minerals);
+        assertEquals(96, s.ore[0]);
         // 두 번째 시도는 보장: 난수를 쓰지 않는다
         EnhanceService.Result ok = EnhanceService.enhance(b, s, "sword", TestData.forbidden());
         assertTrue(ok.success);
         assertTrue(ok.guaranteed);
         assertEquals(3, s.weapon("sword").level);
         assertEquals(0, s.weapon("sword").failCount);
-        assertEquals(92, s.minerals, "보장 시도도 같은 비용");
+        assertEquals(92, s.ore[0], "보장 시도도 같은 비용");
 
         GameState t = withSword(2, 100);
         assertTrue(EnhanceService.enhance(b, t, "sword", TestData.fixed(0.8999)).success, "0.8999 는 성공");
@@ -83,7 +83,7 @@ class EnhanceTest {
     void T03_failCountSurvivesSwapAndSaveLoad() throws Exception {
         GameState s = withSword(3, 100);
         s.defeatedBosses.add("boss_mine");
-        s.minerals = 100;
+        s.ore[0] = 100;
         s.weapons.add(new WeaponState("hammer"));
         EnhanceService.enhance(b, s, "sword", Rng.enhanceSource(s)); // 결과 무관
         // 실패를 만들기 위해 고정 실패
@@ -122,14 +122,14 @@ class EnhanceTest {
         GameState s = withSword(3, 100);
         EnhanceService.Result r = EnhanceService.enhance(b, s, "sword", TestData.forbidden());
         assertEquals(EnhanceService.Block.CAP, r.block);
-        assertEquals(100, s.minerals);
+        assertEquals(100, s.ore[0]);
 
         GameState m = withSword(10, 100);
         m.defeatedBosses.add("boss_mine");
         m.defeatedBosses.add("boss_fortress");
         EnhanceService.Result r2 = EnhanceService.enhance(b, m, "sword", TestData.forbidden());
         assertEquals(EnhanceService.Block.MAX_LEVEL, r2.block);
-        assertEquals(100, m.minerals);
+        assertEquals(100, m.ore[0]);
         assertEquals(0, m.weapon("sword").failCount);
     }
 
@@ -141,7 +141,7 @@ class EnhanceTest {
         assertEquals(1f, p.chance);
         assertTrue(p.guaranteed);
         assertEquals(1, p.triesToGuarantee);
-        assertEquals(15, p.currentDamage);
-        assertEquals(16, p.nextDamage);
+        assertEquals(19, p.currentDamage);
+        assertEquals(20, p.nextDamage);
     }
 }

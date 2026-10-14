@@ -14,7 +14,11 @@ public interface Arena {
 
     Rectangle roomBounds();
 
+    /** 예고·공격 중인 근접 적의 수. */
     int aggressiveCount();
+
+    /** 예고·공격 중인 원거리 적의 수 (근접과 따로 센다). */
+    int rangedAggressiveCount();
 
     void sfx(String id);
 }

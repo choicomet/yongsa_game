@@ -3,7 +3,7 @@
 CraftPix 에셋(art_source/craftpix/)을 게임용으로 정리한다.
 
   assets/tiles/craftpix_tiles.png + assets/data/tileset.json      테마 7종 바닥·벽 (16px 원본, 게임에서 2배)
-  assets/sprites/cp/*.png + assets/data/sprites_craftpix.json      소품·불꽃·문·수정·언데드 장식
+  assets/sprites/cp/*.png + assets/data/sprites_craftpix.json      소품·불꽃·문·광맥(수정)·언데드 몬스터와 장식
 
 원본 팩(라이선스상 저장소에 그대로 올리지 않는다)은 art_source/craftpix/ 에 풀어 둔다:
   dungeon/   ← Free 2D Top-Down Pixel Dungeon Asset Pack 의 Tiled_files
@@ -55,6 +55,22 @@ def recolor(img, hue=None, sat=1.0, val=1.0, hue_mix=1.0):
             v = min(1, v * val)
             r2, g2, b2 = colorsys.hsv_to_rgb(h, s, v)
             px[x, y] = (int(r2 * 255), int(g2 * 255), int(b2 * 255), a)
+    return out
+
+
+def recolor_warm(img, hue):
+    """붉은~노란 색(불꽃)만 주어진 색상으로 바꾼다."""
+    out = img.copy()
+    px = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if s > 0.25 and (h < 0.18 or h > 0.94):
+                r2, g2, b2 = colorsys.hsv_to_rgb(hue / 360, min(1, s * 0.9), v)
+                px[x, y] = (int(r2 * 255), int(g2 * 255), int(b2 * 255), a)
     return out
 
 
@@ -142,9 +158,7 @@ def build_tiles():
             e["pattern"] = "checker"
         else:
             fl = [wf_tile(wf, FLOOR)] + [wf_tile(wf, i) for i in FLOOR_MARKS]
-            weights = [40, 1, 1, 1, 1]
-            if th["name"] == "boss_mine":
-                weights = [16, 2, 2, 2, 2]
+            weights = [40, 1, 1, 1, 1]  # 무늬 타일은 드물게: 바닥이 깔끔해야 적과 경고가 잘 보인다
             e["floor"] = [add(rc(t)) for t in fl]
             e["floorWeights"] = weights
         e["faceUpper"] = [add(rc(wf_tile(wf, FACE_U[1])))]
@@ -215,6 +229,11 @@ def pick(sheet_img, boxes, idx):
 
 def build_sprites():
     MANIFEST.clear()
+    # 예전에 만든 그림이 남아 섞이지 않도록 출력 폴더를 비우고 시작한다
+    if os.path.isdir(OUT_SPR):
+        for f in os.listdir(OUT_SPR):
+            if f.endswith(".png"):
+                os.remove(os.path.join(OUT_SPR, f))
     obj = load("dungeon", "Objects.png")
     ob = components(obj, gap=1)
     sup = load("objects", "supplies_objects.png")
@@ -224,26 +243,19 @@ def build_sprites():
 
     variants = {
         # 던전 소품
-        "chest": [(obj, ob, 5)],
-        "chest_gold": [(obj, ob, 13), (obj, ob, 14)],
-        "gold": [(obj, ob, 7), (obj, ob, 8), (obj, ob, 15), (obj, ob, 16), (obj, ob, 40)],
         "crates": [(obj, ob, 10), (obj, ob, 11), (obj, ob, 12)],
         "crate": [(obj, ob, 24), (obj, ob, 27)],
         "barrel": [(obj, ob, 25), (obj, ob, 28), (obj, ob, 35)],
         "pot": [(obj, ob, 29), (obj, ob, 30), (obj, ob, 32), (obj, ob, 33)],
         "vases": [(obj, ob, 36), (obj, ob, 21)],
-        "shields": [(obj, ob, 38)],
-        "ladder": [(obj, ob, 3)],
         # 보급품
         "shelf": [(sup, sb, 1), (sup, sb, 2), (sup, sb, 6), (sup, sb, 7), (sup, sb, 8)],
         "supplies": [(sup, sb, 19), (sup, sb, 20), (sup, sb, 30), (sup, sb, 31), (sup, sb, 50), (sup, sb, 51), (sup, sb, 70), (sup, sb, 72)],
         "sacks": [(sup, sb, 73), (sup, sb, 74), (sup, sb, 75), (sup, sb, 62)],
         "weapon_rack": [(sup, sb, 76), (sup, sb, 77), (sup, sb, 80), (sup, sb, 81), (sup, sb, 82)],
-        "tool_rack": [(sup, sb, 87), (sup, sb, 88), (sup, sb, 89), (sup, sb, 90)],
         # 기타
-        "dragon_skull": [(oth, otb, 0), (oth, otb, 1), (oth, otb, 2)],
-        "trophy": [(oth, otb, 3), (oth, otb, 6)],
-        "big_barrel": [(oth, otb, 10), (oth, otb, 11)],
+        "dragon_skull": [(oth, otb, 1), (oth, otb, 2)],
+        "shields": [(obj, ob, 38)],
         "armor": [(oth, otb, 12), (oth, otb, 13), (oth, otb, 14)],
         "banner_red": [(oth, otb, 15), (oth, otb, 19)],
         "banner_blue": [(oth, otb, 16), (oth, otb, 20)],
@@ -253,11 +265,41 @@ def build_sprites():
             origin = 0 if key.startswith("banner") else None
             save_still(f"{key}_{i}", pick(im, boxes, idx), 2.0, origin)
 
-    # 불꽃 애니메이션 (6프레임): 벽 횃불, 작은 가마솥, 큰 불 그릇, 받침대 화로
+    # 방을 돌파하면 나타나는 상자: 닫힘 → 열림 5프레임. 장식으로는 쓰지 않는다.
+    doors = load("dungeon", "doors_lever_chest_animation.png")
+    chest = [doors.crop((128, f * 48 + 16, 160, f * 48 + 48)) for f in range(5)]
+    # 다섯 장을 같은 테두리로 잘라 그림 아래의 빈 줄을 없앤다 (바닥에 놓인 것처럼 보이게)
+    x0 = min(f.getbbox()[0] for f in chest)
+    x1 = max(f.getbbox()[2] for f in chest)
+    y0 = min(f.getbbox()[1] for f in chest)
+    y1 = max(f.getbbox()[3] for f in chest)
+    save_anim("chest", [f.crop((x0, y0, x1, y1)) for f in chest], 12, 2.0, origin_y=1)
+
+    # 제단: 받침돌 위에 해골 전리품을 올린다 (구역마다 다른 조합). 축복을 받는 곳에만 쓴다.
+    ped = load("objects", "pedestals.png")
+    pb = components(ped, gap=1)
+
+    def stack(base, top, overlap):
+        """base 위에 top 을 가운데 맞춰 올린 그림."""
+        w = max(base.width, top.width)
+        h = base.height + top.height - overlap
+        out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        out.alpha_composite(base, ((w - base.width) // 2, h - base.height))
+        out.alpha_composite(top, ((w - top.width) // 2, 0))
+        return out
+
+    for zone, pi, ti in (("mine", 0, 4), ("fortress", 6, 3), ("temple", 3, 6)):
+        save_still("shrine_" + zone, stack(pick(ped, pb, pi), pick(oth, otb, ti), 12), 2.0, 6)
+
+    # 불꽃 애니메이션 (6프레임): 벽 횃불, 가마솥, 받침대 화로
     fire = load("dungeon", "fire_animation.png")
-    for key, (x0, x1) in (("torch", (0, 36)), ("cauldron", (36, 80)), ("fire_bowl", (80, 128)), ("brazier", (128, 176))):
+    for key, (x0, x1) in (("torch", (0, 36)), ("cauldron", (36, 80)), ("brazier", (128, 176))):
         frames = [fire.crop((x0, f * 48, x1, f * 48 + 48)) for f in range(6)]
         save_anim(key, frames, 9, 2.0, origin_y=4)
+        if key == "brazier":
+            # 캠프의 문을 알리는 구역 색 화로: 불꽃(따뜻한 색)만 색을 돌리고 받침대는 그대로 둔다
+            for name, hue in (("brazier_blue", 215), ("brazier_violet", 275)):
+                save_anim(name, [recolor_warm(f, hue) for f in frames], 9, 2.0, origin_y=4)
     fire2 = load("dungeon", "fire_animation2.png")
     for key, (x0, x1) in (("candle_0", (0, 32)), ("candle_1", (32, 64)), ("candle_2", (64, 96))):
         frames = [fire2.crop((x0, f * 32, x1, f * 32 + 32)) for f in range(6)]
@@ -269,31 +311,35 @@ def build_sprites():
         frames = [doors.crop((x0, f * 48, x0 + 32, f * 48 + 48)) for f in range(5)]
         save_anim(key, frames, 10, 2.0, origin_y=0)
 
-    # 수정 → 광맥 (구역별 색)
+    # 수정 = 캘 수 있는 광맥 (구역별 색, 모양은 하나). 수정을 장식으로는 쓰지 않는다.
     for key, name in (("vein_mine", "Yellow_crystal2"), ("vein_fortress", "Blue_crystal2"), ("vein_temple", "Violet_crystal2")):
         save_still(key, load("crystals", name + ".png"), 1.0, 6)
-    for key, name in (("crystal_mine", "Yellow_crystal3"), ("crystal_fortress", "Blue_crystal3"), ("crystal_temple", "Violet_crystal3"),
-                      ("crystal_red", "Red_crystal3"), ("crystal_green", "Green_crystal3")):
-        save_still(key + "_0", load("crystals", name + ".png"), 1.0, 4)
 
     # 언데드 장식 (신전 구역과 신전 보스방)
     sep = lambda n: load("undead", "Objects_separately", n)
     und = {
         "grave": ["Grave_shadow1_1.png", "Grave_shadow1_7.png", "Grave_shadow1_8.png", "Grave_shadow1_9.png", "Grave_shadow1_11.png", "Grave_shadow1_12.png"],
-        "ubones": ["Bones_shadow1_3.png", "Bones_shadow1_4.png", "Bones_shadow1_6.png", "Bones_shadow1_8.png", "Bones_shadow1_14.png", "Bones_shadow1_17.png"],
-        "dead_tree": ["Dead_tree_shadow1_2.png", "Broken_tree_shadow1_2.png", "Broken_tree_shadow1_3.png"],
-        "thorn": ["Thorn_plant_shadow1_2.png", "Thorn_plant_shadow1_4.png"],
-        "ruin": ["Ruin_shadow1_3.png", "Ruin_shadow1_4.png"],
-        "skull_pile": ["Pile_sculls_shadow1.png"],
         "lich": ["Lich_shadow1.png"],
-        "dead_arm": ["Dead_arm_shadow1_1.png"],
     }
     for key, files in und.items():
         for i, f in enumerate(files):
             if not os.path.exists(src("undead", "Objects_separately", f)):
                 continue
-            scale = {"lich": 1.5, "ubones": 1.0, "dead_tree": 1.3, "thorn": 1.3, "skull_pile": 1.3, "ruin": 1.5}.get(key, 2.0)
-            save_still(f"{key}_{i}", sep(f), scale)
+            save_still(f"{key}_{i}", sep(f), 1.5 if key == "lich" else 2.0)
+
+    # The Undead pack contains 18-frame animated guardians, not just scenery.
+    # Keep the original timing/alignment and use the same sheet for hover movement.
+    for key, filename, fw, fh, scale in (
+        ("watcher", "Animation6.png", 48, 80, 0.65),
+        ("sapling", "Animation3.png", 64, 64, 1.0),
+    ):
+        sheet = load("undead", filename)
+        frames = [sheet.crop((c*fw, r*fh, (c+1)*fw, (r+1)*fh)) for r in range(3) for c in range(6)]
+        save_anim(key, frames, 12, scale, origin_y=10)
+        definition = MANIFEST[key]
+        anim = {k: definition[k] for k in ("file", "frameWidth", "frameHeight", "frames", "fps")}
+        MANIFEST[key] = {"originX": fw/2, "originY": 10, "scale": scale,
+                         "anims": {"idle": dict(anim), "move": dict(anim)}}
 
     with open(os.path.join(ROOT, "assets", "data", "sprites_craftpix.json"), "w", encoding="utf-8") as f:
         json.dump(MANIFEST, f, ensure_ascii=False, indent=1)

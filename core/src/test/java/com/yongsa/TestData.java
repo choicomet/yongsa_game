@@ -15,9 +15,22 @@ public final class TestData {
     private static Balance balance;
     private static DungeonMap map;
 
+    /**
+     * 기존 규칙 테스트용 수치: 소환 표식과 보스 사망 연출의 대기 시간만 0으로 둔다
+     * (적이 전투 시작과 함께 나오고, 보스 처치가 곧바로 확정된다). 그 밖의 값은 실제 데이터 그대로다.
+     */
     public static Balance balance() {
-        if (balance == null) balance = Balance.loadFromPath("data/balance.json");
+        if (balance == null) {
+            balance = liveBalance();
+            balance.dungeon.spawnMarkTime = 0;
+            balance.feel.bossDeathTime = 0;
+        }
         return balance;
+    }
+
+    /** balance.json 을 고치지 않고 그대로 읽은 수치 (표식·연출 시간 포함). 매번 새로 읽는다. */
+    public static Balance liveBalance() {
+        return Balance.loadFromPath("data/balance.json");
     }
 
     public static DungeonMap map() {

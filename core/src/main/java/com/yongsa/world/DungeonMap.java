@@ -37,6 +37,8 @@ public class DungeonMap {
     public final Map<String, Vector2> points = new HashMap<>();
     public final List<MapObject> interacts = new ArrayList<>();
     public final List<Rectangle> solids = new ArrayList<>();
+    /** 전투방 안쪽의 엄폐물. solids 에도 들어 있어 지나갈 수 없고, 추가로 탄과 적의 시야·돌진을 막는다. */
+    public final List<Rectangle> covers = new ArrayList<>();
     public final List<MapObject> decor = new ArrayList<>();
     /** 구역별 방 순서 (본 경로 순서 → 곁가지). */
     public final Map<String, List<RoomDef>> zoneRooms = new HashMap<>();
@@ -74,6 +76,11 @@ public class DungeonMap {
 
     public boolean isSolidAt(float x, float y) {
         return isSolidTile((int) Math.floor(x / tileSize), (int) Math.floor(y / tileSize));
+    }
+
+    public boolean coverAt(float x, float y) {
+        for (Rectangle c : covers) if (c.contains(x, y)) return true;
+        return false;
     }
 
     /** 사각형이 고체 타일이나 고정 장애물과 겹치는지. */

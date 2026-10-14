@@ -61,7 +61,7 @@ public final class EnhanceService {
     public static Preview preview(Balance b, GameState s, String weaponType) {
         Preview p = new Preview();
         p.weaponType = weaponType;
-        p.minerals = s.minerals;
+        p.minerals = weaponType == null ? 0 : s.ore(b.oreIndex(weaponType));
         p.cap = Progress.enhanceCap(b, s);
         WeaponState w = weaponType == null ? null : s.weapon(weaponType);
         if (w == null) {
@@ -84,7 +84,7 @@ public final class EnhanceService {
         p.chance = p.guaranteed ? 1f : step.chance;
         p.triesToGuarantee = Math.max(1, step.maxTries - w.failCount);
         if (w.level >= p.cap) p.block = Block.CAP;
-        else if (s.minerals < step.cost) p.block = Block.NOT_ENOUGH;
+        else if (p.minerals < step.cost) p.block = Block.NOT_ENOUGH;
         return p;
     }
 
@@ -103,7 +103,7 @@ public final class EnhanceService {
         WeaponState w = s.weapon(weaponType);
         Balance.EnhanceStep step = b.enhanceStep(w.level + 1);
 
-        s.minerals -= step.cost;
+        s.addOre(b.oreIndex(weaponType), -step.cost);
         r.executed = true;
         r.cost = step.cost;
         r.guaranteed = w.failCount + 1 >= step.maxTries;

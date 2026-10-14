@@ -34,7 +34,16 @@ public class Hud {
         float life;
     }
 
+    /** 큰 사건 알림: 아이콘 + 제목 + 설명. 한 번에 하나씩 차례로 보여 준다. */
+    private static class Notice {
+        String icon, title, desc;
+    }
+
     private final Deque<Toast> toasts = new ArrayDeque<>();
+    private final Deque<Notice> notices = new ArrayDeque<>();
+    private Notice notice;
+    private float noticeLife;
+    public float noticeTime = 3.2f;
     private String banner;
     private float bannerLife;
     private String saveError;
@@ -59,6 +68,15 @@ public class Hud {
         while (toasts.size() > 3) toasts.removeFirst();
     }
 
+    /** icon 은 스프라이트 키(무기 등) 또는 임시 그림 이름(icon_*). */
+    public void notice(String icon, String title, String desc) {
+        Notice n = new Notice();
+        n.icon = icon;
+        n.title = title;
+        n.desc = desc;
+        notices.addLast(n);
+    }
+
     public void banner(String text, float seconds) {
         banner = text;
         bannerLife = seconds;
@@ -72,6 +90,50 @@ public class Hud {
         for (Toast t : toasts) t.life -= dt;
         toasts.removeIf(t -> t.life <= 0);
         if (bannerLife > 0) bannerLife -= dt;
+        if (notice != null) {
+            noticeLife -= dt;
+            if (noticeLife <= 0) notice = null;
+        }
+        if (notice == null && !notices.isEmpty()) {
+            notice = notices.pollFirst();
+            noticeLife = noticeTime;
+        }
+    }
+
+    /** 아이콘: "<키>_icon" 그림이 있으면 그것을, 없으면 그 키의 그림을 쓴다. */
+    public static TextureRegion icon(SpriteLibrary sprites, String key) {
+        SpriteLibrary.Entry e = sprites.get(key + "_icon");
+        if (e == null) e = sprites.get(key);
+        return e != null ? e.frame("idle", 0) : sprites.placeholder(key);
+    }
+
+    private TextureRegion icon(String key) {
+        return icon(sprites, key);
+    }
+
+    /** 개발자 모드가 켜져 있으면 화면에 표시한다. */
+    public boolean devOn;
+
+    private void drawNotice(SpriteBatch batch) {
+        if (notice == null) return;
+        // 오른쪽 아래에서 미끄러져 들어온다
+        float in = Math.min(1, (noticeTime - noticeLife) / 0.2f), out = Math.min(1, noticeLife / 0.3f);
+        float nw = 300, nh = 46, nx = 960 - 12 - nw + (1 - in) * 40, ny = 12;
+        batch.setColor(1, 1, 1, out);
+        panel(batch, nx, ny, nw, nh);
+        TextureRegion ic = icon(notice.icon);
+        if (ic != null) {
+            float k = Math.min(28f / ic.getRegionHeight(), 28f / ic.getRegionWidth());
+            batch.setColor(1, 1, 1, out);
+            batch.draw(ic, nx + 24 - ic.getRegionWidth() * k / 2f, ny + 9, ic.getRegionWidth() * k, ic.getRegionHeight() * k);
+            batch.setColor(Color.WHITE);
+        }
+        fonts.body.setColor(UiSkin.GOLD.r, UiSkin.GOLD.g, UiSkin.GOLD.b, out);
+        fonts.body.draw(batch, notice.title, nx + 48, ny + 37);
+        fonts.body.setColor(UiSkin.TEXT);
+        fonts.small.setColor(UiSkin.TEXT.r, UiSkin.TEXT.g, UiSkin.TEXT.b, out);
+        fonts.small.draw(batch, notice.desc, nx + 48, ny + 17);
+        fonts.small.setColor(UiSkin.TEXT);
     }
 
     public void draw(SpriteBatch batch, GameWorld w, Balance b) {
@@ -103,72 +165,96 @@ public class Hud {
         small.setColor(UiSkin.TEXT);
         small.draw(batch, obj, x + 24, y - 45);
 
-        // ---- 오른쪽 위: 광물 | 위치 ----
-        String minerals = String.valueOf(w.state.minerals);
-        String loc = w.locationName();
-        layout.setText(body, minerals);
-        float mw = layout.width;
-        layout.setText(body, loc);
-        float lw = layout.width;
-        float pw = 30 + mw + 22 + lw + 14;
-        float px = 960 - 12 - pw;
-        panel(batch, px, y - 30, pw, 30);
-        batch.draw(sprites.placeholder("icon_mineral"), px + 8, y - 24, 16, 16);
-        body.draw(batch, minerals, px + 30, y - 9);
-        batch.setColor(0.6f, 0.56f, 0.52f, 1f);
-        batch.draw(tx.white, px + 30 + mw + 10, y - 24, 1, 18);
-        batch.setColor(Color.WHITE);
-        body.draw(batch, loc, px + 30 + mw + 20, y - 9);
+        // 받은 축복 (이번 목숨 동안)
+        if (!w.state.blessings.isEmpty()) {
+            StringBuilder sb = new StringBuilder("축복  ");
+            for (int i = 0; i < w.state.blessings.size(); i++) {
+                Balance.BlessingDef bd = b.blessingOrNull(w.state.blessings.get(i));
+                if (bd == null) continue;
+                if (i > 0) sb.append(" · ");
+                sb.append(bd.name);
+            }
+            layout.setText(small, sb);
+            panel(batch, x, y - 94, layout.width + 20, 26);
+            small.setColor(0.85f, 0.75f, 1f, 1f);
+            small.draw(batch, sb, x + 10, y - 75);
+            small.setColor(UiSkin.TEXT);
+        }
 
-        drawMinimap(batch, w, 960 - 12 - 196, y - 30 - 8 - 100, 196, 100);
+        // ---- 오른쪽 위: 구역별 광물 · 골드 ----
+        {
+            float pw = 14;
+            String[] nums = new String[b.zones.length + 1];
+            for (int i = 0; i < b.zones.length; i++) nums[i] = String.valueOf(w.state.ore(i));
+            nums[b.zones.length] = String.valueOf(w.state.gold);
+            for (String n : nums) {
+                layout.setText(small, n);
+                pw += 16 + layout.width + 12;
+            }
+            float px = 960 - 12 - pw;
+            panel(batch, px, y - 26, pw, 26);
+            float cx = px + 10;
+            for (int i = 0; i < nums.length; i++) {
+                boolean gold = i == b.zones.length;
+                float[] c = gold ? GOLD_COIN : b.zones[i].oreColor;
+                // 광물은 마름모, 골드는 동전
+                batch.setColor(c[0] * 0.55f, c[1] * 0.55f, c[2] * 0.55f, 1);
+                if (gold) batch.draw(tx.white, cx, y - 19, 10, 12);
+                else gem(batch, cx + 5, y - 13, 6);
+                batch.setColor(c[0], c[1], c[2], 1);
+                if (gold) batch.draw(tx.white, cx + 2, y - 17, 6, 8);
+                else gem(batch, cx + 5, y - 13, 4);
+                batch.setColor(Color.WHITE);
+                small.setColor(UiSkin.TEXT);
+                small.draw(batch, nums[i], cx + 15, y - 8);
+                layout.setText(small, nums[i]);
+                cx += 16 + layout.width + 12;
+            }
+        }
 
-        // ---- 아래 왼쪽: 무기 ----
+        // 미니맵 (정사각형)과 현재 위치 이름
+        float mm = 150;
+        drawMinimap(batch, w, 960 - 12 - mm, y - 26 - 6 - mm, mm);
+        {
+            String loc = w.locationName();
+            layout.setText(small, loc);
+            small.setColor(UiSkin.DIM);
+            small.draw(batch, loc, 960 - 12 - layout.width - 4, y - 26 - 6 - mm - 5);
+            small.setColor(UiSkin.TEXT);
+        }
+
+        // ---- 아래 왼쪽: 무기 · 회피 · 충격파 (작은 칸 세 개. 방 아래쪽을 가리지 않게) ----
+        float by = 10, slot = 34;
         WeaponState ws = w.state.equippedWeapon();
-        float by = 12;
-        panel(batch, 12, by, 196, 40);
+        slot(batch, 12, by, slot);
         if (ws != null) {
-            TextureRegion icon = sprites.get(ws.type).frame("idle", 0);
-            float k = Math.min(28f / icon.getRegionHeight(), 28f / icon.getRegionWidth());
-            batch.draw(icon, 34 - icon.getRegionWidth() * k / 2f, by + 6, icon.getRegionWidth() * k, icon.getRegionHeight() * k);
-            String name = b.weapon(ws.type).name + " +" + ws.level;
-            body.draw(batch, name, 54, by + 30);
-            small.setColor(UiSkin.DIM);
-            small.draw(batch, "피해 " + DamageCalc.weaponDamage(b, ws), 54, by + 15);
-            small.setColor(UiSkin.TEXT);
-        } else {
-            small.setColor(UiSkin.DIM);
-            small.draw(batch, "무기 없음 · 대장간에서 제작", 22, by + 25);
-            small.setColor(UiSkin.TEXT);
+            TextureRegion icon = icon(ws.type);
+            float k = Math.min(24f / icon.getRegionHeight(), 24f / icon.getRegionWidth());
+            batch.draw(icon, 12 + slot / 2f - icon.getRegionWidth() * k / 2f, by + 6, icon.getRegionWidth() * k, icon.getRegionHeight() * k);
+            small.setColor(UiSkin.GOLD);
+            small.draw(batch, "+" + ws.level, 12 + 2, by + 13);
         }
-
-        // 충격파 칸
-        float sx = 216;
-        boolean unlocked = Progress.isAwakeningUnlocked(b, w.state);
-        String lockText = b.boss(b.zones[0].boss).name + " 처치 후 해금";
-        if (!unlocked) {
-            layout.setText(small, lockText);
-            panel(batch, sx, by, 46 + layout.width + 10, 40);
-        } else {
-            panel(batch, sx, by, 132, 40);
-        }
-        batch.setColor(unlocked ? Color.WHITE : new Color(0.4f, 0.4f, 0.45f, 1f));
-        batch.draw(sprites.placeholder("icon_shock"), sx + 8, by + 8, 24, 24);
+        key(batch, small, "J", 12, by, slot);
+        // 회피
+        float dx = 12 + slot + 4;
+        slot(batch, dx, by, slot);
+        float dodgeTotal = b.hero.dodgeCooldown * w.mods.dodgeCooldownMul;
+        batch.setColor(0.45f, 0.8f, 1f, w.hero.dodgeCooldown > 0 ? 0.35f : 1f);
+        batch.draw(tx.white, dx + 9, by + 14, 16, 3);
+        batch.draw(tx.white, dx + 19, by + 11, 3, 9);
+        batch.draw(tx.white, dx + 22, by + 13, 3, 5);
         batch.setColor(Color.WHITE);
-        small.setColor(UiSkin.DIM);
-        small.draw(batch, "Q", sx + 30, by + 34);
-        if (!unlocked) {
-            small.draw(batch, lockText, sx + 46, by + 25);
-        } else if (w.hero.shockCooldown > 0) {
-            float p = w.hero.shockCooldown / b.shockwave.cooldown;
-            batch.setColor(0, 0, 0, 0.6f);
-            batch.draw(tx.white, sx + 8, by + 8, 24, 24 * p);
-            batch.setColor(Color.WHITE);
-            small.setColor(UiSkin.TEXT);
-            small.draw(batch, "충격파 " + String.format("%.1f", w.hero.shockCooldown) + "초", sx + 46, by + 25);
-        } else {
-            small.setColor(new Color(0.6f, 0.85f, 1f, 1f));
-            small.draw(batch, "충격파 준비", sx + 46, by + 25);
-        }
+        cooldown(batch, dx, by, slot, dodgeTotal > 0 ? w.hero.dodgeCooldown / dodgeTotal : 0);
+        key(batch, small, "K", dx, by, slot);
+        // 충격파
+        float sx = dx + slot + 4;
+        slot(batch, sx, by, slot);
+        boolean unlocked = Progress.isAwakeningUnlocked(b, w.state);
+        batch.setColor(unlocked ? Color.WHITE : new Color(0.35f, 0.35f, 0.4f, 1f));
+        batch.draw(sprites.placeholder("icon_shock"), sx + 5, by + 5, 24, 24);
+        batch.setColor(Color.WHITE);
+        if (unlocked) cooldown(batch, sx, by, slot, w.hero.shockCooldown / b.shockwave.cooldown);
+        key(batch, small, "U", sx, by, slot);
         small.setColor(UiSkin.TEXT);
 
         // ---- 보스 체력 ----
@@ -243,13 +329,61 @@ public class Hud {
             small.setColor(UiSkin.TEXT);
         }
 
-        // 조작 도움 (첫 화면 근처에서만)
-        if (!w.state.hasAnyWeapon() && w.state.minerals == 0 && w.time < 25) {
-            String help = "이동 WASD · 공격 마우스 왼쪽 · 상호작용 E · 가방 I · 메뉴 Esc";
-            layout.setText(small, help);
-            small.setColor(1, 1, 1, MathUtils.clamp(25 - w.time, 0, 1) * 0.85f);
-            small.draw(batch, help, 480 - layout.width / 2f, 104);
+        drawNotice(batch);
+        if (devOn) {
+            small.setColor(1f, 0.5f, 0.5f, 1f);
+            small.draw(batch, "개발자 모드 (F1)", 130, 30);
             small.setColor(UiSkin.TEXT);
+        }
+
+        // 조작 안내는 시작하고 잠깐만 보여 준다 (방 아래쪽을 가리지 않게). 전체 조작은 Esc 메뉴에 있다.
+        if (w.time < HELP_TIME) {
+            float a = Math.min(1, (HELP_TIME - w.time) / 2f);
+            String help = "WASD 이동   J 공격   K 회피   L 채굴/사용   U 충격파   I 대장간   O 무기 교체   Esc 메뉴";
+            layout.setText(small, help);
+            batch.setColor(0, 0, 0, 0.55f * a);
+            batch.draw(tx.white, 480 - layout.width / 2f - 10, 12, layout.width + 20, 22);
+            batch.setColor(Color.WHITE);
+            small.setColor(0.85f, 0.83f, 0.77f, a);
+            small.draw(batch, help, 480 - layout.width / 2f, 28);
+            small.setColor(UiSkin.TEXT);
+        }
+    }
+
+    private static final float HELP_TIME = 25f;
+    private static final float[] GOLD_COIN = {1f, 0.82f, 0.3f};
+
+    /** 아래쪽 작은 칸. */
+    private void slot(SpriteBatch batch, float x, float y, float size) {
+        batch.setColor(0.07f, 0.06f, 0.09f, 0.8f);
+        batch.draw(tx.white, x, y, size, size);
+        batch.setColor(0.73f, 0.69f, 0.63f, 0.9f);
+        batch.draw(tx.white, x, y, size, 1);
+        batch.draw(tx.white, x, y + size - 1, size, 1);
+        batch.draw(tx.white, x, y, 1, size);
+        batch.draw(tx.white, x + size - 1, y, 1, size);
+        batch.setColor(Color.WHITE);
+    }
+
+    /** 칸 오른쪽 위의 키 글자. */
+    private void key(SpriteBatch batch, BitmapFont f, String k, float x, float y, float size) {
+        f.setColor(UiSkin.DIM);
+        f.draw(batch, k, x + size - 10, y + size - 3);
+    }
+
+    /** 재사용 대기: 아래에서 위로 걷히는 어둠. p 는 남은 비율. */
+    private void cooldown(SpriteBatch batch, float x, float y, float size, float p) {
+        if (p <= 0) return;
+        batch.setColor(0, 0, 0, 0.62f);
+        batch.draw(tx.white, x + 1, y + 1, size - 2, (size - 2) * Math.min(1, p));
+        batch.setColor(Color.WHITE);
+    }
+
+    private void gem(SpriteBatch batch, float cx, float cy, int r) {
+        for (int i = 0; i <= r; i++) {
+            float half = r - i;
+            batch.draw(tx.white, cx - half, cy + i, half * 2 + 1, 1);
+            batch.draw(tx.white, cx - half, cy - i, half * 2 + 1, 1);
         }
     }
 
@@ -257,53 +391,86 @@ public class Hud {
             new Color(0.75f, 0.62f, 0.45f, 1), new Color(0.62f, 0.5f, 0.38f, 1),
             new Color(0.45f, 0.55f, 0.7f, 1), new Color(0.58f, 0.45f, 0.75f, 1)};
 
-    /** 미니맵: 용사 주변 구역을 보여준다. 들어가 본 방만 보인다. 현재 방은 금색 테두리, 보스방은 붉게. */
-    private void drawMinimap(SpriteBatch batch, GameWorld w, float x, float y, float mw, float mh) {
+    private TextureRegion face;
+
+    /** 용사 얼굴 (정면 그림의 머리 부분). */
+    private TextureRegion face() {
+        if (face == null) {
+            TextureRegion r = sprites.get("hero").frame("idle", "down", 0);
+            face = new TextureRegion(r, 5, 0, Math.min(16, r.getRegionWidth() - 5), Math.min(15, r.getRegionHeight()));
+        }
+        return face;
+    }
+
+    /**
+     * 미니맵: 용사 주변을 정사각형으로 보여 준다. 방은 모두 표시한다 —
+     * 아직 안 가 본 방은 어두운 윤곽, 가 본 방은 구역 색, 돌파하지 못한 전투방은 붉게.
+     * 보스방과 제단 방에는 표식을 찍고, 용사 자리에는 얼굴을 그린다.
+     */
+    private void drawMinimap(SpriteBatch batch, GameWorld w, float x, float y, float size) {
         com.yongsa.world.DungeonMap m = w.map;
-        panel(batch, x, y, mw, mh);
-        float pad = 4;
-        float viewW = 4200f; // 미니맵이 보여주는 월드 폭(px)
-        float k = (mw - pad * 2) / viewW;
-        float cxw = w.hero.x, cyw = w.hero.y;
-        float left = x + pad, bottom = y + pad, right = x + mw - pad, top = y + mh - pad;
-        float ox = x + mw / 2f - cxw * k, oy = y + mh / 2f - cyw * k;
+        panel(batch, x, y, size, size);
+        float pad = 3;
+        float viewW = 4300f; // 미니맵이 보여주는 월드 폭(px): 좌우로 방 두 개쯤
+        float k = (size - pad * 2) / viewW;
+        float left = x + pad, bottom = y + pad, right = x + size - pad, top = y + size - pad;
+        float ox = x + size / 2f - w.hero.x * k, oy = y + size / 2f - w.hero.y * k;
+        // 문으로 이어진 길 (방과 방 사이를 가는 선으로)
+        batch.setColor(0.5f, 0.48f, 0.46f, 0.7f);
+        for (com.yongsa.world.DoorDef d : m.doors) {
+            float dx = ox + (d.bounds.x + d.bounds.width / 2f) * k, dy = oy + (d.bounds.y + d.bounds.height / 2f) * k;
+            if (dx < left + 1 || dx > right - 2 || dy < bottom + 1 || dy > top - 2) continue;
+            batch.draw(tx.white, dx - 1, dy - 1, 3, 3);
+        }
         for (com.yongsa.world.RoomDef r : m.rooms) {
             boolean visited = r.kind == com.yongsa.world.RoomDef.Kind.CAMP || w.state.visitedRooms.contains(r.id);
-            if (!visited) continue;
-            Color c;
-            int theme = m.theme((int) (r.centerX() / m.tileSize), (int) (r.centerY() / m.tileSize));
-            if (r.kind == com.yongsa.world.RoomDef.Kind.BOSS) {
-                c = w.state.isBossDefeated(w.b.zone(r.zone).boss) ? new Color(0.5f, 0.3f, 0.3f, 1) : new Color(0.9f, 0.2f, 0.2f, 1);
-            } else if (r.isCombat() && !w.state.isRoomCleared(r.id)) {
-                c = new Color(0.75f, 0.32f, 0.28f, 1);
-            } else {
-                c = THEME[Math.max(0, Math.min(3, theme))];
-            }
+            boolean boss = r.kind == com.yongsa.world.RoomDef.Kind.BOSS;
+            boolean bossAlive = boss && !w.state.isBossDefeated(w.b.zone(r.zone).boss);
             float rx = ox + r.bounds.x * k, ry = oy + r.bounds.y * k;
             float rx2 = rx + r.bounds.width * k, ry2 = ry + r.bounds.height * k;
             // 패널 밖은 잘라낸다
             float cx0 = Math.max(rx, left), cy0 = Math.max(ry, bottom), cx1 = Math.min(rx2, right), cy1 = Math.min(ry2, top);
             if (cx1 <= cx0 || cy1 <= cy0) continue;
-            batch.setColor(c.r, c.g, c.b, 0.85f);
-            batch.draw(tx.white, cx0, cy0, cx1 - cx0, cy1 - cy0);
-            if (r == w.room) {
-                batch.setColor(UiSkin.GOLD);
-                batch.draw(tx.white, cx0, cy0, cx1 - cx0, 1);
-                batch.draw(tx.white, cx0, cy1 - 1, cx1 - cx0, 1);
-                batch.draw(tx.white, cx0, cy0, 1, cy1 - cy0);
-                batch.draw(tx.white, cx1 - 1, cy0, 1, cy1 - cy0);
+            if (!visited) {
+                batch.setColor(0.2f, 0.2f, 0.24f, 0.9f);
+            } else if (boss) {
+                batch.setColor(bossAlive ? 0.9f : 0.5f, bossAlive ? 0.2f : 0.3f, bossAlive ? 0.2f : 0.3f, 0.9f);
+            } else if (r.isCombat() && !w.state.isRoomCleared(r.id)) {
+                batch.setColor(0.75f, 0.32f, 0.28f, 0.9f);
+            } else {
+                Color c = THEME[Math.max(0, Math.min(3, m.theme((int) (r.centerX() / m.tileSize), (int) (r.centerY() / m.tileSize))))];
+                batch.setColor(c.r, c.g, c.b, 0.9f);
             }
-            // 미처치 보스방 표시
-            if (r.kind == com.yongsa.world.RoomDef.Kind.BOSS && !w.state.isBossDefeated(w.b.zone(r.zone).boss)) {
-                batch.setColor(1, 0.9f, 0.9f, 1);
-                float bx = (cx0 + cx1) / 2f, by = (cy0 + cy1) / 2f;
-                batch.draw(tx.white, bx - 2, by - 1, 4, 3);
+            batch.draw(tx.white, cx0, cy0, cx1 - cx0, cy1 - cy0);
+            // 윤곽: 안 가 본 방은 흐리게, 지금 있는 방은 금색
+            if (r == w.room) batch.setColor(UiSkin.GOLD);
+            else batch.setColor(0.55f, 0.53f, 0.5f, visited ? 0f : 0.9f);
+            batch.draw(tx.white, cx0, cy0, cx1 - cx0, 1);
+            batch.draw(tx.white, cx0, cy1 - 1, cx1 - cx0, 1);
+            batch.draw(tx.white, cx0, cy0, 1, cy1 - cy0);
+            batch.draw(tx.white, cx1 - 1, cy0, 1, cy1 - cy0);
+            float mx = (rx + rx2) / 2f, my = (ry + ry2) / 2f;
+            if (mx < left + 3 || mx > right - 3 || my < bottom + 3 || my > top - 3) continue;
+            if (bossAlive) {
+                // 보스: 붉은 해골 표식 대신 굵은 X
+                batch.setColor(1f, 0.85f, 0.85f, 1);
+                for (int i = -3; i <= 3; i++) {
+                    batch.draw(tx.white, mx + i, my + i, 1, 1);
+                    batch.draw(tx.white, mx + i, my - i, 1, 1);
+                }
+            } else if ("shrine".equals(r.feature)) {
+                // 제단: 보랏빛 마름모
+                batch.setColor(0.85f, 0.6f, 1f, 1);
+                gem(batch, mx, my, 3);
             }
         }
-        float blink = (w.time * 3) % 1 < 0.6f ? 1 : 0.4f;
-        batch.setColor(1, 1, 1, blink);
-        batch.draw(tx.white, x + mw / 2f - 2, y + mh / 2f - 2, 4, 4);
         batch.setColor(Color.WHITE);
+        TextureRegion f = face();
+        float fw = 14, fh = fw * f.getRegionHeight() / f.getRegionWidth();
+        batch.setColor(0, 0, 0, 0.8f);
+        batch.draw(tx.white, x + size / 2f - fw / 2f - 1, y + size / 2f - fh / 2f - 1, fw + 2, fh + 2);
+        batch.setColor(Color.WHITE);
+        batch.draw(f, x + size / 2f - fw / 2f, y + size / 2f - fh / 2f, fw, fh);
     }
 
     private void panel(SpriteBatch batch, float x, float y, float w, float h) {

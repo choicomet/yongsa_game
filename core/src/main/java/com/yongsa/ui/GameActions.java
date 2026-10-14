@@ -15,4 +15,9 @@ public interface GameActions {
     boolean save();
 
     void sfx(String id);
+
+    /** 무기 아이콘 (없으면 null). */
+    default com.badlogic.gdx.graphics.g2d.TextureRegion weaponIcon(String type) {
+        return null;
+    }
 }

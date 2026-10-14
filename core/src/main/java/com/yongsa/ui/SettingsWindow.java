@@ -30,7 +30,7 @@ public final class SettingsWindow {
             }
         });
         p.add(full).left().colspan(3).padTop(8).row();
-        p.add(w.label("조작: 이동 WASD/방향키 · 공격 마우스 왼쪽 · 상호작용 E · 충격파 Q · 가방 I · 메뉴 Esc", "dim"))
+        p.add(w.label("이동 WASD/방향키 · J 공격 · K 회피 · L 상호작용 · U 충격파 · I 가방 · O 무기", "dim"))
                 .left().colspan(3).padTop(12).row();
         Table buttons = new Table();
         Windows.Modal[] holder = new Windows.Modal[1];

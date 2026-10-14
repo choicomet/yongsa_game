@@ -20,6 +20,10 @@ public class RoomDef {
     public int depth;
     /** 보스까지 가는 본 경로에 있는지 (아니면 곁가지). */
     public boolean mainPath;
+    /** 방에 놓인 것: "shrine"(제단) | "" (없음). */
+    public String feature = "";
+    /** 제단을 지키는 방: 적이 더 많이, 더 여러 번, 강화 개체와 함께 나온다. */
+    public boolean guard;
 
     public RoomDef(String id, String zone, Kind kind, Rectangle bounds) {
         this.id = id;

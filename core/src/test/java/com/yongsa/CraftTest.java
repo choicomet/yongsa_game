@@ -13,52 +13,52 @@ class CraftTest {
     @Test
     void firstCraftAutoEquipsAndOwnedIsBlocked() {
         GameState s = TestData.newGame();
-        s.minerals = 20;
+        s.ore[0] = 20;
         CraftService.Result r = CraftService.craft(b, s, "sword");
         assertTrue(r.executed);
         assertTrue(r.autoEquipped);
         assertEquals("sword", s.equipped);
-        assertEquals(14, s.minerals);
+        assertEquals(14, s.ore[0]);
         assertEquals(CraftService.Block.OWNED, CraftService.craftBlock(b, s, "sword"));
         assertEquals(CraftService.Block.LOCKED, CraftService.craftBlock(b, s, "hammer"), "망치는 첫 보스 처치 후");
     }
 
     @Test
-    void T05_cannotDismantleEquippedOrLast() {
+    void T05_secondWeaponGoesToBagAndCombatBlocksEquip() {
         GameState s = TestData.newGame();
-        s.minerals = 100;
+        s.ore[0] = 100;
+        s.ore[1] = 100;
         CraftService.craft(b, s, "sword");
-        assertEquals(CraftService.Block.LAST_WEAPON, CraftService.dismantle(b, s, "sword", false).block);
         s.defeatedBosses.add("boss_mine");
         CraftService.Result h = CraftService.craft(b, s, "hammer");
         assertTrue(h.executed);
         assertFalse(h.autoEquipped, "두 번째 무기는 가방으로");
         assertEquals("sword", s.equipped);
-        assertEquals(CraftService.Block.EQUIPPED, CraftService.dismantle(b, s, "sword", false).block);
-        assertEquals(CraftService.Block.IN_COMBAT, CraftService.dismantle(b, s, "hammer", true).block);
         assertEquals(CraftService.Block.IN_COMBAT, CraftService.equip(s, "hammer", true).block);
-        assertNotNull(s.equippedWeapon());
-        assertEquals(2, s.weapons.size());
+        assertTrue(CraftService.equip(s, "hammer", false).executed);
+        assertEquals("hammer", s.equipped);
+        assertEquals(2, s.weapons.size(), "만든 장비는 없앨 수 없다 (분해 없음)");
     }
 
     @Test
-    void T06_dismantleRefundAndRecraftAtZero() {
+    void T06_eachWeaponNeedsItsOwnOreColor() {
         GameState s = TestData.newGame();
-        s.minerals = 100;
         s.defeatedBosses.add("boss_mine");
-        CraftService.craft(b, s, "sword");
-        CraftService.craft(b, s, "hammer");
-        s.weapon("hammer").level = 4;
-        s.weapon("hammer").failCount = 2;
-        int before = s.minerals;
-        CraftService.Result d = CraftService.dismantle(b, s, "hammer", false);
-        assertTrue(d.executed);
-        assertEquals(5, d.minerals);
-        assertEquals(before + 5, s.minerals);
-        assertEquals(3, CraftService.refund(b, "sword"));
-        CraftService.Result again = CraftService.craft(b, s, "hammer");
-        assertTrue(again.executed);
-        assertEquals(0, s.weapon("hammer").level);
-        assertEquals(0, s.weapon("hammer").failCount);
+        s.defeatedBosses.add("boss_fortress");
+        // 노란 광석만 잔뜩 있어도 망치와 쌍단검은 만들 수 없다
+        s.ore[0] = 100;
+        assertEquals(CraftService.Block.NOT_ENOUGH, CraftService.craftBlock(b, s, "hammer"));
+        assertEquals(CraftService.Block.NOT_ENOUGH, CraftService.craftBlock(b, s, "daggers"));
+        assertTrue(CraftService.craft(b, s, "sword").executed);
+        s.ore[1] = b.weapon("hammer").craftCost;
+        s.ore[2] = b.weapon("daggers").craftCost;
+        assertTrue(CraftService.craft(b, s, "hammer").executed);
+        assertTrue(CraftService.craft(b, s, "daggers").executed);
+        assertEquals(0, s.ore[1]);
+        assertEquals(0, s.ore[2]);
+        assertEquals(100 - b.weapon("sword").craftCost, s.ore[0], "다른 색 광석은 줄지 않는다");
+        assertEquals("mine", b.weapon("sword").ore);
+        assertEquals("fortress", b.weapon("hammer").ore);
+        assertEquals("temple", b.weapon("daggers").ore);
     }
 }

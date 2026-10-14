@@ -29,7 +29,7 @@ class WorldTest {
 
     GameState armed() {
         GameState s = TestData.newGame();
-        s.minerals = 6;
+        s.ore[0] = 6;
         CraftService.craft(b, s, "sword");
         return s;
     }
@@ -145,13 +145,13 @@ class WorldTest {
         w.hero.y = o.y() + (o.y() > ore.centerY() ? -24 : 24);
         in.interactHeld = true;
         run(w, in, 0.5f);
-        assertEquals(0, s.minerals);
+        assertEquals(0, s.ore[0]);
         in.interactHeld = false; // 놓으면 취소
         w.step(dt, in);
         assertEquals(0f, w.miningProgress);
         in.interactHeld = true;
         run(w, in, 1.05f);
-        assertEquals(b.zone("mine").veinYield, s.minerals);
+        assertEquals(b.zone("mine").veinYield, s.ore[0]);
         assertTrue(v.mined);
     }
 
@@ -171,13 +171,13 @@ class WorldTest {
         w.step(dt, in);
         assertNull(w.combat);
         assertTrue(s.isRoomCleared(TestData.firstBattle().id));
-        assertEquals(b.zone("mine").roomReward, s.minerals);
+        assertEquals(b.zone("mine").roomReward, s.ore[0]);
         assertFalse(w.isDoorLocked(TestData.doorOf(TestData.firstBattle())));
         // 다시 들어와도 적이 없다
         w.hero.x += 1;
         w.step(dt, in);
         assertNull(w.combat);
-        assertEquals(b.zone("mine").roomReward, s.minerals);
+        assertEquals(b.zone("mine").roomReward, s.ore[0]);
     }
 
     @Test
@@ -189,7 +189,7 @@ class WorldTest {
         Enemy e = w.combat.enemies.get(0);
         w.hero.x = e.x + 20;
         w.hero.y = e.y;
-        run(w, in, 0.7f);
+        run(w, in, b.enemyCombat.spawnGrace - 0.1f);
         for (Enemy x : w.combat.enemies) assertFalse(x.aggressive());
         run(w, in, 0.3f);
         assertTrue(w.combat.enemies.stream().anyMatch(Enemy::aggressive));
@@ -218,7 +218,7 @@ class WorldTest {
         assertNotNull(atk);
         in.attackHeld = false;
         run(w, in, cycle);
-        assertEquals(1000 - 12, e.hp);
+        assertEquals(1000 - b.weapon("sword").baseAttack, e.hp);
     }
 
     @Test
@@ -264,7 +264,7 @@ class WorldTest {
         w.step(dt, in);
         assertTrue(w.hero.dead);
         assertFalse(s.isRoomCleared(TestData.firstBattle().id), "사망 우선: 클리어 없음");
-        assertEquals(0, s.minerals);
+        assertEquals(0, s.ore[0]);
         run(w, in, b.hero.deathTime + 0.05f);
         assertFalse(w.hero.dead);
         assertNull(w.combat, "실패한 방 초기화");
@@ -276,7 +276,7 @@ class WorldTest {
     }
 
     @Test
-    void T11_bedDeathReturnRules() {
+    void T11_returnAndDeathRules() {
         GameState s = armed();
         GameWorld w = new GameWorld(b, map, s);
         put(w, TestData.oreRoom());
@@ -291,23 +291,23 @@ class WorldTest {
         assertEquals(50, w.hero.hp);
         assertSame(m, s.mineRoom(TestData.oreRoom().id));
         assertEquals(cycle, s.miningCycle);
-        // 사망: 광맥 재생 없음
+        // 캠프에는 쉬는 곳도 대장간도 없다: 다시 일어나는 곳일 뿐이다
+        assertNull(map.interact("bed"));
+        assertNull(map.interact("forge"));
+        run(w, in, 0.5f);
+        assertEquals(50, w.hero.hp, "캠프에 있어도 회복되지 않는다");
+        // 사망: 캠프에서 체력이 가득 찬 채 다시 일어나고, 광맥이 새로 자란다
         w.hero.hp = 1;
         w.damageHero(10, w.hero.x, w.hero.y);
         w.step(dt, in);
         run(w, in, 1.1f);
-        assertEquals(100, w.hero.hp);
-        assertTrue(s.mineRoom(TestData.oreRoom().id).veins.get(0).mined);
-        // 침대: 새 회차
-        w.hero.hp = 40;
-        w.useBed();
         assertEquals(100, w.hero.hp);
         assertEquals(cycle + 1, s.miningCycle);
         assertNull(s.mineRoom(TestData.oreRoom().id));
     }
 
     @Test
-    void T16_shockwaveStopsAtWalls() {
+    void T16_shockwaveHitsEveryoneInTheRoomOnceAndPushesThemAway() {
         GameState s = armed();
         Progress.onBossDefeated(b, s, "boss_mine");
         GameWorld w = new GameWorld(b, map, s);
@@ -315,26 +315,38 @@ class WorldTest {
         put(w, a);
         PlayerInput in = idle(w);
         w.step(dt, in);
-        // 방 왼쪽 벽 가까이에서 왼쪽으로 충격파
-        w.hero.x = a.bounds.x + 40;
+        run(w, in, b.dungeon.spawnMarkTime + 0.05f);
+        // 방 가운데에서 터뜨린다: 조준 방향과 거리에 상관없이 방 안의 모든 적이 한 번씩 맞는다
+        w.hero.x = a.centerX();
         w.hero.y = a.centerY();
-        Enemy e = w.combat.enemies.get(0);
-        e.hp = 999;
-        e.grace = 999;
-        e.x = a.bounds.x - 100; // 벽 너머 (방 밖)
-        e.y = a.centerY();
-        w.combat.enemies.get(1).hp = 999;
-        w.combat.enemies.get(1).grace = 999;
-        in.aimX = w.hero.x - 200;
+        Enemy near = w.combat.enemies.get(0), far = w.combat.enemies.get(1);
+        for (Enemy e : w.combat.enemies) {
+            e.hp = 999;
+            e.grace = 999;
+        }
+        near.x = w.hero.x + 60;
+        near.y = w.hero.y;
+        far.x = a.bounds.x + 80; // 용사 뒤쪽 먼 구석
+        far.y = a.bounds.y + 80;
+        float nearX = near.x;
+        w.combat.projectiles.add(new com.yongsa.combat.Projectile(w.hero.x + 150, w.hero.y + 150, 0f, 1f, 5));
+        in.aimX = w.hero.x + 200;
         in.aimY = w.hero.hurtY();
         in.shockwavePressed = true;
         w.step(dt, in);
         in.clearEdges();
         assertEquals(AttackInstance.Kind.SHOCKWAVE, w.hero.attack.kind);
-        run(w, in, 0.4f);
-        assertEquals(999, e.hp);
-        assertTrue(w.hero.attack == null || w.hero.attack.effectiveLength <= 48f);
+        run(w, in, b.shockwave.windup + 0.2f);
+        assertTrue(near.x > nearX + b.shockwave.knockback * 0.6f, "용사에게서 멀어지는 쪽으로 밀려난다");
+        run(w, in, 0.3f);
+        int dmg = com.yongsa.model.DamageCalc.shockwaveDamage(b, s.equippedWeapon());
+        assertEquals(999 - dmg, near.hp, "한 번만 맞는다");
+        assertEquals(999 - dmg, far.hp, "등 뒤의 먼 적도 맞는다");
+        assertTrue(w.combat.projectiles.isEmpty(), "날아오던 탄이 지워진다");
         assertTrue(w.hero.shockCooldown > 5f);
+        // 보스: 골렘은 조금 밀리고, 마왕은 밀리지 않는다
+        assertTrue(b.boss("boss_mine").shockPush > 0 && b.boss("boss_mine").shockPush < b.shockwave.knockback);
+        assertEquals(0f, b.boss("boss_temple").shockPush);
     }
 
     @Test
@@ -418,7 +430,7 @@ class WorldTest {
     }
 
     @Test
-    void bossEntryHealsAndKillGrantsRewardAndUnlock() {
+    void bossKillHealsAndGrantsRewardAndUnlock() {
         GameState s = armed();
         GameWorld w = new GameWorld(b, map, s);
         PlayerInput in = idle(w);
@@ -427,16 +439,17 @@ class WorldTest {
         w.step(dt, in);
         assertNotNull(w.combat);
         assertTrue(w.combat.boss);
-        assertEquals(100, w.hero.hp);
+        assertEquals(30, w.hero.hp, "보스방에 들어간다고 회복되지 않는다");
         Enemy boss = w.combat.bossEnemy();
-        assertEquals(650, boss.hp);
+        assertEquals(b.boss("boss_mine").hp, boss.hp);
         run(w, in, 0.5f);
         assertEquals(Enemy.State.IDLE, boss.state, "준비 시간 동안 대기");
         boss.hp = 0;
         w.events.clear();
         run(w, in, 1.5f);
         assertTrue(s.isBossDefeated("boss_mine"));
-        assertEquals(12, s.minerals);
+        assertEquals(100, w.hero.hp, "보스를 쓰러뜨리면 체력이 모두 찬다");
+        assertEquals(b.zone("mine").bossReward, s.ore[0]);
         assertTrue(w.events.stream().anyMatch(e -> e.type == WorldEvent.Type.AWAKEN_GUIDE));
         assertFalse(w.isDoorLocked(TestData.gate("fortress")));
         assertTrue(Progress.isAwakeningUnlocked(b, s));
@@ -463,7 +476,7 @@ class WorldTest {
                 if (w.combat == null) break;
                 if (boss.state == Enemy.State.TELEGRAPH) seen.add(boss.attackId);
             }
-            assertTrue(seen.size() >= 2, zone + " 패턴: " + seen);
+            assertTrue(seen.size() >= 3, zone + " 패턴: " + seen + " (맴돌며 버텨도 여러 공격이 나와야 한다)");
         }
     }
 }

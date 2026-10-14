@@ -4,7 +4,27 @@ package com.yongsa.world;
 public class WorldEvent {
     public enum Type {
         TOAST, SFX, DAMAGE_NUMBER, HERO_HURT, ENEMY_DIED, ROOM_CLEARED, BOSS_INTRO, BOSS_DEFEATED,
-        AWAKEN_GUIDE, ENDING, OPEN_FORGE, RESPAWNED, DIED, MINED, SHORTCUT_UNLOCKED, TELEPORT, COMBAT_STARTED
+        AWAKEN_GUIDE, ENDING, RESPAWNED, DIED, MINED, SHORTCUT_UNLOCKED, TELEPORT, COMBAT_STARTED,
+        /** 적이 표식에서 나왔다 (x, y). */
+        ENEMY_SPAWNED,
+        /** 다음 웨이브 (amount = 남은 웨이브 수). */
+        WAVE_STARTED,
+        /** 상태 이상 발동 (text = 상태 이름, x, y). */
+        STATUS_APPLIED,
+        /** 보스 체력이 0이 되어 사망 연출이 시작됐다 (x, y). */
+        BOSS_DYING,
+        /** 적 탄이 공격에 지워졌다 (x, y). */
+        PROJECTILE_BROKEN,
+        /** 회피 시작과 끝 (x, y). */
+        DODGE,
+        /** 방을 돌파해 상자가 나타났다 (x, y). */
+        CHEST_APPEARED,
+        /** 상자에서 회복약이 나왔다 (text = 회복약 id, amount = 회복량). */
+        CHEST_HEAL,
+        /** 상자 개봉 (x, y, amount = 골드). */
+        CHEST_OPENED,
+        /** 축복 획득 (text = 축복 id). */
+        BLESSING
     }
 
     public final Type type;

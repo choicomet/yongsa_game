@@ -7,6 +7,7 @@ import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -24,6 +25,7 @@ import com.yongsa.save.SaveManager;
 import com.yongsa.ui.ForgeWindow;
 import com.yongsa.ui.SettingsWindow;
 import com.yongsa.ui.Windows;
+import com.yongsa.ui.KeyboardInput;
 
 /** 타이틀: 새 게임, 이어하기, 설정, 종료. 정상 저장이 없으면 이어하기를 비활성화한다. */
 public class TitleScreen extends ScreenAdapter {
@@ -33,6 +35,8 @@ public class TitleScreen extends ScreenAdapter {
     private final GlyphLayout layout = new GlyphLayout();
     private SaveManager.LoadResult load;
     private float t;
+    /** 배경: 실제 플레이 화면을 찍은 그림 (없으면 어두운 바탕만). 로고: tools/make_title.py 가 만든 그림. */
+    private Texture background, logo;
 
     public TitleScreen(YongsaGame g) {
         this.g = g;
@@ -44,23 +48,26 @@ public class TitleScreen extends ScreenAdapter {
     @Override
     public void show() {
         load = g.saves.load();
+        if (background == null) background = texture("ui/title_bg.png", Texture.TextureFilter.Linear);
+        if (logo == null) logo = texture("ui/title_logo.png", Texture.TextureFilter.Nearest);
         buildMenu();
-        InputMultiplexer mux = new InputMultiplexer(stage, new InputAdapter() {
-            @Override
-            public boolean keyDown(int keycode) {
-                if (keycode == Input.Keys.ESCAPE) return windows.escape();
-                return false;
-            }
-        });
-        Gdx.input.setInputProcessor(mux);
+        Gdx.input.setInputProcessor(new KeyboardInput(windows::keyDown));
         g.audio.music("bgm_title");
+    }
+
+    private static Texture texture(String path, Texture.TextureFilter filter) {
+        if (!Gdx.files.internal(path).exists()) return null;
+        Texture tex = new Texture(Gdx.files.internal(path));
+        tex.setFilter(filter, filter);
+        return tex;
     }
 
     private void buildMenu() {
         stage.clear();
         Table root = new Table();
         root.setFillParent(true);
-        root.bottom().padBottom(56);
+        // 메뉴는 왼쪽 아래: 오른쪽은 배경(플레이 화면)이 보이게 비워 둔다
+        root.left().bottom().padLeft(72).padBottom(52);
         boolean canContinue = load.status == SaveManager.LoadStatus.OK
                 || load.status == SaveManager.LoadStatus.RESTORED_FROM_BACKUP;
         root.add(windows.button("새 게임", this::newGame)).width(220).padBottom(8).row();
@@ -75,6 +82,7 @@ public class TitleScreen extends ScreenAdapter {
             root.add(l).padTop(10).row();
         }
         stage.addActor(root);
+        windows.setBaseRoot(root);
     }
 
     private void newGame() {
@@ -124,49 +132,53 @@ public class TitleScreen extends ScreenAdapter {
         SpriteBatch b = g.batch;
         b.setProjectionMatrix(stage.getCamera().combined);
         b.begin();
-        // 배경: 모닥불과 용사
-        b.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-        float fl = 1 + 0.08f * MathUtils.sin(t * 11) + 0.05f * MathUtils.sin(t * 23);
-        b.setColor(1f, 0.45f, 0.15f, 0.35f);
-        b.draw(g.textures.glow, 480 - 360 * fl, 260 - 300 * fl, 720 * fl, 600 * fl);
-        b.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        // 배경: 플레이 화면을 천천히 훑는다
+        if (background != null) {
+            float zoom = 1.12f, bw = 960 * zoom, bh = 540 * zoom;
+            float px = (bw - 960) / 2f * (1 + MathUtils.sin(t * 0.11f)), py = (bh - 540) / 2f * (1 + MathUtils.sin(t * 0.07f + 1f));
+            b.setColor(Color.WHITE);
+            b.draw(background, -px, -py, bw, bh);
+        }
+        // 글씨가 놓이는 왼쪽과 아래쪽을 어둡게
+        for (int i = 0; i < 24; i++) {
+            b.setColor(0.02f, 0.015f, 0.03f, 0.05f);
+            b.draw(g.textures.white, 0, 0, 640 - i * 22, 540);
+        }
+        b.setColor(0.02f, 0.015f, 0.03f, 0.35f);
+        b.draw(g.textures.white, 0, 0, 960, 540);
         b.setColor(Color.WHITE);
-        TextureRegion log = g.sprites.placeholder("campfire_log");
-        b.draw(log, 480 - log.getRegionWidth() * 1.5f, 262, log.getRegionWidth() * 3, log.getRegionHeight() * 3);
-        b.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-        b.setColor(1f, 0.5f, 0.15f, 0.95f);
-        b.draw(g.textures.flame, 480 - 27, 290, 54, 78 * fl);
-        b.setColor(1f, 0.85f, 0.4f, 0.85f);
-        b.draw(g.textures.flame, 480 - 13, 290, 26, 44 * fl);
-        b.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        b.setColor(Color.WHITE);
-        TextureRegion hero = WorldRenderer.frame(g.sprites, "hero", "idle", t);
-        b.draw(hero, 560, 262, hero.getRegionWidth() * 3, hero.getRegionHeight() * 3);
-        TextureRegion sword = g.sprites.get("sword").frame("idle", 0);
-        b.draw(sword, 650, 268, 0, 0, sword.getRegionWidth() * 3, sword.getRegionHeight() * 3, 1, 1, -20);
+        b.draw(g.textures.vignette, 0, 0, 960, 540);
 
-        BitmapFont tf = g.fonts.title;
-        String title = "용사가 다한다";
-        layout.setText(tf, title);
-        tf.setColor(0.1f, 0.05f, 0.02f, 1);
-        tf.draw(b, title, 480 - layout.width / 2f + 3, 488 - 3);
-        tf.setColor(1f, 0.82f, 0.4f, 1);
-        tf.draw(b, title, 480 - layout.width / 2f, 488);
+        float top = 540 - 64;
+        if (logo != null) {
+            // 로고는 살짝 떠오르내린다
+            float ly = top - logo.getHeight() + MathUtils.sin(t * 1.6f) * 2f;
+            b.draw(logo, 64, ly, logo.getWidth(), logo.getHeight());
+            top = ly - 14;
+        } else {
+            BitmapFont tf = g.fonts.title;
+            tf.setColor(1f, 0.82f, 0.4f, 1);
+            tf.draw(b, "용사가 다한다", 64, top);
+            tf.setColor(Color.WHITE);
+            top -= 60;
+        }
         BitmapFont sf = g.fonts.body;
-        String sub = "캐고, 만들고, 강화하고, 쓰러뜨린다. 전부 혼자서.";
-        layout.setText(sf, sub);
-        sf.setColor(0.8f, 0.76f, 0.7f, 1);
-        sf.draw(b, sub, 480 - layout.width / 2f, 432);
+        sf.setColor(0.9f, 0.86f, 0.78f, 1);
+        sf.draw(b, "캐고, 만들고, 강화하고, 쓰러뜨린다.", 72, top);
+        sf.setColor(1f, 0.6f, 0.45f, 1);
+        sf.draw(b, "전부 혼자서.", 72, top - 24);
         sf.setColor(Color.WHITE);
-        tf.setColor(Color.WHITE);
         b.end();
 
         stage.act(delta);
         stage.draw();
+        windows.drawKeyboardFocus(g.batch, g.textures, g.fonts);
     }
 
     @Override
     public void dispose() {
         stage.dispose();
+        if (background != null) background.dispose();
+        if (logo != null) logo.dispose();
     }
 }

@@ -12,7 +12,7 @@ class BalanceTest {
 
     @Test
     void damageTableMatchesDesign() {
-        int[][] table = {{0, 12, 19}, {2, 15, 24}, {3, 16, 26}, {5, 19, 30}, {6, 21, 33}, {8, 24, 37}, {10, 26, 42}};
+        int[][] table = {{0, 15, 22}, {2, 19, 27}, {3, 20, 30}, {5, 24, 35}, {6, 26, 38}, {8, 29, 43}, {10, 33, 48}};
         for (int[] row : table) {
             assertEquals(row[1], DamageCalc.weaponDamage(b, "sword", row[0]), "철검 +" + row[0]);
             assertEquals(row[2], DamageCalc.weaponDamage(b, "hammer", row[0]), "망치 +" + row[0]);
@@ -45,7 +45,7 @@ class BalanceTest {
     @Test
     void firstVeinsReachSwordPlusTwo() {
         // 첫 광물방만으로 철검을 만들 수 있고, 첫 전투방 보상까지 더하면 +1 강화가 가능하다
-        int harvest = b.zone("mine").veinYield * b.mining.oreRoomVeins;
+        int harvest = b.zone("mine").veinYield * b.mining.firstRoomVeins;
         assertTrue(harvest >= b.weapon("sword").craftCost);
         int left = harvest - b.weapon("sword").craftCost + b.zone("mine").roomReward;
         assertTrue(left >= b.enhanceStep(1).cost);

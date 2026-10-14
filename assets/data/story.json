@@ -1,0 +1,31 @@
+{
+  "_설명": "이야기 장면. opening 은 새 게임 시작 전, ending 은 마지막 보스 처치 후에 차례로 보여 준다. 그림은 assets/story/ 에 있다 (원본: output/story-v1).",
+  "opening": [
+    {
+      "image": "01-arrival.jpg",
+      "caption": "어느 날, 마을의 오래된 우물에서 봉인의 마왕이 모습을 드러냈다."
+    },
+    {
+      "image": "02-seal.jpg",
+      "caption": "마왕은 주민들을 수정에 봉인하고, 그 힘을 품은 채 지하로 사라졌다."
+    },
+    {
+      "image": "03-descent.jpg",
+      "caption": "뒤늦게 돌아온 검사는 사람들을 구하기 위해 마왕이 숨은 지하로 내려갔다."
+    }
+  ],
+  "ending": [
+    {
+      "image": "04-final-strike.jpg",
+      "caption": "지하에서 벼려낸 검이 마왕의 가슴에 박힌 봉인석을 갈랐다."
+    },
+    {
+      "image": "05-release.jpg",
+      "caption": "봉인석이 깨지자 마을의 수정도 흩어지고, 갇혀 있던 사람들이 눈을 떴다."
+    },
+    {
+      "image": "06-homecoming.jpg",
+      "caption": "마을로 돌아온 검사는 검을 내려놓고, 되찾은 사람들과 새로운 아침을 맞았다."
+    }
+  ]
+}
