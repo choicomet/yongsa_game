@@ -1,0 +1,47 @@
+{
+  "tool": "built-in image_gen",
+  "generated": [
+    {
+      "id": "icon_cleave",
+      "prompt": "Use case: stylized-concept. Production inventory/skill sprite for a top-down pixel-cluster fantasy dungeon game. One centered isolated symbol on real transparent alpha, no frame, no background, no text, no letters or keyboard keys, no ground shadow. Bold readable silhouette at 32-48 screen pixels, few large color clusters, restrained highlights, crisp angular pixel-art edges, no tiny ornate details, no photorealism or smooth 3D. Subject fills 86 percent of canvas with safe margins. Square native 1024x1024. Black iron EARTH CLEAVE symbol: a fractured dark slate rock with a bold diagonal orange fissure and three big dark stone chips breaking upward. High contrast rusty orange and charcoal slate."
+    },
+    {
+      "id": "icon_crescent",
+      "prompt": "Use case: stylized-concept. Production inventory/skill sprite for a top-down pixel-cluster fantasy dungeon game. One centered isolated symbol on real transparent alpha, no frame, no background, no text, no letters or keyboard keys, no ground shadow. Bold readable silhouette at 32-48 screen pixels, few large color clusters, restrained highlights, crisp angular pixel-art edges, no tiny ornate details, no photorealism or smooth 3D. Subject fills 86 percent of canvas with safe margins. Square native 1024x1024. BLOOD CRESCENT symbol: one thick sharp crimson crescent blade curving to the right, inner dark red band and simple bright scarlet edge, small pointed mist tail trailing left. No moon face, no sword handle, no circle frame."
+    },
+    {
+      "id": "icon_strike",
+      "prompt": "Use case: stylized-concept. Production inventory/skill sprite for a top-down pixel-cluster fantasy dungeon game. One centered isolated symbol on real transparent alpha, no frame, no background, no text, no letters or keyboard keys, no ground shadow. Bold readable silhouette at 32-48 screen pixels, few large color clusters, restrained highlights, crisp angular pixel-art edges, no tiny ornate details, no photorealism or smooth 3D. Subject fills 86 percent of canvas with safe margins. Square native 1024x1024. SKY STRIKE symbol: one strong angular cyan lightning bolt descending diagonally from upper right to lower left, pale ice core, blue outline and only two small secondary sparks. No cloud, no landscape."
+    },
+    {
+      "id": "icon_beam",
+      "prompt": "Use case: stylized-concept. Production inventory/skill sprite for a top-down pixel-cluster fantasy dungeon game. One centered isolated symbol on real transparent alpha, no frame, no background, no text, no letters or keyboard keys, no ground shadow. Bold readable silhouette at 32-48 screen pixels, few large color clusters, restrained highlights, crisp angular pixel-art edges, no tiny ornate details, no photorealism or smooth 3D. Subject fills 86 percent of canvas with safe margins. Square native 1024x1024. HOLY WAVE symbol: broad sweeping gold blade of light flying right, a wide crescent-shaped pale gold front and 3 short ochre tapered trailing rays. Distinct from the narrow lightning bolt. No sword handle, no sun face."
+    },
+    {
+      "id": "potion",
+      "prompt": "Use case: stylized-concept. Single production item sprite for top-down oblique 2D fantasy dungeon, a small squat ruby-red healing potion in a clear faceted glass bottle with a thick cork stopper and thin brown leather neck tie. Native portrait 3:4 canvas 768x1024. True transparent background, minimal margins, object fills 88% height. Clear dark maroon outline and small warm off-white pixel highlights, large deliberate pixel color clusters, readable small silhouette, restrained details matching earthy stone mine game background. Top of stopper visible from above, reddish liquid fills lower two thirds, narrow neck and broad rounded base. No lettering, label, badge, cross, UI, glitter, halo, floor or drop shadow."
+    }
+  ],
+  "files": [
+    {
+      "id": "icon_cleave",
+      "path": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-ee18374c-6e99-4668-a97d-7cb4ca86976f.png"
+    },
+    {
+      "id": "icon_crescent",
+      "path": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-26d8e029-648e-4b47-a118-799621b3651e.png"
+    },
+    {
+      "id": "icon_strike",
+      "path": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-f48452f6-1937-4c8a-96a3-3aec3f58bbd1.png"
+    },
+    {
+      "id": "icon_beam",
+      "path": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-aa9f045f-5e0d-4917-9d45-e56f366b6a73.png"
+    },
+    {
+      "id": "potion",
+      "path": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-ca5bba63-b533-474e-83b5-91206ccebfa2.png"
+    }
+  ]
+}
