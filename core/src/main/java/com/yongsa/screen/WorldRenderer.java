@@ -79,6 +79,8 @@ public class WorldRenderer implements Disposable {
     /** 던전 방 배경 그림 (보이는 방만 읽어 두고, 오래 안 쓴 것은 버린다). */
     private final Map<String, Texture> sceneTex = new HashMap<>();
     private final Map<String, Float> sceneUsed = new HashMap<>();
+    /** GPT 가 준 앞쪽 가림 레이어 (<장면>-front.png). 없는 장면은 null 로 기억한다. */
+    private final Map<String, Texture> frontTex = new HashMap<>();
     private final Color ambient = new Color(0.6f, 0.55f, 0.5f, 1f);
     private boolean ambientSet;
     private float time, ghostT, moteT, emberT;
@@ -833,6 +835,7 @@ public class WorldRenderer implements Disposable {
         collect(list, tx0, ty0, tx1, ty1);
         list.sort((a, b) -> Float.compare(b.y, a.y));
         for (Sorted s : list) s.call.draw();
+        drawSceneFronts();
         particles.drawNormal(batch);
         batch.setColor(Color.WHITE);
         batch.end();
@@ -977,6 +980,72 @@ public class WorldRenderer implements Disposable {
                 en.getValue().dispose();
                 sceneUsed.remove(en.getKey());
                 it.remove();
+            }
+        }
+    }
+
+    /**
+     * 앞쪽 가림 레이어: 그림 아래쪽 바위 테두리·난간·기둥을 용사와 몬스터 위에 한 번 더 그린다.
+     * 걸을 수 있는 바닥(계단 포함) 위의 픽셀은 불러올 때 지워서, 서 있는 자리를 가리지 않는다.
+     */
+    private void drawSceneFronts() {
+        for (Room r : map.rooms) {
+            if (r.scene == null) continue;
+            if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            Texture tex = frontTexture(r);
+            if (tex == null) continue;
+            batch.setColor(Color.WHITE);
+            batch.draw(tex, r.originX, r.originY, r.widthPx, r.heightPx, 0, 0, tex.getWidth(), tex.getHeight(), r.flip, false);
+        }
+        if (frontTex.size() > 4) {
+            for (Iterator<Map.Entry<String, Texture>> it = frontTex.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Texture> en = it.next();
+                if (en.getValue() == null || time - sceneUsed.getOrDefault(en.getKey(), 0f) < 20f) continue;
+                en.getValue().dispose();
+                it.remove();
+            }
+        }
+    }
+
+    private Texture frontTexture(Room r) {
+        String key = r.scene.image.replace(".png", "-front.png");
+        if (frontTex.containsKey(key)) {
+            sceneUsed.put(key, time);
+            return frontTex.get(key);
+        }
+        Texture t = null;
+        if (Gdx.files.internal(key).exists()) {
+            com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(key));
+            eraseWalkable(p, r.scene.walkable);
+            t = new Texture(p);
+            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            p.dispose();
+        }
+        frontTex.put(key, t);
+        sceneUsed.put(key, time);
+        return t;
+    }
+
+    /** 바닥 다각형(0~1 좌표) 안쪽 픽셀을 투명하게: 줄마다 다각형과 만나는 구간을 지운다. */
+    private static void eraseWalkable(com.badlogic.gdx.graphics.Pixmap p, float[] poly) {
+        int w = p.getWidth(), h = p.getHeight(), n = poly.length / 2;
+        p.setBlending(com.badlogic.gdx.graphics.Pixmap.Blending.None);
+        p.setColor(0, 0, 0, 0);
+        float[] xs = new float[n];
+        for (int y = 0; y < h; y++) {
+            float v = (y + 0.5f) / h;
+            int k = 0;
+            for (int i = 0, j = n - 1; i < n; j = i++) {
+                float vi = poly[i * 2 + 1], vj = poly[j * 2 + 1];
+                if ((vi > v) != (vj > v)) {
+                    float u = poly[j * 2] + (v - vj) / (vi - vj) * (poly[i * 2] - poly[j * 2]);
+                    xs[k++] = u * w;
+                }
+            }
+            java.util.Arrays.sort(xs, 0, k);
+            for (int i = 0; i + 1 < k; i += 2) {
+                int x0 = Math.max(0, Math.round(xs[i])), x1 = Math.min(w, Math.round(xs[i + 1]));
+                if (x1 > x0) p.fillRectangle(x0, y, x1 - x0, 1);
             }
         }
     }
@@ -2176,6 +2245,8 @@ public class WorldRenderer implements Disposable {
         lighting.dispose();
         for (Texture t : sceneTex.values()) t.dispose();
         sceneTex.clear();
+        for (Texture t : frontTex.values()) if (t != null) t.dispose();
+        frontTex.clear();
         for (Texture[] ts : corridorSkin.values()) for (Texture t : ts) t.dispose();
         if (potionTex != null) potionTex.dispose();
         corridorSkin.clear();
