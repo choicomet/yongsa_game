@@ -330,7 +330,7 @@ public class WorldRenderer implements Disposable {
             case MONSTER_DIED: {
                 Corpse c = new Corpse();
                 c.region = art.world(e.sprite);
-                float scale = S * e.size * (e.boss ? 1f : MOB_SCALE);
+                float scale = S * e.size * (e.boss ? bossScale(e.sprite) : MOB_SCALE);
                 c.w = art.width(c.region) * scale;
                 c.h = art.height(c.region) * scale;
                 c.x = e.x;
@@ -406,6 +406,10 @@ public class WorldRenderer implements Disposable {
                 Speech sp = new Speech();
                 sp.x = e.x;
                 sp.y = e.y;
+                for (Monster m : g.monsters) {
+                    if (m.boss && Math.abs(m.x - e.x) < .01f)
+                        sp.y = Math.max(sp.y, monsterTop(m) + 16);
+                }
                 sp.text = e.text;
                 sp.speaker = e.speaker;
                 speeches.clear();
@@ -1414,9 +1418,14 @@ public class WorldRenderer implements Disposable {
         return h.moving && ((int) (h.walkTime * 8)) % 2 == 1 ? 2 * HERO_SCALE : 0;
     }
 
+    private float bossScale(String sprite) {
+        return "golem".equals(sprite) ? 1.25f : 1.15f;
+    }
+
     private float monsterScale(Monster m) {
-        if (m.state == Monster.State.PHASE_SHIFT) return S * (2f + .3f * m.progress());
-        return S * (m.finalBoss ? (m.phase2 ? 2.3f : 2f) : m.boss ? 1.7f : MOB_SCALE);
+        float presence = bossScale(m.def.sprite);
+        if (m.state == Monster.State.PHASE_SHIFT) return S * (2f + .3f * m.progress()) * presence;
+        return S * (m.finalBoss ? (m.phase2 ? 2.3f : 2f) * presence : m.boss ? 1.7f * presence : MOB_SCALE);
     }
 
     private float monsterBob(Monster m) {
@@ -1441,6 +1450,16 @@ public class WorldRenderer implements Disposable {
     private float monsterTop(Monster m) {
         if (m.boss && !m.finalBoss && bossSheet(m.def.sprite) != null) return m.y + BOSS_BODY * BOSS_SHEET_SCALE;
         return m.y - 2 + monsterBob(m) + art.height(art.world(m.def.sprite)) * monsterScale(m) * monsterStretchY(m);
+    }
+
+    /** Reserve the top HUD strip for a large boss, without zooming or losing the hero below. */
+    public float cameraTargetY(float normalY, float viewHeight, float zoom) {
+        Monster boss = g.activeBoss();
+        if (boss == null || boss.dead) return normalY;
+        // A steady envelope avoids making the camera bob with each animation frame.
+        float top = boss.y + art.height(art.world(boss.def.sprite)) * monsterScale(boss) * 1.12f + 10;
+        float required = top + 120 * zoom - viewHeight / 2;
+        return MathUtils.clamp(required, normalY, normalY + viewHeight * .23f);
     }
 
     private void drawMonster(Monster m) {
@@ -1632,7 +1651,7 @@ public class WorldRenderer implements Disposable {
         // 마왕의 기운
         for (Monster m : g.monsters) {
             if (m.dead || !m.finalBoss) continue;
-            float k = m.phase2 || m.state == Monster.State.PHASE_SHIFT ? 1.4f : 1f;
+            float k = (m.phase2 || m.state == Monster.State.PHASE_SHIFT ? 1.4f : 1f) * bossScale(m.def.sprite);
             batch.setColor(0.6f, 0.2f, 1f, (0.35f + 0.1f * MathUtils.sin(time * 5f)) * k);
             batch.draw(art.glow, m.x - 90 * k, m.y - 20, 180 * k, 160 * k);
         }
@@ -1641,7 +1660,7 @@ public class WorldRenderer implements Disposable {
             if (m.dead) continue;
             if (m.shield > 0) {
                 float fr = m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
-                float r = m.hurtRadius * 2.6f;
+                float r = m.hurtRadius * 2.6f * (m.boss ? bossScale(m.def.sprite) : MOB_SCALE);
                 float pulse = 0.8f + 0.2f * MathUtils.sin(time * 4f);
                 batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, (0.18f + 0.25f * fr) * pulse);
                 batch.draw(art.glow, m.x - r, m.y - r * 0.2f, r * 2, r * 1.9f);
@@ -1649,7 +1668,7 @@ public class WorldRenderer implements Disposable {
             if (m.state == Monster.State.CHANNEL) {
                 Color c = "lightning".equals(m.channelKind) ? PROJ_SKY : "firespin".equals(m.channelKind) ? PROJ_FIRE
                         : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD : new Color(1f, 0.6f, 0.35f, 1f);
-                float r = m.hurtRadius * 2.4f * (0.9f + 0.1f * MathUtils.sin(time * 10f));
+                float r = m.hurtRadius * 2.4f * (m.boss ? bossScale(m.def.sprite) : MOB_SCALE) * (0.9f + 0.1f * MathUtils.sin(time * 10f));
                 batch.setColor(c.r, c.g, c.b, 0.4f);
                 batch.draw(art.glow, m.x - r, m.centerY() - r, r * 2, r * 2);
             }
@@ -1672,13 +1691,13 @@ public class WorldRenderer implements Disposable {
             if (m.state == Monster.State.SPAWN) {
                 Color c = spawnColor(m);
                 float p = m.progress();
-                float r = m.hurtRadius * 2.2f * (m.boss ? 1f : MOB_SCALE);
+                float r = m.hurtRadius * 2.2f * (m.boss ? bossScale(m.def.sprite) : MOB_SCALE);
                 batch.setColor(c.r, c.g, c.b, 0.55f * Math.min(1f, p * 2.5f));
                 batch.draw(art.glow, m.x - r, m.y - r * 0.45f, r * 2, r * 0.9f);
             } else if (m.state == Monster.State.CAST_TELEGRAPH) {
                 Color c = projectileColor(m.def.sprite);
                 float p = m.progress();
-                float sz = (m.boss ? 70 : 34 * MOB_SCALE) * (0.4f + p);
+                float sz = (m.boss ? 70 * bossScale(m.def.sprite) : 34 * MOB_SCALE) * (0.4f + p);
                 batch.setColor(c.r, c.g, c.b, 0.35f + 0.5f * p);
                 batch.draw(art.glow, m.x - sz / 2f, m.centerY() + m.hurtRadius * 0.4f - sz / 2f, sz, sz);
             } else if (m.state == Monster.State.STUNNED) {

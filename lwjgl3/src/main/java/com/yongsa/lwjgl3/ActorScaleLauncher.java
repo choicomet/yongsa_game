@@ -25,7 +25,8 @@ public final class ActorScaleLauncher {
 
     private static final class Capture extends YongsaGame {
         private final FileHandle output;
-        private final String[] names = {"camp", "lineup", "mine", "castle", "tower", "warning", "stunned", "death", "walk", "left", "up", "attack", "roll"};
+        private final String[] names = {"camp", "lineup", "mine", "castle", "tower", "warning", "stunned", "death", "walk", "left", "up", "attack", "roll",
+                "golem", "knight", "warden", "demonlord", "golem-slam", "golem-shield", "golem-death", "demonlord-shift", "demonlord-phase2"};
         private OrthographicCamera camera;
         private int scene;
         private GameSession session;
@@ -40,6 +41,7 @@ public final class ActorScaleLauncher {
             var state = NewGame.create(balance);
             var map = newMap();
             String id = scene == 2 ? "L1" : scene == 3 ? "R1" : scene == 4 ? "T1" : "CAMP";
+            if (scene >= 13) id = scene == 14 ? "R6" : scene == 15 ? "T6" : scene == 16 || scene >= 20 ? "F" : "L6";
             var room = map.room(id);
             state.bossesDefeated.addAll(java.util.List.of("LEFT", "RIGHT", "TOP"));
             state.mapVersion = com.yongsa.world.WorldMap.VERSION;
@@ -47,6 +49,23 @@ public final class ActorScaleLauncher {
             session = new GameSession(balance, map, state, 42);
             session.monsters.clear();
             float cx = session.hero.x, cy = session.hero.y;
+            if (scene >= 13) {
+                var boss = new Monster("F".equals(id) ? balance.finalBoss : balance.dungeon(room.dungeonId).boss,
+                        true, "F".equals(id), balance.tileSize);
+                boolean placed = false;
+                for (int ring=0; ring<12 && !placed; ring++) for (int dx=-ring; dx<=ring && !placed; dx++)
+                    for (int dy=-ring; dy<=ring && !placed; dy++) {
+                        float x=room.originX+room.widthPx*.5f+dx*balance.tileSize;
+                        float y=room.originY+room.heightPx*.45f+dy*balance.tileSize;
+                        if (map.free(x-75,y,9,6) && map.free(x+65,y+40,boss.hw,boss.hh)) { cx=x; cy=y; placed=true; }
+                    }
+                if (!placed) throw new AssertionError("No walkable boss comparison area: " + id);
+                session.hero.x=cx-75; session.hero.y=cy;
+                boss.x=cx+65; boss.y=cy+40; session.monsters.add(boss);
+                if (scene==17) { boss.enter(Monster.State.SLAM_TELEGRAPH,1); boss.stateT=.3f; boss.slamX=boss.x; boss.slamY=boss.y; boss.slamRadius=balance.monster.bossSlamRadiusTiles*balance.tileSize; }
+                if (scene==18) boss.shield=boss.shieldMax=500;
+                if (scene>=20) { boss.phase2=true; if(scene==20) { boss.enter(Monster.State.PHASE_SHIFT,1); boss.stateT=.5f; } }
+            }
             if (scene >= 1 && scene <= 7) {
                 if (!"CAMP".equals(id)) {
                     // Use the first broad, walkable area near the room center.
@@ -80,14 +99,14 @@ public final class ActorScaleLauncher {
             if (scene==12) { session.hero.rollT=.20f; session.hero.rollX=1; }
             renderer = new WorldRenderer(session,art,fonts,batch,shapes);
             renderer.update(scene==12 ? .045f : 0);
-            if (scene==7) {
+            if (scene==7 || scene==19) {
                 for (var m:session.monsters) {
                     var e=GameEvent.fx(GameEvent.Type.MONSTER_DIED,m.x,m.y);
                     e.sprite=m.def.sprite; e.boss=m.boss; e.size=m.boss?1.7f:1f;
                     renderer.onEvent(e); m.dead=true;
                 }
             }
-            camera.zoom=2f/3f*100f/115f;
+            camera.zoom=2f/3f*100f/(scene>=13 ? 100f : 115f);
             camera.position.set(Math.round(cx/camera.zoom)*camera.zoom, Math.round((cy+16)/camera.zoom)*camera.zoom,0);
             camera.update();
         }

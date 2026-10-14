@@ -195,6 +195,12 @@ class BossPatternTest {
         }
         assertEquals(m.maxHp, m.hp, "변신이 끝나면 체력이 다시 가득 찬다");
         assertFalse(s.finalBossDefeated);
+        m.hp = 1;
+        List<GameEvent> death = hitBoss(g, m);
+        GameEvent corpse = death.stream().filter(e -> e.type == GameEvent.Type.MONSTER_DIED).findFirst().orElseThrow();
+        assertTrue(m.dead);
+        assertTrue(corpse.boss);
+        assertEquals(2.3f, corpse.size, .001f, "2페이즈 사망 그림이 1페이즈 크기로 줄면 안 된다");
     }
 
     @Test
