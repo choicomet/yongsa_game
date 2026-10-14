@@ -253,6 +253,17 @@ public class WorldRenderer implements Disposable {
             String th = r.dungeonId == null ? "CAMP" : r.dungeonId;
             for (int y = r.y0; y <= r.y1; y++) for (int x = r.x0; x <= r.x1; x++) theme[x + y * map.width] = th;
         }
+        // 통로 바닥과 벽은 이어진 던전 테마. 앞벽(아래가 통로 바닥)에는 일정한 간격으로 횃불을 건다.
+        for (int y = 0; y < map.height; y++) {
+            for (int x = 0; x < map.width; x++) {
+                com.yongsa.world.Corridor c = map.corridorAt(x, y);
+                if (c == null) continue;
+                theme[x + y * map.width] = c.theme;
+                if (map.tile(x, y) == WorldMap.WALL && map.roomAt(x, y) == null && map.tile(x, y - 1) == WorldMap.CORRIDOR
+                        && Math.floorMod(x * 7 + y * 3, 9) == 0)
+                    torches.add(new float[]{x * T + T / 2f, y * T, MathUtils.random(10f)});
+            }
+        }
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
             if (r.scene != null) continue;
@@ -610,8 +621,10 @@ public class WorldRenderer implements Disposable {
             p.endSize = 0;
         }
 
-        // 방 분위기에 맞춰 바탕 밝기를 천천히 바꾼다
+        // 방 분위기에 맞춰 바탕 밝기를 천천히 바꾼다 (통로는 조금 더 어둡다)
         Color target = ambientFor(room);
+        if (hr == null && map.corridor((int) Math.floor(g.hero.x / T), (int) Math.floor(g.hero.y / T)))
+            target = corridorAmbient(map.corridorAt((int) Math.floor(g.hero.x / T), (int) Math.floor(g.hero.y / T)).theme);
         if (!ambientSet) {
             ambient.set(target);
             ambientSet = true;
@@ -644,6 +657,15 @@ public class WorldRenderer implements Disposable {
             case "RIGHT": return new Color(0.34f, 0.24f, 0.27f, 1f);
             case "TOP": return new Color(0.27f, 0.24f, 0.38f, 1f);
             default: return new Color(0.5f, 0.45f, 0.44f, 1f);
+        }
+    }
+
+    private Color corridorAmbient(String th) {
+        switch (th) {
+            case "LEFT": return new Color(0.5f, 0.52f, 0.6f, 1f);
+            case "RIGHT": return new Color(0.56f, 0.42f, 0.46f, 1f);
+            case "TOP": return new Color(0.48f, 0.44f, 0.64f, 1f);
+            default: return new Color(0.66f, 0.6f, 0.56f, 1f);
         }
     }
 
@@ -826,12 +848,12 @@ public class WorldRenderer implements Disposable {
                 int t = map.tile(x, y);
                 if (t == WorldMap.VOID) continue;
                 Room tr = map.roomAt(x, y);
-                if (tr != null && tr.scene != null) continue; // 배경 그림이 바닥과 벽이다
+                if (tr != null && tr.scene != null && t != WorldMap.CORRIDOR) continue; // 배경 그림이 바닥과 벽이다 (통로 입구만 덧그린다)
                 String th = themeAt(x, y);
                 float px = x * T, py = y * T;
                 if (t == WorldMap.WALL) {
                     int below = map.tile(x, y - 1);
-                    boolean front = below == WorldMap.FLOOR || below == WorldMap.DOOR;
+                    boolean front = below == WorldMap.FLOOR || below == WorldMap.DOOR || below == WorldMap.CORRIDOR;
                     batch.draw(art.world(front ? "wallfront_" + th : "walltop_" + th), px, py, T, T);
                     continue;
                 }

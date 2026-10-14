@@ -10,6 +10,7 @@ import com.yongsa.combat.Physics;
 import com.yongsa.combat.Projectile;
 import com.yongsa.config.Balance;
 import com.yongsa.config.Balance.DungeonDef;
+import com.yongsa.world.Corridor;
 import com.yongsa.world.Door;
 import com.yongsa.world.Prop;
 import com.yongsa.world.Room;
@@ -123,11 +124,13 @@ public class GameSession {
         } else {
             hero.x = state.resumeX;
             hero.y = state.resumeY;
-            if (map.roomAt(tileX(hero.x), tileY(hero.y)) == null || !Physics.free(map, hero.x, hero.y, hero, T)) placeAtCampSpawn();
+            boolean onMap = map.roomAt(tileX(hero.x), tileY(hero.y)) != null || map.corridor(tileX(hero.x), tileY(hero.y));
+            if (!onMap || !Physics.free(map, hero.x, hero.y, hero, T)) placeAtCampSpawn();
         }
         if (state.hp <= 0) state.hp = rules.maxHp(state);
         heroRoom = map.roomAt(tileX(hero.x), tileY(hero.y));
-        currentRoom = heroRoom != null ? heroRoom : map.room("CAMP");
+        Corridor cor = map.corridorAt(tileX(hero.x), tileY(hero.y));
+        currentRoom = heroRoom != null ? heroRoom : cor != null ? cor.link.a : map.room("CAMP");
         if (heroRoom != null) {
             Door d = nearestDoor(heroRoom);
             setEntry(d);
@@ -699,7 +702,7 @@ public class GameSession {
     }
 
     /**
-     * 열린 문을 지나가면 이어진 방의 짝 문 앞으로 옮긴다 (방 사이 통로는 없다).
+     * 통로가 없는 이음(심연 계단)의 열린 문을 지나가면 이어진 방의 짝 문 앞으로 옮긴다. 통로가 있으면 걸어서 간다.
      * deferDoors 면 DOOR_ENTER 를 보내고 화면이 어두워진 뒤 passPendingDoor 로 옮긴다. 옮겼으면(또는 기다리면) true.
      */
     private boolean checkDoors() {
@@ -711,6 +714,7 @@ public class GameSession {
         for (Door d : r.doors) {
             if (d.isClosed() || !d.triggers(hero.x, hero.y)) continue;
             if (d.partner().room.type == RoomType.VILLAGE && refuseVillageExit(d)) return false;
+            if (d.link.corridor != null) continue; // 통로로 걸어서 간다
             if (deferDoors) {
                 pendingDoor = d;
                 GameEvent e = new GameEvent(GameEvent.Type.DOOR_ENTER);

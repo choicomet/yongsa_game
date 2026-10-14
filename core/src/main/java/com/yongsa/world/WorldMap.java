@@ -5,20 +5,22 @@ import com.yongsa.world.MapDef.LinkDef;
 import com.yongsa.world.MapDef.RoomDef;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 /**
  * 캠프와 던전 3개가 들어 있는 통합 맵 하나 (FR-맵-03, 04).
- * 방은 지도 칸 하나의 가운데에 떨어져 놓이고, 사이 통로 없이 문으로 이어진다:
- * 문(그림 속 계단·갱도 입구)을 지나가면 이어진 방의 짝 문 앞으로 옮겨 간다.
+ * 방은 지도 칸 하나의 가운데에 놓이고, 이어진 방끼리는 출구(그림 속 계단·갱도 입구)에서 나가는
+ * 3칸 폭 통로로 걸어서 오간다. 통로가 없는 이음(심연 계단)만 지나가면 짝 문 앞으로 옮겨 간다.
  * 캠프와 던전 방은 배경 그림 한 장이고 그림의 바닥 경계(다각형)가 벽이다.
  */
 public class WorldMap {
-    public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3;
+    public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3, CORRIDOR = 4;
     /** 방 배치가 바뀌면 올린다. 저장 파일의 방 기록(광맥 자리)·이어하기 위치가 다르면 버린다. */
-    public static final int VERSION = 4;
+    public static final int VERSION = 5;
 
     public final int width, height;
     public final int tileSize;
@@ -26,10 +28,13 @@ public class WorldMap {
     private final Door[] doorAt;
     private final Room[] roomAt;
     private final boolean[] blocked;
+    /** 통로 바닥과 그 벽 칸이 어느 통로에 속하나. */
+    private final Corridor[] corridorAt;
 
     public final List<Room> rooms = new ArrayList<>();
     public final List<Link> links = new ArrayList<>();
     public final List<Prop> props = new ArrayList<>();
+    public final List<Corridor> corridors = new ArrayList<>();
     private final Map<String, Room> byId = new HashMap<>();
     private final MapDef def;
     private final RoomSceneLayout scenes;
@@ -46,12 +51,14 @@ public class WorldMap {
         doorAt = new Door[width * height];
         roomAt = new Room[width * height];
         blocked = new boolean[width * height];
+        corridorAt = new Corridor[width * height];
 
         for (RoomDef rd : def.rooms) {
             if (rd.scene == null) buildTileRoom(rd);
             else buildSceneRoom(rd);
         }
         for (LinkDef ld : def.links) buildLink(ld);
+        buildCorridors();
         buildCampProps();
     }
 
@@ -248,6 +255,196 @@ public class WorldMap {
         throw new IllegalArgumentException("그림에 없는 출구: " + ref);
     }
 
+    // ───────────────────────── 통로
+
+    private static final int[] DX = {-1, 1, 0, 0}, DY = {0, 0, -1, 1};
+    /** 통로 가운데 줄끼리 이만큼은 떨어진다 (벽이 서로 붙지 않게). */
+    private static final int CORRIDOR_GAP = 4;
+    /** 통로는 방 그림에서 이만큼 떨어져 돈다. */
+    private static final int ROOM_MARGIN = 2;
+    /** 방 그림과 그 둘레 여백 칸 (통로를 짓는 동안만 쓴다). */
+    private boolean[] roomZone;
+
+    /**
+     * 그림 방끼리의 이음마다 3칸 폭 통로를 판다: 출구에서 나가는 방향으로 그림 밖까지 곧게 나간 뒤,
+     * 다른 방과 이미 판 통로를 비켜 꺾임이 적은 길로 짝 출구 앞까지 간다.
+     */
+    private void buildCorridors() {
+        List<Link> todo = new ArrayList<>();
+        for (Link l : links)
+            if (!l.oneWay && l.doorA.room.scene != null && l.doorB.room.scene != null) todo.add(l);
+        int[] owner = new int[width * height];
+        java.util.Arrays.fill(owner, -1);
+        roomZone = new boolean[width * height];
+        for (Room r : rooms)
+            for (int y = r.y0 - ROOM_MARGIN; y <= r.y1 + ROOM_MARGIN; y++)
+                for (int x = r.x0 - ROOM_MARGIN; x <= r.x1 + ROOM_MARGIN; x++)
+                    if (inBounds(x, y)) roomZone[idx(x, y)] = true;
+        List<List<int[]>> mouthsA = new ArrayList<>(), mouthsB = new ArrayList<>();
+        for (int i = 0; i < todo.size(); i++) {
+            List<int[]> a = mouth(todo.get(i).doorA), b = mouth(todo.get(i).doorB);
+            mouthsA.add(a);
+            mouthsB.add(b);
+            reserve(owner, a, i);
+            reserve(owner, b, i);
+        }
+        for (int i = 0; i < todo.size(); i++) {
+            Link l = todo.get(i);
+            List<int[]> a = mouthsA.get(i), b = mouthsB.get(i);
+            int[] s = a.get(a.size() - 1), e = b.get(b.size() - 1);
+            List<int[]> path = route(s[0], s[1], dirIndex(l.doorA.side), e[0], e[1], owner, i);
+            if (path == null) {
+                System.err.println("통로를 낼 수 없다: " + l.doorA.room.id + "." + l.doorA.name + " - " + l.doorB.room.id + "." + l.doorB.name);
+                continue;
+            }
+            List<int[]> line = new ArrayList<>(a);
+            line.addAll(path.subList(1, path.size() - 1));
+            List<int[]> back = new ArrayList<>(b);
+            Collections.reverse(back);
+            line.addAll(back);
+            String theme = l.a.dungeonId != null ? l.a.dungeonId : l.b.dungeonId != null ? l.b.dungeonId : "CAMP";
+            Corridor c = new Corridor(l, theme);
+            c.path.addAll(line);
+            for (int[] p : line) carve(c, p[0], p[1]);
+            reserve(owner, line, i);
+            l.corridor = c;
+            corridors.add(c);
+        }
+        // 통로 옆 빈 곳은 벽
+        for (Corridor c : corridors) {
+            for (int[] p : c.tiles) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        int x = p[0] + dx, y = p[1] + dy;
+                        if (!inBounds(x, y) || tile(x, y) != VOID) continue;
+                        set(x, y, WALL);
+                        corridorAt[idx(x, y)] = c;
+                    }
+                }
+            }
+        }
+    }
+
+    private static int dirIndex(Door.Side side) {
+        switch (side) {
+            case LEFT: return 0;
+            case RIGHT: return 1;
+            case DOWN: return 2;
+            default: return 3;
+        }
+    }
+
+    /** 출구 자리에서 나가는 방향으로 방 그림(과 둘레 여백) 밖 첫 칸까지 곧게 가는 칸들. */
+    private List<int[]> mouth(Door d) {
+        int dir = dirIndex(d.side);
+        int x = (int) Math.floor(d.footX / tileSize), y = (int) Math.floor(d.footY / tileSize);
+        List<int[]> line = new ArrayList<>();
+        while (inBounds(x, y)) {
+            line.add(new int[]{x, y});
+            if (!nearRoom(d.room, x, y, ROOM_MARGIN)) break;
+            x += DX[dir];
+            y += DY[dir];
+        }
+        return line;
+    }
+
+    private static boolean nearRoom(Room r, int x, int y, int m) {
+        return x >= r.x0 - m && x <= r.x1 + m && y >= r.y0 - m && y <= r.y1 + m;
+    }
+
+    /** 다른 통로가 이 줄 가까이 지나지 못하게 표시한다 (방 그림 안쪽 칸은 방이 막는다). */
+    private void reserve(int[] owner, List<int[]> line, int who) {
+        for (int[] p : line) {
+            for (int dy = -CORRIDOR_GAP; dy <= CORRIDOR_GAP; dy++) {
+                for (int dx = -CORRIDOR_GAP; dx <= CORRIDOR_GAP; dx++) {
+                    int x = p[0] + dx, y = p[1] + dy;
+                    if (inBounds(x, y) && owner[idx(x, y)] < 0) owner[idx(x, y)] = who;
+                }
+            }
+        }
+    }
+
+    /** 통로 가운데 줄이 지날 수 있는 칸인가: 맵 가장자리·방 그림 둘레·다른 통로 곁이 아니다. */
+    private boolean routable(int x, int y, int[] owner, int who) {
+        if (x < 2 || y < 2 || x >= width - 2 || y >= height - 2) return false;
+        int o = owner[idx(x, y)];
+        if (o >= 0 && o != who) return false;
+        return !roomZone[idx(x, y)];
+    }
+
+    /** 꺾일 때마다 값을 더 치르는 최단 길 (가운데 줄 칸들, 시작·끝 포함). 길이 없으면 null. */
+    private List<int[]> route(int sx, int sy, int sdir, int ex, int ey, int[] owner, int who) {
+        final int turn = 6;
+        int n = width * height;
+        int[] cost = new int[n * 4];
+        int[] prev = new int[n * 4];
+        java.util.Arrays.fill(cost, Integer.MAX_VALUE);
+        PriorityQueue<int[]> open = new PriorityQueue<>((p, q) -> Integer.compare(p[0], q[0]));
+        int start = idx(sx, sy) * 4 + sdir;
+        cost[start] = 0;
+        prev[start] = -1;
+        open.add(new int[]{Math.abs(ex - sx) + Math.abs(ey - sy), start});
+        int goal = -1;
+        while (!open.isEmpty()) {
+            int[] top = open.poll();
+            int st = top[1];
+            int i = st / 4, dir = st % 4, x = i % width, y = i / width;
+            if (top[0] - (Math.abs(ex - x) + Math.abs(ey - y)) > cost[st]) continue;
+            if (x == ex && y == ey) {
+                goal = st;
+                break;
+            }
+            for (int nd = 0; nd < 4; nd++) {
+                if ((nd ^ 1) == dir) continue; // 되돌아가지 않는다
+                int nx = x + DX[nd], ny = y + DY[nd];
+                boolean end = nx == ex && ny == ey;
+                if (!end && !routable(nx, ny, owner, who)) continue;
+                int ns = idx(nx, ny) * 4 + nd;
+                int c = cost[st] + 1 + (nd == dir ? 0 : turn);
+                if (c >= cost[ns]) continue;
+                cost[ns] = c;
+                prev[ns] = st;
+                open.add(new int[]{c + Math.abs(ex - nx) + Math.abs(ey - ny), ns});
+            }
+        }
+        if (goal < 0) return null;
+        List<int[]> path = new ArrayList<>();
+        for (int st = goal; st >= 0; st = prev[st]) path.add(new int[]{(st / 4) % width, (st / 4) / width});
+        Collections.reverse(path);
+        return path;
+    }
+
+    /** 가운데 칸 둘레 3×3 을 통로 바닥으로 판다. 이어진 두 방 그림 안에서는 그림의 바닥이 아닌 칸만. */
+    private void carve(Corridor c, int cx, int cy) {
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int x = cx + dx, y = cy + dy;
+                if (!inBounds(x, y)) continue;
+                int t = tile(x, y);
+                if (t == CORRIDOR) continue;
+                Room r = roomAt[idx(x, y)];
+                if (r != null) {
+                    if ((r != c.link.a && r != c.link.b) || r.scene == null || r.floor(x, y)) continue;
+                } else if (t != VOID) {
+                    continue;
+                }
+                set(x, y, CORRIDOR);
+                corridorAt[idx(x, y)] = c;
+                c.tiles.add(new int[]{x, y});
+            }
+        }
+    }
+
+    /** 이 칸이 속한 통로 (바닥 또는 그 벽). 없으면 null. */
+    public Corridor corridorAt(int x, int y) {
+        return inBounds(x, y) ? corridorAt[idx(x, y)] : null;
+    }
+
+    /** 통로 바닥 칸인가. */
+    public boolean corridor(int x, int y) {
+        return tile(x, y) == CORRIDOR;
+    }
+
     private void buildCampProps() {
         Room camp = byId.get("CAMP");
         if (camp.scene != null) {
@@ -339,6 +536,7 @@ public class WorldMap {
         int t = tile(x, y);
         if (t == VOID || t == WALL) return true;
         if (t == DOOR && doorAt[idx(x, y)].isClosed()) return true;
+        if (t == CORRIDOR) return corridorAt[idx(x, y)].closed();
         return blocked[idx(x, y)];
     }
 
@@ -353,7 +551,7 @@ public class WorldMap {
         Room r = roomAt((int) Math.floor(x / T), (int) Math.floor(y / T));
         if (r != null && r.scene != null) {
             float radius = Math.max(hw, hh);
-            if (!r.allowsFoot(x, y, radius)) return false;
+            if (!r.allowsFoot(x, y, radius) && !corridorFoot(r, tx0, ty0, tx1, ty1)) return false;
             for (int ty = ty0; ty <= ty1; ty++)
                 for (int tx = tx0; tx <= tx1; tx++)
                     if (isBlockedOverlay(tx, ty)) return false;
@@ -364,6 +562,26 @@ public class WorldMap {
             for (int tx = tx0; tx <= tx1; tx++)
                 if (solid(tx, ty)) return false;
         return true;
+    }
+
+    /**
+     * 그림 방 출구와 통로가 만나는 곳: 발이 통로 칸이나 그림 바닥 칸에만 걸치고, 바로 곁에 통로 칸이 있다.
+     * (그림 바닥 경계는 출구에서 끝나므로 경계 바로 안쪽 칸에서도 통로로 넘어갈 수 있어야 한다.)
+     */
+    private boolean corridorFoot(Room r, int tx0, int ty0, int tx1, int ty1) {
+        for (int ty = ty0; ty <= ty1; ty++) {
+            for (int tx = tx0; tx <= tx1; tx++) {
+                if (tile(tx, ty) == CORRIDOR) {
+                    if (corridorAt[idx(tx, ty)].closed()) return false;
+                } else if (!r.floor(tx, ty)) {
+                    return false;
+                }
+            }
+        }
+        for (int ty = ty0 - 1; ty <= ty1 + 1; ty++)
+            for (int tx = tx0 - 1; tx <= tx1 + 1; tx++)
+                if (tile(tx, ty) == CORRIDOR && !corridorAt[idx(tx, ty)].closed()) return true;
+        return false;
     }
 
     public Prop propAt(int tx, int ty) {

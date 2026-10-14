@@ -34,8 +34,11 @@ class WorldTest {
         }
         assertEquals(RoomType.VILLAGE, map.room("CAMP").doors.stream()
                 .filter(d -> d.name.equals("down")).findFirst().get().partner().room.type, "캠프 아래 문은 마을로 나간다");
+        // 임시로 다시 쓴 그림(L2, L8, R4)에 남는 출구만 막혀 있다
+        java.util.Set<String> spare = java.util.Set.of("L2.west", "L8.east", "R4.south");
         for (Room r : map.rooms)
-            for (Door d : r.doors) assertFalse(d.dead(), "그림 속 출구는 모두 어딘가로 이어진다: " + r.id + "." + d.name);
+            for (Door d : r.doors)
+                assertEquals(spare.contains(r.id + "." + d.name), d.dead(), "그림 속 출구는 어딘가로 이어진다: " + r.id + "." + d.name);
         Room camp = map.room("CAMP");
         assertTrue(map.room("L1").x1 < camp.x0, "왼쪽 던전은 캠프 왼쪽");
         assertTrue(map.room("R1").x0 > camp.x1, "오른쪽 던전은 캠프 오른쪽");
@@ -82,7 +85,7 @@ class WorldTest {
         for (String id : new String[]{"LEFT", "RIGHT", "TOP"}) all.bossesDefeated.add(id);
         all.unsealed = true;
         map.updateGates(all);
-        assertEquals(25, map.links.size());
+        assertEquals(24, map.links.size());
         for (Link l : map.links) {
             for (Door d : new Door[]{l.doorA, l.doorB}) {
                 String name = d.room.id + "." + d.name;
@@ -101,6 +104,57 @@ class WorldTest {
                     reached = d.triggers(x, y);
                 }
                 assertTrue(reached, name + " 출구까지 걸어갈 수 있다");
+            }
+        }
+    }
+
+    @Test
+    void everyRoomIsJoinedByAWalkableCorridor() {
+        WorldMap map = TestData.map();
+        GameState all = NewGame.create(TestData.balance());
+        for (String id : new String[]{"LEFT", "RIGHT", "TOP"}) all.bossesDefeated.add(id);
+        all.unsealed = true;
+        map.updateGates(all);
+        // 심연 계단(한쪽 길)만 빼고 모든 이음에 통로가 있다
+        java.util.Set<Room> reached = new java.util.HashSet<>();
+        java.util.ArrayDeque<Room> queue = new java.util.ArrayDeque<>();
+        queue.add(map.room("CAMP"));
+        reached.add(map.room("CAMP"));
+        for (Link l : map.links) {
+            assertEquals(!l.oneWay, l.corridor != null, l.a.id + "-" + l.b.id);
+            if (l.corridor == null) continue;
+            for (Door d : new Door[]{l.doorA, l.doorB}) {
+                float[] pos = {d.arriveX, d.arriveY};
+                for (float[] w : TestData.waypoints(d, 32)) {
+                    for (int i = 0; i < 400 && Math.hypot(w[0] - pos[0], w[1] - pos[1]) > 3; i++) {
+                        float tx = w[0] - pos[0], ty = w[1] - pos[1];
+                        float len = (float) Math.sqrt(tx * tx + ty * ty), step = Math.min(2, len);
+                        float nx = pos[0] + tx / len * step, ny = pos[1] + ty / len * step;
+                        if (map.free(nx, pos[1], 9, 6)) pos[0] = nx;
+                        if (map.free(pos[0], ny, 9, 6)) pos[1] = ny;
+                    }
+                }
+                Door to = d.partner();
+                assertTrue(Math.hypot(to.arriveX - pos[0], to.arriveY - pos[1]) < 4,
+                        d.room.id + "." + d.name + " 에서 통로를 따라 " + to.room.id + " 까지 걸어간다");
+            }
+        }
+        while (!queue.isEmpty()) {
+            Room r = queue.remove();
+            for (Link l : map.links) {
+                if (l.corridor == null || (l.a != r && l.b != r)) continue;
+                if (reached.add(l.other(r))) queue.add(l.other(r));
+            }
+        }
+        for (Room r : map.rooms)
+            assertEquals(r.type != RoomType.FINAL, reached.contains(r), r.id + " 은 캠프에서 걸어서 갈 수 있다 (심연만 떨어져서 간다)");
+        // 통로끼리는 겹치지 않는다 (지름길이 생기지 않게)
+        java.util.Map<Long, Link> owner = new java.util.HashMap<>();
+        for (Link l : map.links) {
+            if (l.corridor == null) continue;
+            for (int[] t : l.corridor.tiles) {
+                Link prev = owner.put(t[0] * 100000L + t[1], l);
+                assertTrue(prev == null || prev == l, "통로가 겹친다: " + t[0] + "," + t[1]);
             }
         }
     }

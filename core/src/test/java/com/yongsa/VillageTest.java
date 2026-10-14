@@ -15,7 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 선우 버전의 마을: 캠프 아래 문 밖. 용사는 몇 번 망설이다 나가고, 마을 사람들은 마왕을 잡아야 수정에서 풀린다. */
+/** 선우 버전의 마을: 캠프 아래 계단에서 통로로 이어진다. 용사는 몇 번 망설이다 나가고, 마을 사람들은 마왕을 잡아야 수정에서 풀린다. */
 class VillageTest {
     private final Balance b = TestData.balance();
 
@@ -33,14 +33,12 @@ class VillageTest {
         return ev.stream().anyMatch(e -> e.type == GameEvent.Type.BOSS_SPEECH && "용사".equals(e.speaker));
     }
 
-    /** 캠프 아래 문 앞에서 아래로 걸어 문을 지나려 한다. 마을에 나갔으면 true. */
+    /** 캠프 아래 문 앞에서 통로를 따라 마을로 걸어가 본다. 마을에 나갔으면 true. */
     private boolean tryLeave(GameSession g, List<GameEvent> out) {
         Door down = g.map.room("CAMP").doors.stream().filter(d -> d.name.equals("down")).findFirst().get();
         g.hero.x = down.arriveX;
         g.hero.y = down.arriveY;
-        Controls go = new Controls();
-        go.moveY = -1;
-        for (int i = 0; i < 120 && !g.inVillage() && !heroSaid(out); i++) out.addAll(run(g, go, 1 / 60f));
+        TestData.walkThrough(g, down, out, () -> g.inVillage() || heroSaid(out));
         out.addAll(run(g, new Controls(), 0.6f));
         return g.inVillage();
     }

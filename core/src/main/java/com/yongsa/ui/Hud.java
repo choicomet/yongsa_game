@@ -18,6 +18,7 @@ import com.yongsa.model.OreType;
 import com.yongsa.model.Vein;
 import com.yongsa.model.Weapon;
 import com.yongsa.world.Door;
+import com.yongsa.world.Corridor;
 import com.yongsa.world.Link;
 import com.yongsa.world.Room;
 import com.yongsa.world.RoomType;
@@ -205,12 +206,12 @@ public class Hud {
 
         Room room = g.heroRoom();
         boolean village = room != null && room.type == RoomType.VILLAGE;
-        String zone = room == null ? "던전 입구" : village ? g.balance.village.name
+        String zone = room == null ? corridorZone() : village ? g.balance.village.name
                 : room.dungeonId == null ? "용사의 캠프" : g.balance.dungeon(room.dungeonId).name;
         if (boss == null) {
             centered(fonts.small, banner == null ? zone : banner, w / 2, h - 35, Ui.GOLD);
             String sub = village ? (g.villagersFree() ? "모두가 돌아왔다" : "던전 밖 · 모두 수정 속에 잠들어 있다")
-                    : g.inCamp() ? "정비하고, 다음 여정을 준비하세요" : "탐험 중";
+                    : g.inCamp() ? "정비하고, 다음 여정을 준비하세요" : room == null ? "통로" : "탐험 중";
             centered(fonts.small, sub, w / 2, h - 59, Ui.DIM);
         } else {
             float bx = w / 2 - 210;
@@ -347,6 +348,15 @@ public class Hud {
             minY = Math.min(minY, r.y0);
             maxY = Math.max(maxY, r.y1);
         }
+        for (Corridor c : g.map.corridors) {
+            if (hiddenOnMap(c.link.a, inVillage) || hiddenOnMap(c.link.b, inVillage)) continue;
+            for (int[] t : c.tiles) {
+                minX = Math.min(minX, t[0]);
+                maxX = Math.max(maxX, t[0]);
+                minY = Math.min(minY, t[1]);
+                maxY = Math.max(maxY, t[1]);
+            }
+        }
         float pw = 900, ph = 560;
         float px = (w - pw) / 2f, py = (h - ph) / 2f - 10 + (1f - a) * 20f;
         float k = Math.min((pw - 80) / (maxX - minX + 1), (ph - 130) / (maxY - minY + 1));
@@ -366,23 +376,20 @@ public class Hud {
         shapes.rect(px, py, 2, ph);
         shapes.rect(px + pw - 2, py, 2, ph);
 
-        // 이음 (방 가운데끼리 잇고 그 위에 방을 그린다). 지도는 처음부터 한눈에 다 보인다 (지용 버전):
-        // 안 가 본 길은 흐리게.
-        for (Link l : g.map.links) {
+        // 통로. 지도는 처음부터 한눈에 다 보인다 (지용 버전): 안 가 본 길은 흐리게, 봉인된 길은 보랏빛.
+        for (Corridor c : g.map.corridors) {
+            Link l = c.link;
+            if (hiddenOnMap(l.a, inVillage) || hiddenOnMap(l.b, inVillage)) continue;
             boolean seen = known(l.a) || known(l.b);
-            if (l.a.type == RoomType.FINAL || l.b.type == RoomType.FINAL) continue; // 심연은 땅 밑이라 지도에 잇지 않는다
-            if (l.a.type == RoomType.VILLAGE || l.b.type == RoomType.VILLAGE) continue; // 마을은 던전 밖
-            float x0 = ox + (l.a.centerTileX() + 0.5f) * k, y0 = oy + (l.a.centerTileY() + 0.5f) * k;
-            float x1 = ox + (l.b.centerTileX() + 0.5f) * k, y1 = oy + (l.b.centerTileY() + 0.5f) * k;
             if (l.gateClosed) shapes.setColor(0.65f, 0.45f, 1f, a);
             else if (!seen) shapes.setColor(0.24f, 0.23f, 0.28f, a);
             else shapes.setColor(0.42f, 0.4f, 0.46f, a);
-            shapes.rectLine(x0, y0, x1, y1, Math.max(4f, k * 2.2f));
+            for (int[] t : c.tiles) shapes.rect(ox + t[0] * k, oy + t[1] * k, k + 0.6f, k + 0.6f);
         }
         // 방
         for (Room r : g.map.rooms) {
             boolean visited = known(r);
-            if (hiddenOnMap(r, inVillage)) continue; // 심연은 길로 이어지지 않고, 마을은 던전 밖이라 따로 보인다
+            if (hiddenOnMap(r, inVillage)) continue; // 심연은 길로 이어지지 않는다
             Color c = roomColor(r, visited);
             float rx = ox + r.x0 * k, ry = oy + r.y0 * k, rw = (r.x1 - r.x0 + 1) * k, rh = (r.y1 - r.y0 + 1) * k;
             if (r.scene == null) {
@@ -504,10 +511,19 @@ public class Hud {
         fonts.small.setColor(Color.WHITE);
     }
 
-    /** 심연은 그 안에 있을 때만, 마을은 마을에 있을 때만 (그때는 마을만) 지도에 나온다. */
+    /** 통로에 있을 때 위쪽 이름: 이어진 던전, 캠프와 마을 사이면 마을 가는 길. */
+    private String corridorZone() {
+        int T = g.balance.tileSize;
+        Corridor c = g.map.corridorAt((int) Math.floor(g.hero.x / T), (int) Math.floor(g.hero.y / T));
+        if (c == null) return "던전 입구";
+        if (c.link.a.type == RoomType.VILLAGE || c.link.b.type == RoomType.VILLAGE) return g.balance.village.name + " 가는 길";
+        if ("CAMP".equals(c.theme)) return "용사의 캠프";
+        return g.balance.dungeon(c.theme).name;
+    }
+
+    /** 심연은 땅 밑이라 그 안에 있을 때만 지도에 나온다. */
     private boolean hiddenOnMap(Room r, boolean inVillage) {
-        if (inVillage) return r.type != RoomType.VILLAGE;
-        return (r.type == RoomType.FINAL && r != g.heroRoom()) || r.type == RoomType.VILLAGE;
+        return r.type == RoomType.FINAL && r != g.heroRoom();
     }
 
     private boolean known(Room r) {

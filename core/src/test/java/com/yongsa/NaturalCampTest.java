@@ -66,8 +66,10 @@ class NaturalCampTest {
             int y = Math.round((camp.sceneY(point[1]) - camp.originY) / step);
             assertTrue(seen[x + y * nx], "Unreachable floor " + java.util.Arrays.toString(point));
         }
-        for (float[] point : new float[][]{{.306f,.375f},{.745f,.38f},{.524f,.51f},{.21f,.425f},{.505f,.96f}})
-            assertFalse(g.map.free(camp.sceneX(point[0]), camp.sceneY(point[1]), g.hero.hw, g.hero.hh), "Visible solid base / closed front gate");
+        for (float[] point : new float[][]{{.306f,.375f},{.745f,.38f},{.524f,.51f},{.21f,.425f}})
+            assertFalse(g.map.free(camp.sceneX(point[0]), camp.sceneY(point[1]), g.hero.hw, g.hero.hh), "Visible solid base");
+        // 아래 계단 밖은 마을로 가는 통로
+        assertTrue(g.map.free(camp.sceneX(.505f), camp.sceneY(.96f), g.hero.hw, g.hero.hh), "village corridor");
         assertEquals(4, camp.doors.size()); // 던전 입구 셋 + 심연으로 내려가는 아래 계단
     }
 
