@@ -158,6 +158,19 @@ public class Balance {
         /** 연속 돌진: 매번 다시 조준해서 rushCount 번 달려든다. */
         public int rushCount;
         public float rushTelegraph;
+        /** 연속 돌진의 마지막 돌진이 끝나면 이만큼 휘청인다 (선우 버전 좀비킹). */
+        public float rushStun;
+        /** 해골 사제 뼈 가시 (선우 버전 리치): 용사 발밑 하나 + 주변 몇 개. */
+        public int spikeCount;
+        public float spikeRadiusTiles, spikeSpreadTiles, spikeWarning, spikeMultiplier;
+        /** 실명: 뼈 가시·소환을 쓸 때 화면이 어두워진다. 한 번 걸면 쿨타임 동안 다시 안 건다. */
+        public float blindSeconds, blindCooldown;
+        /** 마왕 척추 채찍: 앞쪽 부채꼴을 한쪽 끝에서 다른 끝으로 휩쓴다. */
+        public int whipLines;
+        public float whipArcDegrees, whipRadiusTiles, whipWarning, whipSweep, whipMultiplier;
+        /** 마왕 2페이즈 눈알: 뜨는 순간 그쪽을 보고 있으면 지금 체력의 절반을 잃고 잠깐 굳는다. */
+        public int eyeCount;
+        public float eyeGap, eyeWarning, eyeAngleDegrees, eyeStun, eyeDistanceTiles;
         /** 낙석: 용사가 있던 자리마다 차례로 예고 뒤 떨어진다. */
         public int rockCount;
         public float rockInterval, rockWarning, rockRadiusTiles, rockMultiplier;
@@ -197,7 +210,7 @@ public class Balance {
         public float speedTiles;
         /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
         public String ai;
-        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle. */
+        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes. */
         public List<String> patterns;
         /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;
@@ -205,5 +218,8 @@ public class Balance {
         public float telegraph, cooldown;
         /** 보스: 구석에 몰리면 순간이동해서 빠져나간다. */
         public boolean cornerBlink;
+        /** 보스 소환: 어느 던전의 잡몹을 몇 마리 부르나 (없으면 자기 던전 잡몹, monster.summonCount). */
+        public String summonFrom;
+        public int summonCount;
     }
 }

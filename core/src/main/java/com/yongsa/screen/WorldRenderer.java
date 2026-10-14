@@ -117,6 +117,96 @@ public class WorldRenderer implements Disposable {
         TextureRegion region;
         float x, y, w, h, t, dur;
         boolean flip, boss;
+        /** 지용 버전 보스 동작 시트가 있으면 쓰러지는 줄을 돌린다. */
+        String sheet;
+    }
+
+    // ───────────────────────── 지용 버전 보스 동작 시트
+    // 256px 칸 8열 x 5행, 왼쪽을 보는 그림, 발은 칸의 (128, 224).
+    // 1행: 대기 4 + 피격 4 · 2행: 이동 8 · 3행: 기본 공격 8 (앞 4칸 준비) · 4행: 특수 공격 8 · 5행: 쓰러짐 8
+    private static final int BOSS_CELL = 256, BOSS_FOOT = 224, BOSS_BODY = 128;
+    private static final float BOSS_SHEET_SCALE = 0.75f;
+    private final java.util.IdentityHashMap<Monster, float[]> bossAnim = new java.util.IdentityHashMap<>();
+
+    /** 보스 그림 이름 → 동작 시트 (파일이 없으면 null: 한 장짜리 그림을 쓴다). */
+    private static String bossSheet(String sprite) {
+        String path;
+        switch (sprite) {
+            case "golem": path = "team/jiyong/boss_golem.png"; break;
+            case "knight": path = "team/jiyong/boss_knight.png"; break;
+            case "warden": path = "team/jiyong/boss_lich.png"; break;
+            default: return null;
+        }
+        return SHEET_EXISTS.computeIfAbsent(path, k -> Gdx.files.internal(k).exists()) ? path : null;
+    }
+
+    private static final java.util.Map<String, Boolean> SHEET_EXISTS = new java.util.HashMap<>();
+
+    private TextureRegion bossCell(String sheet, int row, int col) {
+        return art.cell(sheet, 8, 5, row * 8 + Math.min(7, Math.max(0, col)));
+    }
+
+    /**
+     * 보스의 지금 자세 (행, 열). 공격은 준비 동안 앞 4칸, 친 뒤(RECOVER)에는 뒤 4칸.
+     * 기본 공격(2행)과 특수 공격(4행 · 내려찍기·마법·긴 패턴)을 나눈다.
+     */
+    private int[] bossPose(Monster m) {
+        if (bossAnim.size() > 16) bossAnim.keySet().removeIf(x -> x.dead);
+        float[] a = bossAnim.computeIfAbsent(m, k -> new float[]{m.x, m.y, 2, 0, 0});
+        // a: 지난 x, y, 마지막 공격 줄, 움직인 시간, 지난 상태
+        boolean moved = Math.abs(m.x - a[0]) + Math.abs(m.y - a[1]) > 0.05f;
+        a[0] = m.x;
+        a[1] = m.y;
+        if (moved) a[3] += Gdx.graphics.getDeltaTime();
+        int four = Math.min(3, (int) (m.progress() * 4));
+        switch (m.state) {
+            case TELEGRAPH: case COMBO_TELEGRAPH: case CHARGE_TELEGRAPH:
+                a[2] = 2;
+                return new int[]{2, four};
+            case SLAM_TELEGRAPH: case CAST_TELEGRAPH:
+                a[2] = 3;
+                return new int[]{3, four};
+            case RECOVER:
+                return new int[]{(int) a[2], 4 + four};
+            case CHANNEL:
+                return new int[]{3, 4 + ((int) (time * 8)) % 4};
+            case CHARGING:
+                return new int[]{1, ((int) (time * 14)) % 8};
+            case STUNNED:
+                return new int[]{0, 4 + ((int) (time * 5)) % 4};
+            default:
+                if (moved) return new int[]{1, ((int) (a[3] * 7)) % 8};
+                return new int[]{0, ((int) (time * 5.5f)) % 4};
+        }
+    }
+
+    private void drawBossSheet(Monster m, String sheet) {
+        int[] pose = bossPose(m);
+        TextureRegion r = bossCell(sheet, pose[0], pose[1]);
+        float appear = m.state == Monster.State.SPAWN ? Math.max(0f, (m.progress() - 0.35f) / 0.65f) : 1f;
+        if (appear <= 0f) return;
+        float k = BOSS_SHEET_SCALE * appear;
+        float size = BOSS_CELL * k;
+        drawShadow(m.x, m.y, BOSS_BODY * k * 0.8f);
+        float jx = m.state == Monster.State.STUNNED ? MathUtils.sin(time * 14f) * 1.5f
+                : m.state == Monster.State.CHARGE_TELEGRAPH ? MathUtils.sin(time * 60f) * 2f * m.progress() : 0;
+        boolean faceRight = m.dirX > 0.2f;
+        float x0 = m.x + jx - size / 2f, y0 = m.y - (BOSS_CELL - BOSS_FOOT) * k;
+        if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
+        else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
+        else batch.setColor(1f, 1f, 1f, appear);
+        if (faceRight) batch.draw(r, x0 + size, y0, -size, size);
+        else batch.draw(r, x0, y0, size, size);
+        if (m.flash > 0) {
+            Particles.additive(batch);
+            batch.setColor(1f, 1f, 1f, Math.min(1f, m.flash / 0.15f));
+            for (int i = 0; i < 2; i++) {
+                if (faceRight) batch.draw(r, x0 + size, y0, -size, size);
+                else batch.draw(r, x0, y0, size, size);
+            }
+            Particles.normal(batch);
+        }
+        batch.setColor(Color.WHITE);
     }
 
     private static class Ghost {
@@ -237,6 +327,12 @@ public class WorldRenderer implements Disposable {
                 c.flip = e.flip;
                 c.boss = e.boss;
                 c.dur = e.boss ? 1.4f : 0.4f;
+                if (e.boss && bossSheet(e.sprite) != null) {
+                    c.sheet = bossSheet(e.sprite);
+                    c.dur = 2.2f;
+                    c.h = BOSS_BODY * BOSS_SHEET_SCALE;
+                    c.w = BOSS_BODY * BOSS_SHEET_SCALE;
+                }
                 corpses.add(c);
                 Color tint = deathColor(e.sprite);
                 particles.smoke(e.x, e.y + c.h * 0.3f, e.boss ? 26 : 9, new Color(0.25f, 0.22f, 0.3f, 0.7f), c.w * 0.4f, e.boss ? 26 : 12, e.boss ? 1.4f : 0.7f);
@@ -564,9 +660,19 @@ public class WorldRenderer implements Disposable {
     /** 맵을 그리기 전에 부른다 (빛 지도를 따로 그린다). */
     public void renderLights(OrthographicCamera cam) {
         computeView(cam);
-        lighting.begin(ambient.r, ambient.g, ambient.b);
+        // 실명 (해골 사제): 거의 캄캄해지고 용사 둘레만 조금 보인다. 바닥 예고와 사제의 눈은 빛난다.
+        float bs = g.balance.monster.blindSeconds;
+        float blind = g.blindT > 0 ? Math.min(1f, Math.min(g.blindT / 0.5f, (bs - g.blindT) / 0.3f)) : 0f;
+        float amb = 1f - 0.92f * blind;
+        lighting.begin(ambient.r * amb, ambient.g * amb, ambient.b * amb);
         HeroActor h = g.hero;
-        lighting.add(h.x, h.y + 14, 250, 1f, 0.92f, 0.8f, 0.6f);
+        lighting.add(h.x, h.y + 14, 250 * (1f - 0.55f * blind), 1f, 0.92f, 0.8f, 0.6f);
+        if (blind > 0) {
+            for (Monster m : g.monsters) {
+                if (m.dead || !m.boss) continue;
+                lighting.add(m.x, m.y + 70, 70, 1f, 0.15f, 0.2f, 0.9f * blind);
+            }
+        }
         if (h.swingT > 0) {
             Weapon w = g.state.equipped();
             Color c = swingColor(w == null ? "" : w.defId);
@@ -580,7 +686,7 @@ public class WorldRenderer implements Disposable {
         for (float[] t : torches) {
             if (!inView(t[0], t[1] - 100)) continue;
             float fl = 0.85f + 0.1f * MathUtils.sin(time * 11f + t[2]) + 0.05f * MathUtils.sin(time * 23f + t[2] * 2);
-            lighting.add(t[0], t[1] + 10, 175 * fl, 1f, 0.62f, 0.32f, 0.75f);
+            lighting.add(t[0], t[1] + 10, 175 * fl, 1f, 0.62f, 0.32f, 0.75f * (1f - blind));
         }
         for (Prop p : map.props) {
             float cx = p.centerX(T), cy = p.centerY(T);
@@ -936,6 +1042,18 @@ public class WorldRenderer implements Disposable {
                     shapes.ellipse(h.x - r * 0.8f, h.y - r * 0.48f, r * 1.6f, r * 0.96f, 40);
                     break;
                 }
+                case EYE: {
+                    // 감긴 눈이 천천히 떠진다
+                    float r = h.radius, open = Math.max(0.08f, p * p);
+                    shapes.setColor(0.12f, 0.02f, 0.08f, 0.85f);
+                    shapes.ellipse(h.x - r * 1.15f, h.y - r * 0.62f, r * 2.3f, r * 1.24f, 32);
+                    shapes.setColor(0.95f, 0.9f, 0.85f, 0.9f);
+                    shapes.ellipse(h.x - r, h.y - r * 0.5f * open, r * 2f, r * open, 32);
+                    shapes.setColor(EYE_RED.r, EYE_RED.g, EYE_RED.b, 0.95f);
+                    float pr = r * 0.32f * open;
+                    shapes.circle(h.x, h.y, pr, 20);
+                    break;
+                }
                 case LINE: {
                     float w = h.radius * 2f;
                     shapes.setColor(c.r * 0.9f, c.g * 0.3f, c.b * 0.3f, blink + 0.05f);
@@ -975,6 +1093,17 @@ public class WorldRenderer implements Disposable {
                 ring(e.x, e.y, e.size * 0.3f, e.size, 0.4f, c);
                 flash(e.x, e.y, e.size * 2.5f, c, 0.3f);
                 break;
+            case "bone":
+                // 바닥에서 솟는 뼈 가시
+                particles.debris(e.x, e.y + 10, 14, BONE, 260, 4);
+                particles.burst(e.x, e.y + 8, 10, new Color(0.6f, 1f, 0.5f, 1f), 160, 0.4f, 3, true);
+                ring(e.x, e.y, e.size * 0.3f, e.size, 0.3f, BONE);
+                break;
+            case "eye":
+                flash(e.x, e.y, 220, EYE_RED, 0.35f);
+                ring(e.x, e.y, 8, 120, 0.4f, EYE_RED);
+                break;
+            case "whip":
             case "spear": {
                 float dx = e.dirX - e.x, dy = e.dirY - e.y;
                 for (int i = 0; i <= 10; i++) {
@@ -997,6 +1126,9 @@ public class WorldRenderer implements Disposable {
             case "bolt": return PROJ_SKY;
             case "tentacle": return PROJ_DARK;
             case "spear": case "blood": return PROJ_BLOOD;
+            case "bone": return BONE;
+            case "whip": return WHIP;
+            case "eye": return EYE_RED;
             default: return new Color(1f, 0.6f, 0.35f, 1f);
         }
     }
@@ -1145,14 +1277,15 @@ public class WorldRenderer implements Disposable {
             drawRoll(h);
             return;
         }
-        boolean blink = h.invuln > 0 && ((int) (h.invuln * 20)) % 2 == 0;
+        boolean blink = h.invuln > 0 && h.stunT <= 0 && ((int) (h.invuln * 20)) % 2 == 0;
         float alpha = blink ? 0.35f : 1f;
         boolean flip = h.facing == Facing.LEFT;
         TextureRegion r = heroRegion(h);
         float w = art.width(r) * S * HERO_SCALE, hgt = art.height(r) * S * HERO_SCALE;
         boolean swordBehind = h.facing == Facing.UP;
         if (swordBehind) drawSword(h, alpha);
-        batch.setColor(1f, 1f, 1f, alpha);
+        if (h.stunT > 0) batch.setColor(0.7f, 0.55f, 0.85f, alpha); // 눈알에 굳음: 잿빛 보라
+        else batch.setColor(1f, 1f, 1f, alpha);
         // 휘두를 때 몸을 살짝 찌그러뜨려 힘이 들어간 느낌을 준다
         float squash = h.swingT > 0 && h.swingKind == 0 ? 1f - 0.08f * (h.swingT / 0.18f) : 1f;
         float bob = heroBob(h);
@@ -1284,10 +1417,16 @@ public class WorldRenderer implements Disposable {
 
     /** Overhead UI follows the same pose as the sprite, not the lower-body combat circle. */
     private float monsterTop(Monster m) {
+        if (m.boss && !m.finalBoss && bossSheet(m.def.sprite) != null) return m.y + BOSS_BODY * BOSS_SHEET_SCALE;
         return m.y - 2 + monsterBob(m) + art.height(art.world(m.def.sprite)) * monsterScale(m) * monsterStretchY(m);
     }
 
     private void drawMonster(Monster m) {
+        String sheet = m.boss && !m.finalBoss ? bossSheet(m.def.sprite) : null;
+        if (sheet != null) {
+            drawBossSheet(m, sheet);
+            return;
+        }
         TextureRegion r = art.world(m.def.sprite);
         float scale = monsterScale(m);
         float appear = m.state == Monster.State.SPAWN ? Math.max(0f, (m.progress() - 0.35f) / 0.65f) : 1f;
@@ -1339,6 +1478,17 @@ public class WorldRenderer implements Disposable {
 
     private void drawCorpse(Corpse c) {
         float p = c.t / c.dur;
+        if (c.sheet != null) {
+            // 쓰러지는 줄 8칸을 돌리고, 마지막 칸에서 천천히 사라진다
+            TextureRegion r = bossCell(c.sheet, 4, (int) Math.min(7, p / 0.6f * 8));
+            float size = BOSS_CELL * BOSS_SHEET_SCALE;
+            float x0 = c.x - size / 2f, y0 = c.y - (BOSS_CELL - BOSS_FOOT) * BOSS_SHEET_SCALE;
+            batch.setColor(1f, 1f, 1f, p < 0.7f ? 1f : 1f - (p - 0.7f) / 0.3f);
+            if (!c.flip) batch.draw(r, x0 + size, y0, -size, size);
+            else batch.draw(r, x0, y0, size, size);
+            batch.setColor(Color.WHITE);
+            return;
+        }
         float a = 1f - p;
         float sy = 1f - 0.5f * p, sx = 1f + 0.25f * p;
         float dw = c.w * sx, dh = c.h * sy;
@@ -1837,6 +1987,9 @@ public class WorldRenderer implements Disposable {
 
     private static final Color PROJ_FIRE = new Color(1f, 0.5f, 0.2f, 1f);
     private static final Color PROJ_BLOOD = new Color(1f, 0.2f, 0.25f, 1f);
+    private static final Color BONE = new Color(0.9f, 0.95f, 0.75f, 1f);
+    private static final Color WHIP = new Color(0.85f, 0.35f, 0.7f, 1f);
+    private static final Color EYE_RED = new Color(1f, 0.15f, 0.2f, 1f);
     private static final Color PROJ_SKY = new Color(0.4f, 0.8f, 1f, 1f);
     private static final Color PROJ_DARK = new Color(0.7f, 0.3f, 1f, 1f);
     private static final Color SPAWN_BLUE = new Color(0.4f, 0.6f, 1f, 1f);

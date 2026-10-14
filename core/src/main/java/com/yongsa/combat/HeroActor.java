@@ -20,6 +20,8 @@ public class HeroActor extends Actor {
     public float mineSwingT;
     /** 둔화 남은 시간 (피웅덩이). */
     public float slowT;
+    /** 굳음 (마왕의 눈알): 남은 동안 움직이지도 치지도 못한다. */
+    public float stunT;
 
     public HeroActor() {
         hw = 9;

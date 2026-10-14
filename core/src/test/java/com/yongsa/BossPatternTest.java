@@ -237,4 +237,142 @@ class BossPatternTest {
         assertEquals(Math.round(hp0 * b.monster.clearedMobHpMultiplier), m.maxHp);
         assertEquals(b.monster.clearedMobAttackMultiplier, m.attackMul, 0.001f);
     }
+
+    // ───────────── 선우 버전 패턴을 맞춘 것
+
+    /** 보스가 다음에 쓸 패턴을 하나로 정해 두고, 용사 가까이 세운다. */
+    private Monster forcePattern(GameSession g, String pattern, float dx) {
+        Monster m = g.activeBoss();
+        run(g, idle, 1.5f);
+        m.def.patterns = new ArrayList<>(List.of(pattern));
+        m.def.phase2Patterns = new ArrayList<>(List.of(pattern));
+        m.lastPattern = null;
+        m.x = g.hero.x + dx;
+        m.y = g.hero.y;
+        m.enter(Monster.State.CHASE, 0);
+        m.patternCd = 0;
+        return m;
+    }
+
+    @Test
+    void golemReelsAfterItsThirdRush() {
+        GameState s = strongHero();
+        GameSession g = fightIn("L6", s);
+        Monster m = g.activeBoss();
+        run(g, idle, 2.0f);
+        Room r = g.map.room("L6");
+        m.x = (r.centerTileX() + 0.5f) * b.tileSize;
+        m.y = (r.centerTileY() + 0.5f) * b.tileSize;
+        g.hero.x = m.x + 3 * b.tileSize;
+        g.hero.y = m.y;
+        m.rushLeft = 1; // 마지막 돌진
+        m.lockX = 0;
+        m.lockY = 1;
+        m.dashLeft = 2 * b.tileSize;
+        m.enter(Monster.State.CHARGING, 1f);
+        for (int i = 0; i < 60 && m.state == Monster.State.CHARGING; i++) {
+            g.update(1 / 60f, idle);
+            g.pollEvents();
+        }
+        assertEquals(Monster.State.STUNNED, m.state, "세 번째 돌진 뒤에는 휘청인다");
+        assertEquals(b.monster.rushStun, m.stateTotal, 0.01f);
+    }
+
+    @Test
+    void skeletonPriestRaisesBoneSpikesAndBlinds() {
+        GameState s = strongHero();
+        GameSession g = fightIn("T6", s);
+        forcePattern(g, "bonespike", 5 * b.tileSize);
+        List<GameEvent> ev = run(g, idle, 2 / 60f);
+        long spikes = g.hazards.stream().filter(h -> "bone".equals(h.style)).count();
+        assertTrue(spikes >= 3, "뼈 가시가 여러 개 솟는다: " + spikes);
+        assertTrue(g.hazards.stream().anyMatch(h -> "bone".equals(h.style) && h.covers(g.hero.x, g.hero.y, 0)), "하나는 용사 발밑");
+        assertTrue(g.blindT > 0, "앞이 캄캄해진다");
+        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.TOAST && e.text.contains("캄캄")));
+        s.hp = 999;
+        int hp = s.hp;
+        run(g, idle, 1.2f);
+        assertTrue(s.hp < hp, "가만히 있으면 맞는다");
+    }
+
+    @Test
+    void skeletonPriestSummonsSkeletonsFromTheCastle() {
+        GameState s = strongHero();
+        GameSession g = fightIn("T6", s);
+        Monster boss = forcePattern(g, "summon", 5 * b.tileSize);
+        for (Monster o : g.monsters) if (!o.boss) o.dead = true;
+        run(g, idle, 2 / 60f);
+        long skeletons = g.monsters.stream().filter(o -> !o.dead && !o.boss
+                && o.def.sprite.equals(b.dungeon("RIGHT").mob.sprite)).count();
+        assertEquals(boss.def.summonCount, skeletons);
+    }
+
+    private GameSession demonFight(GameState s) {
+        s.equippedUid = s.newWeapon("holy_awakened").uid;
+        for (String id : new String[]{"LEFT", "RIGHT", "TOP"}) s.bossesDefeated.add(id);
+        s.unsealed = true;
+        GameSession g = new GameSession(b, TestData.map(), s, 7);
+        g.dropToAbyss();
+        Controls up = new Controls();
+        up.moveY = 1;
+        for (int i = 0; i < 600 && !g.fighting(); i++) {
+            g.update(1 / 60f, up);
+            g.pollEvents();
+        }
+        assertTrue(g.fighting());
+        return g;
+    }
+
+    @Test
+    void demonWhipSweepsTheFrontArc() {
+        GameState s = NewGame.create(b);
+        GameSession g = demonFight(s);
+        Monster m = forcePattern(g, "whip", 3 * b.tileSize);
+        run(g, idle, 2 / 60f);
+        long lines = g.hazards.stream().filter(h -> "whip".equals(h.style)).count();
+        assertEquals(b.monster.whipLines, lines);
+        s.hp = 999;
+        run(g, idle, b.monster.whipWarning + b.monster.whipSweep + 0.2f);
+        assertTrue(s.hp < 999, "채찍이 휩쓰는 자리에 서 있으면 맞는다");
+    }
+
+    @Test
+    void demonEyesPunishLookingAtThem() {
+        GameState s = NewGame.create(b);
+        GameSession g = demonFight(s);
+        Monster m = forcePattern(g, "eyes", 6 * b.tileSize);
+        run(g, idle, 2 / 60f);
+        List<Hazard> eyes = new ArrayList<>();
+        for (Hazard h : g.hazards) if (h.kind == Hazard.Kind.EYE) eyes.add(h);
+        assertFalse(eyes.isEmpty());
+        m.enter(Monster.State.RECOVER, 99f);
+        m.patternCd = 99;
+        // 첫 눈알만 남기고, 용사가 그 눈을 바라보게 한다
+        Hazard eye = eyes.get(0);
+        g.hazards.removeIf(h -> h != eye);
+        eye.delay = 0.05f;
+        s.hp = 800;
+        float dx = eye.x - g.hero.x, dy = eye.y - g.hero.centerY(), l = (float) Math.sqrt(dx * dx + dy * dy);
+        g.hero.aimX = dx / l;
+        g.hero.aimY = dy / l;
+        g.hero.invuln = 0;
+        run(g, idle, 0.1f);
+        assertEquals(400, s.hp, "눈이 마주치면 지금 체력의 절반을 잃는다");
+        assertTrue(g.hero.stunT > 0, "몸이 굳는다");
+
+        // 등을 돌리고 있으면 괜찮다
+        Hazard eye2 = new Hazard(Hazard.Kind.EYE, "eye");
+        eye2.x = eye.x;
+        eye2.y = eye.y;
+        eye2.radius = eye.radius;
+        eye2.delay = eye2.warning = 0.05f;
+        g.hazards.add(eye2);
+        g.hero.stunT = 0;
+        g.hero.invuln = 0;
+        g.hero.aimX = -dx / l;
+        g.hero.aimY = -dy / l;
+        int before = s.hp;
+        run(g, idle, 0.1f);
+        assertEquals(before, s.hp);
+    }
 }

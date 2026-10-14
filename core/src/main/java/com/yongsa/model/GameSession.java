@@ -93,6 +93,9 @@ public class GameSession {
     private boolean slept;
     private Prop sleepBed;
     public static final float SLEEP_TIME = 3.2f, SLEEP_REST_AT = 1.5f;
+    /** 실명 (해골 사제): 남은 시간. 그리는 쪽에서 화면을 어둡게 한다. */
+    public float blindT;
+    private float blindCd;
     /** 마을 사람마다 몇 번째 대사까지 했는지. */
     private final java.util.Map<String, Integer> talkCount = new java.util.HashMap<>();
 
@@ -248,6 +251,9 @@ public class GameSession {
         hero.swingT -= dt;
         hero.mineSwingT -= dt;
         hero.slowT -= dt;
+        hero.stunT -= dt;
+        blindT -= dt;
+        blindCd -= dt;
 
         if (hero.kbT > 0) {
             Physics.move(map, hero, hero.kbVX * dt, hero.kbVY * dt, T);
@@ -265,6 +271,10 @@ public class GameSession {
             return;
         }
 
+        if (hero.stunT > 0) {
+            hero.moving = false;
+            return;
+        }
         float mx = c.moveX, my = c.moveY;
         float len = (float) Math.sqrt(mx * mx + my * my);
         hero.moving = len > 0.01f;
@@ -289,6 +299,8 @@ public class GameSession {
     private void autoFace() {
         float range = balance.attack.autoFaceTiles * T;
         if (range <= 0) return;
+        // 마왕의 눈알이 뜨려는 동안은 걸어가는 쪽을 본다 (스스로 눈을 돌릴 수 있게)
+        for (Hazard h : hazards) if (h.kind == Hazard.Kind.EYE && !h.dead) return;
         Monster best = null;
         float bestD = range * range;
         for (Monster m : monsters) {
@@ -597,6 +609,8 @@ public class GameSession {
             last = b != null && b.phase2 ? "꽤나 즐거운 여흥이었다." : "한심하긴.";
         }
         hazards.clear();
+        blindT = 0;
+        hero.stunT = 0;
         hero.slowT = 0;
         if (fightRoom != null) {
             fightRoom.setFightLock(false); // 싸우던 방만 처음 상태로 (A8)
@@ -733,6 +747,8 @@ public class GameSession {
         hero.kbT = 0;
         hero.slowT = 0;
         hazards.clear();
+        blindT = 0;
+        hero.stunT = 0;
         projectiles.clear();
         shots.clear();
         doorCd = 0.35f;
@@ -760,6 +776,8 @@ public class GameSession {
         projectiles.clear();
         shots.clear();
         hazards.clear();
+        blindT = 0;
+        hero.stunT = 0;
         DungeonDef d = balance.dungeon(r.dungeonId);
         if (r.type == RoomType.MOB) {
             for (int i = 0; i < d.mobsPerRoom; i++) spawn(r, d.mob, false, false, false);
@@ -844,6 +862,8 @@ public class GameSession {
         projectiles.clear();
         shots.clear();
         hazards.clear();
+        blindT = 0;
+        hero.stunT = 0;
         state.room(r.id).cleared = true;
         events.add(GameEvent.sound("door"));
         events.add(new GameEvent(GameEvent.Type.ROOM_CLEARED));
@@ -973,11 +993,13 @@ public class GameSession {
                         aimAtHero(m);
                         m.enter(Monster.State.CHARGE_TELEGRAPH, mc.rushTelegraph);
                         if (blocked) wallBump(m);
-                    } else if (charge && blocked) {
-                        // 벽에 부딪혀 잠깐 기절한다: 반격할 기회
+                    } else if (charge && over && (blocked || m.rushLeft == 1)) {
+                        // 벽에 부딪히거나 연속 돌진을 다 쓰면 휘청인다: 반격할 기회
+                        boolean lastRush = m.rushLeft == 1;
                         m.rushLeft = 0;
-                        m.enter(Monster.State.STUNNED, mc.chargeStun);
-                        wallBump(m);
+                        m.enter(Monster.State.STUNNED, lastRush ? Math.max(mc.rushStun, blocked ? mc.chargeStun : 0) : mc.chargeStun);
+                        if (blocked) wallBump(m);
+                        else events.add(GameEvent.sound("block"));
                     } else if (over) {
                         m.rushLeft = 0;
                         m.enter(Monster.State.RECOVER, charge ? 0.6f : mc.swoopRecover);
@@ -1329,19 +1351,91 @@ public class GameSession {
                 return true;
             }
             case "summon": {
+                int count = m.def.summonCount > 0 ? m.def.summonCount : mc.summonCount;
                 int alive = 0;
                 for (Monster o : monsters) if (!o.dead && !o.boss) alive++;
-                if (alive >= mc.summonCount) return false;
+                if (alive >= count) return false;
                 Room r = fightRoom;
                 if (r == null) return false;
-                DungeonDef d = balance.dungeon(r.dungeonId);
-                for (int i = 0; i < mc.summonCount; i++) {
+                DungeonDef d = balance.dungeon(m.def.summonFrom != null ? m.def.summonFrom : r.dungeonId);
+                for (int i = 0; i < count - alive; i++) {
                     Monster s = makeMonster(r, d.mob, false, false, false);
                     if (s != null) summoned.add(s);
                 }
                 events.add(GameEvent.toast(m.def.name + "이(가) 부하를 불렀다!"));
                 events.add(GameEvent.sound("roar"));
                 m.enter(Monster.State.RECOVER, 0.8f);
+                blind(m);
+                return true;
+            }
+            case "bonespike": {
+                // 용사 발밑 하나 + 주변에 흩어진 뼈 가시
+                float spread = mc.spikeSpreadTiles * T;
+                circleHazard("bone", hero.x, hero.y, mc.spikeRadiusTiles * T, mc.spikeWarning, m.attack(), mc.spikeMultiplier);
+                for (int i = 1; i < mc.spikeCount; i++) {
+                    for (int tries = 0; tries < 8; tries++) {
+                        float a = random.nextFloat() * 6.283f, d = spread * (0.45f + 0.55f * random.nextFloat());
+                        float tx = hero.x + (float) Math.cos(a) * d, ty = hero.y + (float) Math.sin(a) * d;
+                        if (map.solid(tileX(tx), tileY(ty))) continue;
+                        circleHazard("bone", tx, ty, mc.spikeRadiusTiles * T, mc.spikeWarning + 0.1f * i, m.attack(), mc.spikeMultiplier);
+                        break;
+                    }
+                }
+                m.slamX = hero.x;
+                m.slamY = hero.y;
+                m.castKind = "bonespike";
+                m.enter(Monster.State.RECOVER, mc.spikeWarning + 0.4f);
+                events.add(GameEvent.sound("cast"));
+                blind(m);
+                return true;
+            }
+            case "whip": {
+                // 앞쪽 부채꼴을 한쪽 끝에서 다른 끝으로 휩쓴다: 선 여러 개가 차례로 터진다
+                aimAtHero(m);
+                float base = (float) Math.atan2(m.dirY, m.dirX);
+                float arc = (float) Math.toRadians(mc.whipArcDegrees);
+                boolean cw = random.nextBoolean();
+                for (int i = 0; i < mc.whipLines; i++) {
+                    float t = mc.whipLines == 1 ? 0.5f : i / (float) (mc.whipLines - 1);
+                    float a = base + arc * ((cw ? t : 1 - t) - 0.5f);
+                    Hazard h = new Hazard(Hazard.Kind.LINE, "whip");
+                    h.x = m.x;
+                    h.y = m.centerY();
+                    h.x2 = m.x + (float) Math.cos(a) * mc.whipRadiusTiles * T;
+                    h.y2 = h.y + (float) Math.sin(a) * mc.whipRadiusTiles * T;
+                    h.radius = T * 0.55f;
+                    h.delay = h.warning = mc.whipWarning + mc.whipSweep * t;
+                    h.damage = m.attack();
+                    h.multiplier = mc.whipMultiplier;
+                    hazards.add(h);
+                }
+                m.enter(Monster.State.SLAM_TELEGRAPH, mc.whipWarning);
+                m.slamX = m.x;
+                m.slamY = m.y;
+                m.slamRadius = 0;
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "eyes": {
+                // 눈알이 차례로 뜬다: 뜨는 순간 그쪽을 보고 있으면 안 된다
+                Room r = fightRoom;
+                for (int i = 0; i < mc.eyeCount; i++) {
+                    for (int tries = 0; tries < 12; tries++) {
+                        float a = random.nextFloat() * 6.283f, d = mc.eyeDistanceTiles * T * (0.7f + 0.3f * random.nextFloat());
+                        float tx = hero.x + (float) Math.cos(a) * d, ty = hero.y + (float) Math.sin(a) * d;
+                        if (map.solid(tileX(tx), tileY(ty)) || (r != null && !r.inside(tileX(tx), tileY(ty)))) continue;
+                        Hazard h = new Hazard(Hazard.Kind.EYE, "eye");
+                        h.x = tx;
+                        h.y = ty;
+                        h.radius = T * 0.9f;
+                        h.delay = h.warning = mc.eyeWarning + mc.eyeGap * i;
+                        hazards.add(h);
+                        break;
+                    }
+                }
+                m.enter(Monster.State.RECOVER, mc.eyeWarning + 0.5f);
+                events.add(GameEvent.toast("눈알이 뜬다! 눈을 돌려라"));
+                events.add(GameEvent.sound("roar"));
                 return true;
             }
             default:
@@ -1435,6 +1529,15 @@ public class GameSession {
         hazards.add(h);
     }
 
+    /** 실명 (해골 사제): 쿨타임이 지났으면 화면을 어둡게 한다. */
+    private void blind(Monster m) {
+        Balance.MonsterCfg mc = balance.monster;
+        if (!"warden".equals(m.def.sprite) || blindCd > 0 || mc.blindSeconds <= 0) return;
+        blindT = mc.blindSeconds;
+        blindCd = mc.blindCooldown;
+        events.add(GameEvent.toast("앞이 캄캄해졌다! 바닥의 빛을 보고 피하자"));
+    }
+
     /** 피웅덩이: 용사 발밑 하나와 방 안 아무 데나 몇 개. */
     private void spawnPools(Monster m) {
         Balance.MonsterCfg mc = balance.monster;
@@ -1474,6 +1577,12 @@ public class GameSession {
                 h.delay -= dt;
                 if (h.delay > 0) continue;
                 h.triggered = true;
+                if (h.kind == Hazard.Kind.EYE) {
+                    eyeOpens(h);
+                    h.dead = true;
+                    if (justDied) return;
+                    continue;
+                }
                 if (h.kind != Hazard.Kind.POOL) {
                     if (h.covers(hero.x, hero.y, hero.hw * 0.6f)) hitHero(h.damage, h.multiplier, h.x, h.y);
                     GameEvent fx = GameEvent.fx(GameEvent.Type.HAZARD_FX, h.x, h.y);
@@ -1521,6 +1630,31 @@ public class GameSession {
         }
     }
 
+    /** 눈알이 뜬다: 용사가 그쪽을 보고 있으면 (구르는 중이 아니면) 지금 체력의 절반을 잃고 굳는다. */
+    private void eyeOpens(Hazard h) {
+        Balance.MonsterCfg mc = balance.monster;
+        GameEvent fx = GameEvent.fx(GameEvent.Type.HAZARD_FX, h.x, h.y);
+        fx.text = h.style;
+        fx.size = h.radius;
+        events.add(fx);
+        events.add(GameEvent.sound("cast"));
+        float dx = h.x - hero.x, dy = h.y - hero.centerY(), l = (float) Math.sqrt(dx * dx + dy * dy);
+        if (l < 0.01f || hero.rolling() || hero.invuln > 0 || devGodMode) return;
+        float cos = (dx * hero.aimX + dy * hero.aimY) / l;
+        if (cos < (float) Math.cos(Math.toRadians(mc.eyeAngleDegrees / 2f))) return;
+        int take = state.hp / 2; // 절반이라 이것만으로는 쓰러지지 않는다
+        state.hp -= take;
+        hero.stunT = mc.eyeStun;
+        hero.flash = 0.3f;
+        hero.invuln = Math.max(hero.invuln, 0.4f);
+        events.add(GameEvent.floatText(hero.x, hero.y + 40, String.valueOf(take), GameEvent.Tone.HERO_HIT));
+        events.add(GameEvent.toast("눈이 마주쳤다! 몸이 굳는다"));
+        events.add(GameEvent.sound("hurt"));
+        GameEvent hit = GameEvent.fx(GameEvent.Type.HIT_FX, hero.x, hero.centerY());
+        hit.tone = GameEvent.Tone.HERO_HIT;
+        events.add(hit);
+    }
+
     /** 마왕이 처음 쓰러지면: 무적으로 변신하며 체력이 다시 차고 2페이즈가 된다. */
     private void startPhaseShift(Monster m) {
         Balance.MonsterCfg mc = balance.monster;
@@ -1532,6 +1666,8 @@ public class GameSession {
         m.rushLeft = 0;
         m.enter(Monster.State.PHASE_SHIFT, mc.phaseShiftSeconds);
         hazards.clear();
+        blindT = 0;
+        hero.stunT = 0;
         projectiles.clear();
         shots.clear();
         speech(m, "이번 용사는 강하군. 나도 본격적으로 해주마!");
@@ -2126,6 +2262,8 @@ public class GameSession {
         hero.kbT = 0;
         hero.slowT = 0;
         hazards.clear();
+        blindT = 0;
+        hero.stunT = 0;
         projectiles.clear();
         shots.clear();
         pendingDoor = null;

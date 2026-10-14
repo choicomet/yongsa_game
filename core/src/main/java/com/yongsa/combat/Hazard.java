@@ -4,12 +4,13 @@ package com.yongsa.combat;
  * 바닥에 생기는 보스 공격: 예고가 보이고 delay 초 뒤 터진다.
  * CIRCLE(낙석·낙뢰·촉수)과 LINE(창)은 한 번 터지고 사라지고,
  * POOL(피웅덩이)은 점점 넓어지며 life 초 동안 남아 밟으면 체력이 닳고 느려진다.
+ * EYE(마왕의 눈알)는 뜨는 순간 용사가 그쪽을 보고 있으면 맞는다 (범위가 아니라 시선).
  */
 public class Hazard {
-    public enum Kind { CIRCLE, LINE, POOL }
+    public enum Kind { CIRCLE, LINE, POOL, EYE }
 
     public final Kind kind;
-    /** 그림 구분: rock, bolt, tentacle, spear, blood. */
+    /** 그림 구분: rock, bolt, tentacle, spear, blood, bone, whip, eye. */
     public final String style;
     public float x, y;
     /** LINE 의 끝점. */

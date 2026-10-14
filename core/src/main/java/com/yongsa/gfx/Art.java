@@ -477,6 +477,27 @@ public class Art implements Disposable {
         return fr[Math.floorMod(index, fr.length)];
     }
 
+    /**
+     * 칸으로 나눈 시트(cols x rows)의 index 번째 칸 (왼쪽 위부터 가로로). 줄여 그리는 큰 그림이라
+     * 부드럽게 거른다 (밉맵). 파일이 없으면 null.
+     */
+    public TextureRegion cell(String path, int cols, int rows, int index) {
+        String key = path + "#grid";
+        TextureRegion[] fr = extraFrames.get(key);
+        if (fr == null) {
+            FileHandle f = Gdx.files.internal(path);
+            if (!f.exists()) return null;
+            Texture t = new Texture(f, true);
+            t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+            extra.put(key, t);
+            fr = new TextureRegion[cols * rows];
+            int w = t.getWidth() / cols, h = t.getHeight() / rows;
+            for (int i = 0; i < fr.length; i++) fr[i] = new TextureRegion(t, i % cols * w, i / cols * h, w, h);
+            extraFrames.put(key, fr);
+        }
+        return fr[Math.floorMod(index, fr.length)];
+    }
+
     @Override
     public void dispose() {
         for (Texture t : extra.values()) if (t != null) t.dispose();
