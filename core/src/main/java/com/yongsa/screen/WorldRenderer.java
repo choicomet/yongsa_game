@@ -169,6 +169,12 @@ public class WorldRenderer implements Disposable {
             case FLOAT_TEXT:
                 addFloat(e);
                 break;
+            case CHEST_OPENED: {
+                Color gold = new Color(1f, 0.85f, 0.4f, 1f);
+                particles.burst(e.x, e.y - T / 2f, 40, gold, 260, 0.8f, 3, true);
+                flash(e.x, e.y - T / 2f, 160, gold, 0.4f);
+                break;
+            }
             case HIT_FX:
                 if (e.tone == GameEvent.Tone.HERO_HIT) {
                     particles.burst(e.x, e.y, 12, new Color(1f, 0.3f, 0.25f, 1f), 160, 0.35f, 3, true);
@@ -961,6 +967,11 @@ public class WorldRenderer implements Disposable {
             if (veins == null) continue;
             for (Vein v : veins) list.add(new Sorted(v.tileY * T + 4, () -> drawVein(v)));
         }
+        for (Room r : map.rooms) {
+            if (!g.hasChest(r) || g.fighting()) continue;
+            float cx = g.chestX(r), cy = g.chestY(r);
+            list.add(new Sorted(cy, () -> drawChest(r, cx, cy)));
+        }
         HeroActor h = g.hero;
         list.add(new Sorted(h.y, this::drawHero));
         for (Monster m : g.monsters) {
@@ -968,6 +979,22 @@ public class WorldRenderer implements Disposable {
             list.add(new Sorted(m.y, () -> drawMonster(m)));
         }
         for (Corpse c : corpses) list.add(new Sorted(c.y, () -> drawCorpse(c)));
+    }
+
+    /** 보스 보물상자 (선우 버전 그림 team/sunwoo/chest_*.png 의 닫힌 칸). 살짝 반짝인다. */
+    private void drawChest(Room r, float x, float y) {
+        TextureRegion t = art.frame("team/sunwoo/chest_" + r.dungeonId.toLowerCase() + ".png", 3, 0);
+        if (t == null) return;
+        float w = t.getRegionWidth(), h = t.getRegionHeight();
+        drawShadow(x, y, w * 0.9f);
+        float bob = MathUtils.sin(time * 3f) * 1.2f;
+        batch.setColor(Color.WHITE);
+        batch.draw(t, x - w / 2f, y - 4 + bob, w, h);
+        Particles.additive(batch);
+        batch.setColor(1f, 0.9f, 0.5f, 0.18f + 0.12f * MathUtils.sin(time * 4f));
+        batch.draw(t, x - w / 2f, y - 4 + bob, w, h);
+        Particles.normal(batch);
+        batch.setColor(Color.WHITE);
     }
 
     private void drawShadow(float x, float y, float w) {

@@ -30,13 +30,14 @@ class EnhanceServiceTest {
     void oddsMatchSpecTable() {
         Odds o = es.odds(6);
         assertEquals(53, o.success, 1e-9);
-        assertEquals(18.8, o.keep, 1e-9);
-        assertEquals(21.15, o.down, 1e-9);
+        // 2026-10-14 팀 결정: 하락 없음 (실패는 유지·파괴만)
+        assertEquals(39.95, o.keep, 1e-9);
+        assertEquals(0, o.down, 1e-9);
         assertEquals(7.05, o.destroy, 1e-9);
         Odds o3 = es.odds(3);
         assertEquals(74, o3.success, 1e-9);
-        assertEquals(13, o3.keep, 1e-9);
-        assertEquals(13, o3.down, 1e-9);
+        assertEquals(26, o3.keep, 1e-9);
+        assertEquals(0, o3.down, 1e-9);
         assertEquals(0, o3.destroy, 1e-9);
         assertEquals(5, es.odds(0).keep, 1e-9);
     }

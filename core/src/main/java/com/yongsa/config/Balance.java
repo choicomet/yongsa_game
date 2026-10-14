@@ -19,6 +19,7 @@ public class Balance {
     public MonsterCfg monster;
     public List<DungeonDef> dungeons;
     public MonsterDef finalBoss;
+    public RewardCfg reward;
 
     public static Balance parse(String json) {
         return new Gson().fromJson(json, Balance.class);
@@ -54,6 +55,13 @@ public class Balance {
         /** 구르기: 짧게 빠르게 이동하고 그 앞부분 동안은 맞지 않는다. 공격하지는 않는다. */
         public float rollDistanceTiles, rollTime, rollInvulnTime, rollCooldown;
         public float damageSpreadMin, damageSpreadMax;
+        /** 이 거리 안에 몬스터가 있으면 용사가 가장 가까운 몬스터를 자동으로 바라본다 (0 이면 끔). */
+        public float autoFaceTiles;
+    }
+
+    /** 보스 보물상자: 잡을 때마다 그 던전 광물을 chestOreMin~chestOreMax 개. */
+    public static class RewardCfg {
+        public int chestOreMin, chestOreMax;
     }
 
     public static class AbsorbCfg {
@@ -143,7 +151,7 @@ public class Balance {
     public static class DungeonDef {
         public String id, name, ore, recommended;
         public MonsterDef mob, boss;
-        public int mobsPerRoom, bossOreReward;
+        public int mobsPerRoom;
     }
 
     public static class MonsterDef {

@@ -260,7 +260,8 @@ public class ForgeWindow extends Modal {
             Table odds = new Table();
             odds.add(label("성공 " + ProbBar.format(o.success) + "%", "small", Ui.BLUE)).width(138).left();
             odds.add(label("유지 " + ProbBar.format(o.keep) + "%", "small", Ui.GREY)).width(138).left().row();
-            odds.add(label("하락 " + ProbBar.format(o.down) + "%", "small", Ui.ORANGE)).left().padTop(5);
+            // 2026-10-14 팀 결정: 실패는 유지·파괴만 (하락은 비중 0, 남아 있으면만 보인다)
+            if (o.down > 0) odds.add(label("하락 " + ProbBar.format(o.down) + "%", "small", Ui.ORANGE)).left().padTop(5);
             odds.add(label("파괴 " + ProbBar.format(o.destroy) + "%", "small", Ui.RED)).left().padTop(5);
             right.add(odds).width(276).left().padBottom(10).row();
             int after = g.rules.attack(s, w) + Math.round(d.perLevel * (1f + s.imprints.size() * g.balance.absorb.attackBonusPerAwakenedWeapon));
@@ -311,7 +312,7 @@ public class ForgeWindow extends Modal {
         ConfirmDialog.Line[] lines = {
                 new ConfirmDialog.Line(g.rules.weaponName(w) + "을 강화합니다.", null),
                 new ConfirmDialog.Line("성공 " + ProbBar.format(o.success) + "%  ·  유지 " + ProbBar.format(o.keep)
-                        + "%  ·  하락 " + ProbBar.format(o.down) + "%", Ui.TEXT),
+                        + (o.down > 0 ? "%  ·  하락 " + ProbBar.format(o.down) : "") + "%", Ui.TEXT),
                 new ConfirmDialog.Line("파괴 " + ProbBar.format(o.destroy) + "%", Ui.RED),
                 new ConfirmDialog.Line("파괴되면 무기가 사라지고 " + ore.displayName + " " + es.destroyRefund(w) + "개만 돌려받습니다.", Ui.DIM),
         };

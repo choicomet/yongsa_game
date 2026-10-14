@@ -51,6 +51,13 @@ class DevToolsTest {
         assertFalse(g.fighting());
         assertTrue(g.hasPortal(boss), "다시 잡으면 포탈이 돌아온다");
         assertEquals(maxHp, g.rules.maxHp(s), "두 번 흡수하지 않는다");
+
+        assertTrue(g.hasChest(boss), "다시 잡아도 보물상자가 나온다");
+        int before = s.ore(com.yongsa.model.OreType.BLACKIRON);
+        g.openChest(boss);
+        int got = s.ore(com.yongsa.model.OreType.BLACKIRON) - before;
+        assertTrue(got >= 30 && got <= 40, "상자 광물 30~40개: " + got);
+        assertFalse(g.hasChest(boss), "한 번 열면 사라진다");
     }
 
     @Test

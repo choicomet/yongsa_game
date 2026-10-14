@@ -371,6 +371,10 @@ public class GameScreen extends ScreenAdapter {
                 case ENTERED_DUNGEON:
                     hud.banner(e.text);
                     break;
+                case CHEST_OPENED:
+                    game.sfx.play("awaken");
+                    hud.toast("보물상자에서 " + e.ore.displayName + " " + e.amount + "개를 얻었다");
+                    break;
                 default:
                     break;
             }
@@ -379,11 +383,17 @@ public class GameScreen extends ScreenAdapter {
 
     private void showBossResult(GameEvent e) {
         game.sfx.play("awaken");
+        if (!e.first) {
+            // 침대 뒤 다시 생긴 보스: 힘은 이미 흡수했으니 상자만 나온다
+            hud.banner(e.text + "을(를) 다시 쓰러뜨렸다 · 보물상자가 나타났다");
+            return;
+        }
         int maxHp = session.rules.maxHp(session.state);
         ConfirmDialog.Line[] lines = {
                 new ConfirmDialog.Line(e.text + "의 힘을 흡수했다.", Ui.GOLD),
                 new ConfirmDialog.Line("최대 체력 +" + e.hpGain + "  (이제 " + maxHp + ")", Ui.GREEN),
-                new ConfirmDialog.Line("보상: " + e.ore.displayName + " " + e.amount + "개", null),
+                new ConfirmDialog.Line("보상: 보물상자가 나타났다 (E 로 열면 " + e.ore.displayName + " "
+                        + game.balance.reward.chestOreMin + "~" + game.balance.reward.chestOreMax + "개)", null),
                 new ConfirmDialog.Line("열림: " + e.opened, Ui.BLUE),
                 new ConfirmDialog.Line(nextWeaponHint(), Ui.DIM),
                 new ConfirmDialog.Line("방 가운데 생긴 귀환 포탈(E)로 캠프에 바로 돌아갈 수 있다", Ui.PURPLE)

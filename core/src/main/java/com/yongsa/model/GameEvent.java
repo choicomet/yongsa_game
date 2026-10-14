@@ -31,7 +31,9 @@ public class GameEvent {
         /** 캠프 문양에서 심연으로 떨어짐. 화면이 어두워진 뒤 GameSession.dropToAbyss 를 부른다. */
         FALL,
         /** 문을 지나 다른 방으로 넘어감 (deferDoors 일 때). 화면이 어두워진 뒤 GameSession.passPendingDoor 를 부른다. */
-        DOOR_ENTER
+        DOOR_ENTER,
+        /** 보스 보물상자를 열었다 (ore, amount). */
+        CHEST_OPENED
     }
 
     /** 떠오르는 글자 색 구분. */
@@ -45,6 +47,8 @@ public class GameEvent {
     public int amount;
     public String dungeonId;
     public int hpGain;
+    /** BOSS_DEFEATED: 처음 잡았나 (다시 생긴 보스면 false, 힘은 오르지 않는다). */
+    public boolean first;
     public String opened;
     /** 연출용 값: 방향, 크기, 그림 이름. */
     public float dirX, dirY, size;

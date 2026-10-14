@@ -81,6 +81,7 @@ public class GameSession {
     private Prop targetProp;
     private Vein targetVein;
     private boolean targetPortal;
+    private boolean targetChest;
 
     public GameSession(Balance balance, WorldMap map, GameState state, long seed) {
         this.balance = balance;
@@ -243,9 +244,33 @@ public class GameSession {
             Physics.move(map, hero, mx * speed * dt, my * speed * dt, T);
             hero.walkTime += dt;
         }
+        autoFace();
 
         if (c.roll && hero.rollCd <= 0) roll(mx, my);
         else if (c.attack && hero.attackCd <= 0) basic();
+    }
+
+    /** 가까운 몬스터를 자동으로 바라본다: 걸어가도 몸과 공격은 적을 향한다 (팀 분담: 최해성). */
+    private void autoFace() {
+        float range = balance.attack.autoFaceTiles * T;
+        if (range <= 0) return;
+        Monster best = null;
+        float bestD = range * range;
+        for (Monster m : monsters) {
+            if (m.dead || m.state == Monster.State.SPAWN) continue;
+            float dx = m.x - hero.x, dy = m.centerY() - hero.centerY();
+            float d = dx * dx + dy * dy;
+            if (d < bestD) {
+                bestD = d;
+                best = m;
+            }
+        }
+        if (best == null) return;
+        float dx = best.x - hero.x, dy = best.centerY() - hero.centerY(), l = (float) Math.sqrt(dx * dx + dy * dy);
+        if (l < 0.01f) return;
+        hero.aimX = dx / l;
+        hero.aimY = dy / l;
+        hero.facing = Facing.of(hero.aimX, hero.aimY);
     }
 
     private void basic() {
@@ -648,15 +673,16 @@ public class GameSession {
         if (r.type == RoomType.BOSS) {
             DungeonDef d = balance.dungeon(r.dungeonId);
             revived.remove(d.id);
+            boolean first = !state.bossDefeated(d.id);
             int gain = absorb.absorbBoss(state, d.id);
             OreType ore = OreType.valueOf(d.ore);
-            state.addOre(ore, d.bossOreReward);
+            if (!state.chests.contains(r.id)) state.chests.add(r.id);
             map.updateGates(state);
             GameEvent e = new GameEvent(GameEvent.Type.BOSS_DEFEATED);
             e.dungeonId = d.id;
             e.hpGain = gain;
             e.ore = ore;
-            e.amount = d.bossOreReward;
+            e.first = first;
             e.text = d.boss.name;
             int idx = indexOf(d.id);
             if (idx + 1 < AbsorbService.BOSS_ORDER.length) {
@@ -1517,7 +1543,18 @@ public class GameSession {
         targetProp = null;
         targetVein = null;
         targetPortal = false;
+        targetChest = false;
         float best = Float.MAX_VALUE;
+        if (heroRoom != null && hasChest(heroRoom) && fightRoom == null) {
+            float d = (float) Math.hypot(chestX(heroRoom) - hero.x, chestY(heroRoom) - hero.y);
+            if (d < 1.3f * T) {
+                targetChest = true;
+                prompt = "E  보물상자 열기";
+                promptX = chestX(heroRoom);
+                promptY = chestY(heroRoom) + 1.6f * T;
+                return;
+            }
+        }
         if (heroRoom != null && hasPortal(heroRoom) && fightRoom == null) {
             float d = (float) Math.hypot(portalX(heroRoom) - hero.x, portalY(heroRoom) - hero.y);
             if (d < 1.1f * T) {
@@ -1587,6 +1624,10 @@ public class GameSession {
     }
 
     private void interact() {
+        if (targetChest) {
+            openChest(heroRoom);
+            return;
+        }
         if (targetPortal) {
             events.add(new GameEvent(GameEvent.Type.WARP));
             events.add(GameEvent.sound("warp"));
@@ -1647,15 +1688,50 @@ public class GameSession {
         events.add(GameEvent.sound("ore"));
     }
 
+    // ───────────────────────── 보물상자 (선우·지용 버전의 보스 보상)
+
+    public boolean hasChest(Room r) {
+        return r != null && state.chests.contains(r.id);
+    }
+
+    /** 상자는 귀환 포탈 오른쪽 옆에 놓인다 (바닥이 아니면 왼쪽). */
+    public float chestX(Room r) {
+        int cx = (int) r.centerTileX(), cy = (int) r.centerTileY();
+        int dx = r.floor(cx + 3, cy) ? 3 : -3;
+        return center(cx + dx);
+    }
+
+    public float chestY(Room r) {
+        return center((int) r.centerTileY());
+    }
+
+    /** 상자를 열면 그 던전 광물을 무작위로 받는다. */
+    public void openChest(Room r) {
+        if (!hasChest(r)) return;
+        state.chests.remove(r.id);
+        OreType ore = OreType.valueOf(balance.dungeon(r.dungeonId).ore);
+        int n = balance.reward.chestOreMin + random.nextInt(balance.reward.chestOreMax - balance.reward.chestOreMin + 1);
+        state.addOre(ore, n);
+        GameEvent e = new GameEvent(GameEvent.Type.CHEST_OPENED);
+        e.ore = ore;
+        e.amount = n;
+        e.x = chestX(r);
+        e.y = chestY(r) + T;
+        events.add(e);
+        events.add(GameEvent.floatText(e.x, e.y, ore.displayName + " +" + n, GameEvent.Tone.ORE));
+        events.add(GameEvent.sound("ore"));
+        events.add(new GameEvent(GameEvent.Type.AUTOSAVE));
+    }
+
     /**
-     * 침대: 체력을 채우고, 모든 던전의 잡몹과 광맥만 다시 채운다 (FR-던전-05).
-     * 보스 처치·던전 개방 기록은 그대로다.
+     * 침대: 체력을 채우고, 모든 던전의 잡몹·광맥과 (마왕이 아닌) 보스를 다시 채운다 (FR-던전-05, 선우 버전 보스 재생성).
+     * 다시 잡아도 힘(최대 체력)은 한 번만 오르고, 상자는 매번 나온다. 열지 않은 상자가 있는 보스방은 그대로 둔다.
      */
     public void useBed() {
         state.hp = rules.maxHp(state);
         for (Room r : map.rooms) {
             RoomRecord rec = state.room(r.id);
-            if (r.type == RoomType.BOSS && state.bossDefeated(r.dungeonId)) continue;
+            if (r.type == RoomType.BOSS && hasChest(r)) continue;
             if (r.type == RoomType.FINAL && state.finalBossDefeated) continue;
             rec.cleared = false;
             if (r.type == RoomType.ORE) {
@@ -1683,7 +1759,8 @@ public class GameSession {
 
     /** 보스를 쓰러뜨린 보스방 가운데에는 캠프로 돌아가는 포탈이 생긴다. */
     public boolean hasPortal(Room r) {
-        return r.type == RoomType.BOSS && state.bossDefeated(r.dungeonId) && !revived.contains(r.dungeonId);
+        return r.type == RoomType.BOSS && state.bossDefeated(r.dungeonId) && state.room(r.id).cleared
+                && !revived.contains(r.dungeonId);
     }
 
     // ───────────────────────── 개발용 (F1)

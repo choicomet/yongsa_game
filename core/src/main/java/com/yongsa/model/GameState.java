@@ -20,6 +20,8 @@ public class GameState {
     public List<String> imprints = new ArrayList<>();
     /** 힘을 흡수한 보스의 던전 ID (잡은 순서). */
     public List<String> bossesDefeated = new ArrayList<>();
+    /** 아직 열지 않은 보스 보물상자가 있는 방 ID (보스를 잡을 때마다 하나 생긴다). */
+    public List<String> chests = new ArrayList<>();
     public boolean unsealed;
     public boolean finalBossDefeated;
 

@@ -444,8 +444,42 @@ public class Art implements Disposable {
         return get("floor_" + theme + "_v" + (v < 6 ? 0 : v - 5));
     }
 
+    private final Map<String, Texture> extra = new java.util.HashMap<>();
+    private final Map<String, TextureRegion[]> extraFrames = new java.util.HashMap<>();
+
+    /**
+     * 따로 불러오는 그림 (assets/ 아래 경로, 예: team/sunwoo/chest_left.png). 팀원 버전에서 가져온 그림처럼
+     * sprites.txt·hd-art.json 에 없는 것들. 파일이 없으면 null.
+     */
+    public Texture tex(String path) {
+        if (extra.containsKey(path)) return extra.get(path);
+        FileHandle f = Gdx.files.internal(path);
+        Texture t = null;
+        if (f.exists()) {
+            t = new Texture(f);
+            t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        }
+        extra.put(path, t);
+        return t;
+    }
+
+    /** 가로로 frames 장 이어 붙인 그림의 index 번째 칸. 파일이 없으면 null. */
+    public TextureRegion frame(String path, int frames, int index) {
+        TextureRegion[] fr = extraFrames.get(path);
+        if (fr == null) {
+            Texture t = tex(path);
+            if (t == null) return null;
+            fr = new TextureRegion[frames];
+            int w = t.getWidth() / frames;
+            for (int i = 0; i < frames; i++) fr[i] = new TextureRegion(t, i * w, 0, w, t.getHeight());
+            extraFrames.put(path, fr);
+        }
+        return fr[Math.floorMod(index, fr.length)];
+    }
+
     @Override
     public void dispose() {
+        for (Texture t : extra.values()) if (t != null) t.dispose();
         hd.dispose();
         atlas.dispose();
         glow.dispose();

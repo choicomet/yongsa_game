@@ -150,17 +150,22 @@ class GameSessionTest {
     }
 
     @Test
-    void bedResetsRoomsButNotDefeatedBoss() {
+    void bedResetsRoomsAndRespawnsBossUnlessChestIsUnopened() {
         GameState s = NewGame.create(b);
         s.room("L1").cleared = true;
         s.room("L6").cleared = true;
+        s.room("R6").cleared = true;
         s.bossesDefeated.add("LEFT");
+        s.bossesDefeated.add("RIGHT");
+        s.chests.add("R6");
         s.hp = 10;
         GameSession g = session(s);
         g.useBed();
         assertFalse(s.room("L1").cleared);
-        assertTrue(s.room("L6").cleared, "잡은 보스는 다시 나오지 않는다");
-        assertEquals(250, s.hp);
+        assertFalse(s.room("L6").cleared, "잡은 보스도 침대 뒤 다시 나온다 (선우 버전)");
+        assertTrue(s.room("R6").cleared, "열지 않은 상자가 있는 보스방은 그대로");
+        assertTrue(s.bossDefeated("LEFT"), "흡수한 힘은 그대로");
+        assertEquals(450, s.hp);
         assertTrue(has(g.pollEvents(), GameEvent.Type.AUTOSAVE));
     }
 
@@ -229,6 +234,7 @@ class GameSessionTest {
     void defeatedBossRoomHasReturnPortalToCamp() {
         GameState s = NewGame.create(b);
         s.bossesDefeated.add("LEFT");
+        s.room("L6").cleared = true;
         GameSession g = session(s);
         Room boss = g.map.room("L6");
         assertTrue(g.hasPortal(boss));
