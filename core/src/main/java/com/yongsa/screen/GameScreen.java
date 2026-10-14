@@ -45,7 +45,7 @@ public class GameScreen extends ScreenAdapter {
     private final WorldRenderer renderer;
     private final CameraFollow follow = new CameraFollow();
     private final Controls controls = new Controls();
-    private boolean interactPressed, rollPressed, attackPressed;
+    private boolean interactPressed, rollPressed, attackPressed, skillPressed;
     private float endingDelay = -1;
     /** 화면 흔들림 세기 (0~1), 타격 순간 잠깐 멈추는 시간, 화면 전환용 검은 막. */
     private float trauma, hitStop, shakeTime;
@@ -116,6 +116,10 @@ public class GameScreen extends ScreenAdapter {
                     case Input.Keys.J:
                         attackPressed = true;
                         return true;
+                    case Input.Keys.Q:
+                    case Input.Keys.L:
+                        skillPressed = true;
+                        return true;
                     case Input.Keys.EQUALS:
                     case Input.Keys.PLUS:
                     case Input.Keys.NUMPAD_ADD:
@@ -152,7 +156,7 @@ public class GameScreen extends ScreenAdapter {
             readControls();
             session.update(dt, controls);
         }
-        if (!frozen) interactPressed = rollPressed = attackPressed = false;
+        if (!frozen) interactPressed = rollPressed = attackPressed = skillPressed = false;
         handleEvents();
         if (!paused) renderer.update(frozen ? dt * 0.15f : dt);
         hud.update(dt);
@@ -266,6 +270,7 @@ public class GameScreen extends ScreenAdapter {
         controls.moveY = (u ? 1 : 0) - (d ? 1 : 0);
         controls.attack = attackPressed || Gdx.input.isKeyPressed(Input.Keys.J);
         controls.roll = rollPressed;
+        controls.skill = skillPressed;
         controls.interact = interactPressed;
     }
 

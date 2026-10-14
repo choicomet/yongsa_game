@@ -73,6 +73,24 @@ public class Balance {
         public int baseAttack, perLevel, craftCost;
         public boolean enhanceable, holy;
         public String awakenedName, abilityName, abilityDesc;
+        /** 검마다 하나 있는 액티브 스킬 (Q). 없으면 null (봉인된 성검). */
+        public SkillDef skill;
+    }
+
+    /**
+     * 검 스킬. enhance.skillUnlockLevel 강화부터 쓸 수 있고, 각성하면 awakened* 값으로 강해진다.
+     * kind: cleave(땅 가르기 충격파) · crescent(날아가는 초승달 검기) · strike(가까운 적에게 낙뢰) · beam(큰 빛의 검기).
+     */
+    public static class SkillDef {
+        public String name, desc, awakenedDesc, kind;
+        public float cooldown, multiplier, awakenedMultiplier = 1f;
+        /** 사거리, 검기 폭(낙뢰는 터지는 반지름), 날아가는 빠르기 (타일 단위). */
+        public float rangeTiles, widthTiles, speedTiles;
+        /** 검기 줄 수 또는 낙뢰 수, 각성하면 awakenedCount. 여러 줄이면 spreadDegrees 간격으로 퍼진다. */
+        public int count = 1, awakenedCount = 1;
+        public float spreadDegrees;
+        /** 맞은 잡몹 기절 시간, 맞힌 적마다 회복하는 최대 체력 비율. */
+        public float stunSeconds, healRatio;
     }
 
     public static class EnhanceCfg {
@@ -82,6 +100,8 @@ public class Balance {
         public float destroyRefundRatio;
         public int dismantleRefund;
         public float hammerSeconds, awakenSeconds;
+        /** 이 강화 단계부터 검 스킬(Q)을 쓸 수 있다. 성검은 깨어나면 바로. */
+        public int skillUnlockLevel;
     }
 
     public static class Band {

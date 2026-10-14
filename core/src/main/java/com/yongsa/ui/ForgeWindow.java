@@ -268,7 +268,13 @@ public class ForgeWindow extends Modal {
             right.add(label("성공 시 공격력 " + g.rules.attack(s, w) + " → " + after, "small", Ui.TEXT))
                     .left().padBottom(5).row();
             right.add(label("각성까지 " + (g.balance.enhance.maxLevel - w.level) + "단계", "small", Ui.PURPLE))
-                    .left().padBottom(8).row();
+                    .left().padBottom(4).row();
+            com.yongsa.config.Balance.SkillDef sk = d.skill;
+            if (sk != null) {
+                int lv = g.balance.enhance.skillUnlockLevel;
+                right.add(label(w.level >= lv ? "Q 스킬 「" + sk.name + "」 사용 가능" : "+" + lv + " 에 Q 스킬 「" + sk.name + "」 열림",
+                        "small", w.level >= lv ? Ui.GOLD : Ui.DIM)).left().padBottom(8).row();
+            }
             boolean risk = es.canDestroy(w);
             right.add(wrapped(risk ? "파괴 시 검 소멸 · " + ore.displayName + " " + es.destroyRefund(w) + "개 반환"
                     : "+6부터 파괴될 수 있습니다.", "small", risk ? Ui.RED : Ui.DIM))

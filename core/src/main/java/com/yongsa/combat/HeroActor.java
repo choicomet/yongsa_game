@@ -6,6 +6,8 @@ public class HeroActor extends Actor {
     /** 공격 방향 (마지막으로 움직인 8방향). */
     public float aimX = 0, aimY = -1;
     public float attackCd, rollCd, mineCd;
+    /** 검 스킬 (Q) 쿨타임. */
+    public float skillCd;
     public float invuln;
     /** 구르기 남은 시간과 방향, 전체 시간 (그리기용). */
     public float rollT, rollTotal = 0.32f;

@@ -4,6 +4,7 @@ import com.yongsa.combat.Attack;
 import com.yongsa.combat.Facing;
 import com.yongsa.combat.Hazard;
 import com.yongsa.combat.HeroActor;
+import com.yongsa.combat.HeroShot;
 import com.yongsa.combat.Monster;
 import com.yongsa.combat.Physics;
 import com.yongsa.combat.Projectile;
@@ -38,6 +39,8 @@ public class GameSession {
     public final HeroActor hero = new HeroActor();
     public final List<Monster> monsters = new ArrayList<>();
     public final List<Projectile> projectiles = new ArrayList<>();
+    /** 용사의 검 스킬이 만든 검기·낙뢰. */
+    public final List<HeroShot> shots = new ArrayList<>();
     /** 바닥에 예고된 보스 공격 (낙석, 낙뢰, 촉수, 창, 피웅덩이). */
     public final List<Hazard> hazards = new ArrayList<>();
     public final Random random;
@@ -186,6 +189,7 @@ public class GameSession {
         if (checkDoors()) return;
         updateRooms();
         updateMonsters(dt);
+        if (!justDied) updateShots(dt);
         if (!justDied) updateProjectiles(dt);
         if (!justDied) updateHazards(dt);
         if (!justDied) resolveFight();
@@ -207,6 +211,7 @@ public class GameSession {
 
     private void updateHero(float dt, Controls c) {
         hero.attackCd -= dt;
+        hero.skillCd -= dt;
         hero.rollCd -= dt;
         hero.mineCd -= dt;
         hero.invuln -= dt;
@@ -247,6 +252,7 @@ public class GameSession {
         autoFace();
 
         if (c.roll && hero.rollCd <= 0) roll(mx, my);
+        else if (c.skill) useSkill();
         else if (c.attack && hero.attackCd <= 0) basic();
     }
 
@@ -293,6 +299,138 @@ public class GameSession {
             if (basicAttack.tryHit(m)) damageMonster(m, basicAttack.multiplier);
         }
         events.add(GameEvent.sound("swing"));
+    }
+
+    // ───────────────────────── 검 스킬 (Q)
+
+    private float skillMsgCd;
+
+    /** 들고 있는 검의 스킬을 쓴다. 아직 안 열렸으면 언제 열리는지 알려 준다. */
+    private void useSkill() {
+        Balance.SkillDef sk = rules.skill(state);
+        if (sk == null || !rules.skillUnlocked(state)) {
+            if (skillMsgCd <= 0) {
+                skillMsgCd = 1.5f;
+                events.add(GameEvent.toast(sk == null ? "봉인된 성검에는 스킬이 없다. 광물로 검을 만들자"
+                        : "+" + balance.enhance.skillUnlockLevel + " 까지 강화하면 「" + sk.name + "」을(를) 쓸 수 있다"));
+            }
+            return;
+        }
+        if (hero.skillCd > 0) return;
+        hero.skillCd = sk.cooldown;
+        hero.swingKind = 1;
+        hero.swingT = 0.25f;
+        boolean aw = rules.skillAwakened(state);
+        int n = aw ? sk.awakenedCount : sk.count;
+        float mult = sk.multiplier * (aw ? sk.awakenedMultiplier : 1f);
+        if ("strike".equals(sk.kind)) {
+            List<Monster> targets = new ArrayList<>();
+            float range = sk.rangeTiles * T;
+            for (Monster m : monsters) {
+                if (m.dead || m.state == Monster.State.SPAWN) continue;
+                if (Math.hypot(m.x - hero.x, m.y - hero.y) <= range) targets.add(m);
+            }
+            targets.sort((a, b) -> Float.compare(dist2(a), dist2(b)));
+            for (int i = 0; i < n; i++) {
+                float tx, ty;
+                if (i < targets.size()) {
+                    tx = targets.get(i).x;
+                    ty = targets.get(i).y;
+                } else if (i == 0) {
+                    tx = hero.x + hero.aimX * 3 * T; // 적이 없으면 바라보는 쪽 앞에
+                    ty = hero.y + hero.aimY * 3 * T;
+                } else break;
+                HeroShot h = new HeroShot();
+                h.kind = sk.kind;
+                h.x = tx;
+                h.y = ty;
+                h.radius = sk.widthTiles * T;
+                h.delay = 0.3f + i * 0.08f;
+                h.life = h.delay + 0.1f;
+                h.multiplier = mult;
+                shots.add(h);
+            }
+        } else {
+            float base = (float) Math.atan2(hero.aimY, hero.aimX);
+            float spread = (float) Math.toRadians(sk.spreadDegrees);
+            for (int i = 0; i < n; i++) {
+                float a = base + spread * (i - (n - 1) / 2f);
+                HeroShot h = new HeroShot();
+                h.kind = sk.kind;
+                h.x = hero.x + (float) Math.cos(a) * T * 0.6f;
+                h.y = hero.centerY() + (float) Math.sin(a) * T * 0.6f;
+                float speed = sk.speedTiles * T;
+                h.vx = (float) Math.cos(a) * speed;
+                h.vy = (float) Math.sin(a) * speed;
+                h.radius = sk.widthTiles * T / 2f;
+                h.life = sk.rangeTiles / sk.speedTiles;
+                h.multiplier = mult;
+                h.stun = sk.stunSeconds;
+                h.heal = sk.healRatio;
+                shots.add(h);
+            }
+        }
+        GameEvent e = new GameEvent(GameEvent.Type.SKILL_CAST);
+        e.text = sk.kind;
+        e.x = hero.x;
+        e.y = hero.centerY();
+        e.dirX = hero.aimX;
+        e.dirY = hero.aimY;
+        events.add(e);
+        events.add(GameEvent.sound("strike".equals(sk.kind) ? "cast" : "slam"));
+    }
+
+    private float dist2(Monster m) {
+        float dx = m.x - hero.x, dy = m.y - hero.y;
+        return dx * dx + dy * dy;
+    }
+
+    private void updateShots(float dt) {
+        skillMsgCd -= dt;
+        for (HeroShot h : shots) {
+            if (h.dead) continue;
+            h.age += dt;
+            h.life -= dt;
+            if (h.strike()) {
+                h.delay -= dt;
+                if (h.delay > 0) continue;
+                for (Monster m : monsters) {
+                    if (m.dead || m.state == Monster.State.SPAWN) continue;
+                    if (Math.hypot(m.x - h.x, m.y - h.y) <= h.radius + m.hurtRadius) damageMonster(m, h.multiplier);
+                }
+                GameEvent fx = GameEvent.fx(GameEvent.Type.SKILL_HIT, h.x, h.y);
+                fx.text = h.kind;
+                fx.size = h.radius;
+                events.add(fx);
+                events.add(GameEvent.sound("cast"));
+                h.dead = true;
+                continue;
+            }
+            h.x += h.vx * dt;
+            h.y += h.vy * dt;
+            if (h.life <= 0 || map.solid(tileX(h.x), tileY(h.y - 6))) {
+                h.dead = true;
+                continue;
+            }
+            for (Monster m : monsters) {
+                if (m.dead || m.state == Monster.State.SPAWN || h.hit.contains(m)) continue;
+                float dx = m.x - h.x, dy = m.centerY() - h.y, r = h.radius + m.hurtRadius;
+                if (dx * dx + dy * dy > r * r) continue;
+                h.hit.add(m);
+                damageMonster(m, h.multiplier);
+                if (h.stun > 0 && !m.dead && !m.boss) m.enter(Monster.State.STUNNED, h.stun);
+                if (h.heal > 0) {
+                    int add = Math.max(1, Math.round(rules.maxHp(state) * h.heal));
+                    state.hp = Math.min(rules.maxHp(state), state.hp + add);
+                    events.add(GameEvent.floatText(hero.x, hero.y + 40, "+" + add, GameEvent.Tone.HEAL));
+                }
+                GameEvent fx = GameEvent.fx(GameEvent.Type.SKILL_HIT, m.x, m.centerY());
+                fx.text = h.kind;
+                fx.size = h.radius;
+                events.add(fx);
+            }
+        }
+        shots.removeIf(h -> h.dead);
     }
 
     public float basicRange() {
@@ -437,6 +575,7 @@ public class GameSession {
         }
         monsters.clear();
         projectiles.clear();
+        shots.clear();
         placeAtCampSpawn();
         heroRoom = currentRoom = map.room("CAMP");
         hero.rollT = 0;
@@ -560,6 +699,7 @@ public class GameSession {
         hero.slowT = 0;
         hazards.clear();
         projectiles.clear();
+        shots.clear();
         doorCd = 0.35f;
     }
 
@@ -583,6 +723,7 @@ public class GameSession {
         r.setFightLock(true);
         monsters.clear();
         projectiles.clear();
+        shots.clear();
         hazards.clear();
         DungeonDef d = balance.dungeon(r.dungeonId);
         if (r.type == RoomType.MOB) {
@@ -666,6 +807,7 @@ public class GameSession {
         r.setFightLock(false);
         monsters.clear();
         projectiles.clear();
+        shots.clear();
         hazards.clear();
         state.room(r.id).cleared = true;
         events.add(GameEvent.sound("door"));
@@ -1356,6 +1498,7 @@ public class GameSession {
         m.enter(Monster.State.PHASE_SHIFT, mc.phaseShiftSeconds);
         hazards.clear();
         projectiles.clear();
+        shots.clear();
         speech(m, "이번 용사는 강하군. 나도 본격적으로 해주마!");
         GameEvent e = new GameEvent(GameEvent.Type.BOSS_PHASE2);
         e.text = m.def.name;
@@ -1816,6 +1959,7 @@ public class GameSession {
         hero.slowT = 0;
         hazards.clear();
         projectiles.clear();
+        shots.clear();
         pendingDoor = null;
         doorCd = 0.35f;
         return true;

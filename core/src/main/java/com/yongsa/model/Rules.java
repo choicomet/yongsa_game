@@ -45,6 +45,25 @@ public final class Rules {
         return w != null && w.awakened && w.defId.equals(weaponDefId);
     }
 
+    /** 들고 있는 검의 스킬 정의 (없는 검이면 null). 열렸는지는 skillUnlocked 로 본다. */
+    public Balance.SkillDef skill(GameState s) {
+        Weapon w = s.equipped();
+        return w == null ? null : b.weapon(w.defId).skill;
+    }
+
+    /** 검 스킬은 강화 skillUnlockLevel 단계부터 (각성했거나 성검이면 바로) 쓸 수 있다. */
+    public boolean skillUnlocked(GameState s) {
+        Weapon w = s.equipped();
+        if (w == null || skill(s) == null) return false;
+        return isHoly(w) || w.awakened || w.level >= b.enhance.skillUnlockLevel;
+    }
+
+    /** 각성한 검이면 스킬도 강해진다. */
+    public boolean skillAwakened(GameState s) {
+        Weapon w = s.equipped();
+        return w != null && w.awakened;
+    }
+
     public String weaponName(Weapon w) {
         WeaponDef d = b.weapon(w.defId);
         String name = w.awakened && d.awakenedName != null ? d.awakenedName : d.name;

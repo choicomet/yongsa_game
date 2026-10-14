@@ -17,6 +17,7 @@ import com.yongsa.YongsaGame;
 import com.yongsa.combat.Facing;
 import com.yongsa.combat.Hazard;
 import com.yongsa.combat.HeroActor;
+import com.yongsa.combat.HeroShot;
 import com.yongsa.combat.Monster;
 import com.yongsa.combat.Projectile;
 import com.yongsa.gfx.Art;
@@ -98,6 +99,19 @@ public class WorldRenderer implements Disposable {
     }
 
     private final List<Speech> speeches = new ArrayList<>();
+    /** 천공 낙뢰가 떨어진 자리 (x, y, 지난 시간): 하늘에서 내리꽂히는 빛줄기를 잠깐 그린다. */
+    private final List<float[]> bolts = new ArrayList<>();
+
+    /** 검 스킬 색: 흑철 흙빛, 혈월 핏빛, 천공 하늘빛, 성검 금빛. */
+    private static Color skillColor(String kind) {
+        if (kind == null) return Color.WHITE;
+        switch (kind) {
+            case "cleave": return new Color(1f, 0.62f, 0.3f, 1f);
+            case "crescent": return new Color(1f, 0.18f, 0.3f, 1f);
+            case "strike": return new Color(0.55f, 0.85f, 1f, 1f);
+            default: return new Color(1f, 0.93f, 0.6f, 1f);
+        }
+    }
 
     private static class Corpse {
         TextureRegion region;
@@ -169,6 +183,31 @@ public class WorldRenderer implements Disposable {
             case FLOAT_TEXT:
                 addFloat(e);
                 break;
+            case SKILL_CAST: {
+                Color c = skillColor(e.text);
+                flash(e.x, e.y, 140, c, 0.25f);
+                if ("cleave".equals(e.text)) {
+                    ring(e.x + e.dirX * 20, e.y - 10 + e.dirY * 20, 10, 70, 0.35f, c);
+                    particles.debris(e.x + e.dirX * 24, e.y - 8, 12, new Color(0.45f, 0.38f, 0.3f, 1f), 160, 4);
+                } else if ("beam".equals(e.text)) {
+                    ring(e.x, e.y - 10, 10, 90, 0.4f, c);
+                }
+                particles.spray(e.x, e.y, e.dirX, e.dirY, 14, c, 300, 0.8f, 0.3f, 3);
+                break;
+            }
+            case SKILL_HIT: {
+                Color c = skillColor(e.text);
+                if ("strike".equals(e.text)) {
+                    flash(e.x, e.y, 220, c, 0.35f);
+                    ring(e.x, e.y, 6, e.size * 1.3f, 0.4f, c);
+                    particles.burst(e.x, e.y + 10, 26, c, 300, 0.6f, 3, true);
+                    bolts.add(new float[]{e.x, e.y, 0f});
+                } else {
+                    particles.burst(e.x, e.y, 12, c, 220, 0.4f, 3, true);
+                    flash(e.x, e.y, 90, c, 0.15f);
+                }
+                break;
+            }
             case CHEST_OPENED: {
                 Color gold = new Color(1f, 0.85f, 0.4f, 1f);
                 particles.burst(e.x, e.y - T / 2f, 40, gold, 260, 0.8f, 3, true);
@@ -327,6 +366,8 @@ public class WorldRenderer implements Disposable {
     // ───────────────────────── 매 프레임
 
     public void update(float dt) {
+        for (float[] b : bolts) b[2] += dt;
+        bolts.removeIf(b -> b[2] > 0.3f);
         time += dt;
         for (Iterator<FloatText> it = floats.iterator(); it.hasNext(); ) {
             FloatText f = it.next();
@@ -598,6 +639,10 @@ public class WorldRenderer implements Disposable {
         for (Projectile p : g.projectiles) {
             Color c = projectileColor(p.source);
             lighting.add(p.x, p.y, 90, c.r, c.g, c.b, 0.7f);
+        }
+        for (HeroShot hs : g.shots) {
+            Color c = skillColor(hs.kind);
+            lighting.add(hs.x, hs.y, hs.strike() ? 70 : 130, c.r, c.g, c.b, 0.8f);
         }
         for (Flash f : flashes) {
             float a = 1f - f.t / f.dur;
@@ -1110,6 +1155,11 @@ public class WorldRenderer implements Disposable {
             float e = 1f - (1f - p) * (1f - p) * (1f - p); // 처음에 빠르고 끝에 느리게
             angle = aim + 75 - 150 * e;
             scale = 1.15f;
+        } else if (h.swingT > 0 && h.swingKind == 1) {
+            // 검 스킬: 검을 높이 들었다가 바라보는 쪽으로 내리꽂는다
+            float p = 1f - h.swingT / 0.25f;
+            angle = p < 0.35f ? 95f : aim;
+            scale = 1.3f;
         } else {
             switch (h.facing) {
                 case LEFT: angle = 125; break;
@@ -1414,6 +1464,7 @@ public class WorldRenderer implements Disposable {
             batch.setColor(1f, 0.95f, 0.85f, 1f);
             batch.draw(art.glow, p.x - r, p.y - r, r * 2, r * 2);
         }
+        drawSkillShots();
         particles.drawGlow(batch);
         batch.setColor(Color.WHITE);
         batch.end();
@@ -1433,6 +1484,58 @@ public class WorldRenderer implements Disposable {
         shapes.end();
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         Particles.normal(batch);
+    }
+
+    /**
+     * 검 스킬 (더하기 섞기 안에서 그린다). 지금은 빛 덩어리를 겹쳐 모양만 낸 임시 효과다.
+     * 그림이 오면 바꾼다 (docs/ART_REQUESTS.md "검 스킬 효과").
+     */
+    private void drawSkillShots() {
+        for (HeroShot h : g.shots) {
+            Color c = skillColor(h.kind);
+            if (h.strike()) {
+                // 떨어질 자리 예고: 바닥에 납작한 빛
+                float p = Math.min(1f, h.age / Math.max(0.01f, h.age + h.delay));
+                batch.setColor(c.r, c.g, c.b, 0.25f + 0.35f * p);
+                batch.draw(art.glow, h.x - h.radius, h.y - h.radius * 0.6f, h.radius * 2, h.radius * 1.2f);
+                continue;
+            }
+            float vl = (float) Math.sqrt(h.vx * h.vx + h.vy * h.vy);
+            float ux = h.vx / vl, uy = h.vy / vl;
+            float r = h.radius;
+            if ("cleave".equals(h.kind)) {
+                // 땅을 가르는 충격파: 지나간 자리를 따라 흙빛 조각이 남는다
+                for (int k = 0; k < 6; k++) {
+                    float tx = h.x - ux * r * 0.7f * k, ty = h.y - uy * r * 0.7f * k - 6;
+                    float a = 0.7f - k * 0.1f;
+                    batch.setColor(c.r, c.g, c.b, a);
+                    batch.draw(art.glow, tx - r * 1.1f, ty - r * 0.5f, r * 2.2f, r);
+                }
+                if (MathUtils.random() < 0.6f) particles.debris(h.x, h.y - 8, 1, new Color(0.45f, 0.38f, 0.3f, 1f), 90, 3);
+            } else {
+                // 초승달·빛의 검기: 진행 방향에 수직으로 길쭉한 빛을 여러 겹
+                float px = -uy, py = ux;
+                int n = "beam".equals(h.kind) ? 9 : 7;
+                for (int k = 0; k < n; k++) {
+                    float t = (k - (n - 1) / 2f) / ((n - 1) / 2f);
+                    float bend = "crescent".equals(h.kind) ? (1f - t * t) * r * 0.9f : 0f;
+                    float sx = h.x + px * t * r * 1.6f + ux * bend, sy = h.y + py * t * r * 1.6f + uy * bend;
+                    float sz = r * (1.1f - 0.5f * Math.abs(t));
+                    batch.setColor(c.r, c.g, c.b, 0.75f);
+                    batch.draw(art.glow, sx - sz, sy - sz, sz * 2, sz * 2);
+                }
+                batch.setColor(1f, 1f, 1f, 0.8f);
+                batch.draw(art.glow, h.x - r * 0.6f, h.y - r * 0.6f, r * 1.2f, r * 1.2f);
+            }
+        }
+        for (float[] b : bolts) {
+            float a = 1f - b[2] / 0.3f;
+            Color c = skillColor("strike");
+            batch.setColor(c.r, c.g, c.b, 0.8f * a);
+            batch.draw(art.white(), b[0] - 5, b[1], 10, 520);
+            batch.setColor(1f, 1f, 1f, a);
+            batch.draw(art.white(), b[0] - 2, b[1], 4, 520);
+        }
     }
 
     /** 바닥에 납작하게 깔리는 고리 (세로를 줄여 비스듬히 보이게). */

@@ -48,9 +48,9 @@ public class Hud {
     private boolean mapOpen;
     private float mapAnim;
     private float introT = -1;
-    private static final int SLOTS = 2;
+    private static final int SLOTS = 3;
     private final float[] readyFlash = new float[SLOTS];
-    private final boolean[] wasReady = {true, true};
+    private final boolean[] wasReady = {true, true, true};
     private Matrix4 projection;
     private float w, h;
 
@@ -156,7 +156,7 @@ public class Hud {
     }
 
     private float[] cooldowns() {
-        return new float[]{Math.max(0, g.hero.attackCd), Math.max(0, g.hero.rollCd)};
+        return new float[]{Math.max(0, g.hero.attackCd), Math.max(0, g.hero.rollCd), Math.max(0, g.hero.skillCd)};
     }
 
     public void render(Matrix4 projection, float w, float h) {
@@ -234,20 +234,33 @@ public class Hud {
         text(fonts.small, "W A S D  이동    ·    E  상호작용", 24, 136, Ui.DIM);
 
         float[] left = cooldowns();
-        String[] keys = {"J", "Space"};
-        String[] names = {"베기", "구르기"};
+        com.yongsa.config.Balance.SkillDef skill = g.rules.skill(g.state);
+        boolean skillOpen = g.rules.skillUnlocked(g.state);
+        String[] keys = {"J", "Space", "Q"};
+        String[] names = {"베기", "구르기", skill == null ? "스킬 없음" : skillOpen ? skill.name : "+" + g.balance.enhance.skillUnlockLevel + " 에 열림"};
         for (int i = 0; i < SLOTS; i++) {
-            float x = w - 252 + i * 120;
+            float x = w - 372 + i * 120;
             card(x, 24, 108, 88);
             if (readyFlash[i] > 0) rect(x, 111, 108, 2, Ui.GOLD);
-            float total = i == 0 ? g.balance.attack.basicCooldown : g.balance.attack.rollTime + g.balance.attack.rollCooldown;
+            float total = i == 0 ? g.balance.attack.basicCooldown : i == 1 ? g.balance.attack.rollTime + g.balance.attack.rollCooldown
+                    : skill == null ? 1 : skill.cooldown;
             if (left[i] > 0) rect(x + 1, 25, 106, 86 * Math.min(1, left[i] / total), new Color(0, 0, 0, 0.5f));
             batch.setColor(Color.WHITE);
             if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
             if (i == 1) batch.draw(art.get("hero_side_walk"), x + 48, 51, 34, 48);
+            if (i == 2 && weapon != null) {
+                // 스킬 칸: 검 그림 뒤로 빛 (잠겨 있으면 어둡게). 스킬 아이콘 그림이 오면 바꾼다 (docs/ART_REQUESTS.md)
+                if (skillOpen) {
+                    batch.setColor(1f, 0.85f, 0.5f, 0.5f + 0.2f * MathUtils.sin(time * 4f));
+                    batch.draw(art.glow, x + 24, 38, 72, 72);
+                }
+                batch.setColor(skillOpen ? Color.WHITE : new Color(0.35f, 0.35f, 0.4f, 1f));
+                batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
+                batch.setColor(Color.WHITE);
+            }
             text(fonts.small, keys[i], x + 10, 100, Ui.GOLD);
             text(fonts.small, names[i], x + 12, 47, Ui.DIM);
-            if (i == 1 && left[i] > 0.1f) centered(fonts.small, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 71, 77, Ui.TEXT);
+            if (i >= 1 && left[i] > 0.1f) centered(fonts.small, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 71, 77, Ui.TEXT);
         }
         for (Toast toast : toasts) {
             float alpha = Math.min(1, (3.2f - toast.t) / 0.5f);

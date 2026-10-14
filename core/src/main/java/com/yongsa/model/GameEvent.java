@@ -33,7 +33,9 @@ public class GameEvent {
         /** 문을 지나 다른 방으로 넘어감 (deferDoors 일 때). 화면이 어두워진 뒤 GameSession.passPendingDoor 를 부른다. */
         DOOR_ENTER,
         /** 보스 보물상자를 열었다 (ore, amount). */
-        CHEST_OPENED
+        CHEST_OPENED,
+        /** 검 스킬을 씀 (text = 종류, dirX·dirY = 방향) / 검 스킬이 맞음·낙뢰가 떨어짐 (size = 크기). */
+        SKILL_CAST, SKILL_HIT
     }
 
     /** 떠오르는 글자 색 구분. */
