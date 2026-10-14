@@ -243,11 +243,6 @@ public class ForgeWindow extends Modal {
         } else if (es.isMax(w)) {
             right.add(wrapped("각성 완료 · " + d.abilityName, "default", Ui.GOLD)).width(276).left().padBottom(8).row();
             right.add(wrapped(d.abilityDesc, "small", Ui.DIM)).width(276).left().padBottom(12).row();
-            right.add(wrapped("힘을 흡수하면 검은 사라지고 능력과 공격력 +10%가 용사에게 남습니다.",
-                    "small", Ui.DIM)).width(276).left().padBottom(12).row();
-            TextButton absorb = nav.add("용사에게 힘 흡수", () -> confirmAbsorb(w));
-            absorb.setDisabled(motion.busy() || g.absorb.weaponAbsorbBlockReason(s, w) != null);
-            right.add(absorb).width(276).height(46).padBottom(10).row();
         } else {
             OreType ore = es.oreOf(w);
             int cost = es.cost(w.level);
@@ -264,7 +259,7 @@ public class ForgeWindow extends Modal {
             if (o.down > 0) odds.add(label("하락 " + ProbBar.format(o.down) + "%", "small", Ui.ORANGE)).left().padTop(5);
             odds.add(label("파괴 " + ProbBar.format(o.destroy) + "%", "small", Ui.RED)).left().padTop(5);
             right.add(odds).width(276).left().padBottom(10).row();
-            int after = g.rules.attack(s, w) + Math.round(d.perLevel * (1f + s.imprints.size() * g.balance.absorb.attackBonusPerAwakenedWeapon));
+            int after = g.rules.attack(s, w) + d.perLevel;
             right.add(label("성공 시 공격력 " + g.rules.attack(s, w) + " → " + after, "small", Ui.TEXT))
                     .left().padBottom(5).row();
             right.add(label("각성까지 " + (g.balance.enhance.maxLevel - w.level) + "단계", "small", Ui.PURPLE))
@@ -365,24 +360,6 @@ public class ForgeWindow extends Modal {
             g.onWeaponsChanged();
             rebuild();
         });
-    }
-
-    private void confirmAbsorb(Weapon w) {
-        WeaponDef d = g.balance.weapon(w.defId);
-        ConfirmDialog.Line[] lines = {
-                new ConfirmDialog.Line(g.rules.weaponName(w) + "은 사라지고 그 힘이 용사에게 남습니다.", null),
-                new ConfirmDialog.Line("남는 힘: " + d.abilityName + " (" + d.abilityDesc + ")", Ui.GOLD),
-                new ConfirmDialog.Line("모든 무기 공격력 +10%", Ui.GOLD),
-        };
-        screen.modals.push(new ConfirmDialog(skin, "힘 흡수", lines, "흡수하기", false, () -> {
-            g.absorb.absorbWeapon(g.state, w);
-            g.onWeaponsChanged();
-            screen.game.sfx.play("awaken");
-            resultText = d.abilityName + "의 힘이 용사에게 스며들었다";
-            resultColor = Ui.GOLD;
-            screen.save(false);
-            rebuild();
-        }));
     }
 
     // ───────────────────────── 분해

@@ -190,7 +190,7 @@ public class Hud {
         rect(88, h - 67, 242 * MathUtils.clamp(shownHp / maxHp, 0, 1), 9, new Color(0xd65958ff));
         if (weapon != null) {
             text(fonts.small, g.rules.weaponName(weapon), 88, h - 79, Ui.TEXT);
-            text(fonts.small, "공격력 " + g.rules.attack(s) + "  ·  흡수 " + s.imprints.size(), 88, h - 101, Ui.DIM);
+            text(fonts.small, "공격력 " + g.rules.attack(s) + "  ·  보스의 힘 " + s.bossesDefeated.size() + "/3", 88, h - 101, Ui.DIM);
         }
 
         card(w - 320, h - 88, 296, 64);

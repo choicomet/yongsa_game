@@ -10,7 +10,7 @@ import com.yongsa.model.OreType;
 import com.yongsa.model.Weapon;
 import com.yongsa.screen.GameScreen;
 
-/** 가방 (UI-06): 무기 목록과 장착, 광물 개수, 용사에게 흡수된 힘. */
+/** 가방 (UI-06): 무기 목록과 장착, 광물 개수, 용사에게 흡수된 보스의 힘. */
 public class BagWindow extends Modal {
     private final GameScreen screen;
     private com.badlogic.gdx.scenes.scene2d.ui.ScrollPane detailPane;
@@ -82,18 +82,11 @@ public class BagWindow extends Modal {
             side.add(label(t.displayName + "  " + s.ore(t) + "개")).left().padBottom(6).row();
         }
         side.add(label("용사에게 흡수된 힘", "default", Ui.DIM)).left().colspan(2).padTop(18).padBottom(8).row();
-        if (s.bossesDefeated.isEmpty() && s.imprints.isEmpty()) {
+        if (s.bossesDefeated.isEmpty()) {
             side.add(label("아직 없다", "small", Ui.DIM)).left().colspan(2).row();
         }
         for (String id : s.bossesDefeated) {
             side.add(wrapped("· " + g.balance.dungeon(id).boss.name + "의 힘 (최대 체력)", Ui.GREEN)).width(280).left().colspan(2).padBottom(8).row();
-        }
-        for (String id : s.imprints) {
-            WeaponDef d = g.balance.weapon(id);
-            side.add(wrapped("· " + d.abilityName + ": " + d.abilityDesc, Ui.GOLD)).width(280).left().colspan(2).padBottom(8).row();
-        }
-        if (!s.imprints.isEmpty()) {
-            side.add(label("  모든 무기 공격력 +" + (s.imprints.size() * 10) + "%", "small", Ui.GOLD)).left().colspan(2).row();
         }
         com.badlogic.gdx.scenes.scene2d.ui.ScrollPane details = new com.badlogic.gdx.scenes.scene2d.ui.ScrollPane(side);
         details.setScrollingDisabled(true, false);

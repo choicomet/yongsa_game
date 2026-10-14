@@ -12,7 +12,6 @@ public class Balance {
     public int tileSize;
     public HeroCfg hero;
     public AttackCfg attack;
-    public AbsorbCfg absorb;
     public List<WeaponDef> weapons;
     public EnhanceCfg enhance;
     public MiningCfg mining;
@@ -79,10 +78,6 @@ public class Balance {
     /** 보스 보물상자: 잡을 때마다 그 던전 광물을 chestOreMin~chestOreMax 개. */
     public static class RewardCfg {
         public int chestOreMin, chestOreMax;
-    }
-
-    public static class AbsorbCfg {
-        public float attackBonusPerAwakenedWeapon;
     }
 
     public static class WeaponDef {

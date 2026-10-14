@@ -27,10 +27,6 @@
   "_reward": "보스를 잡을 때마다(침대 뒤 다시 생긴 보스 포함) 보스방에 보물상자. E 로 열면 그 던전 광물 30~40개 (선우 버전)",
   "reward": { "chestOreMin": 30, "chestOreMax": 40 },
 
-  "absorb": {
-    "attackBonusPerAwakenedWeapon": 0.10
-  },
-
   "weapons": [
     { "id": "holy_sealed", "name": "봉인된 성검", "baseAttack": 10, "perLevel": 0, "craftCost": 0, "enhanceable": false, "holy": true },
     { "id": "blackiron", "name": "흑철검", "ore": "BLACKIRON", "baseAttack": 22, "perLevel": 3, "craftCost": 8, "enhanceable": true,

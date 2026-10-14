@@ -16,7 +16,7 @@ public class GameState {
     public int equippedUid;
     public int nextUid = 1;
 
-    /** 용사에게 흡수된 각성 무기의 정의 ID. 무기는 사라지고 힘만 용사에게 남는다. */
+    /** 예전 저장 파일 호환용 (각성 무기 흡수는 없앴다, 쓰지 않는다). */
     public List<String> imprints = new ArrayList<>();
     /** 힘을 흡수한 보스의 던전 ID (잡은 순서). */
     public List<String> bossesDefeated = new ArrayList<>();

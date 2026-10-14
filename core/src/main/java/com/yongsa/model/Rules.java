@@ -18,12 +18,11 @@ public final class Rules {
         return b;
     }
 
-    /** 공격력 = (기본 + 단계 × 단계당) × (1 + 흡수한 각성 무기 수 × 보너스). 명세서 5.4. */
+    /** 공격력 = 기본 + 단계 × 단계당 (각성 무기 흡수는 2026-10-14 에 없앴다). */
     public int attack(GameState s, Weapon w) {
         if (w == null) return 0;
         WeaponDef d = b.weapon(w.defId);
-        float raw = d.baseAttack + w.level * d.perLevel;
-        return Math.round(raw * (1f + s.imprints.size() * b.absorb.attackBonusPerAwakenedWeapon));
+        return d.baseAttack + w.level * d.perLevel;
     }
 
     public int attack(GameState s) {
@@ -38,9 +37,8 @@ public final class Rules {
         return t[Math.min(n, t.length) - 1];
     }
 
-    /** 각성 능력은 각성한 무기를 들고 있거나, 그 힘을 용사가 흡수했으면 쓸 수 있다. */
+    /** 각성 능력은 각성한 무기를 들고 있을 때만 쓴다. */
     public boolean hasAbility(GameState s, String weaponDefId) {
-        if (s.imprints.contains(weaponDefId)) return true;
         Weapon w = s.equipped();
         return w != null && w.awakened && w.defId.equals(weaponDefId);
     }

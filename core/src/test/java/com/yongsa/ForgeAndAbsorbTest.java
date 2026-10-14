@@ -80,21 +80,18 @@ class ForgeAndAbsorbTest {
     }
 
     @Test
-    void awakenedWeaponPowerGoesToHero() {
+    void awakenedAbilityWorksOnlyWhileHoldingTheSword() {
+        // 2026-10-14: 각성 무기 흡수는 없앴다. 능력은 각성한 검을 들고 있을 때만.
         GameState s = NewGame.create(b);
         Weapon black = s.newWeapon("blackiron");
         black.level = 10;
-        s.equippedUid = black.uid;
-        assertNotNull(absorb.weaponAbsorbBlockReason(s, black), "각성 전에는 흡수할 수 없다");
         black.awakened = true;
+        s.equippedUid = black.uid;
         assertTrue(rules.hasAbility(s, "blackiron"));
-        absorb.absorbWeapon(s, black);
-        assertFalse(s.weapons.contains(black));
-        assertTrue(s.imprints.contains("blackiron"));
-        assertTrue(rules.hasAbility(s, "blackiron"), "무기가 사라져도 능력은 용사에게 남는다");
-        assertEquals(Rules.HOLY_SEALED, s.equipped().defId);
         Weapon blood = s.newWeapon("bloodmoon");
-        assertEquals(Math.round(55 * 1.1f), rules.attack(s, blood));
+        s.equippedUid = blood.uid;
+        assertFalse(rules.hasAbility(s, "blackiron"));
+        assertEquals(55, rules.attack(s, blood), "흡수 보너스 없이 기본 공격력");
     }
 
     @Test
