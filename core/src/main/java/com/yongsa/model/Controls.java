@@ -1,20 +1,16 @@
 package com.yongsa.model;
 
-/** 한 프레임 입력. 화면이 키보드를 읽어 채우고, GameSession은 Gdx.input을 모른다. */
+/** 이번 프레임의 입력. 화면이 키보드에서 읽어 GameSession 에 넘긴다. */
 public class Controls {
     public float moveX, moveY;
-    /** 아래는 "이번 프레임에 눌렀는지" */
-    public boolean attack, whirl, dash, dodge, interact;
-    /** 막기: "누르고 있는지" (Ctrl). */
-    public boolean guard;
+    public boolean attack, roll, interact;
+    /** 검 스킬 (Q). */
+    public boolean skill;
+    /** 포션 마시기 (R). */
+    public boolean potion;
 
-    public void clearPresses() {
-        attack = whirl = dash = dodge = interact = false;
-    }
-
-    public void clearAll() {
+    public void clear() {
         moveX = moveY = 0;
-        guard = false;
-        clearPresses();
+        attack = roll = interact = skill = potion = false;
     }
 }

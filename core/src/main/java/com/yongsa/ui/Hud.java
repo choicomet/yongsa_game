@@ -1,374 +1,556 @@
 package com.yongsa.ui;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.scenes.scene2d.Group;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.Disposable;
-import com.yongsa.combat.Boss;
-import com.yongsa.config.DungeonDef;
-import com.yongsa.config.OreDef;
-import com.yongsa.model.Cutscene;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
+import com.yongsa.combat.Monster;
+import com.yongsa.gfx.Art;
+import com.yongsa.gfx.Fonts;
 import com.yongsa.model.GameSession;
+import com.yongsa.model.GameState;
+import com.yongsa.model.OreType;
+import com.yongsa.model.Vein;
 import com.yongsa.model.Weapon;
-import com.yongsa.render.Assets;
+import com.yongsa.world.Door;
+import com.yongsa.world.Corridor;
+import com.yongsa.world.Link;
+import com.yongsa.world.Room;
+import com.yongsa.world.RoomType;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * 플레이 화면 HUD (UI-03):
- * 왼쪽 위 체력·장착 검·구슬, 오른쪽 위 원형 미니맵과 광물 3종, 가운데 위 지역 이름·보스 체력,
- * 아래 가운데 스킬 3칸과 E 안내, 왼쪽 아래 "다음 할 일", 처음 한 번 조작 키 안내.
+ * 플레이 화면 HUD (UI-03): 왼쪽 위 체력과 장착 무기, 오른쪽 위 광물 3종,
+ * 아래 스킬 3개, 왼쪽 아래 “다음 할 일”, 보스방에서는 위 가운데 보스 체력.
+ * 지도는 M 키로 열고 닫는다 (FR-맵-10).
  */
-public class Hud implements Disposable {
+public class Hud {
+    private final GameSession g;
+    private final Art art;
+    private final Fonts fonts;
+    private final SpriteBatch batch;
+    private final ShapeRenderer shapes;
+    private final GlyphLayout layout = new GlyphLayout();
+    private final List<Toast> toasts = new ArrayList<>();
+    private String banner;
+    private float bannerT;
+    private float shownHp = -1, trailHp = -1, trailHold;
+    private float bossShown = -1, bossTrail = -1;
+    private Monster lastBoss;
+    private float hurtT;
+    private float time;
+    private boolean mapOpen;
+    private float mapAnim;
+    private float introT = -1;
+    private static final int SLOTS = 4;
+    private final float[] readyFlash = new float[SLOTS];
+    private final boolean[] wasReady = {true, true, true, true};
+    private Matrix4 projection;
+    private float w, h;
 
-    private final GameSession s;
-    private final Assets assets;
-    private final Skin skin;
-
-    private final HpBar hpBar;
-    private final Label hpLabel, weaponLabel, attackLabel;
-    private final Image weaponIcon;
-    private final Table orbRow;
-    private final Map<String, Label> oreLabels = new HashMap<>();
-    private final Label areaLabel, bossName, goalLabel, hintLabel, toastLabel, captionLabel;
-    private final Table bossTable, hintBox;
-    private final HpBar bossBar, armorBar;
-    /** 보스 체력바 위 남은 체력. */
-    private final Label bossHpLabel;
-    private final Label armorLabel;
-    private final SkillSlot whirl, dash, dodge, guard;
-    private final Table statusRow, speechBox;
-    private final Label speechName, speechText;
-    private final Map<String, Image> statusIcons = new HashMap<>();
-    private final Map<String, Label> statusTimes = new HashMap<>();
-    private Label godLabel;
-    public final Minimap minimap;
-    private final Table keyGuide;
-    private final Group root = new Group();
-    private String lastIcon = "", lastArea = "";
-    private int lastOrbs = -1;
-    private float guideTime;
-
-    public Hud(Stage stage, Skin skin, GameSession s, Assets assets) {
-        this.s = s;
-        this.assets = assets;
-        this.skin = skin;
-        root.setSize(stage.getWidth(), stage.getHeight());
-        stage.addActor(root);
-
-        // ---- 왼쪽 위
-        Table status = new Table(skin);
-        status.setBackground(skin.getDrawable("panel-hud"));
-        hpBar = new HpBar(skin.getRegion("white"), new Color(0.88f, 0.2f, 0.26f, 1f));
-        hpLabel = new Label("", skin, "small-white");
-        weaponIcon = new Image(assets.region("weapon_sealed"));
-        weaponLabel = new Label("", skin, "large");
-        attackLabel = new Label("", skin, "small");
-        orbRow = new Table();
-        Table hpRow = new Table();
-        // 남은 체력은 체력바 위에 (2026-10-12 결정)
-        Table hpCol = new Table();
-        hpCol.add(hpLabel).left().padBottom(1).row();
-        hpCol.add(hpBar).width(300).height(16);
-        hpRow.add(new Label("HP", skin, "gold")).padRight(8).bottom();
-        hpRow.add(hpCol).left();
-        status.add(hpRow).left().colspan(2).row();
-        status.add(weaponIcon).size(40).padTop(6).padRight(8);
-        Table wt = new Table();
-        wt.add(weaponLabel).left().row();
-        wt.add(attackLabel).left();
-        status.add(wt).left().padTop(6).row();
-        status.add(orbRow).left().colspan(2).padTop(4).row();
-        statusRow = new Table();
-        for (String st : new String[]{"poison", "burn", "shock", "freeze", "blind", "slow", "stun", "invert"}) {
-            Image icon = new Image(assets.region("status_" + st));
-            Label t = new Label("", skin, "small-white");
-            statusIcons.put(st, icon);
-            statusTimes.put(st, t);
-        }
-        status.add(statusRow).left().colspan(2).padTop(4);
-        Table tl = new Table();
-        tl.setFillParent(true);
-        tl.top().left().pad(14);
-        tl.add(status).left();
-        root.addActor(tl);
-
-        // ---- 오른쪽 위: 원형 미니맵 + 광물
-        minimap = new Minimap(s);
-        Table ores = new Table(skin);
-        ores.setBackground(skin.getDrawable("panel-hud"));
-        for (OreDef o : s.balance.ores) {
-            Label count = new Label("0", skin, "large");
-            oreLabels.put(o.id, count);
-            ores.add(new Image(assets.region("ore_" + o.id))).size(24).padRight(6);
-            ores.add(new Label(o.name, skin, "small-white")).left().padRight(10);
-            ores.add(count).right().minWidth(36).row();
-        }
-        Table tr = new Table();
-        tr.setFillParent(true);
-        tr.top().right().pad(14);
-        tr.add(minimap).size(200).row();
-        tr.add(new Label("M  지도", skin, "small")).right().padTop(2).row();
-        tr.add(ores).right().padTop(4);
-        root.addActor(tr);
-
-        // ---- 가운데 위: 지역 이름, 보스 체력
-        areaLabel = new Label("", skin, "heading");
-        bossName = new Label("", skin, "large-gold");
-        bossBar = new HpBar(skin.getRegion("white"), new Color(0.75f, 0.15f, 0.6f, 1f));
-        bossTable = new Table();
-        bossHpLabel = new Label("", skin, "small-white");
-        bossTable.add(bossName).row();
-        bossTable.add(bossHpLabel).padTop(2).row();
-        bossTable.add(bossBar).width(460).height(18).padTop(1).row();
-        armorBar = new HpBar(skin.getRegion("white"), new Color(0.9f, 0.86f, 0.72f, 1f));
-        armorLabel = new Label("뼈갑옷 — 깨기 전에는 체력이 닳지 않는다", skin, "small-white");
-        Table armorRow = new Table();
-        armorRow.add(armorBar).width(460).height(9).row();
-        armorRow.add(armorLabel).padTop(1);
-        bossTable.add(armorRow).padTop(3);
-        armorBar.setVisible(false);
-        armorLabel.setVisible(false);
-        Table tc = new Table();
-        tc.setFillParent(true);
-        tc.top().padTop(18);
-        tc.add(bossTable).row();
-        tc.add(areaLabel).padTop(8);
-        root.addActor(tc);
-        areaLabel.getColor().a = 0;
-
-        // ---- 왼쪽 아래: 다음 할 일 (FR-공통-07)
-        Table goal = new Table(skin);
-        goal.setBackground(skin.getDrawable("panel-hud"));
-        goalLabel = new Label("", skin);
-        goal.add(new Label("다음 할 일", skin, "gold")).left().row();
-        goal.add(goalLabel).left();
-        Table bl = new Table();
-        bl.setFillParent(true);
-        bl.bottom().left().pad(14);
-        bl.add(goal).left();
-        root.addActor(bl);
-
-        // ---- 아래 가운데: E 안내 + 스킬
-        hintLabel = new Label("", skin, "large-gold");
-        hintBox = new Table(skin);
-        hintBox.setBackground(skin.getDrawable("panel-hud"));
-        hintBox.add(hintLabel);
-        whirl = new SkillSlot(assets.region("skill_whirl"), skin.getRegion("white"), "Q", "회전 베기", skin.getFont("small"), skin.getFont("number"));
-        dash = new SkillSlot(assets.region("skill_dash"), skin.getRegion("white"), "L", "돌진 베기", skin.getFont("small"), skin.getFont("number"));
-        dodge = new SkillSlot(assets.region("skill_dodge"), skin.getRegion("white"), "Space", "회피", skin.getFont("small"), skin.getFont("number"));
-        guard = new SkillSlot(assets.region("skill_guard"), skin.getRegion("white"), "Ctrl", "막기", skin.getFont("small"), skin.getFont("number"));
-        Table skills = new Table();
-        skills.add(whirl).size(64).padRight(18);
-        skills.add(dash).size(64).padRight(18);
-        skills.add(dodge).size(64).padRight(18);
-        skills.add(guard).size(64);
-        keyGuide = new Table(skin);
-        keyGuide.setBackground(skin.getDrawable("panel-hud"));
-        keyGuide.add(new Label("WASD 이동   J 공격(가까운 적을 자동으로 바라봄)   Q 회전 베기   L 돌진 베기   Space 회피   Ctrl 막기(누르고 있기)", skin, "small-white")).row();
-        keyGuide.add(new Label("E 캐기·상호작용   I 가방   M 지도   Esc 메뉴", skin, "small-white"));
-        Table bc = new Table();
-        bc.setFillParent(true);
-        bc.bottom().padBottom(34);
-        bc.add(keyGuide).padBottom(10).row();
-        bc.add(hintBox).padBottom(14).row();
-        bc.add(skills);
-        root.addActor(bc);
-        keyGuide.setVisible(!s.progress.tutorialDone());
-
-        // ---- 알림·컷신 자막
-        toastLabel = new Label("", skin, "large");
-        toastLabel.setAlignment(Align.center);
-        toastLabel.setWrap(true);
-        captionLabel = new Label("", skin, "heading");
-        captionLabel.setAlignment(Align.center);
-        Table center = new Table();
-        center.setFillParent(true);
-        center.top().padTop(150);
-        center.add(toastLabel).width(820);
-        root.addActor(center);
-        Table caption = new Table();
-        caption.setFillParent(true);
-        caption.bottom().padBottom(190);
-        caption.add(captionLabel).width(1000);
-        root.addActor(caption);
-        toastLabel.getColor().a = 0;
-
-        // ---- 대사 (마왕·용사)
-        speechBox = new Table(skin);
-        speechBox.setBackground(skin.getDrawable("panel-hud"));
-        speechName = new Label("", skin, "gold");
-        speechText = new Label("", skin, "heading");
-        speechText.setWrap(true);
-        speechText.setAlignment(Align.center);
-        speechBox.add(speechName).padBottom(4).row();
-        speechBox.add(speechText).width(760);
-        Table sp = new Table();
-        sp.setFillParent(true);
-        sp.bottom().padBottom(250);
-        sp.add(speechBox);
-        root.addActor(sp);
-        speechBox.getColor().a = 0;
+    private static class Toast {
+        String text;
+        float t;
     }
 
-    /** 대사 상자. 마왕은 붉게, 용사의 독백은 옅은 금색 기울임 느낌으로. */
-    public void speech(String speaker, String text, float seconds) {
-        boolean demon = "마왕".equals(speaker);
-        speechName.setText(demon ? "마왕" : speaker);
-        speechName.setColor(demon ? new Color(1f, 0.35f, 0.35f, 1f) : new Color(0.95f, 0.85f, 0.55f, 1f));
-        speechText.setText(demon ? "「 " + text + " 」" : "( " + text + " )");
-        speechText.setColor(demon ? new Color(1f, 0.85f, 0.85f, 1f) : new Color(0.92f, 0.92f, 0.95f, 1f));
-        speechBox.clearActions();
-        speechBox.getColor().a = 0;
-        speechBox.addAction(Actions.sequence(Actions.fadeIn(0.25f), Actions.delay(seconds), Actions.fadeOut(0.6f)));
+    public Hud(GameSession g, Art art, Fonts fonts, SpriteBatch batch, ShapeRenderer shapes) {
+        this.g = g;
+        this.art = art;
+        this.fonts = fonts;
+        this.batch = batch;
+        this.shapes = shapes;
     }
 
-    public void resize(float w, float h) {
-        root.setSize(w, h);
+    public void toast(String text) {
+        for (Toast t : toasts) if (t.text.equals(text)) {
+            t.t = 0;
+            return;
+        }
+        Toast t = new Toast();
+        t.text = text;
+        toasts.add(t);
+        if (toasts.size() > 1) toasts.remove(0);
     }
 
-    public void update(float delta) {
-        hpBar.setRatio(s.hero.hp() / (float) s.hero.maxHp());
-        hpLabel.setText(s.hero.hp() + " / " + s.hero.maxHp());
-        Weapon w = s.inventory.equipped();
-        weaponLabel.setText(w.displayName());
-        String extra = s.hero.absorbedCount() > 0 ? "   (흡수한 힘 +" + (s.hero.absorbedCount() * 10) + "%)" : "";
-        attackLabel.setText("공격력 " + s.attackOf(w) + extra);
-        if (!w.icon().equals(lastIcon)) {
-            lastIcon = w.icon();
-            weaponIcon.setDrawable(new TextureRegionDrawable(assets.region(lastIcon)));
-        }
-        if (s.progress.orbs().size() != lastOrbs) {
-            lastOrbs = s.progress.orbs().size();
-            orbRow.clear();
-            for (DungeonDef d : s.balance.dungeons) {
-                Image orb = new Image(assets.region("orb_" + d.id));
-                if (!s.progress.hasOrb(d.id)) orb.setColor(0.25f, 0.25f, 0.3f, 0.7f);
-                orbRow.add(orb).size(22).padRight(4);
-            }
-            orbRow.add(new Label("보스의 정수", skin, "small")).padLeft(4);
-        }
-        for (Map.Entry<String, Label> e : oreLabels.entrySet()) e.getValue().setText(s.inventory.oreText(e.getKey()));
+    public void banner(String text) {
+        banner = text;
+        bannerT = 0;
+    }
 
-        String area = s.areaName();
-        if (!area.equals(lastArea)) {
-            lastArea = area;
-            areaLabel.setText(area);
-            areaLabel.clearActions();
-            areaLabel.getColor().a = 0;
-            areaLabel.addAction(Actions.sequence(Actions.fadeIn(0.4f), Actions.delay(1.6f), Actions.fadeOut(0.8f)));
-        }
+    public void toggleMap() {
+        mapOpen = !mapOpen;
+    }
 
-        Boss boss = s.activeBoss();
-        bossTable.setVisible(boss != null);
+    public boolean mapOpen() {
+        return mapOpen;
+    }
+
+    /** 용사가 맞았을 때 화면 가장자리가 붉게 번쩍인다. */
+    public void hurt() {
+        hurtT = 0.35f;
+    }
+
+    /** 보스가 나타날 때 체력 패널을 강조한다. */
+    public void bossIntro(String name, boolean finalBoss) {
+        introT = 0;
+        banner = null;
+    }
+
+    public void update(float dt) {
+        time += dt;
+        for (int i = toasts.size() - 1; i >= 0; i--) {
+            toasts.get(i).t += dt;
+            if (toasts.get(i).t > 3.2f) toasts.remove(i);
+        }
+        if (banner != null) {
+            bannerT += dt;
+            if (bannerT > 2.6f) banner = null;
+        }
+        if (introT >= 0) {
+            introT += dt;
+            if (introT > 2.6f) introT = -1;
+        }
+        hurtT -= dt;
+        mapAnim += ((mapOpen ? 1f : 0f) - mapAnim) * Math.min(1f, dt * 14f);
+
+        int maxHp = g.rules.maxHp(g.state);
+        int hp = Math.max(0, g.state.hp);
+        if (shownHp < 0) shownHp = trailHp = hp;
+        shownHp += (hp - shownHp) * Math.min(1f, dt * 14f);
+        // 깎인 만큼 하얀 막대가 잠깐 남았다가 따라 줄어든다
+        if (hp < trailHp) {
+            trailHold -= dt;
+            if (trailHold <= 0) trailHp += (hp - trailHp) * Math.min(1f, dt * 5f);
+        } else {
+            trailHp = hp;
+            trailHold = 0.45f;
+        }
+        if (hp >= trailHp - 0.5f) trailHold = 0.45f;
+        shownHp = Math.max(0, Math.min(maxHp, shownHp));
+
+        Monster boss = g.activeBoss();
+        if (boss != lastBoss) {
+            lastBoss = boss;
+            bossShown = 0;
+            bossTrail = boss == null ? 0 : boss.hp;
+        }
         if (boss != null) {
-            bossName.setText(boss.def.name + (boss.phase == 2 ? "  — 본모습" : ""));
-            bossBar.setRatio(boss.hp() / (float) boss.maxHp());
-            bossHpLabel.setText(boss.hp() + " / " + boss.maxHp());
-            boolean armored = boss.armor > 0;
-            armorBar.setVisible(armored);
-            armorLabel.setVisible(armored || boss.stagger > 0);
-            if (armored) {
-                armorBar.setRatio(boss.armor / (float) Math.max(1, boss.armorMax));
-                armorLabel.setText("뼈갑옷 " + boss.armor + " — 깨기 전에는 체력이 닳지 않는다");
-            } else if (boss.stagger > 0) {
-                armorLabel.setText(boss.stunned ? "돌진 끝에 기절했다! 지금이 기회다" : "갑옷이 깨져 휘청인다! 지금이 기회다");
+            bossShown += (boss.hp - bossShown) * Math.min(1f, dt * 4f);
+            bossTrail += (boss.hp - bossTrail) * Math.min(1f, dt * 2f);
+            if (bossTrail < boss.hp) bossTrail = boss.hp;
+        }
+
+        float[] left = cooldowns();
+        for (int i = 0; i < SLOTS; i++) {
+            boolean ready = left[i] <= 0;
+            if (ready && !wasReady[i] && i > 0) readyFlash[i] = 0.4f;
+            wasReady[i] = ready;
+            readyFlash[i] -= dt;
+        }
+    }
+
+    private float[] cooldowns() {
+        return new float[]{Math.max(0, g.hero.attackCd), Math.max(0, g.hero.rollCd), Math.max(0, g.hero.skillCd), Math.max(0, g.hero.potionCd)};
+    }
+
+    public void render(Matrix4 projection, float w, float h) {
+        this.projection = projection;
+        this.w = w;
+        this.h = h;
+        batch.setProjectionMatrix(projection);
+        shapes.setProjectionMatrix(projection);
+        GameState s = g.state;
+        int maxHp = g.rules.maxHp(s);
+        Weapon weapon = s.equipped();
+        Monster boss = g.activeBoss();
+        batch.begin();
+        batch.setColor(0, 0, 0, 0.28f);
+        batch.draw(art.vignette, 0, 0, w, h);
+        float low = s.hp < maxHp * 0.3f ? 0.22f + 0.12f * MathUtils.sin(time * 6f) : 0f;
+        float red = Math.max(low, Math.max(0, hurtT) / 0.35f * 0.65f);
+        if (red > 0) {
+            batch.setColor(0.8f, 0.05f, 0.05f, red);
+            batch.draw(art.vignette, 0, 0, w, h);
+        }
+        card(24, h - 122, 326, 98);
+        batch.setColor(Color.WHITE);
+        batch.draw(art.get("hero_down"), 30, h - 113, 53, 80);
+        text(fonts.small, "용사", 88, h - 40, Ui.GOLD);
+        String hp = Math.max(0, s.hp) + " / " + maxHp;
+        layout.setText(fonts.small, hp);
+        text(fonts.small, hp, 330 - layout.width, h - 40, Ui.TEXT);
+        rect(88, h - 67, 242, 9, new Color(0x40232aff));
+        rect(88, h - 67, 242 * MathUtils.clamp(trailHp / maxHp, 0, 1), 9, Ui.GOLD);
+        rect(88, h - 67, 242 * MathUtils.clamp(shownHp / maxHp, 0, 1), 9, new Color(0xd65958ff));
+        if (weapon != null) {
+            text(fonts.small, g.rules.weaponName(weapon), 88, h - 79, Ui.TEXT);
+            text(fonts.small, "공격력 " + g.rules.attack(s) + "  ·  보스의 힘 " + s.bossesDefeated.size() + "/3", 88, h - 101, Ui.DIM);
+        }
+
+        card(w - 320, h - 88, 296, 64);
+        float ox = w - 306;
+        for (OreType type : OreType.values()) {
+            batch.setColor(Color.WHITE);
+            batch.draw(art.gem(type), ox, h - 76, 40, 40);
+            text(fonts.small, String.valueOf(s.ore(type)), ox + 43, h - 49, Ui.TEXT);
+            ox += 94;
+        }
+        text(fonts.small, "I  가방     M  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
+
+        Room room = g.heroRoom();
+        boolean village = room != null && room.type == RoomType.VILLAGE;
+        String zone = room == null ? corridorZone() : village ? g.balance.village.name
+                : room.dungeonId == null ? "용사의 캠프" : g.balance.dungeon(room.dungeonId).name;
+        if (boss == null) {
+            centered(fonts.small, banner == null ? zone : banner, w / 2, h - 35, Ui.GOLD);
+            String sub = village ? (g.villagersFree() ? "모두가 돌아왔다" : "던전 밖 · 모두 수정 속에 잠들어 있다")
+                    : g.inCamp() ? "정비하고, 다음 여정을 준비하세요" : room == null ? "통로" : "탐험 중";
+            centered(fonts.small, sub, w / 2, h - 59, Ui.DIM);
+        } else {
+            float bx = w / 2 - 210;
+            card(bx - 16, h - 100, 452, 76);
+            if (introT >= 0) rect(bx - 16, h - 25, 452 * Math.min(1, introT / 0.5f), 1, Ui.GOLD);
+            centered(fonts.normal, boss.def.name, w / 2, h - 38, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
+            rect(bx, h - 73, 420, 9, new Color(0x39232aff));
+            rect(bx, h - 73, 420 * MathUtils.clamp(bossTrail / boss.maxHp, 0, 1), 9, Ui.GOLD);
+            rect(bx, h - 73, 420 * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 9, boss.finalBoss ? Ui.PURPLE : Ui.RED);
+            if (boss.shield > 0 && boss.shieldMax > 0) {
+                // 방패: 체력바 위 밝은 막대. 다 깎기 전에는 체력이 닳지 않는다
+                rect(bx, h - 61, 420, 4, new Color(0x2a2418ff));
+                rect(bx, h - 61, 420 * MathUtils.clamp((float) boss.shield / boss.shieldMax, 0, 1), 4, new Color(1f, 0.82f, 0.55f, 1f));
+            }
+            centered(fonts.small, boss.shield > 0 ? "방패 " + boss.shield + "  ·  " + boss.hp + " / " + boss.maxHp
+                    : boss.hp + " / " + boss.maxHp, w / 2, h - 80, Ui.DIM);
+        }
+
+        card(24, 24, 624, 88);
+        rect(24, 24, 3, 88, Ui.GOLD);
+        text(fonts.small, "다음 여정", 42, 95, Ui.GOLD);
+        fonts.normal.setColor(Ui.TEXT);
+        fonts.normal.draw(batch, g.nextTask(), 42, 69, 586, com.badlogic.gdx.utils.Align.left, true);
+        text(fonts.small, "W A S D  이동    ·    E  상호작용", 24, 136, Ui.DIM);
+
+        float[] left = cooldowns();
+        com.yongsa.config.Balance.SkillDef skill = g.rules.skill(g.state);
+        boolean skillOpen = g.rules.skillUnlocked(g.state);
+        String[] keys = {"J", "Space", "Q", "R"};
+        String[] names = {"베기", "구르기", skill == null ? "스킬 없음" : skillOpen ? skill.name : "+" + g.balance.enhance.skillUnlockLevel + " 에 열림",
+                "포션 " + s.potions + "/" + g.balance.potion.max};
+        for (int i = 0; i < SLOTS; i++) {
+            float x = w - 492 + i * 120;
+            card(x, 24, 108, 88);
+            if (readyFlash[i] > 0) rect(x, 111, 108, 2, Ui.GOLD);
+            float total = i == 0 ? g.balance.attack.basicCooldown : i == 1 ? g.balance.attack.rollTime + g.balance.attack.rollCooldown
+                    : i == 3 ? g.balance.potion.cooldown : skill == null ? 1 : skill.cooldown;
+            if (left[i] > 0) rect(x + 1, 25, 106, 86 * Math.min(1, left[i] / total), new Color(0, 0, 0, 0.5f));
+            batch.setColor(Color.WHITE);
+            if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
+            if (i == 1) batch.draw(art.get("hero_side_walk"), x + 48, 51, 34, 48);
+            if (i == 2 && weapon != null) {
+                // 스킬 칸: 검 그림 뒤로 빛 (잠겨 있으면 어둡게). 스킬 아이콘 그림이 오면 바꾼다 (docs/ART_REQUESTS.md)
+                if (skillOpen) {
+                    batch.setColor(1f, 0.85f, 0.5f, 0.5f + 0.2f * MathUtils.sin(time * 4f));
+                    batch.draw(art.glow, x + 24, 38, 72, 72);
+                }
+                batch.setColor(skillOpen ? Color.WHITE : new Color(0.35f, 0.35f, 0.4f, 1f));
+                batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
+                batch.setColor(Color.WHITE);
+            }
+            if (i == 3) drawPotion(x + 54, 52, s.potions > 0);
+            text(fonts.small, keys[i], x + 10, 100, Ui.GOLD);
+            text(fonts.small, names[i], x + 12, 47, Ui.DIM);
+            if (i >= 1 && left[i] > 0.1f) centered(fonts.small, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 71, 77, Ui.TEXT);
+        }
+        for (Toast toast : toasts) {
+            float alpha = Math.min(1, (3.2f - toast.t) / 0.5f);
+            layout.setText(fonts.small, toast.text);
+            float tw = Math.min(800, layout.width + 40);
+            card((w - tw) / 2, 162, tw, 44);
+            centered(fonts.small, toast.text, w / 2, 190, new Color(1, 1, 1, alpha));
+        }
+        batch.setColor(Color.WHITE);
+        batch.end();
+        if (mapAnim > 0.01f) drawMap();
+        fonts.normal.setColor(Color.WHITE);
+        fonts.small.setColor(Color.WHITE);
+    }
+
+    /** 포션 칸: 임시로 코드로 그린 붉은 병 (아이콘 그림이 오면 바꾼다, docs/ART_REQUESTS.md). */
+    private void drawPotion(float cx, float y, boolean have) {
+        float k = have ? 1f : 0.4f;
+        rect(cx - 5, y + 38, 10, 6, new Color(0.55f * k, 0.38f * k, 0.22f * k, 1f));
+        rect(cx - 4, y + 30, 8, 9, new Color(0.75f * k, 0.8f * k, 0.85f * k, 0.9f));
+        rect(cx - 13, y, 26, 31, new Color(0.75f * k, 0.8f * k, 0.85f * k, 0.9f));
+        rect(cx - 11, y + 2, 22, 18, new Color(0.85f * k, 0.12f * k, 0.18f * k, 1f));
+        rect(cx - 8, y + 22, 3, 6, new Color(1f, 1f, 1f, 0.5f * k));
+        batch.setColor(Color.WHITE);
+    }
+
+    private void rect(float x, float y, float width, float height, Color color) {
+        batch.setColor(color);
+        batch.draw(art.white(), x, y, width, height);
+    }
+
+    private void card(float x, float y, float width, float height) {
+        rect(x, y, width, height, new Color(0x101820ed));
+        rect(x, y + height - 1, width, 1, new Color(0x806c4bca));
+        rect(x, y, width, 1, new Color(0x39454fca));
+    }
+
+    private void text(BitmapFont font, String value, float x, float y, Color color) {
+        font.setColor(color);
+        batch.setColor(Color.WHITE);
+        font.draw(batch, value, x, y);
+    }
+
+    private void centered(BitmapFont font, String value, float x, float y, Color color) {
+        layout.setText(font, value);
+        text(font, value, x - layout.width / 2, y, color);
+    }
+
+
+    /** 전체 화면 검은 막 (화면 전환용). */
+    public void renderFade(float alpha) {
+        if (alpha <= 0.001f) return;
+        batch.setProjectionMatrix(projection);
+        batch.begin();
+        batch.setColor(0, 0, 0, alpha);
+        batch.draw(art.white(), 0, 0, w, h);
+        batch.setColor(Color.WHITE);
+        batch.end();
+    }
+
+    private void shadowed(BitmapFont font, String text, float x, float y, Color c) {
+        font.setColor(0, 0, 0, 0.8f);
+        font.draw(batch, text, x + 2, y - 2);
+        font.setColor(c);
+        font.draw(batch, text, x, y);
+    }
+
+
+    // ───────────────────────── 지도 (M)
+
+    private void drawMap() {
+        float a = mapAnim;
+        int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+        boolean inVillage = g.inVillage();
+        for (Room r : g.map.rooms) {
+            if (hiddenOnMap(r, inVillage)) continue;
+            minX = Math.min(minX, r.x0);
+            maxX = Math.max(maxX, r.x1);
+            minY = Math.min(minY, r.y0);
+            maxY = Math.max(maxY, r.y1);
+        }
+        for (Corridor c : g.map.corridors) {
+            if (hiddenOnMap(c.link.a, inVillage) || hiddenOnMap(c.link.b, inVillage)) continue;
+            for (int[] t : c.tiles) {
+                minX = Math.min(minX, t[0]);
+                maxX = Math.max(maxX, t[0]);
+                minY = Math.min(minY, t[1]);
+                maxY = Math.max(maxY, t[1]);
             }
         }
+        float pw = 900, ph = 560;
+        float px = (w - pw) / 2f, py = (h - ph) / 2f - 10 + (1f - a) * 20f;
+        float k = Math.min((pw - 80) / (maxX - minX + 1), (ph - 130) / (maxY - minY + 1));
+        float ox = px + (pw - (maxX - minX + 1) * k) / 2f - minX * k;
+        float oy = py + 60 + (ph - 130 - (maxY - minY + 1) * k) / 2f - minY * k;
 
-        goalLabel.setText(s.goal().text());
-        String hint = s.interactHint();
-        if (hint.isEmpty() && s.sheltered()) hint = "바위 뒤에 숨어 있다 — 폭풍을 막는 중";
-        Boss cb = s.activeBoss();
-        if (hint.isEmpty() && cb != null && cb.cocoon) hint = "바람의 고치 " + (int) Math.ceil(cb.cocoonTime) + "초  ·  회피 쿨타임 없음";
-        hintLabel.setText(hint);
-        hintBox.setVisible(!hint.isEmpty() && s.cutscene() == null);
+        Room here = g.heroRoom();
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.setColor(0, 0, 0, 0.55f * a);
+        shapes.rect(0, 0, w, h);
+        shapes.setColor(0.08f, 0.07f, 0.1f, 0.94f * a);
+        shapes.rect(px, py, pw, ph);
+        shapes.setColor(0.55f, 0.46f, 0.27f, a);
+        shapes.rect(px, py, pw, 2);
+        shapes.rect(px, py + ph - 2, pw, 2);
+        shapes.rect(px, py, 2, ph);
+        shapes.rect(px + pw - 2, py, 2, ph);
 
-        whirl.setCooldown(s.unit.whirlCooldown, s.balance.skills.whirl.cooldown);
-        dash.setCooldown(s.unit.dashCooldown, s.balance.skills.dash.cooldown);
-        dodge.setCooldown(s.unit.dodgeCooldown, s.balance.skills.dodge.cooldown);
-        guard.setCooldown(s.unit.guardBroken, s.balance.guard.breakTime);
-        guard.setMeter(s.unit.guardRatio(), s.unit.guardBroken > 0, s.unit.guarding);
-        boolean sealed = s.unit.skillsSealed();
-        whirl.setSealed(sealed);
-        dash.setSealed(sealed);
-        updateStatuses();
-
-        Cutscene c = s.cutscene();
-        captionLabel.setText(c != null ? c.caption() : "");
-
-        // 처음 플레이 조작 안내 (FR-공통-02): 25초 보여 주고 끝
-        if (keyGuide.isVisible()) {
-            guideTime += delta;
-            if (guideTime > 25f) {
-                keyGuide.setVisible(false);
-                s.progress.finishTutorial();
+        // 통로. 지도는 처음부터 한눈에 다 보인다 (지용 버전): 안 가 본 길은 흐리게, 봉인된 길은 보랏빛.
+        for (Corridor c : g.map.corridors) {
+            Link l = c.link;
+            if (hiddenOnMap(l.a, inVillage) || hiddenOnMap(l.b, inVillage)) continue;
+            boolean seen = known(l.a) || known(l.b);
+            if (l.gateClosed) shapes.setColor(0.65f, 0.45f, 1f, a);
+            else if (!seen) shapes.setColor(0.24f, 0.23f, 0.28f, a);
+            else shapes.setColor(0.42f, 0.4f, 0.46f, a);
+            for (int[] t : c.tiles) shapes.rect(ox + t[0] * k, oy + t[1] * k, k + 0.6f, k + 0.6f);
+        }
+        // 방
+        for (Room r : g.map.rooms) {
+            boolean visited = known(r);
+            if (hiddenOnMap(r, inVillage)) continue; // 심연은 길로 이어지지 않는다
+            Color c = roomColor(r, visited);
+            float rx = ox + r.x0 * k, ry = oy + r.y0 * k, rw = (r.x1 - r.x0 + 1) * k, rh = (r.y1 - r.y0 + 1) * k;
+            if (r.scene == null) {
+                if (r == here) {
+                    float pulse = 0.5f + 0.5f * MathUtils.sin(time * 5f);
+                    shapes.setColor(1f, 0.85f, 0.35f, (0.6f + 0.4f * pulse) * a);
+                    shapes.rect(rx - 4, ry - 4, rw + 8, rh + 8);
+                }
+                shapes.setColor(0.03f, 0.03f, 0.05f, a);
+                shapes.rect(rx - 1, ry - 1, rw + 2, rh + 2);
+                shapes.setColor(c.r, c.g, c.b, c.a * a);
+                shapes.rect(rx, ry, rw, rh);
+                shapes.setColor(1f, 1f, 1f, 0.07f * a);
+                shapes.rect(rx, ry + rh - 4, rw, 4);
+            } else {
+                // 그림 방은 실제 바닥 모양대로 칸을 칠한다
+                float pad = r == here ? 3f : 1.2f;
+                if (r == here) {
+                    float pulse = 0.5f + 0.5f * MathUtils.sin(time * 5f);
+                    shapes.setColor(1f, 0.85f, 0.35f, (0.6f + 0.4f * pulse) * a);
+                } else {
+                    shapes.setColor(0.03f, 0.03f, 0.05f, a);
+                }
+                for (int ty = r.y0; ty <= r.y1; ty++)
+                    for (int tx = r.x0; tx <= r.x1; tx++)
+                        if (r.floor(tx, ty)) shapes.rect(ox + tx * k - pad, oy + ty * k - pad, k + pad * 2, k + pad * 2);
+                shapes.setColor(c.r, c.g, c.b, c.a * a);
+                for (int ty = r.y0; ty <= r.y1; ty++)
+                    for (int tx = r.x0; tx <= r.x1; tx++)
+                        if (r.floor(tx, ty)) shapes.rect(ox + tx * k, oy + ty * k, k + 0.6f, k + 0.6f);
+            }
+            if (r.type == RoomType.ORE && visited) {
+                List<Vein> veins = g.veinsOf(r);
+                if (veins != null) {
+                    for (Vein v : veins) {
+                        shapes.setColor(oreColor(v.ore).r, oreColor(v.ore).g, oreColor(v.ore).b, a);
+                        shapes.rect(ox + v.tileX * k - 1, oy + v.tileY * k - 1, Math.max(3, k) + 2, Math.max(3, k) + 2);
+                    }
+                }
+            }
+            float mcx = ox + (r.centerTileX() + 0.5f) * k, mcy = oy + (r.centerTileY() + 0.5f) * k;
+            if (r.type == RoomType.BOSS && !g.state.bossDefeated(r.dungeonId)) {
+                // 아직 살아 있는 보스: 굵은 X
+                shapes.setColor(1f, 0.85f, 0.8f, a);
+                shapes.rectLine(mcx - 9, mcy - 9, mcx + 9, mcy + 9, 4);
+                shapes.rectLine(mcx - 9, mcy + 9, mcx + 9, mcy - 9, 4);
+            } else if (g.hasChest(r)) {
+                // 열지 않은 보물상자
+                shapes.setColor(0.2f, 0.12f, 0.04f, a);
+                shapes.rect(mcx - 10, mcy - 8, 20, 16);
+                shapes.setColor(1f, 0.8f, 0.3f, a);
+                shapes.rect(mcx - 8, mcy - 6, 16, 12);
+                shapes.setColor(0.45f, 0.28f, 0.1f, a);
+                shapes.rect(mcx - 8, mcy, 16, 2);
+            }
+            if (g.hasPortal(r)) {
+                float cx = mcx, cy = mcy;
+                shapes.setColor(0.55f, 0.45f, 1f, a);
+                shapes.ellipse(cx - 12, cy - 7, 24, 14, 20);
+                shapes.setColor(0.85f, 0.8f, 1f, a);
+                shapes.ellipse(cx - 6, cy - 3, 12, 6, 16);
             }
         }
-        root.setVisible(c == null || c.fall() < 0.5f);
-    }
+        // 용사 위치
+        float hx = ox + g.hero.x / g.balance.tileSize * k, hy = oy + g.hero.y / g.balance.tileSize * k;
+        float pulse = 0.5f + 0.5f * MathUtils.sin(time * 8f);
+        shapes.setColor(1f, 1f, 1f, 0.35f * pulse * a);
+        shapes.circle(hx, hy, 10 + 4 * pulse, 20);
+        shapes.setColor(0.1f, 0.1f, 0.1f, a);
+        shapes.circle(hx, hy, 6, 16);
+        shapes.setColor(1f, 0.95f, 0.7f, a);
+        shapes.circle(hx, hy, 4.5f, 16);
 
-    private void updateStatuses() {
-        statusRow.clearChildren();
-        addStatus("poison", "중독", s.unit.poison);
-        addStatus("burn", "화상", s.unit.burn);
-        addStatus("shock", "감전", s.unit.shock);
-        addStatus("freeze", "빙결", s.unit.freeze);
-        addStatus("blind", "실명", s.unit.blind);
-        addStatus("slow", "둔화", s.unit.slow);
-        addStatus("stun", "기절", s.unit.stun);
-        if (s.hero.invulnerable) {
-            if (godLabel == null) godLabel = new Label("무적 (개발자 도구)", skin, "small-white");
-            godLabel.setColor(1f, 0.85f, 0.35f, 1f);
-            statusRow.add(godLabel).padRight(12);
+        // 범례
+        String[] labels = {"캠프", "방", "안 가 본 방", "광물방", "보스방", "보물상자", "봉인된 길"};
+        Color[] colors = {new Color(0.85f, 0.6f, 0.3f, 1f), new Color(0.5f, 0.48f, 0.56f, 1f), UNSEEN, new Color(0.35f, 0.5f, 0.75f, 1f),
+                new Color(0.8f, 0.25f, 0.2f, 1f), new Color(1f, 0.8f, 0.3f, 1f), new Color(0.65f, 0.45f, 1f, 1f)};
+        float lx = px + 40;
+        for (int i = 0; i < labels.length; i++) {
+            shapes.setColor(colors[i].r, colors[i].g, colors[i].b, a);
+            shapes.rect(lx, py + 26, 16, 16);
+            layout.setText(fonts.small, labels[i]);
+            lx += 16 + 10 + layout.width + 28;
         }
-        if (s.inverted()) {
-            Label l = statusTimes.get("invert");
-            l.setText("키 뒤틀림");
-            statusRow.add(statusIcons.get("invert")).size(24).padRight(4);
-            statusRow.add(l).padRight(12);
-        } else if (s.mirrorTime() > 0) {
-            Label l = statusTimes.get("invert");
-            l.setText(String.format("좌우 반전 %.1f", s.mirrorTime()));
-            statusRow.add(statusIcons.get("invert")).size(24).padRight(4);
-            statusRow.add(l).padRight(12);
+        shapes.end();
+
+        batch.begin();
+        fonts.large.setColor(1f, 0.85f, 0.4f, a);
+        fonts.large.draw(batch, "지도", px + 30, py + ph - 20);
+        fonts.small.setColor(Ui.DIM.r, Ui.DIM.g, Ui.DIM.b, a);
+        layout.setText(fonts.small, "M  닫기");
+        fonts.small.draw(batch, "M  닫기", px + pw - 30 - layout.width, py + ph - 26);
+        // 던전 이름
+        String[] ids = {"LEFT", "RIGHT", "TOP"};
+        for (String id : ids) {
+            float sx = 0, sy = 0;
+            int n = 0;
+            for (Room r : g.map.rooms) {
+                if (!id.equals(r.dungeonId) || r.type == RoomType.FINAL) continue;
+                sx += ox + (r.x0 + r.x1) / 2f * k;
+                sy += oy + r.y1 * k;
+                n++;
+            }
+            if (n == 0) continue;
+            String name = g.balance.dungeon(id).name;
+            layout.setText(fonts.small, name);
+            fonts.small.setColor(0.9f, 0.85f, 0.75f, 0.9f * a);
+            fonts.small.draw(batch, name, sx / n - layout.width / 2f, sy / n + 24);
+        }
+        lx = px + 40;
+        for (String label : labels) {
+            fonts.small.setColor(Ui.TEXT.r, Ui.TEXT.g, Ui.TEXT.b, a);
+            fonts.small.draw(batch, label, lx + 26, py + 40);
+            layout.setText(fonts.small, label);
+            lx += 16 + 10 + layout.width + 28;
+        }
+        batch.end();
+        fonts.large.setColor(Color.WHITE);
+        fonts.small.setColor(Color.WHITE);
+    }
+
+    /** 통로에 있을 때 위쪽 이름: 이어진 던전, 캠프와 마을 사이면 마을 가는 길. */
+    private String corridorZone() {
+        int T = g.balance.tileSize;
+        Corridor c = g.map.corridorAt((int) Math.floor(g.hero.x / T), (int) Math.floor(g.hero.y / T));
+        if (c == null) return "던전 입구";
+        if (c.link.a.type == RoomType.VILLAGE || c.link.b.type == RoomType.VILLAGE) return g.balance.village.name + " 가는 길";
+        if ("CAMP".equals(c.theme)) return "용사의 캠프";
+        return g.balance.dungeon(c.theme).name;
+    }
+
+    /** 심연은 땅 밑이라 그 안에 있을 때만 지도에 나온다. */
+    private boolean hiddenOnMap(Room r, boolean inVillage) {
+        return r.type == RoomType.FINAL && r != g.heroRoom();
+    }
+
+    private boolean known(Room r) {
+        return r.type == RoomType.CAMP || g.state.room(r.id).visited;
+    }
+
+    private static final Color UNSEEN = new Color(0.2f, 0.2f, 0.25f, 0.9f);
+
+    private Color roomColor(Room r, boolean visited) {
+        if (!visited && r.type != RoomType.BOSS && r.type != RoomType.FINAL) return UNSEEN;
+        switch (r.type) {
+            case CAMP: return new Color(0.85f, 0.6f, 0.3f, 1f);
+            case ORE: return new Color(0.35f, 0.5f, 0.75f, 1f);
+            case BOSS:
+            case FINAL:
+                if (!visited) return new Color(0.45f, 0.14f, 0.12f, 0.75f);
+                return r.type == RoomType.FINAL ? new Color(0.6f, 0.25f, 0.8f, 1f) : new Color(0.8f, 0.25f, 0.2f, 1f);
+            default:
+                return g.state.room(r.id).cleared ? new Color(0.5f, 0.48f, 0.56f, 1f) : new Color(0.4f, 0.36f, 0.42f, 1f);
         }
     }
 
-    private void addStatus(String id, String name, float t) {
-        if (t <= 0) return;
-        Label l = statusTimes.get(id);
-        l.setText(name + " " + (int) Math.ceil(t) + "초");
-        statusRow.add(statusIcons.get(id)).size(24).padRight(4);
-        statusRow.add(l).padRight(12);
-    }
-
-    public void toast(String msg) {
-        toast(msg, Color.WHITE, 2.6f);
-    }
-
-    public void toast(String msg, Color color, float seconds) {
-        toastLabel.setText(msg);
-        toastLabel.setColor(color);
-        toastLabel.clearActions();
-        toastLabel.getColor().a = 1f;
-        toastLabel.addAction(Actions.sequence(Actions.delay(seconds), Actions.fadeOut(0.6f)));
-    }
-
-    public void setVisible(boolean v) {
-        root.setVisible(v);
-    }
-
-    @Override
-    public void dispose() {
-        minimap.dispose();
+    private static Color oreColor(OreType t) {
+        switch (t) {
+            case BLACKIRON: return new Color(0.75f, 0.82f, 1f, 1f);
+            case BLOODMOON: return new Color(1f, 0.4f, 0.5f, 1f);
+            default: return new Color(0.55f, 0.9f, 1f, 1f);
+        }
     }
 }

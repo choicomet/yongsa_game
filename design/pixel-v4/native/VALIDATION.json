@@ -1,0 +1,4 @@
+[
+  {"name":"hero_down","width":32,"height":48,"visibleColors":22,"partialAlphaPixels":0,"visibleBounds":[4,3,27,42],"integerScalesVerified":[1,2,4,8]},
+  {"name":"sword_holy","width":32,"height":32,"visibleColors":10,"partialAlphaPixels":0,"visibleBounds":[2,3,28,27],"integerScalesVerified":[1,2,4,8]}
+]

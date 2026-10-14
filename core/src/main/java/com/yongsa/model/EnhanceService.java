@@ -1,114 +1,169 @@
 package com.yongsa.model;
 
-import com.yongsa.config.EnhanceDef;
-import com.yongsa.config.EnhanceRuleDef;
+import com.yongsa.config.Balance;
+import com.yongsa.config.Balance.Band;
+import com.yongsa.config.Balance.WeaponDef;
 
 import java.util.Random;
 
 /**
- * 강화 한 번 판정: 비용 확인 → 광물 소모 → 성공/유지/하락/파괴 → 결과 반환 (구현안 6장).
- * libGDX에 의존하지 않고, Random을 밖에서 받아 테스트에서 결과를 고정한다 (NFR-05, 07).
+ * 강화 한 번을 판정한다 (FR-대장간-05~10, 명세서 5.2).
+ * 성공률 = 95 − 7 × 단계. 실패분은 단계 구간마다 파괴·하락·유지 비율로 나눈다.
  */
 public class EnhanceService {
 
-    private final EnhanceTable table;
-    private final EnhanceDef def;
-    private final Random random;
+    public enum Outcome { SUCCESS, KEEP, DOWN, DESTROY }
 
-    public EnhanceService(EnhanceTable table, EnhanceDef def, Random random) {
-        this.table = table;
-        this.def = def;
-        this.random = random;
+    /** 한 번 시도 기준 확률(%), 네 값의 합은 100. */
+    public static final class Odds {
+        public final double success, keep, down, destroy;
+
+        Odds(double success, double keep, double down, double destroy) {
+            this.success = success;
+            this.keep = keep;
+            this.down = down;
+            this.destroy = destroy;
+        }
+
+        public double total() {
+            return success + keep + down + destroy;
+        }
     }
 
-    /** 성검 공격력·흡혈 계산 (없으면 무기 자체 값만). */
-    private SwordPower power;
+    public static final class Result {
+        public final Outcome outcome;
+        public final int levelBefore, levelAfter;
+        public final boolean awakened;
+        public final int refund;
+        public final OreType refundOre;
 
-    public void setPower(SwordPower power) {
-        this.power = power;
+        Result(Outcome outcome, int before, int after, boolean awakened, int refund, OreType refundOre) {
+            this.outcome = outcome;
+            this.levelBefore = before;
+            this.levelAfter = after;
+            this.awakened = awakened;
+            this.refund = refund;
+            this.refundOre = refundOre;
+        }
     }
 
-    public EnhanceTable table() {
-        return table;
+    private final Balance b;
+    private final Rules rules;
+
+    public EnhanceService(Balance b) {
+        this.b = b;
+        this.rules = new Rules(b);
+    }
+
+    private Band band(int level) {
+        for (Band band : b.enhance.bands) {
+            if (level >= band.fromLevel && level <= band.toLevel) return band;
+        }
+        throw new IllegalArgumentException("강화 구간 없음: +" + level);
+    }
+
+    public Odds odds(int level) {
+        Band band = band(level);
+        double success = b.enhance.successBasePercent - b.enhance.successStepPercent * level;
+        double fail = 100 - success;
+        int shares = band.destroyShare + band.downShare + band.keepShare;
+        double destroy = fail * band.destroyShare / shares;
+        double down = fail * band.downShare / shares;
+        double keep = fail - destroy - down;
+        return new Odds(success, keep, down, destroy);
+    }
+
+    public int cost(int level) {
+        return band(level).cost;
+    }
+
+    public boolean isMax(Weapon w) {
+        return w.level >= b.enhance.maxLevel;
+    }
+
+    public boolean canDestroy(Weapon w) {
+        return !isMax(w) && odds(w.level).destroy > 0;
+    }
+
+    public OreType oreOf(Weapon w) {
+        WeaponDef d = b.weapon(w.defId);
+        return d.ore == null ? null : OreType.valueOf(d.ore);
     }
 
     public int destroyRefund(Weapon w) {
-        return (int) Math.floor(w.def().craftCost * def.destroyRefundRatio);
+        return (int) Math.floor(b.weapon(w.defId).craftCost * b.enhance.destroyRefundRatio);
     }
 
-    public EnhancePreview preview(Weapon w, Inventory inv, Hero hero) {
-        int atkNow = power != null ? power.attack(w, inv, hero) : DamageCalc.attack(w, hero, def);
-        float lsNow = power != null ? power.lifesteal(w, inv, hero) : lifesteal(w.level());
-        boolean maxed = w.level() >= table.maxLevel();
-        if (!w.def().enhanceable || maxed) {
-            return new EnhancePreview(w.def().enhanceable, maxed, new EnhanceOdds(0, 0, 0, 0), 0,
-                    inv.ore(w.ore()), atkNow, atkNow, 0, 0, lsNow, lsNow);
-        }
-        int atkAfter = DamageCalc.attack(w.baseAttack() + w.def().attackPerLevel, hero, def);
-        // 개발자 도구 "강화 성공 100%"가 켜져 있으면 창에도 100%로 보인다
-        EnhanceOdds odds = alwaysSucceed ? new EnhanceOdds(100, 0, 0, 0) : table.odds(w.level());
-        return new EnhancePreview(true, false, odds, table.cost(w.level()), inv.ore(w.ore()),
-                atkNow, atkAfter, destroyRefund(w), table.maxLevel() - w.level(), lsNow, lifesteal(w.level() + 1));
+    /** 강화할 수 없는 이유. 할 수 있으면 null. */
+    public String blockReason(GameState s, Weapon w) {
+        if (w == null) return "장착한 무기가 없습니다";
+        WeaponDef d = b.weapon(w.defId);
+        if (!d.enhanceable) return d.name + "은 강화할 수 없습니다";
+        if (isMax(w)) return "이미 최대 단계입니다";
+        if (s.ore(oreOf(w)) < cost(w.level)) return oreOf(w).displayName + "이 모자랍니다";
+        return null;
     }
 
-    private float lifesteal(int level) {
-        float[] t = def.lifesteal;
-        if (t.length == 0) return 0;
-        return t[Math.max(0, Math.min(t.length - 1, level))];
-    }
+    public Result enhance(GameState s, Weapon w, Random rnd) {
+        String reason = blockReason(s, w);
+        if (reason != null) throw new IllegalStateException(reason);
+        OreType ore = oreOf(w);
+        int before = w.level;
+        s.addOre(ore, -cost(before));
+        s.stats.enhanceTries++;
 
-    public EnhanceResult enhance(Weapon w, Inventory inv) {
-        int before = w.level();
-        if (!w.def().enhanceable) return none(EnhanceOutcome.NOT_ENHANCEABLE, w);
-        if (before >= table.maxLevel()) return none(EnhanceOutcome.MAX_LEVEL, w);
-        int cost = table.cost(before);
-        if (!inv.spendOre(w.ore(), cost)) return none(EnhanceOutcome.NOT_ENOUGH_ORE, w);
-        w.addEnhanceSpent(cost);
-
-        String name = w.displayName();
-        EnhanceOutcome outcome = roll(table.rule(before));
-        switch (outcome) {
-            case SUCCESS -> w.setLevel(before + 1);
-            case DOWN -> w.setLevel(Math.max(0, before - 1));
-            case DESTROY -> {
-                int refund = destroyRefund(w);
-                inv.remove(w);
-                inv.addOre(w.ore(), refund);
-                return new EnhanceResult(outcome, name, before, before, cost, refund, false);
+        Odds o = odds(before);
+        double r = rnd.nextDouble() * 100.0;
+        Result result;
+        if (r < o.success) {
+            w.level++;
+            boolean awakenedNow = false;
+            if (isMax(w) && !w.awakened) {
+                w.awakened = true;
+                awakenedNow = true;
             }
-            default -> { }
+            s.stats.enhanceSuccess++;
+            result = new Result(Outcome.SUCCESS, before, w.level, awakenedNow, 0, null);
+        } else if (r < o.success + o.keep) {
+            result = new Result(Outcome.KEEP, before, before, false, 0, null);
+        } else if (r < o.success + o.keep + o.down) {
+            w.level = Math.max(0, w.level - 1);
+            result = new Result(Outcome.DOWN, before, w.level, false, 0, null);
+        } else {
+            int refund = destroyRefund(w);
+            s.addOre(ore, refund);
+            s.weapons.remove(w);
+            Weapon holy = holySword(s);
+            s.equippedUid = holy == null ? 0 : holy.uid;
+            s.stats.destroyed++;
+            result = new Result(Outcome.DESTROY, before, -1, false, refund, ore);
         }
-        boolean awakenedNow = false;
-        if (w.level() == table.maxLevel() && !w.awakened()) {
-            w.awaken();
-            awakenedNow = true;
+        log(s, w, result);
+        return result;
+    }
+
+    private Weapon holySword(GameState s) {
+        for (Weapon x : s.weapons) if (rules.isHoly(x)) return x;
+        return null;
+    }
+
+    private void log(GameState s, Weapon w, Result r) {
+        String name = b.weapon(w.defId).name;
+        String line;
+        switch (r.outcome) {
+            case SUCCESS:
+                line = name + " +" + r.levelBefore + " → +" + r.levelAfter + " 성공" + (r.awakened ? " (각성!)" : "");
+                break;
+            case KEEP:
+                line = name + " +" + r.levelBefore + " 유지";
+                break;
+            case DOWN:
+                line = name + " +" + r.levelBefore + " → +" + r.levelAfter + " 하락";
+                break;
+            default:
+                line = name + " +" + r.levelBefore + " 파괴 (" + r.refundOre.displayName + " " + r.refund + "개 돌려받음)";
         }
-        return new EnhanceResult(outcome, name, before, w.level(), cost, 0, awakenedNow);
-    }
-
-    private static EnhanceResult none(EnhanceOutcome o, Weapon w) {
-        return new EnhanceResult(o, w.displayName(), w.level(), w.level(), 0, 0, false);
-    }
-
-    /** 1차: 성공 여부. 2차: 실패를 유지·하락·파괴 비중으로 나눈다. */
-    /** 개발자 도구: 강화가 항상 성공 (확률 100%). 저장하지 않는다. */
-    private boolean alwaysSucceed;
-
-    public boolean alwaysSucceed() {
-        return alwaysSucceed;
-    }
-
-    public void setAlwaysSucceed(boolean on) {
-        alwaysSucceed = on;
-    }
-
-    private EnhanceOutcome roll(EnhanceRuleDef r) {
-        if (alwaysSucceed) return EnhanceOutcome.SUCCESS;
-        if (random.nextInt(100) < r.success) return EnhanceOutcome.SUCCESS;
-        int total = r.keep + r.down + r.destroy;
-        int x = random.nextInt(total);
-        if (x < r.keep) return EnhanceOutcome.KEEP;
-        if (x < r.keep + r.down) return EnhanceOutcome.DOWN;
-        return EnhanceOutcome.DESTROY;
+        s.enhanceLog.add(0, line);
+        while (s.enhanceLog.size() > 5) s.enhanceLog.remove(s.enhanceLog.size() - 1);
     }
 }

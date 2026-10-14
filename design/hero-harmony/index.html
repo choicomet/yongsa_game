@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>용사와 배경 · 적용 전후</title>
+<style>
+:root{color-scheme:dark;font:16px/1.6 system-ui,sans-serif;background:#10171b;color:#e6dfd2}*{box-sizing:border-box}body{margin:0}main{max-width:1440px;margin:auto;padding:40px 28px}small{color:#c6a87e;letter-spacing:.1em}h1{font-size:32px;font-weight:650;letter-spacing:-.04em;margin:6px 0 10px}p{color:#b9bcb9;margin:0 0 24px;max-width:820px}nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:24px 0}button,select{font:inherit;border:1px solid #44524f;color:#e6dfd2;background:#1e2a2c;padding:9px 18px;border-radius:6px}button[aria-pressed=true]{border-color:#cfaf77;background:#433b2d}label{display:flex;align-items:center;gap:8px}.cards{display:grid;grid-template-columns:1fr 1fr;gap:18px}figure{margin:0;background:#080b0d;border:1px solid #33413f;border-radius:10px;overflow:hidden}figcaption{padding:13px 18px;display:flex;justify-content:space-between;gap:8px}figcaption span{color:#929e98;font-size:13px}.viewport{position:relative;aspect-ratio:16/9;overflow:hidden}.viewport img{width:100%;height:100%;object-fit:cover;transition:transform .15s;image-rendering:pixelated}.close .viewport img{transform:scale(3);transform-origin:50% 48%}.note{padding-top:18px;font-size:14px;color:#939e98}a{color:#d9bd85}footer{border-top:1px solid #33413f;margin-top:32px;padding-top:20px;color:#aab4ac}@media(max-width:760px){main{padding:24px 14px}.cards{grid-template-columns:1fr}h1{font-size:25px}figcaption span{display:none}}
+</style>
+<main><small>용사가 다한다 / ART IN GAME</small><h1>같은 용사, 배경에 맞춘 선과 명암</h1>
+<p><a href="../actor-scale/index.html">최신 변경: 용사·잡몹 25% 확대 비교 보기 →</a><br>아래는 크기 확대 이전의 외곽선 수정 기록이야.</p>
+<p>진한 외곽선과 소매의 밝기를 덜어내고, 축소할 때 튀던 잔선도 정리했어. 갈색 머리·붉은 목도리·남색 옷과 게임 속 크기는 그대로 유지했어.</p>
+<nav><label>장소 <select id="room"><option value="camp">중앙캠프</option><option value="l1">푸른 갱도</option><option value="r1">붉은 성채</option><option value="t1">보랏빛 탑</option></select></label>
+<label>자세 <select id="pose"><option value="0">정면</option><option value="1">뒷모습</option><option value="2">측면</option><option value="3">정면 걷기</option><option value="4">뒤로 걷기</option><option value="5">옆으로 걷기</option><option value="6">왼쪽 보기</option></select></label>
+<button id="detail" aria-pressed="true">가까이 비교</button><button id="full" aria-pressed="false">전체 화면</button></nav>
+<section class="cards close" id="cards"><figure><figcaption>기존<span>진한 선 · 거친 축소</span></figcaption><div class="viewport"><img id="before" alt="변경 전 실제 게임 렌더링"></div></figure><figure><figcaption>수정안<span>얇은 색선 · 도트 질감 유지</span></figcaption><div class="viewport"><img id="after" alt="변경 후 실제 게임 렌더링"></div></figure></section>
+<p class="note">동일한 위치·조명·115% 게임 배율로 실제 Java 렌더러에서 촬영했어. 가까이 비교는 화면 사진을 3배 확대한 보기야. 던전은 정면 비교를 제공하고, 모든 자세는 중앙캠프에서 확인할 수 있어.</p>
+<footer><a href="https://github.com/choicomet/yongsa_game/pull/4">중앙캠프 PR #4</a> · <a href="README.md">적용 설명</a></footer></main>
+<script>
+const room=document.querySelector('#room'),pose=document.querySelector('#pose'),cards=document.querySelector('#cards');
+function update(){if(room.value!=='camp')pose.value='0';pose.disabled=room.value!=='camp';for(const side of ['before','after'])document.getElementById(side).src=`${side}/${room.value}-${pose.value}.png`;}
+room.addEventListener('change',update);pose.addEventListener('change',update);
+for(const id of ['detail','full'])document.getElementById(id).onclick=()=>{cards.classList.toggle('close',id==='detail');for(const key of ['detail','full'])document.getElementById(key).setAttribute('aria-pressed',key===id);};
+update();
+</script></html>

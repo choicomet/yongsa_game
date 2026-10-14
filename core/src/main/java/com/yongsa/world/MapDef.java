@@ -1,0 +1,41 @@
+package com.yongsa.world;
+
+import com.google.gson.Gson;
+
+import java.util.List;
+
+/**
+ * assets/data/map.json: 통합 맵의 방 배치 (방 배치는 고정, A10).
+ * 방마다 지도 칸(cx, cy)을 하나 차지하고, 그림 방은 배경 그림(scene)과 가로 크기(width, 타일)를 정한다.
+ * 이음(link)은 "방.출구" 두 개를 잇는다. 캠프 출구 이름은 LEFT/RIGHT/UP/DOWN.
+ */
+public class MapDef {
+    /** 지도 칸 하나의 크기 (타일). 방은 칸 가운데에 놓이고, 칸끼리는 떨어져 있다. */
+    public int slotW, slotH;
+    public int minCellX, maxCellX, minCellY, maxCellY;
+    /** 캠프 바닥 크기 (벽 제외, 타일). */
+    public int[] campSize;
+    public List<RoomDef> rooms;
+    public List<LinkDef> links;
+
+    public static MapDef parse(String json) {
+        return new Gson().fromJson(json, MapDef.class);
+    }
+
+    public static class RoomDef {
+        public String id, type, dungeon;
+        public int cx, cy;
+        /** natural-room-scenes.json 의 장면 id. 없으면 타일 방 (캠프). */
+        public String scene;
+        /** 그림의 가로 크기 (타일). */
+        public float width;
+        /** 그림을 좌우로 뒤집어 쓴다. */
+        public boolean flip;
+    }
+
+    public static class LinkDef {
+        public String a, b, gate;
+        /** a 문으로만 b 문 앞에 나간다 (b 문은 원래 이음을 그대로 쓴다). */
+        public boolean oneWay;
+    }
+}

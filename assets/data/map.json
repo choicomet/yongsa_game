@@ -1,0 +1,79 @@
+{
+  "_note": "방마다 지도 칸(cx, cy) 하나. 그림 방은 scene(natural-room-scenes.json)과 가로 크기 width(타일). 이음은 '방.출구'끼리이고, 이어진 출구 사이에는 걸어서 가는 통로가 자동으로 생긴다 (oneWay 는 통로 없이 옮겨 간다). 이어지지 않은 그림 속 출구는 막힌다.",
+  "slotW": 46,
+  "slotH": 28,
+  "minCellX": -3,
+  "maxCellX": 3,
+  "minCellY": -3,
+  "maxCellY": 3,
+  "campSize": [20, 14],
+  "rooms": [
+    { "id": "CAMP", "type": "CAMP", "cx": 0, "cy": 0, "scene": "central-camp", "width": 32 },
+
+    { "id": "L1", "type": "MOB",  "dungeon": "LEFT", "cx": -1, "cy": 0,  "scene": "mine-mob-c",  "width": 32 },
+    { "id": "L2", "type": "ORE",  "dungeon": "LEFT", "cx": -2, "cy": 0,  "scene": "mine-ore-b",  "width": 30, "flip": true },
+    { "id": "L8", "type": "MOB",  "dungeon": "LEFT", "cx": -1, "cy": -1, "scene": "mine-mob-b",  "width": 30, "flip": true,
+      "_note": "임시 그림: 위·왼쪽 출구가 있는 갱도 방 그림이 오면 바꾼다 (docs/ART_REQUESTS.md)" },
+    { "id": "L3", "type": "MOB",  "dungeon": "LEFT", "cx": -2, "cy": -1, "scene": "mine",        "width": 34 },
+    { "id": "L4", "type": "ORE",  "dungeon": "LEFT", "cx": -3, "cy": 0,  "scene": "mine-ore-a",  "width": 28 },
+    { "id": "L5", "type": "MOB",  "dungeon": "LEFT", "cx": -2, "cy": -2, "scene": "mine-mob-b",  "width": 31, "flip": true },
+    { "id": "L7", "type": "MOB",  "dungeon": "LEFT", "cx": -3, "cy": -2, "scene": "mine-mob-b",  "width": 30,
+      "_note": "임시 그림: 오른쪽·위 출구가 있는 보스방 앞 방 그림이 오면 바꾼다" },
+    { "id": "L6", "type": "BOSS", "dungeon": "LEFT", "cx": -3, "cy": -1, "scene": "mine-boss-a", "width": 39 },
+
+    { "id": "R1", "type": "MOB",  "dungeon": "RIGHT", "cx": 1, "cy": 0,  "scene": "citadel",        "width": 34 },
+    { "id": "R2", "type": "ORE",  "dungeon": "RIGHT", "cx": 1, "cy": -1, "scene": "citadel-ore-b",  "width": 30 },
+    { "id": "R7", "type": "MOB",  "dungeon": "RIGHT", "cx": 1, "cy": -2, "scene": "citadel-mob-b",  "width": 32, "flip": true,
+      "_note": "임시 그림: 위·오른쪽 출구가 있는 성채 방 그림이 오면 바꾼다" },
+    { "id": "R3", "type": "MOB",  "dungeon": "RIGHT", "cx": 2, "cy": -2, "scene": "citadel-mob-c",  "width": 30 },
+    { "id": "R4", "type": "ORE",  "dungeon": "RIGHT", "cx": 2, "cy": -3, "scene": "citadel-ore-b",  "width": 30, "flip": true,
+      "_note": "위로 난 출구가 있는 그림이라야 바로 위 R3 과 통로로 짧게 이어진다" },
+    { "id": "R5", "type": "MOB",  "dungeon": "RIGHT", "cx": 3, "cy": -2, "scene": "citadel-mob-b",  "width": 34 },
+    { "id": "R6", "type": "BOSS", "dungeon": "RIGHT", "cx": 3, "cy": -1, "scene": "citadel-boss-a", "width": 39 },
+
+    { "id": "T1", "type": "MOB",  "dungeon": "TOP", "cx": 0,  "cy": 1, "scene": "tower-mob-c",  "width": 34 },
+    { "id": "T2", "type": "ORE",  "dungeon": "TOP", "cx": 1,  "cy": 1, "scene": "tower-ore-b",  "width": 28 },
+    { "id": "T3", "type": "MOB",  "dungeon": "TOP", "cx": 1,  "cy": 2, "scene": "tower",        "width": 34 },
+    { "id": "T4", "type": "ORE",  "dungeon": "TOP", "cx": 1,  "cy": 3, "scene": "tower-ore-a",  "width": 30 },
+    { "id": "T5", "type": "MOB",  "dungeon": "TOP", "cx": 0,  "cy": 2, "scene": "tower-mob-b",  "width": 32 },
+    { "id": "T7", "type": "MOB",  "dungeon": "TOP", "cx": -1, "cy": 2, "scene": "tower-ore-b",  "width": 30, "flip": true,
+      "_note": "임시 그림: 오른쪽·위 출구가 있는 탑 방 그림이 오면 바꾼다" },
+    { "id": "T6", "type": "BOSS", "dungeon": "TOP", "cx": -1, "cy": 3, "scene": "tower-boss-a", "width": 39 },
+
+    { "id": "V", "type": "VILLAGE", "cx": 0, "cy": -1, "scene": "village", "width": 24,
+      "_note": "던전 밖 마을 (선우 버전). 캠프 아래 계단에서 통로로 나간다. 그림은 임시 (docs/ART_REQUESTS.md)" },
+
+    { "id": "F", "type": "FINAL", "dungeon": "TOP", "cx": -3, "cy": 3, "scene": "seal-hall", "width": 39,
+      "_note": "심연: 캠프 문양에서 떨어져 오고, 아래 계단으로 캠프에 돌아간다" }
+  ],
+  "links": [
+    { "a": "CAMP.LEFT", "b": "L1.east", "gate": "LEFT" },
+    { "a": "L1.west", "b": "L2.west2" },
+    { "a": "L1.south", "b": "L8.north" },
+    { "a": "L2.south", "b": "L3.north" },
+    { "a": "L3.rail", "b": "L4.south" },
+    { "a": "L3.south", "b": "L5.north" },
+    { "a": "L5.east", "b": "L7.east" },
+    { "a": "L7.north", "b": "L6.south" },
+
+    { "a": "CAMP.RIGHT", "b": "R1.west", "gate": "RIGHT" },
+    { "a": "R1.south", "b": "R2.west" },
+    { "a": "R2.south", "b": "R7.north" },
+    { "a": "R7.west", "b": "R3.west" },
+    { "a": "R3.south", "b": "R4.west" },
+    { "a": "R3.east", "b": "R5.west" },
+    { "a": "R5.north", "b": "R6.south" },
+
+    { "a": "CAMP.UP", "b": "T1.south", "gate": "TOP" },
+    { "a": "T1.east", "b": "T2.west" },
+    { "a": "T2.north", "b": "T3.south" },
+    { "a": "T3.back", "b": "T4.south" },
+    { "a": "T3.stairs", "b": "T5.east" },
+    { "a": "T5.west", "b": "T7.west" },
+    { "a": "T7.north", "b": "T6.south" },
+
+    { "a": "CAMP.down", "b": "V.north" },
+    { "a": "F.south", "b": "CAMP.down", "oneWay": true,
+      "_note": "심연 계단으로 올라오면 캠프 아래 문 앞에 선다 (내려가는 길은 봉인 문양에서 떨어지는 것뿐)" }
+  ]
+}

@@ -1,10 +1,10 @@
 .gradle/
 build/
 */build/
+out/
 .idea/
 *.iml
-out/
+.vscode/
 bin/
-local.properties
-__pycache__/
-*.pyc
+saves/
+*.class

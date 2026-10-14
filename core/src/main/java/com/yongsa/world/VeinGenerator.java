@@ -1,100 +1,139 @@
 package com.yongsa.world;
 
+import com.yongsa.model.OreType;
+import com.yongsa.model.Vein;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
 /**
- * 광맥 배치 (FR-채집-03, 04, 09, 구현안 3장).
- * 방마다 미리 정해 둔 후보 칸 중에서 뽑고, 입구에서 넓이 우선 탐색(BFS)으로 모든 광맥에 닿는지 검사한다.
- * 막히면 다시 뽑는다. 광맥마다 나올 광물 수도 여기서 정하고, 첫 광물방은 합계를 보장한다.
+ * 광물방의 광맥을 무작위로 놓는다 (FR-채집-03, 04, 09).
+ * 아무 좌표가 아니라 후보 칸(벽에서 한 칸, 문 앞 두 칸을 비운 바닥) 중에서 뽑고,
+ * 광맥끼리 붙지 않게 한다. 뽑은 뒤 입구에서 넓이 우선 탐색(BFS)으로
+ * 모든 문과 모든 광맥에 닿는지 검사하고, 막히면 다시 뽑는다.
  */
 public final class VeinGenerator {
-
-    public interface Blocked {
-        boolean at(int tx, int ty);
-    }
-
-    public record Cell(int x, int y) {
-    }
-
-    public record Placement(Cell cell, int amount) {
-    }
-
     private VeinGenerator() {
     }
 
-    /**
-     * @param candidates 후보 칸(타일 좌표)
-     * @param room       방 안쪽 타일 범위 (x0, y0, x1, y1)
-     * @param entry      입구 바로 안쪽 타일
-     * @param minTotal   광물 합계 보장 (없으면 0)
-     */
-    public static List<Placement> generate(List<Cell> candidates, int count, int[] room, Cell entry, Blocked walls,
-                                           int oreMin, int oreMax, int minTotal, Random random) {
+    public static List<Vein> generate(Room room, Random rnd, int count, OreType ore,
+                                      int minAmount, int maxAmount, int hits, int guarantee) {
+        List<int[]> candidates = candidates(room);
         count = Math.min(count, candidates.size());
-        for (int attempt = 0; attempt < 50; attempt++) {
-            List<Cell> pool = new ArrayList<>(candidates);
-            List<Cell> chosen = new ArrayList<>();
-            while (chosen.size() < count && !pool.isEmpty()) {
-                Cell c = pool.remove(random.nextInt(pool.size()));
-                if (touches(chosen, c)) continue;
-                chosen.add(c);
+        for (int attempt = 0; attempt < 400; attempt++) {
+            // 작은 방이라 다 못 놓으면 조금씩 줄인다
+            if (attempt > 0 && attempt % 60 == 0 && count > 1) count--;
+            Collections.shuffle(candidates, rnd);
+            List<int[]> picked = new ArrayList<>();
+            for (int[] c : candidates) {
+                if (picked.size() >= count) break;
+                if (touches(picked, c)) continue;
+                picked.add(c);
             }
-            if (chosen.size() < count) continue;
-            if (!allReachable(chosen, room, entry, walls)) continue;
-
-            List<Placement> result = new ArrayList<>();
+            if (picked.size() < count) continue;
+            if (!reachable(room, picked)) continue;
+            List<Vein> veins = new ArrayList<>();
             int total = 0;
-            for (Cell c : chosen) {
-                int amount = oreMin + random.nextInt(oreMax - oreMin + 1);
-                result.add(new Placement(c, amount));
+            for (int[] p : picked) {
+                int amount = minAmount + rnd.nextInt(maxAmount - minAmount + 1);
                 total += amount;
+                veins.add(new Vein(p[0], p[1], ore, amount, hits));
             }
-            // 보장: 모자라면 1개짜리 광맥을 최대치로 올린다
-            for (int i = 0; i < result.size() && total < minTotal; i++) {
-                Placement p = result.get(i);
-                if (p.amount() < oreMax) {
-                    total += oreMax - p.amount();
-                    result.set(i, new Placement(p.cell(), oreMax));
-                }
+            // 첫 광물방 보장: 합계가 모자라면 아직 최대가 아닌 광맥을 하나씩 올린다
+            while (total < guarantee) {
+                List<Vein> low = new ArrayList<>();
+                for (Vein v : veins) if (v.amount < maxAmount) low.add(v);
+                if (low.isEmpty()) break;
+                low.get(rnd.nextInt(low.size())).amount++;
+                total++;
             }
-            return result;
+            return veins;
         }
-        return List.of();
+        throw new IllegalStateException("광맥을 놓을 자리가 없습니다: " + room.id);
     }
 
-    private static boolean touches(List<Cell> chosen, Cell c) {
-        for (Cell o : chosen) if (Math.abs(o.x - c.x) <= 1 && Math.abs(o.y - c.y) <= 1) return true;
+    /** 바닥 경계에서 한 칸 떨어지고, 출구 앞 두 칸을 비운 바닥 칸. */
+    static List<int[]> candidates(Room room) {
+        List<int[]> out = new ArrayList<>();
+        for (int y = room.y0 + 1; y <= room.y1 - 1; y++) {
+            for (int x = room.x0 + 1; x <= room.x1 - 1; x++) {
+                if (!room.insideWithMargin(x, y, 1)) continue;
+                if (nearDoor(room, x, y)) continue;
+                out.add(new int[]{x, y});
+            }
+        }
+        return out;
+    }
+
+    private static boolean nearDoor(Room room, int x, int y) {
+        for (Door d : room.doors) {
+            if (Math.abs(d.insideX - x) <= 2 && Math.abs(d.insideY - y) <= 2) return true;
+            if (Math.abs(d.tilesX[0] - x) <= 2 && Math.abs(d.tilesY[0] - y) <= 2) return true;
+        }
         return false;
     }
 
-    /** 광맥을 막힌 칸으로 두고 입구에서 BFS. 모든 광맥의 이웃 칸 중 하나에 닿아야 한다. */
-    static boolean allReachable(List<Cell> veins, int[] room, Cell entry, Blocked walls) {
-        Set<Cell> blocked = new HashSet<>(veins);
-        Set<Cell> seen = new HashSet<>();
-        ArrayDeque<Cell> queue = new ArrayDeque<>();
-        queue.add(entry);
-        seen.add(entry);
+    private static boolean touches(List<int[]> picked, int[] c) {
+        for (int[] p : picked) {
+            if (Math.abs(p[0] - c[0]) <= 1 && Math.abs(p[1] - c[1]) <= 1) return true;
+        }
+        return false;
+    }
+
+    /** 광맥을 막힌 칸으로 보고, 첫 문 안쪽에서 시작해 이어진 모든 문과 광맥 옆에 닿는지 본다. */
+    public static boolean reachable(Room room, List<int[]> veins) {
+        int w = room.x1 - room.x0 + 1, h = room.y1 - room.y0 + 1;
+        boolean[] block = new boolean[w * h];
+        for (int[] v : veins) block[(v[0] - room.x0) + (v[1] - room.y0) * w] = true;
+        boolean[] seen = new boolean[w * h];
+        List<int[]> starts = new ArrayList<>();
+        for (Door d : room.doors) {
+            if (d.dead()) continue;
+            int[] s = nearestFloor(room, d.insideX, d.insideY);
+            if (s != null) starts.add(s);
+        }
+        if (starts.isEmpty()) return true;
+        int[] first = starts.get(0);
+        if (block[(first[0] - room.x0) + (first[1] - room.y0) * w]) return false;
+        ArrayDeque<int[]> q = new ArrayDeque<>();
+        q.add(first);
+        seen[(first[0] - room.x0) + (first[1] - room.y0) * w] = true;
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-        while (!queue.isEmpty()) {
-            Cell c = queue.poll();
+        while (!q.isEmpty()) {
+            int[] p = q.poll();
             for (int[] d : dirs) {
-                Cell n = new Cell(c.x + d[0], c.y + d[1]);
-                if (n.x < room[0] || n.y < room[1] || n.x > room[2] || n.y > room[3]) continue;
-                if (seen.contains(n) || blocked.contains(n) || walls.at(n.x, n.y)) continue;
-                seen.add(n);
-                queue.add(n);
+                int nx = p[0] + d[0], ny = p[1] + d[1];
+                if (!room.floor(nx, ny)) continue;
+                int i = (nx - room.x0) + (ny - room.y0) * w;
+                if (seen[i] || block[i]) continue;
+                seen[i] = true;
+                q.add(new int[]{nx, ny});
             }
         }
-        for (Cell v : veins) {
+        for (int[] s : starts) {
+            if (!seen[(s[0] - room.x0) + (s[1] - room.y0) * w]) return false;
+        }
+        for (int[] v : veins) {
             boolean ok = false;
-            for (int[] d : dirs) if (seen.contains(new Cell(v.x + d[0], v.y + d[1]))) ok = true;
+            for (int[] d : dirs) {
+                int nx = v[0] + d[0], ny = v[1] + d[1];
+                if (room.floor(nx, ny) && seen[(nx - room.x0) + (ny - room.y0) * w]) ok = true;
+            }
             if (!ok) return false;
         }
         return true;
+    }
+
+    /** 가장 가까운 바닥 칸 (그 칸이 바닥이면 그대로). */
+    static int[] nearestFloor(Room room, int x, int y) {
+        for (int r = 0; r <= 4; r++) {
+            for (int dy = -r; dy <= r; dy++)
+                for (int dx = -r; dx <= r; dx++)
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) == r && room.floor(x + dx, y + dy)) return new int[]{x + dx, y + dy};
+        }
+        return null;
     }
 }
