@@ -1,0 +1,67 @@
+[
+  {
+    "id": "mine-boss-a-front",
+    "source": "exec-82bc618f-1996-4f8c-b02b-cdfa4bf51f86.png",
+    "prompt": "Use case: background-extraction. Input image is the EDIT TARGET, not a style reference. Return exact same 1672x941 canvas with true RGBA transparency. Extract ONLY the near foreground rock walls and timber posts along the lower left and lower right edges, including the two posts flanking the bottom center doorway. Retain their exact existing positions, shapes, colors and pixels. Remove ALL floor, including bottom doorway passage, back walls, upper sides, black backdrop. Upper 55% of the output should be fully transparent. Do NOT redraw, recompose, enlarge, move or add anything. This PNG is composited pixel-perfect over the identical original to occlude game characters. Transparent background, no checkerboard painted in."
+  },
+  {
+    "id": "citadel-boss-a-front",
+    "source": "exec-59d79a25-6c48-4c50-a4f6-86ed5cb0a523.png",
+    "prompt": "Use case: background-extraction. Input is exact EDIT TARGET. Create true transparent RGBA foreground cutout with identical 1672x941 canvas. Keep ONLY the near front wall, pillars, railings and attached torches/banners along lower-left and lower-right rim, including the pillars beside the bottom-center staircase. Preserve EXACT position, size, shape, color and texture. All upper/back walls, all floor including center staircase, black backdrop and interiors become transparent. Do not move, regenerate, redesign or add objects. Upper 45% fully transparent. Need pixel-registered overlay on identical original game room so characters walk behind front pillars. Avoid opaque floor or opaque black or painted checkerboard."
+  },
+  {
+    "id": "tower-boss-a-front",
+    "source": "exec-71ed6775-7837-4abf-8754-a3c924db48c8.png",
+    "prompt": "Use case: background-extraction. Input is exact EDIT TARGET. Create true transparent RGBA foreground cutout with identical 1672x941 canvas. Keep ONLY the near front wall, pillars, railings and attached torches/banners along lower-left and lower-right rim, including the pillars beside the bottom-center staircase. Preserve EXACT position, size, shape, color and texture. All upper/back walls, all floor including center staircase, black backdrop and interiors become transparent. Do not move, regenerate, redesign or add objects. Upper 45% fully transparent. Need pixel-registered overlay on identical original game room so characters walk behind front pillars. Avoid opaque floor or opaque black or painted checkerboard."
+  },
+  {
+    "id": "seal-hall-front",
+    "source": "exec-8f63ad42-b7bc-4974-8bfe-e2779ae45cc1.png",
+    "prompt": "Use case: background-extraction. Input is exact EDIT TARGET. Create true transparent RGBA foreground cutout with identical 1672x941 canvas. Keep ONLY the near front wall, pillars, railings and attached torches/banners along lower-left and lower-right rim, including the pillars beside the bottom-center staircase. Preserve EXACT position, size, shape, color and texture. All upper/back walls, all floor including center staircase, black backdrop and interiors become transparent. Do not move, regenerate, redesign or add objects. Upper 45% fully transparent. Need pixel-registered overlay on identical original game room so characters walk behind front pillars. Avoid opaque floor or opaque black or painted checkerboard."
+  },
+  {
+    "id": "mine-front",
+    "source": "exec-9b4013c0-d256-4104-b94a-cb7df024b8c2.png",
+    "prompt": "Use case: background-extraction. Extract foreground from this EXACT game background, keep exact 1672x941 coordinates and scale. Output RGBA transparent PNG. Retain ONLY the front near walls, pillars, railings along the bottom left and bottom right edges. All back walls, upper half, ALL FLOOR and ALL STAIR TREADS including bottom-central staircase must become transparent. The center bottom opening is a transparent hole from x=0.46 to 0.56 all the way down. Preserve exact original pixels of the foreground, not a redesign. No backdrop, no floor, no staircase, no characters, no re-centering. This is a pixel-aligned overlay for the original game image."
+  },
+  {
+    "id": "citadel-front",
+    "source": "exec-2dc4bd7a-a849-48f6-9db5-49a6b1e0adfc.png",
+    "prompt": "Use case: background-extraction. Extract foreground from this EXACT game background, keep exact 1672x941 coordinates and scale. Output RGBA transparent PNG. Retain ONLY the front near walls, pillars, railings along the bottom left and bottom right edges. All back walls, upper half, ALL FLOOR and ALL STAIR TREADS including bottom-central staircase must become transparent. The center bottom opening is a transparent hole from x=0.46 to 0.56 all the way down. Preserve exact original pixels of the foreground, not a redesign. No backdrop, no floor, no staircase, no characters, no re-centering. This is a pixel-aligned overlay for the original game image."
+  },
+  {
+    "id": "tower-front",
+    "source": "exec-c41bf4aa-f8ac-442d-8915-fbeb08d8a47d.png",
+    "prompt": "Use case: background-extraction. Extract foreground from this EXACT game background, keep exact 1672x941 coordinates and scale. Output RGBA transparent PNG. Retain ONLY the front near walls, pillars, railings along the bottom left and bottom right edges. All back walls, upper half, ALL FLOOR and ALL STAIR TREADS including bottom-central staircase must become transparent. The center bottom opening is a transparent hole from x=0.46 to 0.56 all the way down. Preserve exact original pixels of the foreground, not a redesign. No backdrop, no floor, no staircase, no characters, no re-centering. This is a pixel-aligned overlay for the original game image."
+  },
+  {
+    "id": "mine-mob-b-front",
+    "source": "exec-e765aa82-85aa-4ef5-8d2d-f93c5a2feaab.png",
+    "prompt": "Use case: background-extraction. Exact EDIT TARGET game room. Output transparent RGBA 1672x941 same canvas. Cut out ONLY frontmost lower rock walls, posts, railings. Preserve exact coordinates, scale, silhouettes and colors. Remove all back walls, all floor and all passages, upper half and black backdrop to true transparency. Bottom rim has NO central doorway; preserve continuous foreground rim. Do not include any floor pixels. Do not redraw, reframe or move anything. Used as pixel-registered foreground occlusion overlay over original."
+  },
+  {
+    "id": "mine-mob-c-front",
+    "source": "exec-b3d87c72-6a57-41a1-9cc7-3af1160682fd.png",
+    "prompt": "Use case: background-extraction. Exact EDIT TARGET game room. Output transparent RGBA 1672x941 same canvas. Cut out ONLY frontmost lower rock walls, posts, railings. Preserve exact coordinates, scale, silhouettes and colors. Remove all back walls, all floor and all passages, upper half and black backdrop to true transparency. Bottom-center passage must stay fully transparent. Do not include any floor pixels. Do not redraw, reframe or move anything. Used as pixel-registered foreground occlusion overlay over original."
+  },
+  {
+    "id": "mine-ore-a-front",
+    "source": "exec-f05ff2cf-b0aa-49e0-93b2-b6ddf07e1f6c.png",
+    "prompt": "Use case: background-extraction. Exact EDIT TARGET game room. Output transparent RGBA 1672x941 same canvas. Cut out ONLY frontmost lower rock walls, posts, railings. Preserve exact coordinates, scale, silhouettes and colors. Remove all back walls, all floor and all passages, upper half and black backdrop to true transparency. Bottom-center passage must stay fully transparent. Do not include any floor pixels. Do not redraw, reframe or move anything. Used as pixel-registered foreground occlusion overlay over original."
+  },
+  {
+    "id": "mine-ore-b-front",
+    "source": "exec-af1439ca-5b2c-4709-82b7-82ca687608d7.png",
+    "prompt": "Use case: background-extraction. Exact EDIT TARGET game room. Output transparent RGBA 1672x941 same canvas. Cut out ONLY frontmost lower rock walls, posts, railings. Preserve exact coordinates, scale, silhouettes and colors. Remove all back walls, all floor and all passages, upper half and black backdrop to true transparency. Bottom-left diagonal passage must stay transparent; do not remove foreground wall in bottom center. Do not include any floor pixels. Do not redraw, reframe or move anything. Used as pixel-registered foreground occlusion overlay over original."
+  },
+  {
+    "id": "tower-antechamber",
+    "source": "exec-ad0ab15d-2e75-47b3-b5ac-556b99924b7b.png",
+    "prompt": "Use case: precise-object-edit. Edit this exact 1672x941 game room. Only change the interior of the EAST exit arch on the far right at x=0.93,y=0.41: remove the stone railing visible inside the opening and make it an unobstructed dark blue horizontal passage continuing to the right. This must read as a walkable doorway, not a balcony or window. Preserve every other pixel and room layout, north stairs, all foreground walls, same camera, same canvas and art style. No text or characters."
+  },
+  {
+    "id": "central-camp-open",
+    "source": "exec-d697a2c3-d05d-457b-ad02-ba58c55247c9.png",
+    "prompt": "Use case: precise-object-edit\nAsset type: registered transparent overlay for existing 2D game camp background. PNG full canvas EXACT same framing and dimensions as reference 1672x941.\nInput reference: full central camp. DO NOT make a new camp. Output ONLY a small replacement patch at the bottom center with everything else fully transparent.\nPrimary request: the wooden gate at bottom of the camp stairs is now open after unsealing. At exact original location x=0.464..0.55, y=0.92..1.0, replace shut wooden panels with two wooden gate leaves swung aside, and show a dark purple-lit stair passage descending beyond. Cover all original shut gate pixels with opaque matching masonry/dark purple floor in this patch, so the closed gate cannot show through. The patch can extend x=.448.. .565 and y=.885..1.0 to blend into the existing steps and jambs. Tiny subtle violet darkness only in passage. No camp objects elsewhere.\nConstraints: FULL 1672x941 canvas; patch remains at BOTTOM CENTER, not centered or enlarged. Match original registration, perspective, existing stairs, stones and colors. Transparent alpha background everywhere outside bottom-center gate/stair patch. No checkerboard painted in, no black opaque background, no text, no people. Keep upper 85 percent of canvas fully transparent. This is a compositing overlay, not an illustration of a door on a new canvas."
+  }
+]
