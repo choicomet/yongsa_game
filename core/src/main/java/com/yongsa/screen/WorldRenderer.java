@@ -64,6 +64,8 @@ public class WorldRenderer implements Disposable {
     private final WorldMap map;
     private final int T;
     private final String[] theme;
+    /** 방·통로 바깥 칸을 메울 바위 테마 (가장 가까운 방·통로 것). */
+    private final String[] fillTheme;
     private final GlyphLayout layout = new GlyphLayout();
     private final Lighting lighting = new Lighting(YongsaGame.WIDTH, YongsaGame.HEIGHT);
     private final Particles particles;
@@ -274,6 +276,16 @@ public class WorldRenderer implements Disposable {
                     torches.add(new float[]{x * T + T / 2f, y * T, MathUtils.random(10f)});
             }
         }
+        // 빈 곳의 바위 테마: 가장 가까운 방·통로의 테마 (넓이 우선으로 번져 나간다)
+        this.fillTheme = new String[map.width * map.height];
+        java.util.ArrayDeque<Integer> q = new java.util.ArrayDeque<>();
+        for (int i = 0; i < theme.length; i++) if (theme[i] != null) { fillTheme[i] = theme[i]; q.add(i); }
+        while (!q.isEmpty()) {
+            int i = q.poll(), x = i % map.width, y = i / map.width;
+            int[] nb = {x > 0 ? i - 1 : -1, x < map.width - 1 ? i + 1 : -1, y > 0 ? i - map.width : -1, y < map.height - 1 ? i + map.width : -1};
+            for (int n : nb) if (n >= 0 && fillTheme[n] == null) { fillTheme[n] = fillTheme[i]; q.add(n); }
+        }
+        for (int i = 0; i < fillTheme.length; i++) if (fillTheme[i] == null) fillTheme[i] = "CAMP";
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
             if (r.scene != null) continue;
@@ -820,6 +832,7 @@ public class WorldRenderer implements Disposable {
 
         batch.begin();
         batch.setColor(Color.WHITE);
+        drawRockFill();
         drawScenes();
         drawTiles(tx0, ty0, tx1, ty1);
         drawSceneDoors();
@@ -906,10 +919,11 @@ public class WorldRenderer implements Disposable {
      * (u0, v0, u1, v1: 그림 왼쪽 위 기준 0~1). 통로 타일 그림(docs/ART_REQUESTS.md 0-9)이 오면 바꾼다.
      */
     private static final String[][] CORRIDOR_SKIN = {
-            {"CAMP", "scenes/natural-v1/central-camp.png", ".30,.50,.45,.68", ".25,.88,.42,.99"},
-            {"LEFT", "scenes/natural-v1/mine.png", ".30,.33,.50,.58", ".20,.85,.40,.99"},
-            {"RIGHT", "scenes/natural-v1/citadel.png", ".62,.32,.78,.58", ".05,.82,.25,.98"},
-            {"TOP", "scenes/natural-v1/tower.png", ".24,.40,.38,.62", ".26,.88,.44,.99"},
+            // 테마, 그림, 통로 바닥, 통로 벽, 방과 통로 바깥을 메우는 바위
+            {"CAMP", "scenes/natural-v1/central-camp.png", ".30,.50,.45,.68", ".25,.88,.42,.99", ".00,.78,.30,1.0"},
+            {"LEFT", "scenes/natural-v1/mine.png", ".30,.33,.50,.58", ".20,.85,.40,.99", ".00,.78,.30,1.0"},
+            {"RIGHT", "scenes/natural-v1/citadel.png", ".62,.32,.78,.58", ".05,.82,.25,.98", ".00,.80,.30,1.0"},
+            {"TOP", "scenes/natural-v1/tower.png", ".24,.40,.38,.62", ".26,.88,.44,.99", ".00,.82,.22,1.0"},
     };
     /** 방 그림 한 칸이 월드에서 차지하는 크기 (30칸 방 = 그림 1672 칸). */
     private static final float SKIN_SCALE = 30f * 32f / 1672f;
@@ -921,23 +935,54 @@ public class WorldRenderer implements Disposable {
         String[] def = CORRIDOR_SKIN[0];
         for (String[] d : CORRIDOR_SKIN) if (d[0].equals(th)) def = d;
         com.badlogic.gdx.graphics.Pixmap src = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(def[1]));
-        t = new Texture[]{crop(src, def[2]), crop(src, def[3])};
+        // 그림 가장자리 바위는 아주 어두워서 조금 밝혀 쓴다 (화면에 까만 곳이 없게)
+        t = new Texture[]{crop(src, def[2], 1f), crop(src, def[3], 1.35f), crop(src, def[4], 1.35f)};
         src.dispose();
         corridorSkin.put(th, t);
         return t;
     }
 
-    private static Texture crop(com.badlogic.gdx.graphics.Pixmap src, String rect) {
+    private static Texture crop(com.badlogic.gdx.graphics.Pixmap src, String rect, float gain) {
         String[] r = rect.split(",");
         int x0 = Math.round(Float.parseFloat(r[0]) * src.getWidth()), y0 = Math.round(Float.parseFloat(r[1]) * src.getHeight());
         int x1 = Math.round(Float.parseFloat(r[2]) * src.getWidth()), y1 = Math.round(Float.parseFloat(r[3]) * src.getHeight());
         com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(x1 - x0, y1 - y0, src.getFormat());
         p.drawPixmap(src, 0, 0, x0, y0, x1 - x0, y1 - y0);
+        if (gain != 1f) {
+            for (int y = 0; y < p.getHeight(); y++)
+                for (int x = 0; x < p.getWidth(); x++) {
+                    int c = p.getPixel(x, y);
+                    int rr = Math.min(255, Math.round(((c >>> 24) & 0xff) * gain));
+                    int gg = Math.min(255, Math.round(((c >>> 16) & 0xff) * gain));
+                    int b = Math.min(255, Math.round(((c >>> 8) & 0xff) * gain));
+                    p.drawPixel(x, y, (rr << 24) | (gg << 16) | (b << 8) | 0xff);
+                }
+        }
         Texture t = new Texture(p);
         p.dispose();
         t.setWrap(Texture.TextureWrap.MirroredRepeat, Texture.TextureWrap.MirroredRepeat);
         t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         return t;
+    }
+
+    /**
+     * 방과 통로 바깥 빈 곳: 가장 가까운 던전 방 그림의 바위로 메운다 (까만 빈칸이 없게).
+     * 방 그림보다 먼저 그리고, 방 그림은 가장자리가 흐려져서 이 바위 위로 녹아든다.
+     */
+    private void drawRockFill() {
+        int x0 = (int) Math.floor(viewX0 / T) - 1, x1 = (int) Math.floor(viewX1 / T) + 1;
+        int y0 = (int) Math.floor(viewY0 / T) - 1, y1 = (int) Math.floor(viewY1 / T) + 1;
+        batch.setColor(Color.WHITE);
+        for (int y = y0; y <= y1; y++) {
+            for (int x = x0; x <= x1; x++) {
+                int cx = MathUtils.clamp(x, 0, map.width - 1), cy = MathUtils.clamp(y, 0, map.height - 1);
+                if (cx == x && cy == y && map.corridorAt(x, y) != null) continue; // 통로는 따로 그린다
+                Texture tex = corridorSkin(fillTheme[cx + cy * map.width])[2];
+                // 1.5배로 키워 깔아 거울 반복 무늬가 덜 보이게 한다
+                float px = x * T, py = y * T, pw = tex.getWidth() * SKIN_SCALE * 1.5f, ph = tex.getHeight() * SKIN_SCALE * 1.5f;
+                batch.draw(tex, px, py, T, T, px / pw, -(py + T) / ph, (px + T) / pw, -py / ph);
+            }
+        }
     }
 
     /** 통로 칸 하나: 바닥은 그림 바닥, 벽은 바위 (앞벽은 조금 밝게, 윗면은 어둡게). 월드 좌표에 맞춰 이어진다. */
@@ -950,7 +995,7 @@ public class WorldRenderer implements Disposable {
         if (wall) {
             int below = map.tile(x, y - 1);
             boolean front = below == WorldMap.FLOOR || below == WorldMap.DOOR || below == WorldMap.CORRIDOR;
-            float k = front ? 0.8f : 0.5f;
+            float k = front ? 1f : 0.8f;
             batch.setColor(k, k, k, 1f);
         }
         batch.draw(tex, px, py, T, T, px / pw, -(py + T) / ph, (px + T) / pw, -py / ph);
@@ -1050,12 +1095,35 @@ public class WorldRenderer implements Disposable {
         }
     }
 
+    /** 방 그림의 네모 가장자리를 투명하게 흐린다: 아래에 깔린 바위와 이어져 네모 테두리가 안 보인다. */
+    private static void featherEdges(com.badlogic.gdx.graphics.Pixmap p) {
+        int w = p.getWidth(), h = p.getHeight(), band = Math.max(8, w / 30);
+        p.setBlending(com.badlogic.gdx.graphics.Pixmap.Blending.None);
+        for (int y = 0; y < h; y++) {
+            int dy = Math.min(y, h - 1 - y);
+            for (int x = 0; x < w; x++) {
+                int d = Math.min(dy, Math.min(x, w - 1 - x));
+                if (d >= band) {
+                    if (dy >= band) x = Math.max(x, w - 1 - band - 1);
+                    continue;
+                }
+                float a = d / (float) band;
+                a = a * a * (3 - 2 * a);
+                int c = p.getPixel(x, y);
+                p.drawPixel(x, y, (c & 0xffffff00) | Math.round((c & 0xff) * a));
+            }
+        }
+    }
+
     private Texture sceneTexture(Room r) {
         String key = r.scene.image;
         sceneUsed.put(key, time);
         Texture t = sceneTex.get(key);
         if (t == null) {
-            t = new Texture(Gdx.files.internal(key), true);
+            com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(key));
+            featherEdges(p);
+            t = new Texture(p, true);
+            p.dispose();
             t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
             sceneTex.put(key, t);
         }
