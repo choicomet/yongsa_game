@@ -12,8 +12,8 @@
 
     { "id": "L1", "type": "MOB",  "dungeon": "LEFT", "cx": -1, "cy": 0,  "scene": "mine-mob-c",  "width": 32 },
     { "id": "L2", "type": "ORE",  "dungeon": "LEFT", "cx": -2, "cy": 0,  "scene": "mine-ore-b",  "width": 30, "flip": true },
-    { "id": "L8", "type": "MOB",  "dungeon": "LEFT", "cx": -1, "cy": -1, "scene": "mine-mob-b",  "width": 30, "flip": true,
-      "_note": "임시 그림: 위·왼쪽 출구가 있는 갱도 방 그림이 오면 바꾼다 (docs/ART_REQUESTS.md)" },
+    { "id": "L8", "type": "MOB",  "dungeon": "LEFT", "cx": -1, "cy": -1, "scene": "mine-junction", "width": 30,
+      "_note": "GPT 갈림 갱도 후보 그림. 왼쪽 갱도 입구는 막힌 곳" },
     {"id": "L3", "type": "MOB", "dungeon": "LEFT", "cx": -2, "cy": -1, "scene": "mine", "width": 34, "waves": 2},
     { "id": "L4", "type": "ORE",  "dungeon": "LEFT", "cx": -3, "cy": 0,  "scene": "mine-ore-a",  "width": 28 },
     { "id": "L5", "type": "MOB",  "dungeon": "LEFT", "cx": -2, "cy": -2, "scene": "mine-mob-b",  "width": 31, "flip": true },

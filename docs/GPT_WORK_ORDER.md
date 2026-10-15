@@ -63,7 +63,7 @@ choicomet/yongsa_game 저장소의 docs/GPT_WORK_ORDER.md 를 읽고 그대로 �
 
 | 순서 | 할 일 | 파일 | 바로 반영? | 자세히 |
 |---|---|---|---|---|
-| D1 | 남은 임시 방 1개 (L8 갈림 갱도, 위 출구 하나) | 새 방 그림 + 장면·맵 JSON | 바닥 다각형 따기 | ART_REQUESTS 1 |
+| D1 | ~~남은 임시 방 1개 (L8 갈림 갱도)~~ 완료: GPT 후보 그림 mine-junction 사용 | - | - | ART_REQUESTS 1 |
 | D2 | 남은 방 앞쪽 가림 레이어 | `<장면 id>-front.png` | 바로 | 4 |
 | D3 | 광석 덩어리가 흐린 광물방 3곳 손보기 (선택) | 방 그림 + `oreSpots` | 좌표 다시 찍기 | 0-10 |
 
