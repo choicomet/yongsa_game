@@ -8,6 +8,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Disposable;
 import com.yongsa.world.Corridor;
+import com.yongsa.world.Room;
+import com.yongsa.world.Door;
 import com.yongsa.world.WorldMap;
 
 import java.nio.ByteBuffer;
@@ -16,7 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Painted passage walls with a continuous, world-aligned floor and quiet solid bedrock. */
+/** Intact authored passage scenes; legacy tile maps retain the repeating-wall fallback. */
 class PassagePainter implements Disposable {
     private static final String DIR = "scenes/passages/";
     /** 그림 속 바닥 폭 (칸). 걸을 수 있는 폭 3칸보다 조금 넓게 그려서 벽 위를 걷는 것처럼 보이지 않게 한다. */
@@ -62,11 +64,19 @@ class PassagePainter implements Disposable {
     private final Map<String, Skin> skins = new HashMap<>();
     private final List<Seg> segs = new ArrayList<>();
     private final float[] verts = new float[20];
+    private final Map<String, Texture> paintings = new HashMap<>();
+    private final boolean painted;
     final boolean active;
 
     PassagePainter(WorldMap map, float tileSize) {
         this.map = map;
         this.T = tileSize;
+        painted = !map.corridors.isEmpty() && map.corridors.stream().allMatch(c -> c.scene != null);
+        if (painted) {
+            active = true;
+            ground = repeating(Gdx.files.internal(DIR + "terrain-bedrock.png"));
+            return;
+        }
         boolean all = true;
         for (Object[] d : DEFS) {
             String n = (String) d[1];
@@ -274,6 +284,19 @@ class PassagePainter implements Disposable {
 
     /** Side walls stop short of turns, leaving the entire collision width visibly clear. */
     void drawWalls(SpriteBatch batch, float x0, float y0, float x1, float y1) {
+        if (painted) {
+            batch.setColor(Color.WHITE);
+            for (Corridor c : map.corridors) {
+                if (c.originX > x1 || c.originX + c.widthPx < x0 || c.originY > y1 || c.originY + c.heightPx < y0) continue;
+                Texture t = paintings.get(c.scene.id);
+                if (t == null) {
+                    t = texture(featherPassage(new Pixmap(Gdx.files.internal(c.scene.image)), c), false, false);
+                    paintings.put(c.scene.id, t);
+                }
+                batch.draw(t, c.originX, c.originY, c.widthPx, c.heightPx, 0, 0, t.getWidth(), t.getHeight(), c.flip, false);
+            }
+            return;
+        }
         for (Seg s : segs) {
             Skin k = skins.getOrDefault(s.theme, skins.get("CAMP"));
             float a = s.mouthA ? s.a : s.a + 1.7f * T;
@@ -294,8 +317,39 @@ class PassagePainter implements Disposable {
         }
     }
 
+    /** Keep floor exits and their masonry opaque; only the surrounding rock fades.
+     * Fading all four edges also faded the entrance stairs/torches into the bedrock. */
+    private static Pixmap featherPassage(Pixmap source, Corridor c) {
+        Pixmap p = rgba(source);
+        int w = p.getWidth(), h = p.getHeight();
+        float fade = Math.min(w, h) * .08f;
+        ByteBuffer pixels = p.getPixels();
+        float[][] ends = {c.scene.path.get(0), c.scene.path.get(c.scene.path.size() - 1)};
+        for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) {
+            float left = smooth((x + .5f) / fade), right = smooth((w - x - .5f) / fade);
+            float top = smooth((y + .5f) / fade), bottom = smooth((h - y - .5f) / fade);
+            for (float[] end : ends) {
+                float protectX = 1 - smooth((Math.abs(x - end[0] * w) - fade * 1.7f) / fade);
+                float protectY = 1 - smooth((Math.abs(y - end[1] * h) - fade * 1.7f) / fade);
+                if (end[0] < .06f) left += (1 - left) * protectY;
+                if (end[0] > .94f) right += (1 - right) * protectY;
+                if (end[1] < .06f) top += (1 - top) * protectX;
+                if (end[1] > .94f) bottom += (1 - bottom) * protectX;
+            }
+            int idx = (y * w + x) * 4 + 3;
+            pixels.put(idx, (byte) Math.round((pixels.get(idx) & 255) * left * right * top * bottom));
+        }
+        return p;
+    }
+
+    private static float smooth(float value) {
+        float t = Math.max(0, Math.min(1, value));
+        return t * t * (3 - 2 * t);
+    }
+
     /** World-aligned UVs continue through every bend; no rotated rails, stairs or carpet seams. */
     void drawFloors(SpriteBatch batch, float x0, float y0, float x1, float y1) {
+        if (painted) return; // 바닥은 길목 그림 안에 이미 있다. 별도 직사각형을 덧그리지 않는다.
         for (Seg s : segs) {
             Skin k = skins.getOrDefault(s.theme, skins.get("CAMP"));
             float[] ls = s.floorAlong, cs = s.floorAcross, alpha = EDGE_ALPHA;
@@ -312,6 +366,43 @@ class PassagePainter implements Disposable {
                         .9f, a00, a10, a11, a01);
             }
         }
+    }
+
+    /** 방 그림의 출구 바깥만 길목 그림으로 부드럽게 넘긴다. 원본 파일은 바꾸지 않는다. */
+    Pixmap joinRoom(Pixmap source, Room r) {
+        Pixmap p = featherEdges(source);
+        if (!painted) return p;
+        int w = p.getWidth(), h = p.getHeight();
+        ByteBuffer pixels = p.getPixels();
+        for (Door d : r.doors) {
+            if (d.link == null || d.link.corridor == null) continue;
+            Corridor c = d.link.corridor;
+            for (int py = 0; py < h; py++) {
+                float wy = r.sceneY((py + .5f) / h);
+                if (wy < c.originY || wy > c.originY + c.heightPx) continue;
+                for (int px = 0; px < w; px++) {
+                    float wx = r.sceneX((px + .5f) / w);
+                    if (wx < c.originX || wx > c.originX + c.widthPx) continue;
+                    float along = (wx - d.footX) * d.dirX + (wy - d.footY) * d.dirY;
+                    if (along < -.5f * T) continue;
+                    // Blend the whole short mouth including its side masonry, not a floor strip.
+                    float across = Math.abs(-(wx - d.footX) * d.dirY + (wy - d.footY) * d.dirX);
+                    float side = Math.max(0, Math.min(1, (d.halfWidth + 2.5f * T - across) / (1.2f * T)));
+                    float amount = Math.max(0, Math.min(1, (along + .5f * T) / (1.2f * T)));
+                    amount = amount * amount * (3 - 2 * amount) * side;
+                    // A diagonal door intersects the rectangular image edge at an
+                    // angle. Fade that cut too, otherwise side timbers end on a hard line.
+                    if (Math.abs(d.dirX) > .1f && Math.abs(d.dirY) > .1f) {
+                        float edge = Math.min(Math.min(wx - c.originX, c.originX + c.widthPx - wx),
+                                Math.min(wy - c.originY, c.originY + c.heightPx - wy));
+                        amount *= smooth(edge / (1.2f * T));
+                    }
+                    int idx = (py * w + px) * 4 + 3;
+                    pixels.put(idx, (byte) Math.round((pixels.get(idx) & 255) * (1 - amount)));
+                }
+            }
+        }
+        return p;
     }
 
     /**
@@ -361,6 +452,8 @@ class PassagePainter implements Disposable {
 
     @Override
     public void dispose() {
+        for (Texture t : paintings.values()) t.dispose();
+        paintings.clear();
         for (Skin s : skins.values()) {
             s.h.dispose();
             s.v.dispose();

@@ -6,7 +6,8 @@ import java.util.List;
 
 /**
  * assets/data/map.json: 통합 맵의 방 배치 (방 배치는 고정, A10).
- * 방마다 지도 칸(cx, cy)을 하나 차지하고, 그림 방은 배경 그림(scene)과 가로 크기(width, 타일)를 정한다.
+ * 그림 방은 배경 그림(scene), 가로 크기(width, 타일), 왼쪽 아래(origin)로 배치한다.
+ * origin이 없는 예전 배치는 지도 칸(cx, cy)을 쓴다.
  * 이음(link)은 "방.출구" 두 개를 잇는다. 캠프 출구 이름은 LEFT/RIGHT/UP/DOWN.
  */
 public class MapDef {
@@ -17,6 +18,8 @@ public class MapDef {
     public int[] campSize;
     public List<RoomDef> rooms;
     public List<LinkDef> links;
+    /** 완성된 길목 그림과 그림 위에서 직접 잰 바닥 경계. */
+    public List<PassageScene> passageScenes;
 
     public static MapDef parse(String json) {
         return new Gson().fromJson(json, MapDef.class);
@@ -27,6 +30,8 @@ public class MapDef {
         public int cx, cy;
         /** 칸 중심에서 이동할 타일 수. 출구 높이를 맞추며 기본값은 0. */
         public int offsetX, offsetY;
+        /** 그림 왼쪽 아래의 절대 타일 좌표. 있으면 칸 배치보다 우선한다. */
+        public float[] origin;
         /** natural-room-scenes.json 의 장면 id. 없으면 타일 방 (캠프). */
         public String scene;
         /** 그림의 가로 크기 (타일). */
@@ -41,5 +46,21 @@ public class MapDef {
         public String a, b, gate;
         /** a 문으로만 b 문 앞에 나간다 (b 문은 원래 이음을 그대로 쓴다). */
         public boolean oneWay;
+        public PassagePlacement painted;
+    }
+
+    public static class PassageScene {
+        public String id, image;
+        public int pixelWidth, pixelHeight;
+        /** 정규화된 그림 좌표: 왼쪽 위 (0,0), 오른쪽 아래 (1,1). */
+        public float[] walkable;
+        public List<float[]> path;
+    }
+
+    public static class PassagePlacement {
+        public String scene;
+        public float[] origin;
+        public float width;
+        public boolean flip, reverse;
     }
 }

@@ -114,7 +114,7 @@ public final class RoomSceneLayout {
             return true;
         }
 
-        private static boolean fitsPolygon(float[] polygon, float px, float py, float radius,
+        static boolean fitsPolygon(float[] polygon, float px, float py, float radius,
                                            float width, float h, boolean mustBeInside) {
             boolean inside = false;
             float radius2 = radius * radius;

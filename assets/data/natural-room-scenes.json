@@ -110,7 +110,7 @@
         {
           "id": "rail",
           "kind": "open-passage",
-          "foot": [0.176, 0.225],
+          "foot": [0.137, 0.25],
           "facing": "UP_LEFT"
         }
       ],
@@ -314,7 +314,7 @@
         {
           "id": "east",
           "kind": "open-passage",
-          "foot": [0.93, 0.66],
+          "foot": [0.94, 0.74],
           "facing": "RIGHT"
         }
       ],
@@ -486,7 +486,7 @@
         {
           "id": "east",
           "kind": "open-passage",
-          "foot": [0.96, 0.36],
+          "foot": [0.96, 0.43],
           "facing": "RIGHT"
         },
         {

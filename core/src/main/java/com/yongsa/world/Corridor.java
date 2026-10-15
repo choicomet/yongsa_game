@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 두 방의 출구를 잇는 3칸 폭 통로 (맵이 끊기지 않고 하나로 이어진다).
+ * 두 방의 출구를 잇는 길목. 그림 길목은 실제 바닥 다각형을 쓰고, 예전 맵은 타일 통로를 쓴다.
  * 이음(link)의 문이 닫히면(던전 봉인, 방 잠금) 통로도 막힌다.
  */
 public class Corridor {
@@ -15,6 +15,21 @@ public class Corridor {
     public final List<int[]> tiles = new ArrayList<>();
     /** 가운데 줄 칸들: doorA 출구에서 doorB 출구까지 차례대로. */
     public final List<int[]> path = new ArrayList<>();
+    /** 그림 바닥을 따라 잰 길. 월드 좌표이며 doorA → doorB 순서다. */
+    public final List<float[]> centerline = new ArrayList<>();
+    public MapDef.PassageScene scene;
+    public float originX, originY, widthPx, heightPx;
+    public boolean flip;
+
+    public float sceneX(float u) { return originX + (flip ? 1 - u : u) * widthPx; }
+    public float sceneY(float v) { return originY + (1 - v) * heightPx; }
+
+    public boolean allowsFoot(float x, float y, float radius) {
+        if (scene == null || !Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(radius) || radius < 0) return false;
+        float px = x - originX;
+        if (flip) px = widthPx - px;
+        return RoomSceneLayout.Scene.fitsPolygon(scene.walkable, px, y - originY, radius, widthPx, heightPx, true);
+    }
 
     Corridor(Link link, String theme) {
         this.link = link;

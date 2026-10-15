@@ -1,75 +1,724 @@
 {
-  "_note": "방마다 지도 칸(cx, cy) 하나. offsetX/offsetY는 출구 정렬을 위한 타일 단위 이동(기본 0). 그림 방은 scene(natural-room-scenes.json)과 가로 크기 width(타일). 이음은 '방.출구'끼리이고, 이어진 출구 사이에는 걸어서 가는 통로가 자동으로 생긴다 (oneWay 는 통로 없이 옮겨 간다). 이어지지 않은 그림 속 출구는 막힌다.",
+  "_note": "그림을 먼저 배치하고 출입구를 맞춘 맵. origin은 왼쪽 아래 절대 타일 좌표. painted는 자르거나 반복하지 않는 길목 그림 한 장이며, walkable/path는 원본 위에서 직접 잰 경계/중앙선이다. design/painted-map-links/build_layout.py로 재현한다.",
   "slotW": 46,
   "slotH": 28,
-  "minCellX": -3,
-  "maxCellX": 3,
-  "minCellY": -3,
-  "maxCellY": 3,
+  "minCellX": 0,
+  "maxCellX": 12,
+  "minCellY": 0,
+  "maxCellY": 11,
   "campSize": [20, 14],
   "rooms": [
-    { "id": "CAMP", "type": "CAMP", "cx": 0, "cy": 0, "scene": "central-camp", "width": 32 },
-
-    { "id": "L1", "offsetX": 0, "offsetY": -1, "type": "MOB",  "dungeon": "LEFT", "cx": -1, "cy": 0,  "scene": "mine-mob-c",  "width": 32 },
-    { "id": "L2", "offsetX": 0, "offsetY": 3, "type": "ORE",  "dungeon": "LEFT", "cx": -2, "cy": 0,  "scene": "mine-ore-b",  "width": 30, "flip": true },
-    { "id": "L8", "offsetX": -1, "offsetY": 0, "type": "MOB",  "dungeon": "LEFT", "cx": -1, "cy": -1, "scene": "mine-junction", "width": 30,
-      "_note": "GPT 갈림 갱도 후보 그림. 왼쪽 갱도 입구는 막힌 곳" },
-    {"id": "L3", "offsetX": 7, "offsetY": 0, "type": "MOB", "dungeon": "LEFT", "cx": -2, "cy": -1, "scene": "mine", "width": 34, "waves": 2},
-    { "id": "L4", "type": "ORE",  "dungeon": "LEFT", "cx": -3, "cy": 0,  "scene": "mine-ore-a",  "width": 28 },
-    { "id": "L5", "offsetX": -1, "offsetY": 3, "type": "MOB",  "dungeon": "LEFT", "cx": -2, "cy": -2, "scene": "mine-mob-b",  "width": 31, "flip": true },
-    {"id": "L7", "type": "MOB", "dungeon": "LEFT", "cx": -3, "cy": -2, "scene": "mine-antechamber", "width": 30, "waves": 2},
-    { "id": "L6", "offsetX": -2, "offsetY": 0, "type": "BOSS", "dungeon": "LEFT", "cx": -3, "cy": -1, "scene": "mine-boss-a", "width": 39 },
-
-    { "id": "R1", "type": "MOB",  "dungeon": "RIGHT", "cx": 1, "cy": 0,  "scene": "citadel",        "width": 34 },
-    { "id": "R2", "type": "ORE",  "dungeon": "RIGHT", "cx": 1, "cy": -1, "scene": "citadel-ore-b",  "width": 30 },
-    {"id": "R7", "type": "MOB", "dungeon": "RIGHT", "cx": 1, "cy": -2, "scene": "citadel-corner", "width": 30},
-    {"id": "R3", "offsetX": 0, "offsetY": -2, "type": "MOB", "dungeon": "RIGHT", "cx": 2, "cy": -2, "scene": "citadel-mob-c", "width": 30, "waves": 2},
-    {"id": "R4", "offsetX": 0, "offsetY": -2, "type": "ORE", "dungeon": "RIGHT", "cx": 2, "cy": -3, "scene": "citadel-ore-north", "width": 30},
-    {"id": "R5", "type": "MOB", "dungeon": "RIGHT", "cx": 3, "cy": -2, "scene": "citadel-mob-b", "width": 34, "waves": 2},
-    { "id": "R6", "type": "BOSS", "dungeon": "RIGHT", "cx": 3, "cy": -1, "scene": "citadel-boss-a", "width": 39 },
-
-    { "id": "T1", "type": "MOB",  "dungeon": "TOP", "cx": 0,  "cy": 1, "scene": "tower-mob-c",  "width": 34 },
-    { "id": "T2", "offsetX": 1, "offsetY": -1, "type": "ORE",  "dungeon": "TOP", "cx": 1,  "cy": 1, "scene": "tower-ore-b",  "width": 28 },
-    {"id": "T3", "type": "MOB", "dungeon": "TOP", "cx": 1, "cy": 2, "scene": "tower", "width": 34, "waves": 2},
-    { "id": "T4", "type": "ORE",  "dungeon": "TOP", "cx": 1,  "cy": 3, "scene": "tower-ore-a",  "width": 30 },
-    { "id": "T5", "type": "MOB",  "dungeon": "TOP", "cx": 0,  "cy": 2, "scene": "tower-mob-b",  "width": 32 },
-    {"id": "T7", "type": "MOB", "dungeon": "TOP", "cx": -1, "cy": 2, "scene": "tower-antechamber", "width": 30, "waves": 3},
-    { "id": "T6", "offsetX": -1, "offsetY": 0, "type": "BOSS", "dungeon": "TOP", "cx": -1, "cy": 3, "scene": "tower-boss-a", "width": 39 },
-
-    { "id": "V", "type": "VILLAGE", "cx": 0, "cy": -1, "scene": "village", "width": 24,
-      "_note": "던전 밖 마을 (선우 버전). 캠프 아래 계단에서 통로로 나간다. 그림은 임시 (docs/ART_REQUESTS.md)" },
-
-    { "id": "F", "type": "FINAL", "dungeon": "TOP", "cx": -3, "cy": 3, "scene": "seal-hall", "width": 39,
-      "_note": "심연: 캠프 문양에서 떨어져 오고, 아래 계단으로 캠프에 돌아간다" }
+    {
+      "id": "CAMP",
+      "type": "CAMP",
+      "cx": 0,
+      "cy": 0,
+      "scene": "central-camp",
+      "width": 32,
+      "origin": [276, 144]
+    },
+    {
+      "id": "L1",
+      "type": "MOB",
+      "dungeon": "LEFT",
+      "cx": -1,
+      "cy": 0,
+      "scene": "mine-mob-c",
+      "width": 32,
+      "origin": [211.228, 147.96671]
+    },
+    {
+      "id": "L2",
+      "type": "ORE",
+      "dungeon": "LEFT",
+      "cx": -2,
+      "cy": 0,
+      "scene": "mine-ore-b",
+      "width": 30,
+      "flip": true,
+      "origin": [148.808, 157.30253]
+    },
+    {
+      "id": "L8",
+      "type": "MOB",
+      "dungeon": "LEFT",
+      "cx": -1,
+      "cy": -1,
+      "scene": "mine-junction",
+      "width": 30,
+      "_note": "GPT 갈림 갱도 후보 그림. 왼쪽 갱도 입구는 막힌 곳",
+      "origin": [212.778, 102.30925]
+    },
+    {
+      "id": "L3",
+      "type": "MOB",
+      "dungeon": "LEFT",
+      "cx": -2,
+      "cy": -1,
+      "scene": "mine",
+      "width": 34,
+      "waves": 2,
+      "origin": [152.19, 109.45894]
+    },
+    {
+      "id": "L4",
+      "type": "ORE",
+      "dungeon": "LEFT",
+      "cx": -3,
+      "cy": 0,
+      "scene": "mine-ore-a",
+      "width": 28,
+      "origin": [114.552, 142.55348]
+    },
+    {
+      "id": "L5",
+      "type": "MOB",
+      "dungeon": "LEFT",
+      "cx": -2,
+      "cy": -2,
+      "scene": "mine-mob-b",
+      "width": 31,
+      "flip": true,
+      "origin": [147.77, 52.80804]
+    },
+    {
+      "id": "L7",
+      "type": "MOB",
+      "dungeon": "LEFT",
+      "cx": -3,
+      "cy": -2,
+      "scene": "mine-antechamber",
+      "width": 30,
+      "waves": 2,
+      "origin": [84.7, 53.25726]
+    },
+    {
+      "id": "L6",
+      "type": "BOSS",
+      "dungeon": "LEFT",
+      "cx": -3,
+      "cy": -1,
+      "scene": "mine-boss-a",
+      "width": 39,
+      "origin": [77.68, 99.20422]
+    },
+    {
+      "id": "R1",
+      "type": "MOB",
+      "dungeon": "RIGHT",
+      "cx": 1,
+      "cy": 0,
+      "scene": "citadel",
+      "width": 34,
+      "origin": [337.764, 127.38919]
+    },
+    {
+      "id": "R2",
+      "type": "ORE",
+      "dungeon": "RIGHT",
+      "cx": 1,
+      "cy": -1,
+      "scene": "citadel-ore-b",
+      "width": 30,
+      "origin": [338.094, 96.60944]
+    },
+    {
+      "id": "R7",
+      "type": "MOB",
+      "dungeon": "RIGHT",
+      "cx": 1,
+      "cy": -2,
+      "scene": "citadel-corner",
+      "width": 30,
+      "origin": [362.094, 61.18096]
+    },
+    {
+      "id": "R3",
+      "type": "MOB",
+      "dungeon": "RIGHT",
+      "cx": 2,
+      "cy": -2,
+      "scene": "citadel-mob-c",
+      "width": 30,
+      "waves": 2,
+      "origin": [422.754, 47.85127]
+    },
+    {
+      "id": "R4",
+      "type": "ORE",
+      "dungeon": "RIGHT",
+      "cx": 2,
+      "cy": -3,
+      "scene": "citadel-ore-north",
+      "width": 30,
+      "origin": [408.354, 12.25396]
+    },
+    {
+      "id": "R5",
+      "type": "MOB",
+      "dungeon": "RIGHT",
+      "cx": 3,
+      "cy": -2,
+      "scene": "citadel-mob-b",
+      "width": 34,
+      "waves": 2,
+      "origin": [484.054, 36.18184]
+    },
+    {
+      "id": "R6",
+      "type": "BOSS",
+      "dungeon": "RIGHT",
+      "cx": 3,
+      "cy": -1,
+      "scene": "citadel-boss-a",
+      "width": 39,
+      "origin": [506.834, 72.38135]
+    },
+    {
+      "id": "T1",
+      "type": "MOB",
+      "dungeon": "TOP",
+      "cx": 0,
+      "cy": 1,
+      "scene": "tower-mob-c",
+      "width": 34,
+      "origin": [264.916, 189.58114]
+    },
+    {
+      "id": "T2",
+      "type": "ORE",
+      "dungeon": "TOP",
+      "cx": 1,
+      "cy": 1,
+      "scene": "tower-ore-b",
+      "width": 28,
+      "origin": [331.536, 190.96058]
+    },
+    {
+      "id": "T3",
+      "type": "MOB",
+      "dungeon": "TOP",
+      "cx": 1,
+      "cy": 2,
+      "scene": "tower",
+      "width": 34,
+      "waves": 2,
+      "origin": [337.976, 234.39182]
+    },
+    {
+      "id": "T4",
+      "type": "ORE",
+      "dungeon": "TOP",
+      "cx": 1,
+      "cy": 3,
+      "scene": "tower-ore-a",
+      "width": 30,
+      "origin": [350.486, 281.10981]
+    },
+    {
+      "id": "T5",
+      "type": "MOB",
+      "dungeon": "TOP",
+      "cx": 0,
+      "cy": 2,
+      "scene": "tower-mob-b",
+      "width": 32,
+      "origin": [283.896, 254.97726]
+    },
+    {
+      "id": "T7",
+      "type": "MOB",
+      "dungeon": "TOP",
+      "cx": -1,
+      "cy": 2,
+      "scene": "tower-antechamber",
+      "width": 30,
+      "waves": 3,
+      "origin": [222.406, 255.16802]
+    },
+    {
+      "id": "T6",
+      "type": "BOSS",
+      "dungeon": "TOP",
+      "cx": -1,
+      "cy": 3,
+      "scene": "tower-boss-a",
+      "width": 39,
+      "origin": [206.666, 301.25122]
+    },
+    {
+      "id": "V",
+      "type": "VILLAGE",
+      "cx": 0,
+      "cy": -1,
+      "scene": "village",
+      "width": 24,
+      "_note": "던전 밖 마을 (선우 버전). 캠프 아래 계단에서 통로로 나간다. 그림은 임시 (docs/ART_REQUESTS.md)",
+      "origin": [280.696, 94.46959]
+    },
+    {
+      "id": "F",
+      "type": "FINAL",
+      "dungeon": "TOP",
+      "cx": -3,
+      "cy": 3,
+      "scene": "seal-hall",
+      "width": 39,
+      "_note": "심연: 캠프 문양에서 떨어져 오고, 아래 계단으로 캠프에 돌아간다",
+      "origin": [12.68, 244]
+    }
   ],
   "links": [
-    { "a": "CAMP.LEFT", "b": "L1.east", "gate": "LEFT" },
-    { "a": "L1.west", "b": "L2.west2" },
-    { "a": "L1.south", "b": "L8.north" },
-    { "a": "L2.south", "b": "L3.north" },
-    { "a": "L3.rail", "b": "L4.south" },
-    { "a": "L3.south", "b": "L5.north" },
-    { "a": "L5.east", "b": "L7.east" },
-    { "a": "L7.north", "b": "L6.south" },
-
-    { "a": "CAMP.RIGHT", "b": "R1.west", "gate": "RIGHT" },
-    { "a": "R1.south", "b": "R2.west" },
-    { "a": "R2.south", "b": "R7.north" },
-    { "a": "R7.east", "b": "R3.west" },
-    { "a": "R3.south", "b": "R4.north" },
-    { "a": "R3.east", "b": "R5.west" },
-    { "a": "R5.north", "b": "R6.south" },
-
-    { "a": "CAMP.UP", "b": "T1.south", "gate": "TOP" },
-    { "a": "T1.east", "b": "T2.west" },
-    { "a": "T2.north", "b": "T3.south" },
-    { "a": "T3.back", "b": "T4.south" },
-    { "a": "T3.stairs", "b": "T5.east" },
-    { "a": "T5.west", "b": "T7.east" },
-    { "a": "T7.north", "b": "T6.south" },
-
-    { "a": "CAMP.down", "b": "V.north" },
-    { "a": "F.south", "b": "CAMP.down", "oneWay": true,
-      "_note": "심연 계단으로 올라오면 캠프 아래 문 앞에 선다 (내려가는 길은 봉인 문양에서 떨어지는 것뿐)" }
+    {
+      "a": "CAMP.LEFT",
+      "b": "L1.east",
+      "gate": "LEFT",
+      "painted": {
+        "scene": "mine-traverse",
+        "origin": [240.998, 142.0895],
+        "width": 38,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "L1.west",
+      "b": "L2.west2",
+      "painted": {
+        "scene": "mine-traverse",
+        "origin": [175.458, 147.04674],
+        "width": 38,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "L1.south",
+      "b": "L8.north",
+      "painted": {
+        "scene": "mine-descent",
+        "origin": [216.128, 116.3471],
+        "width": 22,
+        "reverse": false,
+        "flip": false
+      }
+    },
+    {
+      "a": "L2.south",
+      "b": "L3.north",
+      "painted": {
+        "scene": "mine-descent",
+        "origin": [159.188, 125.63789],
+        "width": 22,
+        "reverse": false,
+        "flip": true
+      }
+    },
+    {
+      "a": "L3.rail",
+      "b": "L4.south",
+      "painted": {
+        "scene": "mine-rail-bend",
+        "origin": [123.872, 123.29634],
+        "width": 36,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "L3.south",
+      "b": "L5.north",
+      "painted": {
+        "scene": "mine-descent",
+        "origin": [154.83, 68.13354],
+        "width": 30,
+        "reverse": false,
+        "flip": false
+      }
+    },
+    {
+      "a": "L5.east",
+      "b": "L7.east",
+      "painted": {
+        "scene": "mine-traverse",
+        "origin": [112.58, 45.61849],
+        "width": 38,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "L7.north",
+      "b": "L6.south",
+      "painted": {
+        "scene": "mine-descent",
+        "origin": [86.4, 67.96167],
+        "width": 22,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "CAMP.RIGHT",
+      "b": "R1.west",
+      "gate": "RIGHT",
+      "painted": {
+        "scene": "citadel-crossing",
+        "origin": [305.724, 135.28697],
+        "width": 36,
+        "reverse": false,
+        "flip": false
+      }
+    },
+    {
+      "a": "R1.south",
+      "b": "R2.west",
+      "painted": {
+        "scene": "citadel-gallery",
+        "origin": [332.704, 109.07676],
+        "width": 32,
+        "reverse": false,
+        "flip": false
+      }
+    },
+    {
+      "a": "R2.south",
+      "b": "R7.north",
+      "painted": {
+        "scene": "citadel-gallery",
+        "origin": [353.694, 76.65364],
+        "width": 32,
+        "reverse": false,
+        "flip": true
+      }
+    },
+    {
+      "a": "R7.east",
+      "b": "R3.west",
+      "painted": {
+        "scene": "citadel-crossing",
+        "origin": [389.154, 53.75675],
+        "width": 36,
+        "reverse": false,
+        "flip": false
+      }
+    },
+    {
+      "a": "R3.south",
+      "b": "R4.north",
+      "painted": {
+        "scene": "citadel-gallery",
+        "origin": [415.054, 27.72663],
+        "width": 32,
+        "reverse": false,
+        "flip": false
+      }
+    },
+    {
+      "a": "R3.east",
+      "b": "R5.west",
+      "painted": {
+        "scene": "citadel-crossing",
+        "origin": [450.654, 41.01799],
+        "width": 36,
+        "reverse": false,
+        "flip": false
+      }
+    },
+    {
+      "a": "R5.north",
+      "b": "R6.south",
+      "painted": {
+        "scene": "citadel-gallery",
+        "origin": [503.934, 52.6788],
+        "width": 32,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "CAMP.UP",
+      "b": "T1.south",
+      "gate": "TOP",
+      "painted": {
+        "scene": "tower-ascent",
+        "origin": [275.316, 158.19789],
+        "width": 22,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "T1.east",
+      "b": "T2.west",
+      "painted": {
+        "scene": "tower-bridge",
+        "origin": [296.996, 184.51428],
+        "width": 36,
+        "reverse": false,
+        "flip": false
+      }
+    },
+    {
+      "a": "T2.north",
+      "b": "T3.south",
+      "painted": {
+        "scene": "tower-ascent",
+        "origin": [339.916, 205.11345],
+        "width": 22,
+        "reverse": true,
+        "flip": true
+      }
+    },
+    {
+      "a": "T3.back",
+      "b": "T4.south",
+      "painted": {
+        "scene": "tower-ascent",
+        "origin": [350.086, 249.61401],
+        "width": 22,
+        "reverse": true,
+        "flip": true
+      }
+    },
+    {
+      "a": "T3.stairs",
+      "b": "T5.east",
+      "painted": {
+        "scene": "tower-stair-bend",
+        "origin": [313.876, 247.95956],
+        "width": 36,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "T5.west",
+      "b": "T7.east",
+      "painted": {
+        "scene": "tower-bridge",
+        "origin": [249.916, 249.18381],
+        "width": 36,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "T7.north",
+      "b": "T6.south",
+      "painted": {
+        "scene": "tower-ascent",
+        "origin": [219.566, 270.00751],
+        "width": 22,
+        "reverse": true,
+        "flip": false
+      }
+    },
+    {
+      "a": "CAMP.down",
+      "b": "V.north",
+      "painted": {
+        "scene": "camp-trail",
+        "origin": [281.476, 113.40984],
+        "width": 22,
+        "reverse": false,
+        "flip": false
+      }
+    },
+    {
+      "a": "F.south",
+      "b": "CAMP.down",
+      "oneWay": true,
+      "_note": "심연 계단으로 올라오면 캠프 아래 문 앞에 선다 (내려가는 길은 봉인 문양에서 떨어지는 것뿐)"
+    }
+  ],
+  "passageScenes": [
+    {
+      "id": "citadel-gallery",
+      "image": "scenes/links-v2/citadel-gallery.png",
+      "pixelWidth": 1536,
+      "pixelHeight": 1024,
+      "walkable": [0.656, 0, 0.762, 0, 0.762, 0.15, 0.79, 0.23, 0.77, 0.31, 0.7, 0.38, 0.6, 0.44, 0.49, 0.49, 0.4, 0.56, 0.36, 0.62, 0.3, 0.7, 0.276, 0.8, 0.28, 0.9, 0.306, 1, 0.194, 1, 0.184, 0.91, 0.175, 0.82, 0.16, 0.77, 0.19, 0.68, 0.24, 0.61, 0.245, 0.54, 0.3, 0.47, 0.4, 0.41, 0.52, 0.35, 0.61, 0.28, 0.635, 0.2, 0.656, 0.13],
+      "path": [
+        [0.7, 0.025],
+        [0.7, 0.13],
+        [0.69, 0.23],
+        [0.64, 0.32],
+        [0.54, 0.4],
+        [0.43, 0.47],
+        [0.34, 0.55],
+        [0.28, 0.65],
+        [0.23, 0.77],
+        [0.23, 0.86],
+        [0.25, 0.975]
+      ]
+    },
+    {
+      "id": "citadel-crossing",
+      "image": "scenes/links-v2/citadel-crossing.png",
+      "pixelWidth": 1659,
+      "pixelHeight": 948,
+      "walkable": [0, 0.14, 0.12, 0.2, 0.24, 0.27, 0.37, 0.36, 0.49, 0.43, 0.6, 0.43, 0.7, 0.49, 0.82, 0.58, 1, 0.7, 1, 0.84, 0.88, 0.8, 0.76, 0.71, 0.64, 0.62, 0.53, 0.6, 0.4, 0.54, 0.26, 0.45, 0.14, 0.36, 0, 0.25],
+      "path": [
+        [0.025, 0.2],
+        [0.13, 0.27],
+        [0.25, 0.35],
+        [0.38, 0.43],
+        [0.51, 0.49],
+        [0.62, 0.51],
+        [0.72, 0.57],
+        [0.83, 0.66],
+        [0.975, 0.77]
+      ]
+    },
+    {
+      "id": "mine-traverse",
+      "image": "scenes/links-v2/mine-traverse.png",
+      "pixelWidth": 1659,
+      "pixelHeight": 948,
+      "walkable": [0, 0.19, 0.1, 0.25, 0.22, 0.33, 0.35, 0.4, 0.45, 0.43, 0.46, 0.31, 0.49, 0.28, 0.52, 0.33, 0.56, 0.38, 0.6, 0.4, 0.56, 0.45, 0.6, 0.49, 0.7, 0.55, 0.8, 0.48, 0.9, 0.43, 1, 0.4, 1, 0.53, 0.91, 0.57, 0.82, 0.66, 0.7, 0.76, 0.61, 0.74, 0.48, 0.65, 0.35, 0.58, 0.24, 0.5, 0.12, 0.4, 0, 0.28],
+      "path": [
+        [0.025, 0.24],
+        [0.12, 0.32],
+        [0.23, 0.4],
+        [0.36, 0.47],
+        [0.5, 0.55],
+        [0.63, 0.63],
+        [0.71, 0.62],
+        [0.81, 0.56],
+        [0.9, 0.49],
+        [0.975, 0.46]
+      ]
+    },
+    {
+      "id": "mine-descent",
+      "image": "scenes/links-v2/mine-descent.png",
+      "pixelWidth": 1024,
+      "pixelHeight": 1536,
+      "walkable": [0.37, 0, 0.6, 0, 0.66, 0.08, 0.65, 0.15, 0.56, 0.22, 0.52, 0.27, 0.57, 0.31, 0.71, 0.36, 0.78, 0.41, 0.76, 0.47, 0.67, 0.53, 0.55, 0.58, 0.5, 0.63, 0.5, 0.68, 0.59, 0.72, 0.7, 0.77, 0.7, 0.84, 0.65, 0.91, 0.65, 1, 0.44, 1, 0.44, 0.9, 0.47, 0.83, 0.45, 0.8, 0.34, 0.75, 0.29, 0.7, 0.28, 0.63, 0.3, 0.57, 0.38, 0.51, 0.5, 0.46, 0.55, 0.42, 0.48, 0.39, 0.35, 0.35, 0.29, 0.3, 0.3, 0.24, 0.4, 0.17, 0.46, 0.11, 0.42, 0.06],
+      "path": [
+        [0.49, 0.02],
+        [0.57, 0.09],
+        [0.54, 0.17],
+        [0.42, 0.24],
+        [0.4, 0.29],
+        [0.49, 0.35],
+        [0.63, 0.4],
+        [0.66, 0.44],
+        [0.59, 0.49],
+        [0.47, 0.54],
+        [0.39, 0.61],
+        [0.39, 0.68],
+        [0.49, 0.74],
+        [0.59, 0.8],
+        [0.58, 0.87],
+        [0.55, 0.98]
+      ]
+    },
+    {
+      "id": "mine-rail-bend",
+      "image": "scenes/links-v2/mine-rail-bend.png",
+      "pixelWidth": 1660,
+      "pixelHeight": 948,
+      "walkable": [0.075, 0, 0.19, 0, 0.23, 0.12, 0.28, 0.2, 0.39, 0.26, 0.51, 0.32, 0.62, 0.4, 0.72, 0.49, 0.81, 0.64, 0.89, 0.79, 1, 0.96, 1, 1, 0.85, 1, 0.78, 0.89, 0.69, 0.77, 0.6, 0.64, 0.51, 0.55, 0.43, 0.48, 0.31, 0.42, 0.22, 0.36, 0.13, 0.26, 0.09, 0.15],
+      "path": [
+        [0.13, 0.025],
+        [0.16, 0.14],
+        [0.22, 0.24],
+        [0.32, 0.31],
+        [0.45, 0.38],
+        [0.56, 0.46],
+        [0.65, 0.56],
+        [0.74, 0.7],
+        [0.83, 0.84],
+        [0.916, 0.975]
+      ]
+    },
+    {
+      "id": "tower-bridge",
+      "image": "scenes/links-v2/tower-bridge.png",
+      "pixelWidth": 1659,
+      "pixelHeight": 948,
+      "walkable": [0, 0.2, 0.13, 0.28, 0.26, 0.36, 0.38, 0.41, 0.47, 0.36, 0.57, 0.37, 0.65, 0.38, 0.76, 0.31, 0.88, 0.23, 1, 0.17, 1, 0.32, 0.88, 0.4, 0.75, 0.48, 0.64, 0.55, 0.54, 0.62, 0.41, 0.63, 0.28, 0.57, 0.14, 0.47, 0, 0.35],
+      "path": [
+        [0.025, 0.27],
+        [0.15, 0.37],
+        [0.28, 0.46],
+        [0.4, 0.5],
+        [0.51, 0.49],
+        [0.64, 0.46],
+        [0.77, 0.39],
+        [0.89, 0.31],
+        [0.975, 0.25]
+      ]
+    },
+    {
+      "id": "tower-ascent",
+      "image": "scenes/links-v2/tower-ascent.png",
+      "pixelWidth": 1024,
+      "pixelHeight": 1536,
+      "walkable": [0.225, 0, 0.375, 0, 0.4, 0.06, 0.48, 0.1, 0.55, 0.14, 0.59, 0.2, 0.65, 0.25, 0.68, 0.3, 0.65, 0.35, 0.58, 0.39, 0.49, 0.42, 0.48, 0.47, 0.49, 0.51, 0.58, 0.56, 0.68, 0.6, 0.74, 0.66, 0.76, 0.73, 0.79, 0.8, 0.83, 0.87, 0.9, 1, 0.61, 1, 0.61, 0.9, 0.6, 0.84, 0.57, 0.77, 0.54, 0.72, 0.51, 0.67, 0.45, 0.63, 0.36, 0.59, 0.3, 0.54, 0.28, 0.48, 0.29, 0.42, 0.32, 0.38, 0.39, 0.35, 0.46, 0.32, 0.48, 0.28, 0.46, 0.23, 0.42, 0.19, 0.35, 0.15, 0.28, 0.11, 0.24, 0.07],
+      "path": [
+        [0.3, 0.02],
+        [0.33, 0.08],
+        [0.43, 0.13],
+        [0.51, 0.18],
+        [0.55, 0.25],
+        [0.58, 0.3],
+        [0.56, 0.34],
+        [0.48, 0.38],
+        [0.4, 0.42],
+        [0.39, 0.49],
+        [0.43, 0.54],
+        [0.53, 0.59],
+        [0.61, 0.64],
+        [0.65, 0.7],
+        [0.69, 0.78],
+        [0.73, 0.86],
+        [0.77, 0.98]
+      ]
+    },
+    {
+      "id": "tower-stair-bend",
+      "image": "scenes/links-v2/tower-stair-bend.png",
+      "pixelWidth": 1660,
+      "pixelHeight": 948,
+      "walkable": [0, 0.14, 0.13, 0.17, 0.26, 0.23, 0.39, 0.29, 0.48, 0.37, 0.54, 0.46, 0.61, 0.57, 0.69, 0.7, 0.75, 0.8, 0.82, 1, 0.68, 1, 0.62, 0.86, 0.57, 0.78, 0.5, 0.66, 0.45, 0.56, 0.39, 0.48, 0.34, 0.43, 0.24, 0.38, 0.12, 0.29, 0, 0.24],
+      "path": [
+        [0.025, 0.19],
+        [0.15, 0.23],
+        [0.28, 0.3],
+        [0.4, 0.36],
+        [0.49, 0.47],
+        [0.56, 0.59],
+        [0.64, 0.73],
+        [0.7, 0.85],
+        [0.728, 0.92]
+      ]
+    },
+    {
+      "id": "camp-trail",
+      "image": "scenes/links-v2/camp-trail.png",
+      "pixelWidth": 1024,
+      "pixelHeight": 1536,
+      "walkable": [0.415, 0, 0.575, 0, 0.58, 0.1, 0.64, 0.16, 0.75, 0.23, 0.75, 0.28, 0.67, 0.34, 0.56, 0.41, 0.5, 0.46, 0.5, 0.49, 0.59, 0.53, 0.71, 0.59, 0.72, 0.66, 0.65, 0.73, 0.59, 0.78, 0.57, 0.82, 0.6, 0.89, 0.63, 1, 0.39, 1, 0.38, 0.91, 0.33, 0.84, 0.34, 0.77, 0.43, 0.71, 0.47, 0.65, 0.44, 0.61, 0.32, 0.56, 0.27, 0.51, 0.28, 0.44, 0.37, 0.37, 0.49, 0.3, 0.54, 0.26, 0.53, 0.23, 0.45, 0.18, 0.4, 0.12],
+      "path": [
+        [0.49, 0.025],
+        [0.49, 0.11],
+        [0.55, 0.18],
+        [0.64, 0.25],
+        [0.59, 0.31],
+        [0.48, 0.37],
+        [0.39, 0.44],
+        [0.39, 0.5],
+        [0.49, 0.55],
+        [0.59, 0.62],
+        [0.58, 0.69],
+        [0.49, 0.75],
+        [0.46, 0.81],
+        [0.5, 0.89],
+        [0.51, 0.975]
+      ]
+    }
   ]
 }

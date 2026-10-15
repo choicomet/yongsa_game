@@ -515,8 +515,7 @@ public class Hud {
 
     /** 통로에 있을 때 위쪽 이름: 이어진 던전, 캠프와 마을 사이면 마을 가는 길. */
     private String corridorZone() {
-        int T = g.balance.tileSize;
-        Corridor c = g.map.corridorAt((int) Math.floor(g.hero.x / T), (int) Math.floor(g.hero.y / T));
+        Corridor c = g.map.corridorAtWorld(g.hero.x, g.hero.y);
         if (c == null) return "던전 입구";
         if (c.link.a.type == RoomType.VILLAGE || c.link.b.type == RoomType.VILLAGE) return g.balance.village.name + " 가는 길";
         if ("CAMP".equals(c.theme)) return "용사의 캠프";

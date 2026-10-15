@@ -13,14 +13,14 @@ import java.util.PriorityQueue;
 
 /**
  * 캠프와 던전 3개가 들어 있는 통합 맵 하나 (FR-맵-03, 04).
- * 방은 지도 칸 하나의 가운데에 놓이고, 이어진 방끼리는 출구(그림 속 계단·갱도 입구)에서 나가는
- * 3칸 폭 통로로 걸어서 오간다. 통로가 없는 이음(심연 계단)만 지나가면 짝 문 앞으로 옮겨 간다.
- * 캠프와 던전 방은 배경 그림 한 장이고 그림의 바닥 경계(다각형)가 벽이다.
+ * 방과 길목은 각각 완성된 그림 한 장이며, 그림의 바닥 경계(다각형)가 이동 경계다.
+ * 출구 위치에 맞춰 장면을 연결한다. 통로가 없는 이음(심연 계단)만 짝 문 앞으로 옮겨 간다.
+ * 예전 JSON에는 지도 칸 배치와 자동 타일 통로를 지원한다.
  */
 public class WorldMap {
     public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3, CORRIDOR = 4;
     /** 방 배치가 바뀌면 올린다. 저장 파일의 방 기록(광맥 자리)·이어하기 위치가 다르면 버린다. */
-    public static final int VERSION = 7;
+    public static final int VERSION = 8;
 
     public final int width, height;
     public final int tileSize;
@@ -141,6 +141,10 @@ public class WorldMap {
         float w = rd.width * T, h = sc.height(w);
         float ox = Math.round((ox(rd.cx) + rd.offsetX) * T + (def.slotW * T - w) / 2f);
         float oy = Math.round((oy(rd.cy) + rd.offsetY) * T + (def.slotH * T - h) / 2f);
+        if (rd.origin != null) {
+            ox = rd.origin[0] * T;
+            oy = rd.origin[1] * T;
+        }
         int x0 = (int) Math.floor(ox / T), x1 = (int) Math.ceil((ox + w) / T) - 1;
         int y0 = (int) Math.floor(oy / T), y1 = (int) Math.ceil((oy + h) / T) - 1;
         Room room = new Room(rd.id, RoomType.valueOf(rd.type), rd.dungeon, rd.cx, rd.cy, x0, y0, x1, y1,
@@ -271,6 +275,10 @@ public class WorldMap {
      * 다른 방과 이미 판 통로를 비켜 꺾임이 적은 길로 짝 출구 앞까지 간다.
      */
     private void buildCorridors() {
+        if (def.passageScenes != null && !def.passageScenes.isEmpty()) {
+            buildPaintedCorridors();
+            return;
+        }
         List<Link> todo = new ArrayList<>();
         for (Link l : links)
             if (!l.oneWay && l.doorA.room.scene != null && l.doorB.room.scene != null) todo.add(l);
@@ -324,6 +332,80 @@ public class WorldMap {
                 }
             }
         }
+    }
+
+    /** 완성된 그림을 그대로 놓고, 그 그림의 바닥 다각형에서 지도 칸을 만든다. */
+    private void buildPaintedCorridors() {
+        Map<String, MapDef.PassageScene> art = new HashMap<>();
+        for (MapDef.PassageScene s : def.passageScenes) {
+            if (s.id == null || s.image == null || s.pixelWidth <= 0 || s.pixelHeight <= 0
+                    || s.walkable == null || s.walkable.length < 6 || s.walkable.length % 2 != 0
+                    || s.path == null || s.path.size() < 2 || art.put(s.id, s) != null)
+                throw new IllegalArgumentException("Invalid passage scene: " + s.id);
+            for (float v : s.walkable) normalized(v);
+            for (float[] p : s.path) {
+                if (p == null || p.length != 2) throw new IllegalArgumentException("Invalid passage anchor: " + s.id);
+                normalized(p[0]); normalized(p[1]);
+            }
+        }
+        for (int i = 0; i < links.size(); i++) {
+            Link l = links.get(i);
+            if (l.oneWay) continue;
+            MapDef.PassagePlacement p = def.links.get(i).painted;
+            if (p == null || !art.containsKey(p.scene) || p.origin == null || p.origin.length != 2
+                    || !Float.isFinite(p.origin[0]) || !Float.isFinite(p.origin[1])
+                    || !Float.isFinite(p.width) || p.width <= 0)
+                throw new IllegalArgumentException("Missing/invalid painted passage: " + def.links.get(i).a);
+            String theme = l.a.dungeonId != null ? l.a.dungeonId : l.b.dungeonId != null ? l.b.dungeonId : "CAMP";
+            Corridor c = new Corridor(l, theme);
+            c.scene = art.get(p.scene);
+            c.originX = p.origin[0] * tileSize; c.originY = p.origin[1] * tileSize;
+            c.widthPx = p.width * tileSize; c.heightPx = c.widthPx * c.scene.pixelHeight / c.scene.pixelWidth;
+            c.flip = p.flip;
+            for (float[] point : c.scene.path) c.centerline.add(new float[]{c.sceneX(point[0]), c.sceneY(point[1])});
+            if (p.reverse) Collections.reverse(c.centerline);
+            float[] first = c.centerline.get(0), last = c.centerline.get(c.centerline.size() - 1);
+            if (Math.hypot(first[0] - l.doorA.footX, first[1] - l.doorA.footY) > 1
+                    || Math.hypot(last[0] - l.doorB.footX, last[1] - l.doorB.footY) > 1)
+                throw new IllegalArgumentException("Passage exits do not meet room exits: " + c.key());
+            // Legacy debug views use a tile centerline. Actual movement uses the floor polygon.
+            for (int k = 1; k < c.centerline.size(); k++) {
+                float[] a = c.centerline.get(k - 1), b = c.centerline.get(k);
+                int steps = Math.max(1, (int) Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / (tileSize / 2f)));
+                for (int j = 0; j <= steps; j++) {
+                    int x = (int) Math.floor((a[0] + (b[0] - a[0]) * j / steps) / tileSize);
+                    int y = (int) Math.floor((a[1] + (b[1] - a[1]) * j / steps) / tileSize);
+                    if (c.path.isEmpty() || c.path.get(c.path.size() - 1)[0] != x || c.path.get(c.path.size() - 1)[1] != y)
+                        c.path.add(new int[]{x, y});
+                }
+            }
+            int x0 = (int) Math.floor(c.originX / tileSize), y0 = (int) Math.floor(c.originY / tileSize);
+            int x1 = (int) Math.ceil((c.originX + c.widthPx) / tileSize), y1 = (int) Math.ceil((c.originY + c.heightPx) / tileSize);
+            if (x0 < 0 || y0 < 0 || x1 > width || y1 > height)
+                throw new IllegalArgumentException("Passage outside map: " + c.key());
+            for (int y = y0; y < y1; y++) for (int x = x0; x < x1; x++) {
+                if (!c.allowsFoot((x + .5f) * tileSize, (y + .5f) * tileSize, 0)) continue;
+                Room r = roomAt(x, y);
+                if (r != null && r != l.a && r != l.b)
+                    throw new IllegalArgumentException("Passage crosses unrelated room: " + c.key() + " / " + r.id);
+                if (corridorAt[idx(x, y)] != null)
+                    throw new IllegalArgumentException("Painted passages overlap: " + c.key());
+                if (r != null && r.floor(x, y)) continue;
+                set(x, y, CORRIDOR);
+                corridorAt[idx(x, y)] = c;
+                c.tiles.add(new int[]{x, y});
+            }
+            l.corridor = c;
+            // Walking passages start at the painted lip; unlike teleport stubs,
+            // their first curve need not extend straight beyond that point.
+            l.doorA.triggerDepth = Math.min(0, l.doorA.triggerDepth);
+            l.doorB.triggerDepth = Math.min(0, l.doorB.triggerDepth);
+            corridors.add(c);
+        }
+    }
+
+    private static void normalized(float v) {
+        if (!Float.isFinite(v) || v < 0 || v > 1) throw new IllegalArgumentException("Invalid passage coordinate");
     }
 
     private static int dirIndex(Door.Side side) {
@@ -441,6 +523,16 @@ public class WorldMap {
         return inBounds(x, y) ? corridorAt[idx(x, y)] : null;
     }
 
+    /** 바닥 가장자리도 정확히 찾는다. 칸 가운데가 벽이어도 그 칸 일부는 길일 수 있다. */
+    public Corridor corridorAtWorld(float x, float y) {
+        for (Corridor c : corridors) {
+            if (c.scene != null && x >= c.originX && x <= c.originX + c.widthPx
+                    && y >= c.originY && y <= c.originY + c.heightPx && c.allowsFoot(x, y, 0)) return c;
+        }
+        Corridor c = corridorAt((int) Math.floor(x / tileSize), (int) Math.floor(y / tileSize));
+        return c != null && c.scene == null ? c : null;
+    }
+
     /** 통로 바닥 칸인가. */
     public boolean corridor(int x, int y) {
         return tile(x, y) == CORRIDOR;
@@ -546,6 +638,7 @@ public class WorldMap {
      * 그림 방에서는 바닥 경계 다각형으로 정확히 보고, 닫힌 출구와 광맥 칸도 막는다.
      */
     public boolean free(float x, float y, float hw, float hh) {
+        if (def.passageScenes != null && !def.passageScenes.isEmpty()) return paintedFree(x, y, hw, hh);
         int T = tileSize;
         int tx0 = (int) Math.floor((x - hw) / T), tx1 = (int) Math.floor((x + hw - 0.01f) / T);
         int ty0 = (int) Math.floor((y - hh) / T), ty1 = (int) Math.floor((y + hh - 0.01f) / T);
@@ -563,6 +656,40 @@ public class WorldMap {
             for (int tx = tx0; tx <= tx1; tx++)
                 if (solid(tx, ty)) return false;
         return true;
+    }
+
+    private boolean paintedFree(float x, float y, float hw, float hh) {
+        if (!Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(hw) || !Float.isFinite(hh) || hw < 0 || hh < 0) return false;
+        float radius = Math.max(hw, hh);
+        int tx0 = (int) Math.floor((x - hw) / tileSize), tx1 = (int) Math.floor((x + hw) / tileSize);
+        int ty0 = (int) Math.floor((y - hh) / tileSize), ty1 = (int) Math.floor((y + hh) / tileSize);
+        for (int ty = ty0; ty <= ty1; ty++) for (int tx = tx0; tx <= tx1; tx++)
+            if (isBlockedOverlay(tx, ty)) return false;
+        Room r = roomAt((int) Math.floor(x / tileSize), (int) Math.floor(y / tileSize));
+        if (r != null) for (Door d : r.doors) if (d.isClosed() && d.blocks(x, y, radius)) return false;
+        if (r != null && r.allowsFoot(x, y, radius)) return true;
+        for (Corridor c : corridors) {
+            if (x + radius < c.originX || x - radius > c.originX + c.widthPx
+                    || y + radius < c.originY || y - radius > c.originY + c.heightPx || c.closed()) continue;
+            if (c.allowsFoot(x, y, radius)) return true;
+            // At a doorway the foot straddles two polygons. Check their union only
+            // in that small overlap; never let the coarse minimap cells open a wall.
+            Door d = null;
+            for (Door end : new Door[]{c.link.doorA, c.link.doorB})
+                if (Math.hypot(x - end.footX, y - end.footY) < 2 * tileSize) { d = end; break; }
+            if (d == null || !onJoinedFloor(c, d.room, x, y)) continue;
+            boolean fits = true;
+            for (int i = 0; i < 32 && fits; i++) {
+                double angle = i * Math.PI / 16;
+                fits = onJoinedFloor(c, d.room, x + radius * (float) Math.cos(angle), y + radius * (float) Math.sin(angle));
+            }
+            if (fits) return true;
+        }
+        return false;
+    }
+
+    private static boolean onJoinedFloor(Corridor c, Room r, float x, float y) {
+        return r.allowsFoot(x, y, 0) || c.allowsFoot(x, y, 0);
     }
 
     /**

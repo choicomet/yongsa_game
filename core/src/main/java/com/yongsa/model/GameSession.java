@@ -126,12 +126,11 @@ public class GameSession {
         } else {
             hero.x = state.resumeX;
             hero.y = state.resumeY;
-            boolean onMap = map.roomAt(tileX(hero.x), tileY(hero.y)) != null || map.corridor(tileX(hero.x), tileY(hero.y));
-            if (!onMap || !Physics.free(map, hero.x, hero.y, hero, T)) placeAtCampSpawn();
+            if (!Physics.free(map, hero.x, hero.y, hero, T)) placeAtCampSpawn();
         }
         if (state.hp <= 0) state.hp = rules.maxHp(state);
         heroRoom = map.roomAt(tileX(hero.x), tileY(hero.y));
-        Corridor cor = map.corridorAt(tileX(hero.x), tileY(hero.y));
+        Corridor cor = map.corridorAtWorld(hero.x, hero.y);
         currentRoom = heroRoom != null ? heroRoom : cor != null ? cor.link.a : map.room("CAMP");
         if (heroRoom != null) {
             Door d = nearestDoor(heroRoom);
@@ -660,7 +659,7 @@ public class GameSession {
     // ───────────────────────── 방
 
     private void updateRooms() {
-        com.yongsa.world.Corridor walking = map.corridorAt(tileX(hero.x), tileY(hero.y));
+        com.yongsa.world.Corridor walking = map.corridorAtWorld(hero.x, hero.y);
         if (walking != null && !state.seenCorridors.contains(walking.key())) state.seenCorridors.add(walking.key());
         Room r = map.roomAt(tileX(hero.x), tileY(hero.y));
         if (r != heroRoom) {

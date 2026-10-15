@@ -241,9 +241,9 @@ class GameSessionTest {
     }
 
     @Test
-    void versionSixSaveKeepsProgressButDropsStaleWorldCoordinates() {
+    void previousMapSaveKeepsProgressButDropsStaleWorldCoordinates() {
         GameState s = NewGame.create(b);
-        s.mapVersion = 6;
+        s.mapVersion = com.yongsa.world.WorldMap.VERSION - 1;
         s.resumeX = 1000; s.resumeY = 1000;
         s.potionDrops.add(new float[]{1000, 1000});
         s.bossesDefeated.add("LEFT");

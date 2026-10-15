@@ -640,8 +640,8 @@ public class WorldRenderer implements Disposable {
 
         // 방 분위기에 맞춰 바탕 밝기를 천천히 바꾼다 (통로는 조금 더 어둡다)
         Color target = ambientFor(room);
-        if (hr == null && map.corridor((int) Math.floor(g.hero.x / T), (int) Math.floor(g.hero.y / T)))
-            target = corridorAmbient(map.corridorAt((int) Math.floor(g.hero.x / T), (int) Math.floor(g.hero.y / T)).theme);
+        com.yongsa.world.Corridor walking = map.corridorAtWorld(g.hero.x, g.hero.y);
+        if (hr == null && walking != null) target = corridorAmbient(walking.theme);
         if (!ambientSet) {
             ambient.set(target);
             ambientSet = true;
@@ -1016,16 +1016,17 @@ public class WorldRenderer implements Disposable {
     }
 
     private Texture frontTexture(Room r) {
-        String key = r.scene.image.replace(".png", "-front.png");
+        String file = r.scene.image.replace(".png", "-front.png");
+        String key = r.id + ":" + file; // 출구 혼합 마스크는 방 배치마다 다르다.
         if (frontTex.containsKey(key)) {
             sceneUsed.put(key, time);
             return frontTex.get(key);
         }
         Texture t = null;
-        if (Gdx.files.internal(key).exists()) {
-            com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(key));
+        if (Gdx.files.internal(file).exists()) {
+            com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(file));
             eraseWalkable(p, r.scene.walkable);
-            if (passages.active) p = PassagePainter.featherEdges(p);
+            if (passages.active) p = passages.joinRoom(p, r);
             t = new Texture(p);
             t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
             p.dispose();
@@ -1060,17 +1061,18 @@ public class WorldRenderer implements Disposable {
     }
 
     private Texture sceneTexture(Room r) {
-        String key = r.scene.image;
+        String file = r.scene.image;
+        String key = r.id + ":" + file;
         sceneUsed.put(key, time);
         Texture t = sceneTex.get(key);
         if (t == null) {
             if (passages.active) {
                 // 방 그림 가장자리를 흐려서 둘레의 땅·길 그림과 이어지게 한다
-                com.badlogic.gdx.graphics.Pixmap p = PassagePainter.featherEdges(new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(key)));
+                com.badlogic.gdx.graphics.Pixmap p = passages.joinRoom(new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(file)), r);
                 t = new Texture(p, true);
                 p.dispose();
             } else {
-                t = new Texture(Gdx.files.internal(key), true);
+                t = new Texture(Gdx.files.internal(file), true);
             }
             t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
             sceneTex.put(key, t);

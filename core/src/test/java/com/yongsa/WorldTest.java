@@ -136,7 +136,8 @@ class WorldTest {
                 }
                 Door to = d.partner();
                 assertTrue(Math.hypot(to.arriveX - pos[0], to.arriveY - pos[1]) < 4,
-                        d.room.id + "." + d.name + " 에서 통로를 따라 " + to.room.id + " 까지 걸어간다");
+                        d.room.id + "." + d.name + " 에서 통로를 따라 " + to.room.id + " 까지 걸어간다: "
+                                + java.util.Arrays.toString(pos) + " → " + to.arriveX + ", " + to.arriveY);
             }
         }
         while (!queue.isEmpty()) {

@@ -62,7 +62,10 @@ public final class TestData {
         List<int[]> p = new ArrayList<>(c.path);
         if (d == d.link.doorB) Collections.reverse(p);
         List<float[]> w = new ArrayList<>();
-        for (int[] t : p) w.add(new float[]{(t[0] + 0.5f) * tileSize, (t[1] + 0.5f) * tileSize});
+        if (!c.centerline.isEmpty()) {
+            w.addAll(c.centerline);
+            if (d == d.link.doorB) Collections.reverse(w);
+        } else for (int[] t : p) w.add(new float[]{(t[0] + 0.5f) * tileSize, (t[1] + 0.5f) * tileSize});
         Door to = d.partner();
         w.add(new float[]{to.arriveX, to.arriveY});
         return w;
