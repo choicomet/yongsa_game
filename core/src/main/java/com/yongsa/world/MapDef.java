@@ -25,6 +25,8 @@ public class MapDef {
     public static class RoomDef {
         public String id, type, dungeon;
         public int cx, cy;
+        /** 칸 중심에서 이동할 타일 수. 출구 높이를 맞추며 기본값은 0. */
+        public int offsetX, offsetY;
         /** natural-room-scenes.json 의 장면 id. 없으면 타일 방 (캠프). */
         public String scene;
         /** 그림의 가로 크기 (타일). */

@@ -241,6 +241,25 @@ class GameSessionTest {
     }
 
     @Test
+    void versionSixSaveKeepsProgressButDropsStaleWorldCoordinates() {
+        GameState s = NewGame.create(b);
+        s.mapVersion = 6;
+        s.resumeX = 1000; s.resumeY = 1000;
+        s.potionDrops.add(new float[]{1000, 1000});
+        s.bossesDefeated.add("LEFT");
+        s.addOre(com.yongsa.model.OreType.BLACKIRON, 7);
+        int ore = s.ore(com.yongsa.model.OreType.BLACKIRON), weapons = s.weapons.size();
+        s.room("L1").cleared = true;
+        GameSession g = session(s);
+        assertTrue(g.inCamp());
+        assertTrue(s.potionDrops.isEmpty());
+        assertEquals(ore, s.ore(com.yongsa.model.OreType.BLACKIRON));
+        assertEquals(weapons, s.weapons.size());
+        assertTrue(s.bossDefeated("LEFT"));
+        assertTrue(s.room("L1").cleared);
+    }
+
+    @Test
     void rollMovesFasterThanWalkingAndGivesInvulnerability() {
         GameState s = NewGame.create(b);
         GameSession g = session(s);

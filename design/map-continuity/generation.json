@@ -1,0 +1,30 @@
+[
+  {
+    "asset": "assets/scenes/passages/terrain-bedrock.png",
+    "prompt": "Create one square 1024x1024 seamless repeating terrain texture for an actual top-down 2.5D painted pixel-art game. Reference image establishes brushwork and color ONLY. This tile fills inaccessible solid terrain OUTSIDE dungeon rooms. Material: dark charcoal BLUE-GRAY rugged rock mass, occasional muted warm brown dust in tiny cracks. Edge-to-edge continuous SOLID BEDROCK, low contrast dark navy charcoal (#101b29 to #263448), small irregular rock facets and deep tiny crevices. Lighting very soft uniform overhead, absolutely no bright or warm pools. No rooms, walkways, floor tiles, doors, rails, architecture, props, gems, plants, isolated boulders, recognizable motifs, or framing. NO central composition or path. Subtle homogeneous rough rock surface with organic variation, not smooth noise. It must recede behind the much brighter playable rooms. Keep all four edges visually similar and tileable; no black vignette. Opaque.",
+    "generator": "image_gen",
+    "sourceResolution": "1254x1254",
+    "processing": "Original PNG copied unchanged. Repetition, feathering and blending occur only in the game renderer."
+  },
+  {
+    "asset": "assets/scenes/passages/floor-mine.png",
+    "prompt": "Generate one square seamless tile texture 1024x1024 for a painted 2.5D pixel-art dungeon game. Reference establishes the painted pixel brushwork and material colors. ONLY the walkable EMPTY ground material of the mine, edge to edge: warm desaturated ochre brown compacted earth, tiny low contrast gray flat stone flecks, subtle irregular packed dirt. Full texture tile, consistent density and even soft lighting across all edges. No walls, rails, paths, ladders, steps, room edges, props, crystals, plants, large stones or central motif. Fine restrained details at scale; no vignette or shadows cast by nonexistent objects. Match reference room's central ochre dirt floor, quieter and slightly darker. No text. Opaque square repeating floor swatch.",
+    "generator": "image_gen",
+    "sourceResolution": "1254x1254",
+    "processing": "Original PNG copied unchanged. Repetition, feathering and blending occur only in the game renderer."
+  },
+  {
+    "asset": "assets/scenes/passages/floor-citadel.png",
+    "prompt": "Create one square 1024x1024 seamless texture swatch for a painted pixel-art 2.5D dungeon game. Use the attached reference's stone floor brushwork. ONLY worn medium desaturated warm gray stone flagstones filling the entire canvas edge to edge, slightly uneven rectangular paving blocks with narrow dark joints, sparse muted brown dust in crevices. Uniform overhead light, moderate-low contrast, no warm point lights. Approximately 12-16 stone blocks across the tile, not giant slabs. Straight overhead floor texture, no perspective foreshortening, all edges tile together. No carpet, runes, symbols, rocks, walls, props, steps, vignette, path shape or central composition. Opaque flat repeatable floor material.",
+    "generator": "image_gen",
+    "sourceResolution": "1254x1254",
+    "processing": "Original PNG copied unchanged. Repetition, feathering and blending occur only in the game renderer."
+  },
+  {
+    "asset": "assets/scenes/passages/floor-tower.png",
+    "prompt": "Create a square 1024x1024 seamless FLOOR MATERIAL texture swatch for a painted pixel-art 2.5D dungeon game. Match attached tower floor color and brushwork. Only cool desaturated slate blue-gray stone flagstones edge to edge; subtle violet hints, worn medium rectangular slabs, narrow dark joints, minimal muted dust. Around 12-16 blocks across, modest low contrast, uniform soft ambient lighting. Straight top-down planar material with no perspective. No symbols or runes, no circles, no central motif, no glowing lines, no light sources, steps, carpets, crystals, walls, props, boulders or vignette. Four edges visually tileable. Same detail density throughout. Opaque texture meant to repeat on walkable corridors, never an illustration of a whole room.",
+    "generator": "image_gen",
+    "sourceResolution": "1254x1254",
+    "processing": "Original PNG copied unchanged. Repetition, feathering and blending occur only in the game renderer."
+  }
+]

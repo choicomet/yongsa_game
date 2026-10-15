@@ -116,6 +116,7 @@ public class GameSession {
         if (state.mapVersion != WorldMap.VERSION) {
             // 방 배치가 바뀐 예전 저장: 광맥 자리와 이어하기 위치는 새 맵에 맞지 않는다
             for (RoomRecord rec : state.rooms.values()) rec.veins = null;
+            state.potionDrops.clear(); // 바닥 보상도 이전 맵의 월드 좌표다.
             state.resumeX = state.resumeY = 0;
             state.mapVersion = WorldMap.VERSION;
         }

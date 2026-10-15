@@ -177,6 +177,19 @@ class WorldTest {
         assertTrue(minBoss > maxMob, "보스방이 가장 넓다");
     }
 
+    @Test
+    void shiftedRoomsRemainSeparatedAndInsideTheMap() {
+        WorldMap map = TestData.map();
+        for (Room a : map.rooms) {
+            assertTrue(a.x0 >= 0 && a.y0 >= 0 && a.x1 < map.width && a.y1 < map.height, a.id);
+            for (Room b : map.rooms) {
+                if (a == b) continue;
+                assertTrue(a.x1 < b.x0 || b.x1 < a.x0 || a.y1 < b.y0 || b.y1 < a.y0,
+                        a.id + " and " + b.id + " paintings must not overwrite each other");
+            }
+        }
+    }
+
     private Link gate(WorldMap map, String gate) {
         for (Link l : map.links) if (gate.equals(l.gate)) return l;
         throw new AssertionError(gate);

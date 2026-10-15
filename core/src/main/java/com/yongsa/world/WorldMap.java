@@ -20,7 +20,7 @@ import java.util.PriorityQueue;
 public class WorldMap {
     public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3, CORRIDOR = 4;
     /** 방 배치가 바뀌면 올린다. 저장 파일의 방 기록(광맥 자리)·이어하기 위치가 다르면 버린다. */
-    public static final int VERSION = 6;
+    public static final int VERSION = 7;
 
     public final int width, height;
     public final int tileSize;
@@ -80,8 +80,8 @@ public class WorldMap {
     private void buildTileRoom(RoomDef rd) {
         RoomType type = RoomType.valueOf(rd.type);
         int w = def.campSize[0] + 2, h = def.campSize[1] + 2;
-        int x0 = ox(rd.cx) + (def.slotW - w) / 2;
-        int y0 = oy(rd.cy) + (def.slotH - h) / 2;
+        int x0 = ox(rd.cx) + (def.slotW - w) / 2 + rd.offsetX;
+        int y0 = oy(rd.cy) + (def.slotH - h) / 2 + rd.offsetY;
         Room room = new Room(rd.id, type, rd.dungeon, rd.cx, rd.cy, x0, y0, x0 + w - 1, y0 + h - 1);
         addRoom(room);
         for (int y = room.y0; y <= room.y1; y++) {
@@ -139,8 +139,8 @@ public class WorldMap {
         if (sc == null) throw new IllegalArgumentException("없는 장면: " + rd.scene);
         int T = tileSize;
         float w = rd.width * T, h = sc.height(w);
-        float ox = Math.round(ox(rd.cx) * T + (def.slotW * T - w) / 2f);
-        float oy = Math.round(oy(rd.cy) * T + (def.slotH * T - h) / 2f);
+        float ox = Math.round((ox(rd.cx) + rd.offsetX) * T + (def.slotW * T - w) / 2f);
+        float oy = Math.round((oy(rd.cy) + rd.offsetY) * T + (def.slotH * T - h) / 2f);
         int x0 = (int) Math.floor(ox / T), x1 = (int) Math.ceil((ox + w) / T) - 1;
         int y0 = (int) Math.floor(oy / T), y1 = (int) Math.ceil((oy + h) / T) - 1;
         Room room = new Room(rd.id, RoomType.valueOf(rd.type), rd.dungeon, rd.cx, rd.cy, x0, y0, x1, y1,

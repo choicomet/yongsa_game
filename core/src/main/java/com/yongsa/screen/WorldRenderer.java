@@ -276,7 +276,7 @@ public class WorldRenderer implements Disposable {
                     torches.add(new float[]{x * T + T / 2f, y * T, MathUtils.random(10f), 1f});
             }
         }
-        passages = new PassagePainter(map, T, theme);
+        passages = new PassagePainter(map, T);
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
             if (r.scene != null) continue;
