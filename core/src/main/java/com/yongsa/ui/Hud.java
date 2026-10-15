@@ -565,8 +565,8 @@ public class Hud {
         com.badlogic.gdx.files.FileHandle f = com.badlogic.gdx.Gdx.files.internal("sprites/skill/icon_" + kind + ".png");
         com.badlogic.gdx.graphics.Texture t = null;
         if (f.exists()) {
-            t = new com.badlogic.gdx.graphics.Texture(f);
-            t.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.Linear, com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
+            t = new com.badlogic.gdx.graphics.Texture(f, true); // 큰 그림을 칸 크기로 줄여 그리므로 밉맵
+            t.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.MipMapLinearLinear, com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
         }
         SKILL_ICONS.put(kind, t);
         return t;

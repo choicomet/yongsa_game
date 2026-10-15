@@ -31,18 +31,18 @@ choicomet/yongsa_game 저장소의 docs/GPT_WORK_ORDER.md 를 읽고 그대로 �
 
 ## 이미 끝난 것
 
-- A1 흰머리 용사, A5 고향 마을 (`codex/art-batch-a`), D1 새 방 4개(L7, R7, T7, R4), D2 앞쪽 가림 레이어 11장 (`codex/claude-art-followup`): 게임에 붙었다.
+- 흰머리 용사, 고향 마을, 출구 막는 문 3종, 스킬 아이콘 4개, 바닥 포션 (`codex/art-batch-a`), 새 방 4개(L7, R7, T7, R4)와 앞쪽 가림 레이어 11장 (`codex/claude-art-followup`), 잡몹 크기 (`codex/mob-species-scale`): 게임에 붙었다.
 
 ## 묶음 A: 가장 눈에 띄는 것 (먼저)
 
+**가장 먼저: 까만 곳 없애기 (해성 요청 2026-10-15)** — 방 바깥·통로 둘레가 까맣게 비어 있어서 방과 길이 따로 논다.
+던전별 `ground.png`(바깥을 메우는 땅), `floor.png`(통로 바닥), `edges.png`(통로 가장자리·모퉁이)와 방 그림 가장자리 처리. 파일은 `assets/corridor/<던전>/`, 코드 연결 필요. 자세히: ART_REQUESTS 0-9.
+
 | 순서 | 할 일 | 파일 | 바로 반영? | 자세히 |
 |---|---|---|---|---|
-| A1 | 싸우는 동안 출구를 막는 문, 던전별 3종 (판자 / 쇠창살 / 마법 장벽), 정면·옆면 | `assets/sprites/gate_{LEFT,RIGHT,TOP}.png`, `gate_*_side.png` | 바로 | ART_REQUESTS 5 |
-| A2 | 골렘을 갱도에 맞는 바위 골렘으로 (흑철석 결정, 버팀목·레일 조각) | `assets/team/jiyong/boss_golem.png` | 바로 | 0-6 |
-| A3 | 기사를 성채에 맞게 (더 어두운 갑옷, 붉은 망토·혈월 문양 방패) | `assets/team/jiyong/boss_knight.png` | 바로 | 0-6 |
-| A4 | 리치 시트를 **마왕**답게 (마지막 보스) | `assets/team/jiyong/boss_lich.png` | 바로 | 0-6 |
-| A5 | 검 스킬 아이콘 4개 | `assets/sprites/skill/icon_{cleave,crescent,strike,beam}.png` | 바로 | 0-5 |
-| A6 | 바닥에 떨어진 포션 | `assets/sprites/potion.png` | 바로 | 0-7 |
+| A1 | 골렘을 갱도에 맞는 바위 골렘으로 (흑철석 결정, 버팀목·레일 조각) | `assets/team/jiyong/boss_golem.png` | 바로 | 0-6 |
+| A2 | 기사를 성채에 맞게 (더 어두운 갑옷, 붉은 망토·혈월 문양 방패) | `assets/team/jiyong/boss_knight.png` | 바로 | 0-6 |
+| A3 | 리치 시트를 **마왕**답게 (마지막 보스) | `assets/team/jiyong/boss_lich.png` | 바로 | 0-6 |
 
 ## 묶음 B: 이야기에 필요한 것
 
@@ -64,9 +64,8 @@ choicomet/yongsa_game 저장소의 docs/GPT_WORK_ORDER.md 를 읽고 그대로 �
 | 순서 | 할 일 | 파일 | 바로 반영? | 자세히 |
 |---|---|---|---|---|
 | D1 | 남은 임시 방 1개 (L8 갈림 갱도, 위 출구 하나) | 새 방 그림 + 장면·맵 JSON | 바닥 다각형 따기 | ART_REQUESTS 1 |
-| D2 | 방 사이 통로 조각 (던전별 바닥·벽·모퉁이·방 입구 잇기) | 새 폴더 `assets/corridor/<던전>/` | 코드 연결 필요 | 0-9 |
-| D3 | 남은 방 앞쪽 가림 레이어 | `<장면 id>-front.png` | 바로 | 4 |
-| D4 | 광석 덩어리가 흐린 광물방 3곳 손보기 (선택) | 방 그림 + `oreSpots` | 좌표 다시 찍기 | 0-10 |
+| D2 | 남은 방 앞쪽 가림 레이어 | `<장면 id>-front.png` | 바로 | 4 |
+| D3 | 광석 덩어리가 흐린 광물방 3곳 손보기 (선택) | 방 그림 + `oreSpots` | 좌표 다시 찍기 | 0-10 |
 
 ## 나중에
 

@@ -1105,8 +1105,8 @@ public class WorldRenderer implements Disposable {
         Texture t = gateTex.get(key);
         if (t == null && !gateTex.containsKey(key)) {
             if (Gdx.files.internal(key).exists()) {
-                t = new Texture(Gdx.files.internal(key));
-                t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+                t = new Texture(Gdx.files.internal(key), true); // 큰 그림을 작게 그리므로 밉맵
+                t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
             }
             gateTex.put(key, t);
         }
@@ -1443,8 +1443,8 @@ public class WorldRenderer implements Disposable {
         if (!potionChecked) {
             potionChecked = true;
             if (Gdx.files.internal("sprites/potion.png").exists()) {
-                potionTex = new Texture(Gdx.files.internal("sprites/potion.png"));
-                potionTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+                potionTex = new Texture(Gdx.files.internal("sprites/potion.png"), true);
+                potionTex.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
             }
         }
         return potionTex;
