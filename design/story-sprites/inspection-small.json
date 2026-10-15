@@ -1,0 +1,487 @@
+[
+  {
+    "file": "assets/team/sunwoo/villager_baker.png",
+    "sourceSize": [
+      1942,
+      809
+    ],
+    "targetSize": [
+      96,
+      40
+    ],
+    "scale": 0.04884856943475227,
+    "interpolation": "LANCZOS",
+    "frames": [
+      {
+        "frame": 0,
+        "sourceBox": [
+          165,
+          53,
+          616,
+          772
+        ],
+        "size": [
+          22,
+          35
+        ],
+        "position": [
+          5,
+          3
+        ]
+      },
+      {
+        "frame": 1,
+        "sourceBox": [
+          91,
+          58,
+          537,
+          772
+        ],
+        "size": [
+          22,
+          35
+        ],
+        "position": [
+          5,
+          3
+        ]
+      },
+      {
+        "frame": 2,
+        "sourceBox": [
+          80,
+          83,
+          470,
+          772
+        ],
+        "size": [
+          19,
+          34
+        ],
+        "position": [
+          6,
+          4
+        ]
+      }
+    ],
+    "sha256": "ae27d325cd07d32c4cb53fb3ebe1d76521cc65873e1cb1c506353795663560ad"
+  },
+  {
+    "file": "assets/team/sunwoo/villager_redhood.png",
+    "sourceSize": [
+      1942,
+      809
+    ],
+    "targetSize": [
+      96,
+      40
+    ],
+    "scale": 0.05007153075822604,
+    "interpolation": "LANCZOS",
+    "frames": [
+      {
+        "frame": 0,
+        "sourceBox": [
+          199,
+          56,
+          640,
+          755
+        ],
+        "size": [
+          22,
+          35
+        ],
+        "position": [
+          5,
+          3
+        ]
+      },
+      {
+        "frame": 1,
+        "sourceBox": [
+          116,
+          56,
+          560,
+          755
+        ],
+        "size": [
+          22,
+          35
+        ],
+        "position": [
+          5,
+          3
+        ]
+      },
+      {
+        "frame": 2,
+        "sourceBox": [
+          41,
+          84,
+          446,
+          755
+        ],
+        "size": [
+          20,
+          34
+        ],
+        "position": [
+          6,
+          4
+        ]
+      }
+    ],
+    "sha256": "3b77fb1000cbb1d90e3cc9f14a4ec9bf53a3566d68652ff9a00857ddc96ee8dc"
+  },
+  {
+    "file": "assets/team/sunwoo/villager_child.png",
+    "sourceSize": [
+      1942,
+      809
+    ],
+    "targetSize": [
+      96,
+      40
+    ],
+    "scale": 0.0463258785942492,
+    "interpolation": "LANCZOS",
+    "frames": [
+      {
+        "frame": 0,
+        "sourceBox": [
+          171,
+          140,
+          510,
+          766
+        ],
+        "size": [
+          16,
+          29
+        ],
+        "position": [
+          8,
+          9
+        ]
+      },
+      {
+        "frame": 1,
+        "sourceBox": [
+          143,
+          140,
+          476,
+          766
+        ],
+        "size": [
+          15,
+          29
+        ],
+        "position": [
+          8,
+          9
+        ]
+      },
+      {
+        "frame": 2,
+        "sourceBox": [
+          113,
+          164,
+          453,
+          767
+        ],
+        "size": [
+          16,
+          28
+        ],
+        "position": [
+          8,
+          10
+        ]
+      }
+    ],
+    "sha256": "8527bc107cf7ee66c728fdcb894ea824bf2f584c4377c48be7ffb51a6e89beeb"
+  },
+  {
+    "file": "assets/team/sunwoo/villager_elder.png",
+    "sourceSize": [
+      1942,
+      809
+    ],
+    "targetSize": [
+      96,
+      40
+    ],
+    "scale": 0.05359877488514548,
+    "interpolation": "LANCZOS",
+    "frames": [
+      {
+        "frame": 0,
+        "sourceBox": [
+          129,
+          83,
+          543,
+          736
+        ],
+        "size": [
+          22,
+          35
+        ],
+        "position": [
+          5,
+          3
+        ]
+      },
+      {
+        "frame": 1,
+        "sourceBox": [
+          116,
+          83,
+          528,
+          736
+        ],
+        "size": [
+          22,
+          35
+        ],
+        "position": [
+          5,
+          3
+        ]
+      },
+      {
+        "frame": 2,
+        "sourceBox": [
+          174,
+          130,
+          576,
+          737
+        ],
+        "size": [
+          22,
+          33
+        ],
+        "position": [
+          5,
+          5
+        ]
+      }
+    ],
+    "sha256": "8896f968bc042826b4a2101e41f532754a72a2a04febc071a86e663591cd326b"
+  },
+  {
+    "file": "assets/team/sunwoo/villager_maid.png",
+    "sourceSize": [
+      1942,
+      809
+    ],
+    "targetSize": [
+      96,
+      40
+    ],
+    "scale": 0.052316890881913304,
+    "interpolation": "LANCZOS",
+    "frames": [
+      {
+        "frame": 0,
+        "sourceBox": [
+          239,
+          88,
+          571,
+          757
+        ],
+        "size": [
+          17,
+          35
+        ],
+        "position": [
+          7,
+          3
+        ]
+      },
+      {
+        "frame": 1,
+        "sourceBox": [
+          151,
+          88,
+          482,
+          757
+        ],
+        "size": [
+          17,
+          35
+        ],
+        "position": [
+          7,
+          3
+        ]
+      },
+      {
+        "frame": 2,
+        "sourceBox": [
+          87,
+          120,
+          416,
+          757
+        ],
+        "size": [
+          17,
+          33
+        ],
+        "position": [
+          7,
+          5
+        ]
+      }
+    ],
+    "sha256": "0e8025d5acac60cba106164fd8a81b5a839e5bec53ede190e98de3c5c0ed52f9"
+  },
+  {
+    "file": "assets/team/sunwoo/villager_boy.png",
+    "sourceSize": [
+      1942,
+      809
+    ],
+    "targetSize": [
+      96,
+      40
+    ],
+    "scale": 0.04562178072111847,
+    "interpolation": "LANCZOS",
+    "frames": [
+      {
+        "frame": 0,
+        "sourceBox": [
+          257,
+          69,
+          576,
+          748
+        ],
+        "size": [
+          15,
+          31
+        ],
+        "position": [
+          8,
+          7
+        ]
+      },
+      {
+        "frame": 1,
+        "sourceBox": [
+          188,
+          68,
+          508,
+          748
+        ],
+        "size": [
+          15,
+          31
+        ],
+        "position": [
+          8,
+          7
+        ]
+      },
+      {
+        "frame": 2,
+        "sourceBox": [
+          99,
+          102,
+          408,
+          748
+        ],
+        "size": [
+          14,
+          29
+        ],
+        "position": [
+          9,
+          9
+        ]
+      }
+    ],
+    "sha256": "759f91c5749e79e312ce249c4053221904a76aa2db8de2ae32581a40c4c61784"
+  },
+  {
+    "file": "assets/team/sunwoo/crystal_prison.png",
+    "sourceSize": [
+      1518,
+      1036
+    ],
+    "targetSize": [
+      88,
+      60
+    ],
+    "scale": 0.05922551252847381,
+    "interpolation": "LANCZOS",
+    "frames": [
+      {
+        "frame": 0,
+        "sourceBox": [
+          173,
+          74,
+          674,
+          953
+        ],
+        "size": [
+          30,
+          52
+        ],
+        "position": [
+          7,
+          4
+        ]
+      },
+      {
+        "frame": 1,
+        "sourceBox": [
+          83,
+          76,
+          581,
+          953
+        ],
+        "size": [
+          29,
+          52
+        ],
+        "position": [
+          7,
+          4
+        ]
+      }
+    ],
+    "sha256": "a90c821a39f9adbfa7a18dfc2c810beb4bd06fa458e8872af3a9c112e2e82c48"
+  },
+  {
+    "file": "assets/sprites/hero_sleep.png",
+    "sourceSize": [
+      1161,
+      1355
+    ],
+    "targetSize": [
+      48,
+      56
+    ],
+    "scale": 0.045494313210848646,
+    "interpolation": "LANCZOS",
+    "frames": [
+      {
+        "frame": 0,
+        "sourceBox": [
+          297,
+          120,
+          885,
+          1263
+        ],
+        "size": [
+          27,
+          52
+        ],
+        "position": [
+          10,
+          2
+        ]
+      }
+    ],
+    "sha256": "687b2e97e6848ee4f3168713e547fb8481736971ef23d26f966b768e7607fcc1"
+  }
+]
