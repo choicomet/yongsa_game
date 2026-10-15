@@ -54,7 +54,7 @@ public class WorldRenderer implements Disposable {
     private static final int S = Art.SCALE;
     // Presentation only: keep feet/collision, attack ranges and camera in world coordinates.
     private static final float HERO_SCALE = 1.25f;
-    private static final float MOB_SCALE = 1.25f;
+    private static final float DEFAULT_MOB_SCALE = 1.25f;
 
     private final GameSession g;
     private final Art art;
@@ -340,7 +340,7 @@ public class WorldRenderer implements Disposable {
             case MONSTER_DIED: {
                 Corpse c = new Corpse();
                 c.region = art.world(e.sprite);
-                float scale = S * e.size * (e.boss ? bossScale(e.sprite) : MOB_SCALE);
+                float scale = S * e.size * (e.boss ? bossScale(e.sprite) : mobScale(e.sprite));
                 c.w = art.width(c.region) * scale;
                 c.h = art.height(c.region) * scale;
                 c.x = e.x;
@@ -1656,6 +1656,14 @@ public class WorldRenderer implements Disposable {
         return h.moving && ((int) (h.walkTime * 8)) % 2 == 1 ? 2 * HERO_SCALE : 0;
     }
 
+    /** Species silhouette at rest: bat ~half hero height, imp ~three quarters, skeleton ~hero. */
+    private float mobScale(String sprite) {
+        if ("bat".equals(sprite)) return .70f;
+        if ("imp".equals(sprite)) return 1.05f;
+        if ("skeleton".equals(sprite)) return 1.30f;
+        return DEFAULT_MOB_SCALE;
+    }
+
     private float bossScale(String sprite) {
         return "golem".equals(sprite) ? 1.25f : 1.15f;
     }
@@ -1663,7 +1671,7 @@ public class WorldRenderer implements Disposable {
     private float monsterScale(Monster m) {
         float presence = bossScale(m.def.sprite);
         if (m.state == Monster.State.PHASE_SHIFT) return S * (2f + .3f * m.progress()) * presence;
-        return S * (m.finalBoss ? (m.phase2 ? 2.3f : 2f) * presence : m.boss ? 1.7f * presence : MOB_SCALE);
+        return S * (m.finalBoss ? (m.phase2 ? 2.3f : 2f) * presence : m.boss ? 1.7f * presence : mobScale(m.def.sprite));
     }
 
     private float monsterBob(Monster m) {
@@ -1671,7 +1679,7 @@ public class WorldRenderer implements Disposable {
         if ("bat".equals(m.def.sprite)) bob = 6 + MathUtils.sin(time * 8f + m.x) * 4f;
         if (m.state == Monster.State.SLAM_TELEGRAPH || m.state == Monster.State.CAST_TELEGRAPH)
             bob += (m.state == Monster.State.SLAM_TELEGRAPH ? 10 : 4) * m.progress();
-        return bob * (m.boss ? 1f : MOB_SCALE);
+        return bob * (m.boss ? 1f : mobScale(m.def.sprite));
     }
 
     private float monsterStretchY(Monster m) {
@@ -1899,7 +1907,7 @@ public class WorldRenderer implements Disposable {
             if (m.dead) continue;
             if (m.shield > 0) {
                 float fr = m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
-                float r = m.hurtRadius * 2.6f * (m.boss ? bossScale(m.def.sprite) : MOB_SCALE);
+                float r = m.hurtRadius * 2.6f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite));
                 float pulse = 0.8f + 0.2f * MathUtils.sin(time * 4f);
                 batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, (0.18f + 0.25f * fr) * pulse);
                 batch.draw(art.glow, m.x - r, m.y - r * 0.2f, r * 2, r * 1.9f);
@@ -1907,7 +1915,7 @@ public class WorldRenderer implements Disposable {
             if (m.state == Monster.State.CHANNEL) {
                 Color c = "lightning".equals(m.channelKind) ? PROJ_SKY : "firespin".equals(m.channelKind) ? PROJ_FIRE
                         : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD : new Color(1f, 0.6f, 0.35f, 1f);
-                float r = m.hurtRadius * 2.4f * (m.boss ? bossScale(m.def.sprite) : MOB_SCALE) * (0.9f + 0.1f * MathUtils.sin(time * 10f));
+                float r = m.hurtRadius * 2.4f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite)) * (0.9f + 0.1f * MathUtils.sin(time * 10f));
                 batch.setColor(c.r, c.g, c.b, 0.4f);
                 batch.draw(art.glow, m.x - r, m.centerY() - r, r * 2, r * 2);
             }
@@ -1930,13 +1938,13 @@ public class WorldRenderer implements Disposable {
             if (m.state == Monster.State.SPAWN) {
                 Color c = spawnColor(m);
                 float p = m.progress();
-                float r = m.hurtRadius * 2.2f * (m.boss ? bossScale(m.def.sprite) : MOB_SCALE);
+                float r = m.hurtRadius * 2.2f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite));
                 batch.setColor(c.r, c.g, c.b, 0.55f * Math.min(1f, p * 2.5f));
                 batch.draw(art.glow, m.x - r, m.y - r * 0.45f, r * 2, r * 0.9f);
             } else if (m.state == Monster.State.CAST_TELEGRAPH) {
                 Color c = projectileColor(m.def.sprite);
                 float p = m.progress();
-                float sz = (m.boss ? 70 * bossScale(m.def.sprite) : 34 * MOB_SCALE) * (0.4f + p);
+                float sz = (m.boss ? 70 * bossScale(m.def.sprite) : 34 * mobScale(m.def.sprite)) * (0.4f + p);
                 batch.setColor(c.r, c.g, c.b, 0.35f + 0.5f * p);
                 batch.draw(art.glow, m.x - sz / 2f, m.centerY() + m.hurtRadius * 0.4f - sz / 2f, sz, sz);
             } else if (m.state == Monster.State.STUNNED) {
@@ -2107,7 +2115,7 @@ public class WorldRenderer implements Disposable {
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         for (Monster m : g.monsters) {
             if (m.dead || m.boss || m.hp >= m.maxHp) continue;
-            float w = 30 * MOB_SCALE, y = monsterTop(m) + 5;
+            float w = Math.max(24, 30 * mobScale(m.def.sprite)), y = monsterTop(m) + 5;
             shapes.setColor(0, 0, 0, 0.7f);
             shapes.rect(m.x - w / 2 - 1, y - 1, w + 2, 6);
             shapes.setColor(0.9f, 0.25f, 0.2f, 1f);
