@@ -71,6 +71,8 @@ public class WorldRenderer implements Disposable {
 
     private final List<FloatText> floats = new ArrayList<>();
     private final List<float[]> torches = new ArrayList<>();
+    /** GPT 길·땅 그림. 그림이 있으면 통로 타일과 통로 횃불 대신 쓴다. */
+    private final PassagePainter passages;
     private final List<Corpse> corpses = new ArrayList<>();
     private final List<Ghost> ghosts = new ArrayList<>();
     private final List<Ring> rings = new ArrayList<>();
@@ -271,9 +273,10 @@ public class WorldRenderer implements Disposable {
                 theme[x + y * map.width] = c.theme;
                 if (map.tile(x, y) == WorldMap.WALL && map.roomAt(x, y) == null && map.tile(x, y - 1) == WorldMap.CORRIDOR
                         && Math.floorMod(x * 7 + y * 3, 9) == 0)
-                    torches.add(new float[]{x * T + T / 2f, y * T, MathUtils.random(10f)});
+                    torches.add(new float[]{x * T + T / 2f, y * T, MathUtils.random(10f), 1f});
             }
         }
+        passages = new PassagePainter(map, T, theme);
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
             if (r.scene != null) continue;
@@ -820,8 +823,13 @@ public class WorldRenderer implements Disposable {
 
         batch.begin();
         batch.setColor(Color.WHITE);
+        if (passages.active) {
+            passages.drawGround(batch, viewX0, viewY0, viewX1, viewY1);
+            passages.drawWalls(batch, viewX0, viewY0, viewX1, viewY1);
+        }
         drawScenes();
         drawTiles(tx0, ty0, tx1, ty1);
+        if (passages.active) passages.drawFloors(batch, viewX0, viewY0, viewX1, viewY1);
         drawSceneDoors();
         drawFloorProps();
         drawTorches();
@@ -869,7 +877,7 @@ public class WorldRenderer implements Disposable {
                 if (tr != null && tr.scene != null && t != WorldMap.CORRIDOR) continue; // 배경 그림이 바닥과 벽이다 (통로 입구만 덧그린다)
                 String th = themeAt(x, y);
                 float px = x * T, py = y * T;
-                if (map.corridorAt(x, y) != null && drawCorridorTile(t, th, x, y, px, py)) continue;
+                if (map.corridorAt(x, y) != null && (passages.active || drawCorridorTile(t, th, x, y, px, py))) continue;
                 if (t == WorldMap.WALL) {
                     int below = map.tile(x, y - 1);
                     boolean front = below == WorldMap.FLOOR || below == WorldMap.DOOR || below == WorldMap.CORRIDOR;
@@ -1017,6 +1025,7 @@ public class WorldRenderer implements Disposable {
         if (Gdx.files.internal(key).exists()) {
             com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(key));
             eraseWalkable(p, r.scene.walkable);
+            if (passages.active) p = PassagePainter.featherEdges(p);
             t = new Texture(p);
             t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
             p.dispose();
@@ -1055,7 +1064,14 @@ public class WorldRenderer implements Disposable {
         sceneUsed.put(key, time);
         Texture t = sceneTex.get(key);
         if (t == null) {
-            t = new Texture(Gdx.files.internal(key), true);
+            if (passages.active) {
+                // 방 그림 가장자리를 흐려서 둘레의 땅·길 그림과 이어지게 한다
+                com.badlogic.gdx.graphics.Pixmap p = PassagePainter.featherEdges(new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(key)));
+                t = new Texture(p, true);
+                p.dispose();
+            } else {
+                t = new Texture(Gdx.files.internal(key), true);
+            }
             t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
             sceneTex.put(key, t);
         }
@@ -1158,6 +1174,7 @@ public class WorldRenderer implements Disposable {
     private void drawTorches() {
         for (float[] t : torches) {
             if (!inView(t[0], t[1])) continue;
+            if (t.length > 3 && passages.active) continue; // 길 그림에 등불이 그려져 있다 (빛만 남긴다)
             boolean alt = ((int) (time * 8 + t[2])) % 2 == 0;
             batch.draw(art.world(alt ? "torch_a" : "torch_b"), t[0] - 8, t[1], 16, 32);
         }
@@ -2295,5 +2312,6 @@ public class WorldRenderer implements Disposable {
         for (Texture[] ts : corridorSkin.values()) for (Texture t : ts) t.dispose();
         if (potionTex != null) potionTex.dispose();
         corridorSkin.clear();
+        passages.dispose();
     }
 }
