@@ -1,0 +1,25 @@
+{
+  "tool": "builtin imagegen",
+  "jobs": [
+    {
+      "id": "boss_golem",
+      "prompt": "Use case: style-transfer. Edit the supplied production game sprite atlas. Preserve EXACT 8 columns x 5 rows grid, 40 poses, each pose position/scale/motion from reference, 16:10 full canvas, ideally 2048x1280. Transparent RGBA background, no labels or grid lines. Each equal square cell 256x256, foot anchor (128,224), body approx128px tall. Leave transparent gutters. All face LEFT in same oblique top-down RPG view. Crisp painted pixel clusters. Row1 idle4 then hit4; row2 walk8; row3 attack8 with 4 windup then4 impact/recovery; row4 special8 with4windup; row5 death8 shrinking to rubble. Do not turn this into character showcase, do not omit frames, no shadows outside cells. Preserve reference poses except specified special action. Replace smooth steel shell with rough collapsed earth and angular rocks, dark blue-black iron ore crystals in cracks, embedded broken timber and rail scraps. Orange ember eyes, orange core crack. Craggy natural rubble silhouette, no polished round metal shell. Preserve slam/jump/punch/death actions.",
+      "original": "exec-99cbaa12-3045-475d-91ec-933ac95a8567.png"
+    },
+    {
+      "id": "boss_knight",
+      "prompt": "Use case: style-transfer. Edit the supplied production game sprite atlas. Preserve EXACT 8 columns x 5 rows grid, 40 poses, each pose position/scale/motion from reference, 16:10 full canvas, ideally 2048x1280. Transparent RGBA background, no labels or grid lines. Each equal square cell 256x256, foot anchor (128,224), body approx128px tall. Leave transparent gutters. All face LEFT in same oblique top-down RPG view. Crisp painted pixel clusters. Row1 idle4 then hit4; row2 walk8; row3 attack8 with 4 windup then4 impact/recovery; row4 special8 with4windup; row5 death8 shrinking to rubble. Do not turn this into character showcase, do not omit frames, no shadows outside cells. Preserve reference poses except specified special action. Bloodmoon knight: dark charcoal armor instead of blue, worn crimson cape, dark red mineral gems, large broad shield bearing a RED CRESCENT moon replacing golden cross. Keep shield prominent all poses. Red slash accents replacing blue. Maintain original sword, poses, locations and scale.",
+      "original": "exec-1e57d82c-31c1-4b43-a37b-e6da8e612a4e.png"
+    },
+    {
+      "id": "boss_lich",
+      "prompt": "Use case: style-transfer. Edit the supplied production game sprite atlas. Preserve EXACT 8 columns x 5 rows grid, 40 poses, each pose position/scale/motion from reference, 16:10 full canvas, ideally 2048x1280. Transparent RGBA background, no labels or grid lines. Each equal square cell 256x256, foot anchor (128,224), body approx128px tall. Leave transparent gutters. All face LEFT in same oblique top-down RPG view. Crisp painted pixel clusters. Row1 idle4 then hit4; row2 walk8; row3 attack8 with 4 windup then4 impact/recovery; row4 special8 with4windup; row5 death8 shrinking to rubble. Do not turn this into character showcase, do not omit frames, no shadows outside cells. Preserve reference poses except specified special action. This skeletal priest is the FINAL DEMON KING, not tower guardian. Preserve skeletal priest identity and poses but imposing broken horned crown, black crimson and violet tattered mantle, red-purple magic hands. Row4 SPECIAL: 4 frames wind up then4 whip a segmented BONE SPINE to the LEFT and recover. Bone spine fits entirely inside cell. Firstrowidlebodyabout128-140px, imposing throughhorns notwholeframe enlargement. Death collapses into bones crown cloak.",
+      "original": "exec-35bc27b9-d2d4-4586-8e71-e0452a4dee1d.png"
+    }
+  ],
+  "lichSpecialRepair": {
+    "prompt": "Use case: precise-object-edit. Fix ONLY the fourth row of this transparent 8-column 5-row sprite sheet. Keep all other rows and character design, transparency, canvas and grid unchanged. Problem: the long bone-whip links adjacent cells in row4. Every one of the 40 cells must have a fully TRANSPARENT GUTTER of at least 12% of cell width on both left and right, especially row4 columns5 and6. Shorten the bone whip into a COMPACT CURLED arc completely inside each own cell; NEVER connect two figures or cross a cell boundary. Row4 first4 windup, last4 short leftward bone-whip slash and recovery. Use the exact same evenly spaced centers as rows1-3, figure body stays centered. All40individualframes isolated, no connecting lines, no sprite touching adjacent cell. Output transparent background. Do not change the number of frames.",
+    "original": "exec-15f2233b-21e3-4e99-af58-d697c6d20087.png",
+    "use": "only row 4; retain original basic attack row"
+  }
+}
