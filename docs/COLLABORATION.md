@@ -9,6 +9,7 @@
 - 사용자 결정(2026-10-16): 기능이나 그림 묶음마다 브랜치를 만들지 않는다. 이후 요청도 이 브랜치에 누적하고, 사용자가 별도로 요청할 때만 나눈다.
 - 팀 기준 버전은 `main`. 해성 통합본의 PR은 `main`을 대상으로 하며, 업로드와 `main` 병합은 구분한다.
 - 박지용 브랜치 `jiyong_prototype`, 중간 제출용 `middle-term`은 별도로 보존한다.
+- 사용자 확정(2026-10-16)에 따라 `claude/project-thread-q0jrky`, `claude/team-integration-m9u9aa`도 유지한다. 해성의 이후 요청 작업은 계속 `haeseong/game`에 누적한다.
 - 이전 브랜치·PR의 포함 관계와 로컬 작업 폴더는 [브랜치 안내](BRANCHES.md)를 기준으로 한다. 과거 문서의 `codex/*`·`claude/*` 이름은 이력이다.
 
 ## 작업 방식

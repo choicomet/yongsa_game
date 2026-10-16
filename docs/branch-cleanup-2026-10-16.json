@@ -18,14 +18,14 @@
       "sha": "46f0898275b3dbe800d127029894a71e4ce88a63",
       "includedInHaeseong": true,
       "includedInMain": true,
-      "action": "awaiting_owner_confirmation"
+      "action": "keep_user_requested"
     },
     {
       "branch": "claude/team-integration-m9u9aa",
       "sha": "95ce69af8531ff98e0633d95267661cc322e7cf8",
       "includedInHaeseong": true,
       "includedInMain": false,
-      "action": "awaiting_owner_confirmation"
+      "action": "keep_user_requested"
     },
     {
       "branch": "codex/art-batch-a",
@@ -140,6 +140,6 @@
       "action": "keep"
     }
   ],
-  "cleanupStatus": "13 remote Codex branches deleted; 2 Claude branches preserved pending owner confirmation after automatic review rejection; main, middle-term, jiyong_prototype unchanged.",
+  "cleanupStatus": "Complete: 13 remote Codex branches deleted; 2 Claude branches retained by explicit user request on 2026-10-16; main, middle-term, jiyong_prototype unchanged. Future Haeseong requests accumulate on haeseong/game.",
   "consolidatedPullRequest": "https://github.com/choicomet/yongsa_game/pull/16"
 }
