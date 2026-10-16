@@ -4,7 +4,9 @@ uiux 팀 프로젝트 (최해성 · 박지용 · 김선우). Java 17 + libGDX 2D
 
 ## 함께 작업하기
 
-디자인과 구현 변경은 작업별 브랜치와 PR로 공유합니다. 현재 진행 방향은 [디자인 기준](docs/ART_DIRECTION.md), 작업 절차는 [협업 안내](docs/COLLABORATION.md)를 먼저 확인하세요.
+**최해성의 요청 작업은 `haeseong/game` 브랜치 하나에 누적합니다.** 클로드 통합본과 맵 PR #14, 이야기 그림 PR #15를 모두 포함합니다. 사용자가 따로 요청할 때만 브랜치를 나눕니다. [담당자별 브랜치와 가져오는 방법](docs/BRANCHES.md), [통합 게임 화면](design/haeseong-integration/README.md), [남은 작업](docs/REMAINING_WORK_2026-10-16.md)을 확인하세요.
+
+현재 진행 방향은 [디자인 기준](docs/ART_DIRECTION.md), 작업 절차는 [협업 안내](docs/COLLABORATION.md)에 있습니다. `main`은 검토 후 병합하는 팀 기준 버전입니다.
 
 [최신 인게임 적용본](design/style2-runtime/README.md)은 선택한 2번 스타일을 용사·검·적·소품·지형에 연결하고, 직접 망치질하는 대장간과 작은 확률 패널을 적용했습니다. 큰 미리보기는 기존 상세 그림을 유지합니다. [실제 게임 캡처 보기](design/style2-runtime/index.html) · [검수 기록](design/style2-runtime/QA.md). v3·v4 시안은 비교 기록으로 보존합니다.
 
