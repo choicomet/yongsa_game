@@ -62,6 +62,8 @@ public class GameEvent {
     public float dirX, dirY, size;
     public String sprite;
     public boolean boss, flip;
+    /** MONSTER_DIED: 쓰러질 때의 본모습을 유지한다. */
+    public boolean phase2;
 
     public GameEvent(Type type) {
         this.type = type;

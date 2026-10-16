@@ -64,7 +64,13 @@
         ]
       }
     ],
-    "sha256": "ae27d325cd07d32c4cb53fb3ebe1d76521cc65873e1cb1c506353795663560ad"
+    "sha256": "ae27d325cd07d32c4cb53fb3ebe1d76521cc65873e1cb1c506353795663560ad",
+    "displayFile": "assets/sprites/story/villager_baker.png",
+    "displaySize": [
+      384,
+      160
+    ],
+    "displaySha256": "4f7d369e6b835d28afed2e2ab40753f9cb52326a426a08653869eb97dcbf28ad"
   },
   {
     "file": "assets/team/sunwoo/villager_redhood.png",
@@ -131,7 +137,13 @@
         ]
       }
     ],
-    "sha256": "3b77fb1000cbb1d90e3cc9f14a4ec9bf53a3566d68652ff9a00857ddc96ee8dc"
+    "sha256": "3b77fb1000cbb1d90e3cc9f14a4ec9bf53a3566d68652ff9a00857ddc96ee8dc",
+    "displayFile": "assets/sprites/story/villager_redhood.png",
+    "displaySize": [
+      384,
+      160
+    ],
+    "displaySha256": "76c07144eec667fc33ae31a0776ed90420912e391b4b4c8f645d8d6f62898483"
   },
   {
     "file": "assets/team/sunwoo/villager_child.png",
@@ -198,7 +210,13 @@
         ]
       }
     ],
-    "sha256": "8527bc107cf7ee66c728fdcb894ea824bf2f584c4377c48be7ffb51a6e89beeb"
+    "sha256": "8527bc107cf7ee66c728fdcb894ea824bf2f584c4377c48be7ffb51a6e89beeb",
+    "displayFile": "assets/sprites/story/villager_child.png",
+    "displaySize": [
+      384,
+      160
+    ],
+    "displaySha256": "46ae55f1b26c48fc24ff667092296d94062b062eff2cd2c8c04941a81f6c4f5f"
   },
   {
     "file": "assets/team/sunwoo/villager_elder.png",
@@ -265,7 +283,13 @@
         ]
       }
     ],
-    "sha256": "8896f968bc042826b4a2101e41f532754a72a2a04febc071a86e663591cd326b"
+    "sha256": "8896f968bc042826b4a2101e41f532754a72a2a04febc071a86e663591cd326b",
+    "displayFile": "assets/sprites/story/villager_elder.png",
+    "displaySize": [
+      384,
+      160
+    ],
+    "displaySha256": "606e19b51e6d85521a8cfa51f59ac11b0f50f33cb841d86adaf43ad7f91878c2"
   },
   {
     "file": "assets/team/sunwoo/villager_maid.png",
@@ -332,7 +356,13 @@
         ]
       }
     ],
-    "sha256": "0e8025d5acac60cba106164fd8a81b5a839e5bec53ede190e98de3c5c0ed52f9"
+    "sha256": "0e8025d5acac60cba106164fd8a81b5a839e5bec53ede190e98de3c5c0ed52f9",
+    "displayFile": "assets/sprites/story/villager_maid.png",
+    "displaySize": [
+      384,
+      160
+    ],
+    "displaySha256": "3910e9a5c18fa4df185203cee2061bef75a4e9e16cc7a939cd12baf8f86b81f4"
   },
   {
     "file": "assets/team/sunwoo/villager_boy.png",
@@ -399,7 +429,13 @@
         ]
       }
     ],
-    "sha256": "759f91c5749e79e312ce249c4053221904a76aa2db8de2ae32581a40c4c61784"
+    "sha256": "759f91c5749e79e312ce249c4053221904a76aa2db8de2ae32581a40c4c61784",
+    "displayFile": "assets/sprites/story/villager_boy.png",
+    "displaySize": [
+      384,
+      160
+    ],
+    "displaySha256": "8723a9ed8b9f95ad3626549bf0f584c5a7b68f8897d3243e92a0f40bcc1b9996"
   },
   {
     "file": "assets/team/sunwoo/crystal_prison.png",
@@ -449,7 +485,13 @@
         ]
       }
     ],
-    "sha256": "a90c821a39f9adbfa7a18dfc2c810beb4bd06fa458e8872af3a9c112e2e82c48"
+    "sha256": "a90c821a39f9adbfa7a18dfc2c810beb4bd06fa458e8872af3a9c112e2e82c48",
+    "displayFile": "assets/sprites/story/crystal_prison.png",
+    "displaySize": [
+      352,
+      240
+    ],
+    "displaySha256": "6ebdea97c5a958d2e78d13c22fa6616bb73fad213512b7baa8436e0e97b3edd2"
   },
   {
     "file": "assets/sprites/hero_sleep.png",
@@ -482,6 +524,12 @@
         ]
       }
     ],
-    "sha256": "687b2e97e6848ee4f3168713e547fb8481736971ef23d26f966b768e7607fcc1"
+    "sha256": "687b2e97e6848ee4f3168713e547fb8481736971ef23d26f966b768e7607fcc1",
+    "displayFile": "assets/sprites/story/hero_sleep.png",
+    "displaySize": [
+      192,
+      224
+    ],
+    "displaySha256": "b9c92039c89a9aff410951aa485a8a6fdecc9f409f6eb6c0221585901bf9add2"
   }
 ]

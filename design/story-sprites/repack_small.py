@@ -27,12 +27,21 @@ for name,count,cw,ch,height,maxw,bottom,directory in specs:
   out.alpha_composite(art,(i*cw+x,y))
   data.append(dict(frame=i,sourceBox=box,size=size,position=[x,y]))
  dest=ROOT/'assets'/directory/f'{name}.png';dest.parent.mkdir(exist_ok=True,parents=True);out.save(dest)
+ # Keep a 4x display atlas from the original, not an enlargement of the tiny fallback.
+ hd=Image.new('RGBA',(cw*count*4,ch*4))
+ for i,(frame,box) in enumerate(zip(frames,boxes)):
+  art=frame.crop(box);size=(max(1,round(art.width*scale*4)),max(1,round(art.height*scale*4)))
+  art=art.resize(size,Image.Resampling.LANCZOS)
+  hd.alpha_composite(art,(i*cw*4+(cw*4-size[0])//2,bottom*4-size[1]))
+ hd_dest=ROOT/'assets/sprites/story'/f'{name}.png';hd_dest.parent.mkdir(exist_ok=True,parents=True);hd.save(hd_dest)
  for i in range(count):
   cell=out.crop((i*cw,0,(i+1)*cw,ch))
   b=cell.getchannel('A').getbbox()
   assert b and b[0]>0 and b[1]>0 and b[2]<cw and b[3]<ch,(name,i,b)
  records.append(dict(file=dest.relative_to(ROOT).as_posix(),sourceSize=src.size,targetSize=out.size,scale=scale,
-                     interpolation='LANCZOS',frames=data,sha256=hashlib.sha256(dest.read_bytes()).hexdigest()))
+                     interpolation='LANCZOS',frames=data,sha256=hashlib.sha256(dest.read_bytes()).hexdigest(),
+                     displayFile=hd_dest.relative_to(ROOT).as_posix(),displaySize=hd.size,
+                     displaySha256=hashlib.sha256(hd_dest.read_bytes()).hexdigest()))
 # Verify prison has real interior alpha instead of an opaque drawn glass effect.
 prison=Image.open(ROOT/'assets/team/sunwoo/crystal_prison.png').convert('RGBA')
 for x in (22,66):
