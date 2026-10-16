@@ -123,6 +123,8 @@ public class WorldRenderer implements Disposable {
         boolean flip, boss;
         /** 지용 버전 보스 동작 시트가 있으면 쓰러지는 줄을 돌린다. */
         String sheet;
+        float sheetScale;
+        boolean sheetFaceRight;
     }
 
     // ───────────────────────── 지용 버전 보스 동작 시트
@@ -133,7 +135,11 @@ public class WorldRenderer implements Disposable {
     private final java.util.IdentityHashMap<Monster, float[]> bossAnim = new java.util.IdentityHashMap<>();
 
     /** 보스 그림 이름 → 동작 시트 (파일이 없으면 null: 한 장짜리 그림을 쓴다). */
-    private static String bossSheet(String sprite) {
+    private static String bossSheet(String sprite, boolean phase2) {
+        if ("demonlord".equals(sprite) && phase2) {
+            String trueForm = "team/jiyong/boss_lich2.png";
+            if (SHEET_EXISTS.computeIfAbsent(trueForm, k -> Gdx.files.internal(k).exists())) return trueForm;
+        }
         String path;
         switch (sprite) {
             case "golem": path = "team/jiyong/boss_golem.png"; break;
@@ -187,8 +193,11 @@ public class WorldRenderer implements Disposable {
 
     /** 동작 시트 크기: 마왕은 다른 보스보다 크고, 2페이즈(본모습)에서 더 커진다. */
     private float sheetScale(Monster m) {
-        if (!m.finalBoss) return BOSS_SHEET_SCALE;
-        return BOSS_SHEET_SCALE * (m.phase2 ? 1.35f : 1.18f);
+        return bossSheetScale(m.finalBoss, m.phase2);
+    }
+
+    private static float bossSheetScale(boolean finalBoss, boolean phase2) {
+        return BOSS_SHEET_SCALE * (finalBoss ? (phase2 ? 1.35f : 1.18f) : 1f);
     }
 
     private void drawBossSheet(Monster m, String sheet) {
@@ -204,7 +213,7 @@ public class WorldRenderer implements Disposable {
         boolean faceRight = m.dirX > 0.2f;
         float x0 = m.x + jx - size / 2f, y0 = m.y - (BOSS_CELL - BOSS_FOOT) * k;
         if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
-        else if (m.finalBoss && m.phase2) batch.setColor(0.95f, 0.62f + 0.08f * MathUtils.sin(time * 6f), 0.95f, appear); // 본모습: 붉은 보랏빛
+        else if (m.finalBoss && m.phase2 && sheet.endsWith("boss_lich.png")) batch.setColor(0.95f, 0.62f + 0.08f * MathUtils.sin(time * 6f), 0.95f, appear); // 시트가 없는 경우만 임시 색상을 쓴다.
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
         if (faceRight) batch.draw(r, x0 + size, y0, -size, size);
@@ -351,11 +360,13 @@ public class WorldRenderer implements Disposable {
                 c.flip = e.flip;
                 c.boss = e.boss;
                 c.dur = e.boss ? 1.4f : 0.4f;
-                if (e.boss && bossSheet(e.sprite) != null) {
-                    c.sheet = bossSheet(e.sprite);
+                if (e.boss && bossSheet(e.sprite, e.phase2) != null) {
+                    c.sheet = bossSheet(e.sprite, e.phase2);
+                    c.sheetScale = bossSheetScale("demonlord".equals(e.sprite), e.phase2);
+                    c.sheetFaceRight = e.dirX > 0.2f;
                     c.dur = 2.2f;
-                    c.h = BOSS_BODY * BOSS_SHEET_SCALE;
-                    c.w = BOSS_BODY * BOSS_SHEET_SCALE;
+                    c.h = BOSS_BODY * c.sheetScale;
+                    c.w = BOSS_BODY * c.sheetScale;
                 }
                 corpses.add(c);
                 Color tint = deathColor(e.sprite);
@@ -1397,33 +1408,43 @@ public class WorldRenderer implements Disposable {
         for (Corpse c : corpses) list.add(new Sorted(c.y, () -> drawCorpse(c)));
     }
 
+    /** Original-size fallback sheets remain usable; display atlases preserve source detail. */
+    private TextureRegion storyFrame(String name, String fallback, int frames, int frame) {
+        String high = "sprites/story/" + name + ".png";
+        return SHEET_EXISTS.computeIfAbsent(high, k -> Gdx.files.internal(k).exists())
+                ? art.cell(high, frames, 1, frame) : art.frame(fallback, frames, frame);
+    }
+
+    private static final float VILLAGER_SCALE = 1.35f;
+
     /**
-     * 마을 사람 (선우 버전 그림 team/sunwoo/villager_*.png: 웃음, 환호, 수정 속).
+     * 마을 사람 (서 있는 두 자세, 수정 속).
      * 마왕 전에는 눈을 감은 채 보랏빛 수정 속에 갇혀 있고, 뒤에는 수정이 사라지고 웃다가 팔을 들고 뛴다.
      */
     private void drawVillager(com.yongsa.config.Balance.Villager v, float x, float y) {
         String path = "team/sunwoo/villager_" + v.kind + ".png";
         float phase = x * 0.031f;
-        drawShadow(x, y, 22);
+        float k = VILLAGER_SCALE, w = 32 * k, h = 40 * k;
+        drawShadow(x, y, 22 * k);
         if (!g.villagersFree()) {
-            TextureRegion f = art.frame(path, 3, 2);
+            TextureRegion f = storyFrame("villager_" + v.kind, path, 3, 2);
             if (f != null) {
                 batch.setColor(0.82f, 0.78f, 1f, 1f);
-                batch.draw(f, Math.round(x - f.getRegionWidth() / 2f), Math.round(y - 2));
+                batch.draw(f, Math.round(x - w / 2f), Math.round(y - 2 * k), w, h);
             }
-            TextureRegion c = art.frame("team/sunwoo/crystal_prison.png", 2, (int) ((time + phase) / 0.6f));
+            TextureRegion c = storyFrame("crystal_prison", "team/sunwoo/crystal_prison.png", 2, (int) ((time + phase) / 0.6f));
             if (c != null) {
                 batch.setColor(1, 1, 1, 0.9f + 0.1f * MathUtils.sin(time * 2f + phase * 10));
-                batch.draw(c, Math.round(x - c.getRegionWidth() / 2f), Math.round(y - 6));
+                batch.draw(c, Math.round(x - 22 * k), Math.round(y - 6 * k), 44 * k, 60 * k);
             }
         } else {
             float t = (time + phase * 7) % 1.6f;
             boolean cheer = t > 0.8f;
             float hop = cheer ? Math.abs(MathUtils.sin((t - 0.8f) / 0.8f * MathUtils.PI * 2)) * 5 : 0;
-            TextureRegion f = art.frame(path, 3, cheer ? 1 : 0);
+            TextureRegion f = storyFrame("villager_" + v.kind, path, 3, cheer ? 1 : 0);
             if (f != null) {
                 batch.setColor(Color.WHITE);
-                batch.draw(f, Math.round(x - f.getRegionWidth() / 2f), Math.round(y - 2 + hop));
+                batch.draw(f, Math.round(x - w / 2f), Math.round(y - 2 * k + hop), w, h);
             }
         }
         batch.setColor(Color.WHITE);
@@ -1594,8 +1615,8 @@ public class WorldRenderer implements Disposable {
         float cx = Float.isNaN(bed.sleepX) ? bed.centerX(T) : bed.sleepX;
         float cy = Float.isNaN(bed.sleepY) ? bed.centerY(T) : bed.sleepY;
         if (Gdx.files.internal("sprites/hero_sleep.png").exists()) {
-            TextureRegion r = art.frame("sprites/hero_sleep.png", 1, 0);
-            float w = r.getRegionWidth() * HERO_SCALE, hgt = r.getRegionHeight() * HERO_SCALE;
+            TextureRegion r = storyFrame("hero_sleep", "sprites/hero_sleep.png", 1, 0);
+            float w = 48 * HERO_SCALE, hgt = 56 * HERO_SCALE;
             batch.setColor(Color.WHITE);
             batch.draw(r, cx - w / 2f, cy - hgt / 2f, w, hgt);
             return;
@@ -1713,7 +1734,7 @@ public class WorldRenderer implements Disposable {
 
     /** Overhead UI follows the same pose as the sprite, not the lower-body combat circle. */
     private float monsterTop(Monster m) {
-        if (m.boss && bossSheet(m.def.sprite) != null) return m.y + BOSS_BODY * sheetScale(m);
+        if (m.boss && bossSheet(m.def.sprite, m.phase2) != null) return m.y + BOSS_BODY * sheetScale(m);
         return m.y - 2 + monsterBob(m) + art.height(art.world(m.def.sprite)) * monsterScale(m) * monsterStretchY(m);
     }
 
@@ -1728,7 +1749,7 @@ public class WorldRenderer implements Disposable {
     }
 
     private void drawMonster(Monster m) {
-        String sheet = m.boss ? bossSheet(m.def.sprite) : null;
+        String sheet = m.boss ? bossSheet(m.def.sprite, m.phase2) : null;
         if (sheet != null) {
             drawBossSheet(m, sheet);
             return;
@@ -1787,10 +1808,10 @@ public class WorldRenderer implements Disposable {
         if (c.sheet != null) {
             // 쓰러지는 줄 8칸을 돌리고, 마지막 칸에서 천천히 사라진다
             TextureRegion r = bossCell(c.sheet, 4, (int) Math.min(7, p / 0.6f * 8));
-            float size = BOSS_CELL * BOSS_SHEET_SCALE;
-            float x0 = c.x - size / 2f, y0 = c.y - (BOSS_CELL - BOSS_FOOT) * BOSS_SHEET_SCALE;
+            float size = BOSS_CELL * c.sheetScale;
+            float x0 = c.x - size / 2f, y0 = c.y - (BOSS_CELL - BOSS_FOOT) * c.sheetScale;
             batch.setColor(1f, 1f, 1f, p < 0.7f ? 1f : 1f - (p - 0.7f) / 0.3f);
-            if (!c.flip) batch.draw(r, x0 + size, y0, -size, size);
+            if (c.sheetFaceRight) batch.draw(r, x0 + size, y0, -size, size);
             else batch.draw(r, x0, y0, size, size);
             batch.setColor(Color.WHITE);
             return;

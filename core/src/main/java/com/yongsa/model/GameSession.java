@@ -596,6 +596,8 @@ public class GameSession {
             died.size = m.finalBoss ? (m.phase2 ? 2.3f : 2.0f) : m.boss ? 1.7f : 1f;
             died.boss = m.boss;
             died.flip = m.dirX < -0.2f;
+            died.dirX = m.dirX;
+            died.phase2 = m.phase2;
             events.add(died);
             if (rules.hasAbility(state, "bloodmoon")) {
                 int heal = Math.max(1, Math.round(rules.maxHp(state) * 0.05f));
