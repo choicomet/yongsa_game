@@ -2248,6 +2248,8 @@ public class GameSession {
         int potions = boss ? rw.bossChestPotions : rw.mobChestPotions;
         dropPotions(chestX(r), chestY(r), potions);
         GameEvent e = new GameEvent(GameEvent.Type.CHEST_OPENED);
+        e.dungeonId = r.dungeonId;
+        e.opened = r.id;
         e.ore = ore;
         e.amount = n;
         e.potions = potions;

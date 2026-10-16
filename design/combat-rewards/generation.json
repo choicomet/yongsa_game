@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-16",
+  "gridNormalization": "Fixed-grid resizing and packing follows the user's earlier authorization for sprite sheets. Generated transparency and original sources are preserved.",
+  "assets": [
+    {
+      "asset": "chest_left",
+      "prompt": "Use case: style-transfer. Production game sprite animation sheet, genuine transparent background. Input 1 is the old treasure chest animation: retain its three states and compact silhouette; input 2 is a style reference ONLY for the restrained hand-painted pixel dungeon look. Replace the old crude chest with a worn brown timber mining chest, dark iron bands and a small blue-black ore clasp, appropriate to a ruined mine with warm lantern light. Exactly three separate frames in a single horizontal row: closed; lid partly raised; fully open with a modest warm gold glow inside. Same chest, same camera slightly from above, same front facing, same body position and base size in every frame. The bottom box must not move or change when the lid opens. Broad readable shapes, chipped wood, subtle textures, no glossy plastic, no extraneous ground. Canvas 1536x768; three equal 512x768 cells. Keep every chest wholly within its cell with generous transparent margins. Center the bases at x=256,768,1280 and bottom baseline y=630. No labels, numbers, grid, floor, shadows outside the chest, background, characters, coins scattered outside, watermark. Render only this mining chest sheet.",
+      "reference": "assets/team/sunwoo/chest_left.png",
+      "tool": "built-in image_gen",
+      "generatedSource": "exec-e444147d-a0d3-4a48-a72e-b2189b9ea114.png"
+    },
+    {
+      "asset": "chest_right",
+      "prompt": "Use case: style-transfer. Production game sprite animation sheet, genuine transparent background. Input 1 is the old treasure chest animation: retain its three states and compact silhouette; input 2 is a style reference ONLY for the restrained hand-painted pixel dungeon look. Replace the old crude chest with a heavy blackened iron citadel chest, worn muted brass edges, subtle crimson panels and a small red crescent lock emblem. Exactly three separate frames in a single horizontal row: closed; lid partly raised; fully open with a modest warm gold-red glow inside. Same chest, same camera slightly from above, same front facing, same body position and base size in every frame. The bottom box must not move or change when the lid opens. Broad readable shapes, restrained metal reflections, dark medieval masonry palette, no glossy plastic. Canvas 1536x768; three equal 512x768 cells. Keep every chest wholly within its cell with generous transparent margins. Center the bases at x=256,768,1280 and bottom baseline y=630. No labels, numbers, grid, floor, shadows outside the chest, background, characters, coins scattered outside, watermark. Render only this citadel chest sheet.",
+      "reference": "assets/team/sunwoo/chest_right.png",
+      "tool": "built-in image_gen",
+      "generatedSource": "exec-edfd00af-6ebd-4be0-a883-b9ec74f2d66a.png"
+    },
+    {
+      "asset": "chest_top",
+      "prompt": "Use case: style-transfer. Production game sprite animation sheet, genuine transparent background. Input 1 is the old treasure chest animation: retain its three states and compact silhouette; input 2 is a style reference ONLY for the restrained hand-painted pixel dungeon look. Replace the old crude chest with an arcane tower chest: dark violet-blue stone and aged silver bands, a small cyan crystal clasp, very restrained violet runic inlay. Exactly three separate frames in a single horizontal row: closed; lid partly raised; fully open with a soft cyan-violet light inside. Same chest, same camera slightly from above, same front facing, same body position and base size in every frame. The bottom box must not move or change when the lid opens. Broad readable shapes, chiseled edges, subtle textures, no glossy plastic, no extravagant sparkles. Canvas 1536x768; three equal 512x768 cells. Keep every chest wholly within its cell with generous transparent margins. Center the bases at x=256,768,1280 and bottom baseline y=630. No labels, numbers, grid, floor, shadows outside the chest, background, characters, scattered items, watermark. Render only this arcane chest sheet.",
+      "reference": "assets/team/sunwoo/chest_top.png",
+      "tool": "built-in image_gen",
+      "generatedSource": "exec-320bc3f3-9313-4ba1-9567-2fd3543ec81a.png"
+    },
+    {
+      "asset": "demon_eye",
+      "prompt": "Use case: stylized-concept. Game effect sprite sheet on genuine transparent background. The input is a STYLE reference for the demon king's crimson-violet organic eyes and dark outlines; do not draw the king. Draw one floating demonic almond-shaped eye with a dark violet folded eyelid, muted ivory sclera and hot crimson iris with a narrow black vertical pupil. Exactly FOUR animation frames arranged in a precise 2x2 grid on a 1024x1024 canvas, one eye centered in each equal 512x512 cell. Reading order: top left fully shut eyelid with NO pupil; top right opening a narrow slit; bottom left half open; bottom right fully open bright eye. The outside silhouette, center and width stay perfectly fixed; only eyelids and glow change. Width about 360px, height up to 210px, centered in each cell. A few short curling violet tendrils on the outer corners, consistent in every frame. Restrained hand-painted pixel game style compatible with the reference, clear legible forms when shown 48x32 pixels. No gore, giant tentacles, characters, rays, floor, ground shadow, environment, text, labels, grid lines or background. All four frames complete and separated by transparent padding.",
+      "reference": "assets/team/jiyong/boss_lich2.png",
+      "tool": "built-in image_gen",
+      "generatedSource": "exec-5904e929-10f0-4b4d-9c65-b67590b8b545.png"
+    }
+  ]
+}

@@ -83,6 +83,7 @@ public class WorldRenderer implements Disposable {
     private final Map<String, Float> sceneUsed = new HashMap<>();
     /** GPT 가 준 앞쪽 가림 레이어 (<장면>-front.png). 없는 장면은 null 로 기억한다. */
     private final Map<String, Texture> frontTex = new HashMap<>();
+    private final SceneForegrounds sceneForegrounds;
     private final Color ambient = new Color(0.6f, 0.55f, 0.5f, 1f);
     private boolean ambientSet;
     private float time, ghostT, moteT, emberT;
@@ -105,6 +106,14 @@ public class WorldRenderer implements Disposable {
     private final List<Speech> speeches = new ArrayList<>();
     /** 천공 낙뢰가 떨어진 자리 (x, y, 지난 시간): 하늘에서 내리꽂히는 빛줄기를 잠깐 그린다. */
     private final List<float[]> bolts = new ArrayList<>();
+    /** Presentation only: rewards are granted once by GameSession, independently of these animations. */
+    private final List<ChestOpening> chestOpenings = new ArrayList<>();
+    private final List<float[]> eyeFlashes = new ArrayList<>(); // x, y, radius, age
+
+    private static class ChestOpening {
+        String room, dungeon;
+        float x, y, age;
+    }
 
     /** 검 스킬 색: 흑철 흙빛, 혈월 핏빛, 천공 하늘빛, 성검 금빛. */
     private static Color skillColor(String kind) {
@@ -286,6 +295,7 @@ public class WorldRenderer implements Disposable {
             }
         }
         passages = new PassagePainter(map, T);
+        sceneForegrounds = new SceneForegrounds(passages);
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
             if (r.scene != null) continue;
@@ -332,9 +342,18 @@ public class WorldRenderer implements Disposable {
                 break;
             }
             case CHEST_OPENED: {
+                if (e.dungeonId != null && e.opened != null) {
+                    chestOpenings.removeIf(c -> e.opened.equals(c.room));
+                    ChestOpening c = new ChestOpening();
+                    c.room = e.opened;
+                    c.dungeon = e.dungeonId;
+                    c.x = e.x;
+                    c.y = e.y - T;
+                    chestOpenings.add(c);
+                }
                 Color gold = new Color(1f, 0.85f, 0.4f, 1f);
-                particles.burst(e.x, e.y - T / 2f, 40, gold, 260, 0.8f, 3, true);
-                flash(e.x, e.y - T / 2f, 160, gold, 0.4f);
+                particles.burst(e.x, e.y - T / 2f, 14, gold, 140, 0.45f, 1.8f, true);
+                flash(e.x, e.y - T / 2f, 110, gold, 0.3f);
                 break;
             }
             case HIT_FX:
@@ -450,11 +469,17 @@ public class WorldRenderer implements Disposable {
                 flash(g.hero.x, g.hero.y, 260, new Color(0.6f, 0.5f, 1f, 1f), 0.6f);
                 break;
             case HERO_DIED:
+                chestOpenings.clear();
+                eyeFlashes.clear();
                 speeches.clear();
                 particles.clear();
                 corpses.clear();
                 ghosts.clear();
                 rings.clear();
+                break;
+            case BED_USED:
+                chestOpenings.clear();
+                eyeFlashes.clear();
                 break;
             default:
                 break;
@@ -502,9 +527,14 @@ public class WorldRenderer implements Disposable {
     // ───────────────────────── 매 프레임
 
     public void update(float dt) {
+        for (ChestOpening c : chestOpenings) c.age += dt;
+        chestOpenings.removeIf(c -> c.age >= 2.8f || g.hasChest(map.room(c.room)));
+        for (float[] e : eyeFlashes) e[3] += dt;
+        eyeFlashes.removeIf(e -> e[3] >= 0.45f);
         for (float[] b : bolts) b[2] += dt;
         bolts.removeIf(b -> b[2] > 0.3f);
         time += dt;
+        sceneForegrounds.expire(time);
         for (Iterator<FloatText> it = floats.iterator(); it.hasNext(); ) {
             FloatText f = it.next();
             f.t += dt;
@@ -852,6 +882,13 @@ public class WorldRenderer implements Disposable {
         drawGhosts();
         List<Sorted> list = new ArrayList<>();
         collect(list, tx0, ty0, tx1, ty1);
+        for (Room r : map.rooms) {
+            if (r.scene == null || r.originX > viewX1 || r.originX + r.widthPx < viewX0
+                    || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            for (SceneForegrounds.Piece piece : sceneForegrounds.pieces(r, time)) {
+                list.add(new Sorted(r.sceneY(piece.depth), () -> sceneForegrounds.draw(batch, r, piece)));
+            }
+        }
         list.sort((a, b) -> Float.compare(b.y, a.y));
         for (Sorted s : list) s.call.draw();
         drawSceneFronts();
@@ -1279,6 +1316,7 @@ public class WorldRenderer implements Disposable {
                     break;
                 }
                 case EYE: {
+                    if (eyeRegion(0) != null) break;
                     // 감긴 눈이 천천히 떠진다
                     float r = h.radius, open = Math.max(0.08f, p * p);
                     shapes.setColor(0.12f, 0.02f, 0.08f, 0.85f);
@@ -1336,6 +1374,7 @@ public class WorldRenderer implements Disposable {
                 ring(e.x, e.y, e.size * 0.3f, e.size, 0.3f, BONE);
                 break;
             case "eye":
+                eyeFlashes.add(new float[]{e.x, e.y, e.size, 0f});
                 flash(e.x, e.y, 220, EYE_RED, 0.35f);
                 ring(e.x, e.y, 8, 120, 0.4f, EYE_RED);
                 break;
@@ -1393,7 +1432,23 @@ public class WorldRenderer implements Disposable {
         for (Room r : map.rooms) {
             if (!g.hasChest(r) || g.fighting()) continue;
             float cx = g.chestX(r), cy = g.chestY(r);
-            list.add(new Sorted(cy, () -> drawChest(r, cx, cy)));
+            if (inView(cx, cy)) list.add(new Sorted(cy, () -> drawChest(r.dungeonId, cx, cy, 0, 1f)));
+        }
+        for (ChestOpening c : chestOpenings) {
+            if (!inView(c.x, c.y) || g.fighting()) continue;
+            int frame = c.age < 0.18f ? 1 : 2;
+            float alpha = Math.min(1f, (2.8f - c.age) / 0.5f);
+            list.add(new Sorted(c.y, () -> drawChest(c.dungeon, c.x, c.y, frame, alpha)));
+        }
+        for (Hazard h : g.hazards) {
+            if (h.kind != Hazard.Kind.EYE || h.dead || !inView(h.x, h.y)) continue;
+            // The fully-open frame is reserved for the actual trigger, not the warning.
+            int frame = Math.min(2, (int) (MathUtils.clamp(h.progress(), 0f, 1f) * 3f));
+            list.add(new Sorted(h.y, () -> drawEye(h.x, h.y, h.radius, frame, 1f)));
+        }
+        for (float[] e : eyeFlashes) {
+            if (!inView(e[0], e[1])) continue;
+            list.add(new Sorted(e[1], () -> drawEye(e[0], e[1], e[2], 3, Math.min(1f, (0.45f - e[3]) / 0.18f))));
         }
         for (float[] pd : g.state.potionDrops) {
             if (!inView(pd[0], pd[1])) continue;
@@ -1495,19 +1550,36 @@ public class WorldRenderer implements Disposable {
         batch.draw(art.white(), x, y, w, h);
     }
 
-    /** 보스 보물상자 (선우 버전 그림 team/sunwoo/chest_*.png 의 닫힌 칸). 살짝 반짝인다. */
-    private void drawChest(Room r, float x, float y) {
-        TextureRegion t = art.frame("team/sunwoo/chest_" + r.dungeonId.toLowerCase() + ".png", 3, 0);
+    /** Same 44x40 world footprint for all atlas resolutions and opening frames. */
+    private void drawChest(String dungeonId, float x, float y, int frame, float alpha) {
+        String name = "chest_" + dungeonId.toLowerCase(java.util.Locale.ROOT) + ".png";
+        TextureRegion t = art.cell("sprites/rewards/" + name, 3, 1, frame);
+        if (t == null) t = art.frame("team/sunwoo/" + name, 3, frame);
         if (t == null) return;
-        float w = t.getRegionWidth(), h = t.getRegionHeight();
-        drawShadow(x, y, w * 0.9f);
-        float bob = MathUtils.sin(time * 3f) * 1.2f;
+        float w = 44f, h = 40f;
+        drawShadow(x, y, w * 0.9f * alpha);
+        batch.setColor(1f, 1f, 1f, alpha);
+        batch.draw(t, x - w / 2f, y - 4, w, h);
+        if (frame == 0) {
+            Particles.additive(batch);
+            batch.setColor(1f, 0.9f, 0.5f, 0.05f + 0.04f * MathUtils.sin(time * 4f));
+            batch.draw(t, x - w / 2f, y - 4, w, h);
+            Particles.normal(batch);
+        }
         batch.setColor(Color.WHITE);
-        batch.draw(t, x - w / 2f, y - 4 + bob, w, h);
-        Particles.additive(batch);
-        batch.setColor(1f, 0.9f, 0.5f, 0.18f + 0.12f * MathUtils.sin(time * 4f));
-        batch.draw(t, x - w / 2f, y - 4 + bob, w, h);
-        Particles.normal(batch);
+    }
+
+    private TextureRegion eyeRegion(int frame) {
+        TextureRegion t = art.cell("sprites/rewards/demon_eye.png", 4, 1, frame);
+        return t != null ? t : art.frame("sprites/demon_eye.png", 4, frame);
+    }
+
+    private void drawEye(float x, float y, float radius, int frame, float alpha) {
+        TextureRegion t = eyeRegion(frame);
+        if (t == null) return;
+        float w = radius * 2.6f, h = w * 32f / 48f;
+        batch.setColor(1f, 1f, 1f, MathUtils.clamp(alpha, 0f, 1f));
+        batch.draw(t, x - w / 2f, y - h / 2f, w, h);
         batch.setColor(Color.WHITE);
     }
 
@@ -2330,6 +2402,7 @@ public class WorldRenderer implements Disposable {
         sceneTex.clear();
         for (Texture t : frontTex.values()) if (t != null) t.dispose();
         frontTex.clear();
+        sceneForegrounds.dispose();
         for (Texture t : gateTex.values()) if (t != null) t.dispose();
         gateTex.clear();
         for (Texture[] ts : corridorSkin.values()) for (Texture t : ts) t.dispose();

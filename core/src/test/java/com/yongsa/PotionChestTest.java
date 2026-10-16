@@ -76,6 +76,28 @@ class PotionChestTest {
     }
 
     @Test
+    void openingAnimationIdentifiesItsRoomAndCannotGrantRewardsTwice() {
+        for (String roomId : List.of("L6", "R6", "T6")) {
+            GameState s = NewGame.create(b);
+            GameSession g = new GameSession(b, TestData.map(), s, 2);
+            Room r = g.map.room(roomId);
+            s.chests.add(roomId);
+            g.pollEvents();
+            g.openChest(r);
+            GameEvent event = g.pollEvents().stream().filter(e -> e.type == GameEvent.Type.CHEST_OPENED).findFirst().orElseThrow();
+            assertEquals(r.dungeonId, event.dungeonId);
+            assertEquals(roomId, event.opened);
+            assertEquals(g.chestX(r), event.x, 0.01f);
+            assertEquals(g.chestY(r), event.y - b.tileSize, 0.01f);
+            int ore = s.ore(event.ore), drops = s.potionDrops.size();
+            g.openChest(r);
+            assertEquals(ore, s.ore(event.ore));
+            assertEquals(drops, s.potionDrops.size());
+            assertTrue(g.pollEvents().stream().noneMatch(e -> e.type == GameEvent.Type.CHEST_OPENED));
+        }
+    }
+
+    @Test
     void potionStaysOnFloorAtFullHp() {
         GameState s = NewGame.create(b);
         GameSession g = new GameSession(b, TestData.map(), s, 1);
