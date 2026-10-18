@@ -40,7 +40,7 @@ final class SceneForegrounds implements Disposable {
         if(entry==null) {
             entry=new Cached();
             Pixmap source=new Pixmap(Gdx.files.internal(room.scene.image));
-            if (passages.active) source = passages.joinRoom(source, room);
+            if (passages.active) source = passages.joinForeground(source, room);
             try {
                 int w=source.getWidth(),h=source.getHeight();
                 for(var mask:masks) {

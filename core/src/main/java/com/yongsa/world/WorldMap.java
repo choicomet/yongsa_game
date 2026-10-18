@@ -35,6 +35,8 @@ public class WorldMap {
     public final List<Link> links = new ArrayList<>();
     public final List<Prop> props = new ArrayList<>();
     public final List<Corridor> corridors = new ArrayList<>();
+    public final List<PaintedJointLayout.Joint> paintedJoints = new ArrayList<>();
+    private final Map<PaintedJointLayout.Joint, Door> jointDoors = new HashMap<>();
     private final Map<String, Room> byId = new HashMap<>();
     private final MapDef def;
     private final RoomSceneLayout scenes;
@@ -59,7 +61,32 @@ public class WorldMap {
         }
         for (LinkDef ld : def.links) buildLink(ld);
         buildCorridors();
+        buildPaintedJoints();
         buildCampProps();
+    }
+
+    private void buildPaintedJoints() {
+        if (def.joints == null) return;
+        for (var j : def.joints) {
+            if (!j.matches(this)) continue;
+            Door door = room(j.room).doors.stream().filter(d -> Math.abs(d.footX-j.door[0])<.02f
+                    && Math.abs(d.footY-j.door[1])<.02f).findFirst().orElseThrow();
+            paintedJoints.add(j);jointDoors.put(j,door);
+            int x0=(int)Math.floor(j.rect[0]/tileSize), y0=(int)Math.floor(j.rect[1]/tileSize);
+            int x1=(int)Math.ceil((j.rect[0]+j.rect[2])/tileSize), y1=(int)Math.ceil((j.rect[1]+j.rect[3])/tileSize);
+            for(int y=y0;y<y1;y++)for(int x=x0;x<x1;x++) {
+                float px=(x+.5f)*tileSize,py=(y+.5f)*tileSize;
+                if(!inBounds(x,y)||!j.owns(px,py))continue;
+                boolean floor=j.allowsFoot(px,py,0);
+                set(x,y,floor?(roomAt(x,y)==null?CORRIDOR:FLOOR):WALL);
+                corridorAt[idx(x,y)]=floor?door.link.corridor:null;
+            }
+        }
+    }
+
+    private PaintedJointLayout.Joint jointAt(float x,float y) {
+        for(var j:paintedJoints)if(j.owns(x,y))return j;
+        return null;
     }
 
     private int ox(int cx) {
@@ -525,6 +552,8 @@ public class WorldMap {
 
     /** 바닥 가장자리도 정확히 찾는다. 칸 가운데가 벽이어도 그 칸 일부는 길일 수 있다. */
     public Corridor corridorAtWorld(float x, float y) {
+        var joint=jointAt(x,y);
+        if(joint!=null)return joint.allowsFoot(x,y,0)?jointDoors.get(joint).link.corridor:null;
         for (Corridor c : corridors) {
             if (c.scene != null && x >= c.originX && x <= c.originX + c.widthPx
                     && y >= c.originY && y <= c.originY + c.heightPx && c.allowsFoot(x, y, 0)) return c;
@@ -626,6 +655,12 @@ public class WorldMap {
      * 그림 방은 칸 가운데가 바닥 경계 안이면 바닥이다.
      */
     public boolean solid(int x, int y) {
+        var joint=jointAt((x+.5f)*tileSize,(y+.5f)*tileSize);
+        if(joint!=null) {
+            Door d=jointDoors.get(joint);
+            return !joint.allowsFoot((x+.5f)*tileSize,(y+.5f)*tileSize,0)
+                    || (d.isClosed() && d.blocks((x+.5f)*tileSize,(y+.5f)*tileSize,0)) || isBlockedOverlay(x,y);
+        }
         int t = tile(x, y);
         if (t == VOID || t == WALL) return true;
         if (t == DOOR && doorAt[idx(x, y)].isClosed()) return true;
@@ -667,6 +702,12 @@ public class WorldMap {
             if (isBlockedOverlay(tx, ty)) return false;
         Room r = roomAt((int) Math.floor(x / tileSize), (int) Math.floor(y / tileSize));
         if (r != null) for (Door d : r.doors) if (d.isClosed() && d.blocks(x, y, radius)) return false;
+        var joint=jointAt(x,y);
+        if(joint!=null) {
+            Door door=jointDoors.get(joint);
+            if(door.isClosed() && door.blocks(x,y,radius))return false;
+            return joint.allowsFoot(x,y,radius);
+        }
         if (r != null && r.allowsFoot(x, y, radius)) return true;
         for (Corridor c : corridors) {
             if (x + radius < c.originX || x - radius > c.originX + c.widthPx

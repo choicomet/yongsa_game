@@ -66,10 +66,12 @@ class PassagePainter implements Disposable {
     private final Map<String, Texture> paintings = new HashMap<>();
     private final boolean painted;
     final boolean active;
+    final PaintedJoints joints;
 
     PassagePainter(WorldMap map, float tileSize) {
         this.map = map;
         this.T = tileSize;
+        joints = new PaintedJoints(map);
         painted = !map.corridors.isEmpty() && map.corridors.stream().allMatch(c -> c.scene != null);
         if (painted) {
             active = true;
@@ -369,6 +371,14 @@ class PassagePainter implements Disposable {
 
     /** 방 그림의 출구 바깥만 길목 그림으로 부드럽게 넘긴다. 원본 파일은 바꾸지 않는다. */
     Pixmap joinRoom(Pixmap source, Room r) {
+        return joinRoom(source, r, false);
+    }
+
+    Pixmap joinForeground(Pixmap source, Room r) {
+        return joinRoom(source, r, true);
+    }
+
+    private Pixmap joinRoom(Pixmap source, Room r, boolean foreground) {
         if (!painted) return featherEdges(source);
         Pixmap p = rgba(source);
         int w = p.getWidth(), h = p.getHeight();
@@ -376,6 +386,7 @@ class PassagePainter implements Disposable {
         RoomJoinMask mask = new RoomJoinMask(r, T);
         for (int py = 0; py < h; py++) for (int px = 0; px < w; px++) {
             float alpha = mask.alpha(r.sceneX((px + .5f) / w), r.sceneY((py + .5f) / h));
+            if (foreground) alpha *= joints.originalForegroundAlpha(r.sceneX((px + .5f) / w), r.sceneY((py + .5f) / h));
             int idx = (py * w + px) * 4 + 3;
             pixels.put(idx, (byte) Math.round((pixels.get(idx) & 255) * alpha));
         }
@@ -429,6 +440,7 @@ class PassagePainter implements Disposable {
 
     @Override
     public void dispose() {
+        joints.dispose();
         for (Texture t : paintings.values()) t.dispose();
         paintings.clear();
         for (Skin s : skins.values()) {

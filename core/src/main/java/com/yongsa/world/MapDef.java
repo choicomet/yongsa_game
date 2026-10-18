@@ -20,9 +20,13 @@ public class MapDef {
     public List<LinkDef> links;
     /** 완성된 길목 그림과 그림 위에서 직접 잰 바닥 경계. */
     public List<PassageScene> passageScenes;
+    /** Local repaints and their floor outlines, spanning a room and passage together. */
+    public List<PaintedJointLayout.Joint> joints;
 
     public static MapDef parse(String json) {
-        return new Gson().fromJson(json, MapDef.class);
+        MapDef def = new Gson().fromJson(json, MapDef.class);
+        if (def.joints != null) PaintedJointLayout.validate(def.joints);
+        return def;
     }
 
     public static class RoomDef {

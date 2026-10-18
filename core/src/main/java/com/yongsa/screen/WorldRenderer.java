@@ -871,6 +871,7 @@ public class WorldRenderer implements Disposable {
         drawScenes();
         drawTiles(tx0, ty0, tx1, ty1);
         if (passages.active) passages.drawFloors(batch, viewX0, viewY0, viewX1, viewY1);
+        passages.joints.draw(batch, viewX0, viewY0, viewX1, viewY1);
         drawSceneDoors();
         drawFloorProps();
         drawTorches();
@@ -889,6 +890,8 @@ public class WorldRenderer implements Disposable {
                 list.add(new Sorted(r.sceneY(piece.depth), () -> sceneForegrounds.draw(batch, r, piece)));
             }
         }
+        for (var front : passages.joints.fronts(viewX0, viewY0, viewX1, viewY1))
+            list.add(new Sorted(front.depth, () -> front.draw(batch)));
         list.sort((a, b) -> Float.compare(b.y, a.y));
         for (Sorted s : list) s.call.draw();
         drawSceneFronts();
@@ -1074,7 +1077,7 @@ public class WorldRenderer implements Disposable {
         if (Gdx.files.internal(file).exists()) {
             com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(file));
             eraseWalkable(p, r.scene.walkable);
-            if (passages.active) p = passages.joinRoom(p, r);
+            if (passages.active) p = passages.joinForeground(p, r);
             t = new Texture(p);
             t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
             p.dispose();
