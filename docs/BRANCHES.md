@@ -38,6 +38,8 @@
 
 ## 가져오기와 로컬 폴더
 
+**PC·노트북 공통:** 현재 받거나 실행할 브랜치는 `haeseong/game`, 검토할 PR은 [#16](https://github.com/choicomet/yongsa_game/pull/16)이다. PR #14의 `5372e64`는 이전 맵 버전이며 이번 출입구 잘림 보정은 [10월 18일 검수 기록](../design/seam-fix/README.md)을 따른다. 아래 `work/yongsa-haeseong` 경로는 당시 노트북의 작업 폴더이므로 다른 PC에서는 실제 저장소 폴더에서 실행한다.
+
 다른 체크아웃에서 처음 받을 때(미커밋 변경이 없는지 먼저 확인):
 
 ```powershell

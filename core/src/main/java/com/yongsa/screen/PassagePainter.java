@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Disposable;
 import com.yongsa.world.Corridor;
 import com.yongsa.world.Room;
-import com.yongsa.world.Door;
 import com.yongsa.world.WorldMap;
 
 import java.nio.ByteBuffer;
@@ -370,37 +369,15 @@ class PassagePainter implements Disposable {
 
     /** 방 그림의 출구 바깥만 길목 그림으로 부드럽게 넘긴다. 원본 파일은 바꾸지 않는다. */
     Pixmap joinRoom(Pixmap source, Room r) {
-        Pixmap p = featherEdges(source);
-        if (!painted) return p;
+        if (!painted) return featherEdges(source);
+        Pixmap p = rgba(source);
         int w = p.getWidth(), h = p.getHeight();
         ByteBuffer pixels = p.getPixels();
-        for (Door d : r.doors) {
-            if (d.link == null || d.link.corridor == null) continue;
-            Corridor c = d.link.corridor;
-            for (int py = 0; py < h; py++) {
-                float wy = r.sceneY((py + .5f) / h);
-                if (wy < c.originY || wy > c.originY + c.heightPx) continue;
-                for (int px = 0; px < w; px++) {
-                    float wx = r.sceneX((px + .5f) / w);
-                    if (wx < c.originX || wx > c.originX + c.widthPx) continue;
-                    float along = (wx - d.footX) * d.dirX + (wy - d.footY) * d.dirY;
-                    if (along < -.5f * T) continue;
-                    // Blend the whole short mouth including its side masonry, not a floor strip.
-                    float across = Math.abs(-(wx - d.footX) * d.dirY + (wy - d.footY) * d.dirX);
-                    float side = Math.max(0, Math.min(1, (d.halfWidth + 2.5f * T - across) / (1.2f * T)));
-                    float amount = Math.max(0, Math.min(1, (along + .5f * T) / (1.2f * T)));
-                    amount = amount * amount * (3 - 2 * amount) * side;
-                    // A diagonal door intersects the rectangular image edge at an
-                    // angle. Fade that cut too, otherwise side timbers end on a hard line.
-                    if (Math.abs(d.dirX) > .1f && Math.abs(d.dirY) > .1f) {
-                        float edge = Math.min(Math.min(wx - c.originX, c.originX + c.widthPx - wx),
-                                Math.min(wy - c.originY, c.originY + c.heightPx - wy));
-                        amount *= smooth(edge / (1.2f * T));
-                    }
-                    int idx = (py * w + px) * 4 + 3;
-                    pixels.put(idx, (byte) Math.round((pixels.get(idx) & 255) * (1 - amount)));
-                }
-            }
+        RoomJoinMask mask = new RoomJoinMask(r, T);
+        for (int py = 0; py < h; py++) for (int px = 0; px < w; px++) {
+            float alpha = mask.alpha(r.sceneX((px + .5f) / w), r.sceneY((py + .5f) / h));
+            int idx = (py * w + px) * 4 + 3;
+            pixels.put(idx, (byte) Math.round((pixels.get(idx) & 255) * alpha));
         }
         return p;
     }
