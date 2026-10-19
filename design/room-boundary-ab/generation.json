@@ -1,0 +1,23 @@
+{
+  "mode": "built-in image_gen",
+  "status": "comparison candidates only; current A remains active",
+  "A": {
+    "sourceCommit": "1b516b33d108999d8eba38d5097a2b435c92bf59",
+    "files": [
+      "A/mine-north.png",
+      "A/mine-side.png"
+    ]
+  },
+  "B": [
+    {
+      "path": "B/mine-north.png",
+      "prompt": "Use case: precise-object-edit.\nEdit target: this square game terrain painting of an open stair connection in a mine. Make a SECOND OPTION that visibly marks the boundary between two rooms, while retaining exactly the same continuous open route and scenery.\nKeep camera, crop, perspective, dimensions, rock contours, path width, stone steps, barrel, crate, rail, all surrounding scenery and the entire outer 15% perimeter unchanged. Work only near the central stair threshold.\nAdd a restrained matched pair of squared dark timber/stone gateway posts built INTO the existing rocks on either side of the steps around normalized x=.39 and .625, their bases around y=.55. The posts should be modest, about one small game-character height, and not encroach into the existing walkable stair treads. Add iron bands and short faded dark-red cloth pennants hanging on the OUTER sides of these two posts, with a simple small pale diamond insignia and no writing. This paired motif should immediately signal 'entering the next room'.\nTie the two side markers together VISUALLY with a narrow, worn pale-grey stone threshold course laid flush across an existing step at y~.54, using the existing step perspective, not a raised obstruction. Make the boundary recognisable at normal small in-game scale without making a grand fantasy doorway. There must be NO overhead crossbeam, roof, spanning arch, gate, closed door, black tunnel mouth or new wall across the path. The upper trail must still visibly flow down the same open steps into the lower room.\nKeep the current warm amber/cool slate hand-painted pixel-art palette and detail. No overall colour grading, no characters, interface, lettering, arrows, labels or borders. Same square framing.",
+      "source": "exec-ede68efa-b2a9-498f-8f44-a3d4c614e556.png"
+    },
+    {
+      "path": "B/mine-side.png",
+      "prompt": "Use case: precise-object-edit.\nImage 1 is the EDIT TARGET: the continuous open side gallery in the mine. Image 2 is ONLY a motif reference: the restrained paired timber posts, short dark red pennants with diamond emblems, and stone threshold. Do NOT import its stair layout.\nCreate a second room-boundary option for Image 1. Preserve its exact square crop, camera, path geometry, outer 15% perimeter, rear rock wall, original lanterns, rails, mine cart, foreground ridge and all surrounding scenery.\nMark the transition at the CENTER of the open path with TWO modest matching iron-banded square timber markers, one planted against the existing rear wall at normalized (x=.55,y=.44), the other at the near-side rock edge around (.43,.64). The markers must stand on the existing solid rock margins, not reduce the open walking width. Each should be around one small game character's height. Each has a short faded burgundy pennant with a small pale diamond, matching the motif in Image 2. Leave the path between them completely OPEN TO THE SKY, no overhead crossbeam, gate, arch or roof.\nAdd a narrow, worn row of pale grey stone pavers FLUSH WITH THE DIRT across that diagonal threshold, from the back marker to the front marker, in the same floor perspective. It should read as 'entering a new room' at small in-game scale, while the earth around it remains visibly continuous from left to right. Absolutely no black tunnel, raised wall, fence or vertical face across the route.\nKeep the detailed hand-painted pixel-art style and current warm amber/cool slate palette. No global recolouring, no new room, no cropping, no characters, interface, text, arrows or borders. Make only the targeted boundary-marker edit.",
+      "source": "exec-c70a3edd-6e2b-4c92-95ca-d13e6baa9bc1.png"
+    }
+  ]
+}

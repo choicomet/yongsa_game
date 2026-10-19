@@ -1,0 +1,420 @@
+{
+  "date": "2026-10-20",
+  "auditedCommit": "449857478a2d3343673b7fcd76acd6a7cf79bac6",
+  "endpointReviews": [
+    {
+      "id": "entry-CAMP-L1",
+      "status": "다시 그리기",
+      "notes": "캠프 석문과 광산 목재 입구가 겹치고 파란 석재 바닥이 옆 흙길로 이어지지 않음",
+      "region": "광산",
+      "evidence": "review/endpoint-01.jpg",
+      "floorEvidence": "review/floor-01.jpg",
+      "cell": 1
+    },
+    {
+      "id": "exit-CAMP-L1",
+      "status": "다시 그리기",
+      "notes": "서로 다른 각도의 목재 문틀 두 개가 교차하며 기둥이 통로 중앙에 남음",
+      "region": "광산",
+      "evidence": "review/endpoint-01.jpg",
+      "floorEvidence": "review/floor-01.jpg",
+      "cell": 2
+    },
+    {
+      "id": "entry-L1-L2",
+      "status": "유지",
+      "notes": "새로 그린 열린 통로. 중앙 문틀 교차가 해소됨",
+      "region": "광산",
+      "evidence": "review/endpoint-01.jpg",
+      "floorEvidence": "review/floor-01.jpg",
+      "cell": 3
+    },
+    {
+      "id": "exit-L1-L2",
+      "status": "다시 그리기",
+      "notes": "L2 쪽은 여전히 겹친 목재 입구와 암벽 돌출이 통행 지점에 남음",
+      "region": "광산",
+      "evidence": "review/endpoint-01.jpg",
+      "floorEvidence": "review/floor-01.jpg",
+      "cell": 4
+    },
+    {
+      "id": "entry-L1-L8",
+      "status": "부분 보정",
+      "notes": "연결 바닥은 열려 있으나 방의 넓은 흙바닥에서 좁은 통로로 넘어가는 재질 경계가 남음",
+      "region": "광산",
+      "evidence": "review/endpoint-01.jpg",
+      "floorEvidence": "review/floor-01.jpg",
+      "cell": 5
+    },
+    {
+      "id": "exit-L1-L8",
+      "status": "다시 그리기",
+      "notes": "위쪽 흙길이 아래 갱도 지붕 위로 덮임. 열린 계단으로 공간을 연결해야 함",
+      "region": "광산",
+      "evidence": "review/endpoint-01.jpg",
+      "floorEvidence": "review/floor-01.jpg",
+      "cell": 6
+    },
+    {
+      "id": "entry-L2-L3",
+      "status": "유지",
+      "notes": "흙길 윤곽이 연속적이며 큰 문틀 교차나 단절 없음",
+      "region": "광산",
+      "evidence": "review/endpoint-02.jpg",
+      "floorEvidence": "review/floor-02.jpg",
+      "cell": 1
+    },
+    {
+      "id": "exit-L2-L3",
+      "status": "다시 그리기",
+      "notes": "통로의 바닥이 북쪽 터널 지붕에서 끊기고 검은 입구 위를 걷는 모양",
+      "region": "광산",
+      "evidence": "review/endpoint-02.jpg",
+      "floorEvidence": "review/floor-02.jpg",
+      "cell": 2
+    },
+    {
+      "id": "entry-L3-L4",
+      "status": "다시 그리기",
+      "notes": "위쪽 직선 레일과 아래 굽은 레일이 서로 다른 높이에서 끝남",
+      "region": "광산",
+      "evidence": "review/endpoint-02.jpg",
+      "floorEvidence": "review/floor-02.jpg",
+      "cell": 3
+    },
+    {
+      "id": "exit-L3-L4",
+      "status": "다시 그리기",
+      "notes": "아래쪽 레일이 문턱 근처에서 끊겨 위쪽 바닥과 선로 높이·진행 방향이 맞지 않음",
+      "region": "광산",
+      "evidence": "review/endpoint-02.jpg",
+      "floorEvidence": "review/floor-02.jpg",
+      "cell": 4
+    },
+    {
+      "id": "entry-L3-L5",
+      "status": "유지",
+      "notes": "열린 계단과 흙길이 이어지며 통행 폭도 읽힘",
+      "region": "광산",
+      "evidence": "review/endpoint-02.jpg",
+      "floorEvidence": "review/floor-02.jpg",
+      "cell": 5
+    },
+    {
+      "id": "exit-L3-L5",
+      "status": "유지",
+      "notes": "이미 교체한 돌계단 연결. 위아래 바닥과 암벽이 이어짐",
+      "region": "광산",
+      "evidence": "review/endpoint-02.jpg",
+      "floorEvidence": "review/floor-02.jpg",
+      "cell": 6
+    },
+    {
+      "id": "entry-L5-L7",
+      "status": "다시 그리기",
+      "notes": "서로 다른 입구의 들보·세로 기둥이 한 자리에 겹침",
+      "region": "광산",
+      "evidence": "review/endpoint-03.jpg",
+      "floorEvidence": "review/floor-03.jpg",
+      "cell": 1
+    },
+    {
+      "id": "exit-L5-L7",
+      "status": "다시 그리기",
+      "notes": "L7 쪽도 목재 문틀이 교차하고 중앙 암벽/기둥이 통행 실루엣과 충돌",
+      "region": "광산",
+      "evidence": "review/endpoint-03.jpg",
+      "floorEvidence": "review/floor-03.jpg",
+      "cell": 2
+    },
+    {
+      "id": "entry-L7-L6",
+      "status": "다시 그리기",
+      "notes": "상부 바닥이 보스 전실의 갱도 지붕 위에 놓여 높이 전환이 설명되지 않음",
+      "region": "광산",
+      "evidence": "review/endpoint-03.jpg",
+      "floorEvidence": "review/floor-03.jpg",
+      "cell": 3
+    },
+    {
+      "id": "exit-L7-L6",
+      "status": "유지",
+      "notes": "보스방으로 내려가는 열린 계단 연결은 큰 그림 단절 없음",
+      "region": "광산",
+      "evidence": "review/endpoint-03.jpg",
+      "floorEvidence": "review/floor-03.jpg",
+      "cell": 4
+    },
+    {
+      "id": "entry-CAMP-R1",
+      "status": "다시 그리기",
+      "notes": "붉은 캠프 입구와 성채 회랑이 비스듬히 교차해 바닥과 옆벽의 방향이 달라짐",
+      "region": "성채",
+      "evidence": "review/endpoint-03.jpg",
+      "floorEvidence": "review/floor-03.jpg",
+      "cell": 5
+    },
+    {
+      "id": "exit-CAMP-R1",
+      "status": "다시 그리기",
+      "notes": "상부 회랑 바닥이 파란 아치 위쪽 벽으로 이어져 출입 방향이 맞지 않음",
+      "region": "성채",
+      "evidence": "review/endpoint-03.jpg",
+      "floorEvidence": "review/floor-03.jpg",
+      "cell": 6
+    },
+    {
+      "id": "entry-R1-R2",
+      "status": "유지",
+      "notes": "성채 방의 남쪽 계단과 굽은 회랑이 열린 바닥으로 이어짐",
+      "region": "성채",
+      "evidence": "review/endpoint-04.jpg",
+      "floorEvidence": "review/floor-04.jpg",
+      "cell": 1
+    },
+    {
+      "id": "exit-R1-R2",
+      "status": "다시 그리기",
+      "notes": "회랑 계단 끝이 파란 아치의 윗벽에 닿음. 문 안으로 들어가는 길과 높이가 맞지 않음",
+      "region": "성채",
+      "evidence": "review/endpoint-04.jpg",
+      "floorEvidence": "review/floor-04.jpg",
+      "cell": 2
+    },
+    {
+      "id": "entry-R2-R7",
+      "status": "부분 보정",
+      "notes": "계단 두 구간 사이의 바닥 폭과 양옆 돌담을 맞추면 연결 가능",
+      "region": "성채",
+      "evidence": "review/endpoint-04.jpg",
+      "floorEvidence": "review/floor-04.jpg",
+      "cell": 3
+    },
+    {
+      "id": "exit-R2-R7",
+      "status": "부분 보정",
+      "notes": "상하 계단 사이에 짙은 수평 이음선과 옆 기둥 단절이 남음",
+      "region": "성채",
+      "evidence": "review/endpoint-04.jpg",
+      "floorEvidence": "review/floor-04.jpg",
+      "cell": 4
+    },
+    {
+      "id": "entry-R7-R3",
+      "status": "다시 그리기",
+      "notes": "옆문 아치가 향하는 방향과 회랑 방향이 다르고 문기둥이 이동 축에 걸림",
+      "region": "성채",
+      "evidence": "review/endpoint-04.jpg",
+      "floorEvidence": "review/floor-04.jpg",
+      "cell": 5
+    },
+    {
+      "id": "exit-R7-R3",
+      "status": "다시 그리기",
+      "notes": "회랑 바닥이 파란 아치 옆 윗벽으로 이어져 입구의 앞뒤가 맞지 않음",
+      "region": "성채",
+      "evidence": "review/endpoint-04.jpg",
+      "floorEvidence": "review/floor-04.jpg",
+      "cell": 6
+    },
+    {
+      "id": "entry-R3-R4",
+      "status": "부분 보정",
+      "notes": "바닥은 열려 있지만 방의 부서진 벽 끝과 회랑 계단 머리의 돌담을 정리해야 함",
+      "region": "성채",
+      "evidence": "review/endpoint-05.jpg",
+      "floorEvidence": "review/floor-05.jpg",
+      "cell": 1
+    },
+    {
+      "id": "exit-R3-R4",
+      "status": "부분 보정",
+      "notes": "계단 이음부의 기둥 끝과 수평 경계가 겹침. 계단 폭과 측벽 높이를 맞춰야 함",
+      "region": "성채",
+      "evidence": "review/endpoint-05.jpg",
+      "floorEvidence": "review/floor-05.jpg",
+      "cell": 2
+    },
+    {
+      "id": "entry-R3-R5",
+      "status": "다시 그리기",
+      "notes": "파란 옆문과 오른쪽 회랑의 출입 방향이 어긋나고 기둥이 길 가운데 남음",
+      "region": "성채",
+      "evidence": "review/endpoint-05.jpg",
+      "floorEvidence": "review/floor-05.jpg",
+      "cell": 3
+    },
+    {
+      "id": "exit-R3-R5",
+      "status": "다시 그리기",
+      "notes": "회랑이 방의 파란 아치 위쪽 벽에 닿아 바닥 높이가 맞지 않음",
+      "region": "성채",
+      "evidence": "review/endpoint-05.jpg",
+      "floorEvidence": "review/floor-05.jpg",
+      "cell": 4
+    },
+    {
+      "id": "entry-R5-R6",
+      "status": "다시 그리기",
+      "notes": "상부 회랑 계단이 하부 아치 지붕으로 이어져 문 안쪽과 연결되지 않음",
+      "region": "성채",
+      "evidence": "review/endpoint-05.jpg",
+      "floorEvidence": "review/floor-05.jpg",
+      "cell": 5
+    },
+    {
+      "id": "exit-R5-R6",
+      "status": "부분 보정",
+      "notes": "열린 계단끼리 연결되지만 중간 단의 폭과 색, 양옆 돌담 높이가 급변함",
+      "region": "성채",
+      "evidence": "review/endpoint-05.jpg",
+      "floorEvidence": "review/floor-05.jpg",
+      "cell": 6
+    },
+    {
+      "id": "entry-CAMP-T1",
+      "status": "다시 그리기",
+      "notes": "탑 통로의 바닥이 캠프 보라색 문의 지붕으로 이어짐",
+      "region": "탑",
+      "evidence": "review/endpoint-06.jpg",
+      "floorEvidence": "review/floor-06.jpg",
+      "cell": 1
+    },
+    {
+      "id": "exit-CAMP-T1",
+      "status": "부분 보정",
+      "notes": "열린 계단과 다리 연결은 가능하나 계단 아래 가로 경계와 오른쪽 기둥 끝을 정리해야 함",
+      "region": "탑",
+      "evidence": "review/endpoint-06.jpg",
+      "floorEvidence": "review/floor-06.jpg",
+      "cell": 2
+    },
+    {
+      "id": "entry-T1-T2",
+      "status": "다시 그리기",
+      "notes": "방의 옆문 기둥과 다리 난간이 출입 지점에 중첩됨. 문에서 다리로 나가는 꺾임을 다시 설계해야 함",
+      "region": "탑",
+      "evidence": "review/endpoint-06.jpg",
+      "floorEvidence": "review/floor-06.jpg",
+      "cell": 3
+    },
+    {
+      "id": "exit-T1-T2",
+      "status": "다시 그리기",
+      "notes": "방의 왼쪽 출입부 난간과 통로 끝이 겹쳐 영웅이 난간 위에 서 있는 모양",
+      "region": "탑",
+      "evidence": "review/endpoint-06.jpg",
+      "floorEvidence": "review/floor-06.jpg",
+      "cell": 4
+    },
+    {
+      "id": "entry-T2-T3",
+      "status": "부분 보정",
+      "notes": "계단 위 바닥 폭과 기둥 연결을 맞춰야 함. 아치 지붕 중첩은 없음",
+      "region": "탑",
+      "evidence": "review/endpoint-06.jpg",
+      "floorEvidence": "review/floor-06.jpg",
+      "cell": 5
+    },
+    {
+      "id": "exit-T2-T3",
+      "status": "부분 보정",
+      "notes": "두 계단 구간의 폭·진행 방향과 측벽을 이어주는 중간 층계참이 필요",
+      "region": "탑",
+      "evidence": "review/endpoint-06.jpg",
+      "floorEvidence": "review/floor-06.jpg",
+      "cell": 6
+    },
+    {
+      "id": "entry-T3-T4",
+      "status": "다시 그리기",
+      "notes": "상부 통로의 바닥이 보라색 문의 지붕 위로 덮여 계단과 문 내부가 끊김",
+      "region": "탑",
+      "evidence": "review/endpoint-07.jpg",
+      "floorEvidence": "review/floor-07.jpg",
+      "cell": 1
+    },
+    {
+      "id": "exit-T3-T4",
+      "status": "부분 보정",
+      "notes": "방 남쪽 계단 아래와 다리의 층계참 바닥·난간 경계를 정리해야 함",
+      "region": "탑",
+      "evidence": "review/endpoint-07.jpg",
+      "floorEvidence": "review/floor-07.jpg",
+      "cell": 2
+    },
+    {
+      "id": "entry-T3-T5",
+      "status": "다시 그리기",
+      "notes": "통로 끝의 외벽·창문과 방 옆 계단이 중첩돼 서로 다른 높이의 바닥처럼 보임",
+      "region": "탑",
+      "evidence": "review/endpoint-07.jpg",
+      "floorEvidence": "review/floor-07.jpg",
+      "cell": 3
+    },
+    {
+      "id": "exit-T3-T5",
+      "status": "다시 그리기",
+      "notes": "방 옆 입구의 난간과 회랑 끝이 겹치고 외벽 창문 앞이 출입구처럼 보임",
+      "region": "탑",
+      "evidence": "review/endpoint-07.jpg",
+      "floorEvidence": "review/floor-07.jpg",
+      "cell": 4
+    },
+    {
+      "id": "entry-T5-T7",
+      "status": "다시 그리기",
+      "notes": "파란 창문과 난간이 출입 위치에 남음. 방에서 회랑으로 이어지는 열린 문턱이 필요",
+      "region": "탑",
+      "evidence": "review/endpoint-07.jpg",
+      "floorEvidence": "review/floor-07.jpg",
+      "cell": 5
+    },
+    {
+      "id": "exit-T5-T7",
+      "status": "다시 그리기",
+      "notes": "옆문 앞 난간과 회랑 끝의 기둥이 겹쳐 캐릭터 발 위치에서 높이가 어긋남",
+      "region": "탑",
+      "evidence": "review/endpoint-07.jpg",
+      "floorEvidence": "review/floor-07.jpg",
+      "cell": 6
+    },
+    {
+      "id": "entry-T7-T6",
+      "status": "다시 그리기",
+      "notes": "보스 전실의 파란 아치 위로 상부 회랑 바닥이 덮임",
+      "region": "탑",
+      "evidence": "review/endpoint-08.jpg",
+      "floorEvidence": "review/floor-08.jpg",
+      "cell": 1
+    },
+    {
+      "id": "exit-T7-T6",
+      "status": "부분 보정",
+      "notes": "보스방 남쪽 계단과 회랑의 층계참 경계 및 측벽을 정리해야 함",
+      "region": "탑",
+      "evidence": "review/endpoint-08.jpg",
+      "floorEvidence": "review/floor-08.jpg",
+      "cell": 2
+    },
+    {
+      "id": "entry-CAMP-V",
+      "status": "부분 보정",
+      "notes": "캠프 계단과 마을길 계단 사이에 가로로 걸친 목재면이 남아 바닥이 끊겨 보임",
+      "region": "마을길",
+      "evidence": "review/endpoint-08.jpg",
+      "floorEvidence": "review/floor-08.jpg",
+      "cell": 3
+    },
+    {
+      "id": "exit-CAMP-V",
+      "status": "유지",
+      "notes": "야외 흙길이 마을 북쪽 계단과 광장으로 이어짐",
+      "region": "마을길",
+      "evidence": "review/endpoint-08.jpg",
+      "floorEvidence": "review/floor-08.jpg",
+      "cell": 4
+    }
+  ]
+}
