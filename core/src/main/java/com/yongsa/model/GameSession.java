@@ -267,13 +267,14 @@ public class GameSession {
         }
 
         if (hero.rolling()) {
-            // 처음에 빠르고 끝으로 갈수록 느려진다 (평균 속도 = 거리 / 시간)
-            float total = balance.attack.rollTime;
-            float p = 1f - hero.rollT / total;
-            float speed = balance.attack.rollDistanceTiles * T / total * 2f * (1f - p);
-            Physics.move(map, hero, hero.rollX * speed * dt, hero.rollY * speed * dt, T);
-            hero.rollT -= dt;
-            hero.walkTime += dt;
+            // Integrate the deceleration curve over this frame, including the partial final frame.
+            float total = hero.rollTotal;
+            float left = Math.max(0, hero.rollT - dt);
+            float a = Math.max(0, 1f - hero.rollT / total), z = 1f - left / total;
+            float distance = balance.attack.rollDistanceTiles * T * ((2*z-z*z) - (2*a-a*a));
+            Physics.move(map, hero, hero.rollX * distance, hero.rollY * distance, T);
+            hero.rollT = left;
+            hero.moving = false;
             return;
         }
 
@@ -284,20 +285,27 @@ public class GameSession {
         float mx = c.moveX, my = c.moveY;
         float len = (float) Math.sqrt(mx * mx + my * my);
         hero.moving = len > 0.01f;
+        if (hero.moving) { mx /= len; my /= len; }
+        if (c.roll && hero.rollCd <= 0) {
+            roll(mx, my);
+            return;
+        }
         if (hero.moving) {
-            mx /= len;
-            my /= len; // 대각선도 직선과 같은 속도 (FR-맵-01)
             hero.aimX = mx;
             hero.aimY = my;
             hero.facing = Facing.of(mx, my);
             float speed = balance.hero.moveSpeedTiles * T * (hero.slowT > 0 ? 1f - balance.monster.slowRatio : 1f);
+            float oldX = hero.x, oldY = hero.y;
             Physics.move(map, hero, mx * speed * dt, my * speed * dt, T);
-            hero.walkTime += dt;
+            float dx = hero.x - oldX, dy = hero.y - oldY;
+            float travelled = (float) Math.sqrt(dx * dx + dy * dy);
+            hero.moving = travelled > .001f;
+            // A wall or slow pool must not leave the legs running at full speed.
+            hero.walkTime += travelled / (balance.hero.moveSpeedTiles * T);
         }
         autoFace();
 
-        if (c.roll && hero.rollCd <= 0) roll(mx, my);
-        else if (c.skill >= 0) useSkill(c.skill);
+        if (c.skill >= 0) useSkill(c.skill);
         else if (c.attack && hero.attackCd <= 0) basic();
     }
 
@@ -513,14 +521,20 @@ public class GameSession {
         if (len > 0.01f) {
             hero.rollX = mx;
             hero.rollY = my;
+            hero.aimX = mx;
+            hero.aimY = my;
         } else {
             hero.rollX = hero.aimX;
             hero.rollY = hero.aimY;
         }
         hero.rollCd = balance.attack.rollTime + balance.attack.rollCooldown;
+        hero.rollFacing = Facing.of(hero.rollX, hero.rollY);
+        hero.facing = hero.rollFacing;
+        hero.moving = false;
         hero.rollT = hero.rollTotal = balance.attack.rollTime;
         hero.invuln = Math.max(hero.invuln, balance.attack.rollInvulnTime);
         hero.swingT = 0;
+        hero.mineSwingT = 0;
         events.add(GameEvent.sound("dash"));
     }
 

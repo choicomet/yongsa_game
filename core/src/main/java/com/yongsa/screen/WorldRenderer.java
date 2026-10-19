@@ -22,6 +22,8 @@ import com.yongsa.combat.Monster;
 import com.yongsa.combat.Projectile;
 import com.yongsa.gfx.Art;
 import com.yongsa.gfx.Fonts;
+import com.yongsa.gfx.HeroMotion;
+import com.yongsa.gfx.SpriteBlend;
 import com.yongsa.gfx.Lighting;
 import com.yongsa.gfx.Particles;
 import com.yongsa.model.GameEvent;
@@ -87,6 +89,9 @@ public class WorldRenderer implements Disposable {
     private final Color ambient = new Color(0.6f, 0.55f, 0.5f, 1f);
     private boolean ambientSet;
     private float time, ghostT, moteT, emberT;
+    private float walkBlend;
+    private final boolean heroMotionAvailable;
+    private final SpriteBlend spriteBlend = new SpriteBlend();
     private int lastStep = -1;
     private float viewX0, viewY0, viewX1, viewY1;
 
@@ -241,7 +246,7 @@ public class WorldRenderer implements Disposable {
 
     private static class Ghost {
         TextureRegion region;
-        float x, y, w, h, t;
+        float x, y, w, h, t, footOffset;
         boolean flip;
     }
 
@@ -277,6 +282,8 @@ public class WorldRenderer implements Disposable {
         this.shapes = shapes;
         this.map = g.map;
         this.T = g.balance.tileSize;
+        heroMotionAvailable = Gdx.files.internal("sprites/hero-motion/walk.png").exists()
+                && Gdx.files.internal("sprites/hero-motion/roll.png").exists();
         this.particles = new Particles(art.white(), art.glow);
         this.theme = new String[map.width * map.height];
         for (Room r : map.rooms) {
@@ -581,6 +588,8 @@ public class WorldRenderer implements Disposable {
         }
 
         HeroActor h = g.hero;
+        float targetWalk = h.moving && !h.rolling() ? 1f : 0f;
+        walkBlend += (targetWalk - walkBlend) * (1f - (float) Math.exp(-20f * dt));
         // 돌진 잔상
         if (h.rolling()) {
             ghostT -= dt;
@@ -590,12 +599,16 @@ public class WorldRenderer implements Disposable {
             if (ghostT <= 0) {
                 ghostT = 0.06f;
                 Ghost gh = new Ghost();
-                gh.region = heroRegion(h);
-                gh.w = art.width(gh.region) * S * HERO_SCALE;
-                gh.h = art.height(gh.region) * S * HERO_SCALE;
+                float p = HeroMotion.clamp(1 - h.rollT / h.rollTotal);
+                gh.region = motionFrame("roll", h.rollFacing, HeroMotion.rollFrame(p));
+                if (gh.region == null) gh.region = heroRegion(h);
+                boolean motion = hasHeroMotion();
+                gh.w = motion ? HeroMotion.WIDTH : art.width(gh.region) * S * HERO_SCALE;
+                gh.h = motion ? HeroMotion.HEIGHT : art.height(gh.region) * S * HERO_SCALE;
+                gh.footOffset = motion ? HeroMotion.FOOT_OFFSET : 2;
                 gh.x = h.x;
                 gh.y = h.y;
-                gh.flip = h.facing == Facing.LEFT;
+                gh.flip = h.rollFacing == Facing.LEFT;
                 ghosts.add(gh);
             }
         }
@@ -1473,7 +1486,8 @@ public class WorldRenderer implements Disposable {
                 ? art.cell(high, frames, 1, frame) : art.frame(fallback, frames, frame);
     }
 
-    private static final float VILLAGER_SCALE = 1.35f;
+    // Adult visible height ~58px, matching the hero; the original child proportions remain smaller.
+    private static final float VILLAGER_SCALE = 1.65f;
 
     /**
      * 마을 사람 (서 있는 두 자세, 수정 속).
@@ -1488,21 +1502,24 @@ public class WorldRenderer implements Disposable {
             TextureRegion f = storyFrame("villager_" + v.kind, path, 3, 2);
             if (f != null) {
                 batch.setColor(0.82f, 0.78f, 1f, 1f);
-                batch.draw(f, Math.round(x - w / 2f), Math.round(y - 2 * k), w, h);
+                batch.draw(f, x - w / 2f, y - 2 * k, w, h);
             }
             TextureRegion c = storyFrame("crystal_prison", "team/sunwoo/crystal_prison.png", 2, (int) ((time + phase) / 0.6f));
             if (c != null) {
                 batch.setColor(1, 1, 1, 0.9f + 0.1f * MathUtils.sin(time * 2f + phase * 10));
-                batch.draw(c, Math.round(x - 22 * k), Math.round(y - 6 * k), 44 * k, 60 * k);
+                batch.draw(c, x - 22 * k, y - 6 * k, 44 * k, 60 * k);
             }
         } else {
-            float t = (time + phase * 7) % 1.6f;
-            boolean cheer = t > 0.8f;
-            float hop = cheer ? Math.abs(MathUtils.sin((t - 0.8f) / 0.8f * MathUtils.PI * 2)) * 5 : 0;
-            TextureRegion f = storyFrame("villager_" + v.kind, path, 3, cheer ? 1 : 0);
+            float t = (time + phase * 7) % 4.8f;
+            float p = HeroMotion.clamp((t - 3.8f) / 1f);
+            float cheer = HeroMotion.smooth(p / .16f) * (1 - HeroMotion.smooth((p - .8f) / .2f));
+            float hop = MathUtils.sin(p * MathUtils.PI);
+            hop *= hop * 3;
+            TextureRegion f = storyFrame("villager_" + v.kind, path, 3, 0);
+            TextureRegion raised = storyFrame("villager_" + v.kind, path, 3, 1);
             if (f != null) {
                 batch.setColor(Color.WHITE);
-                batch.draw(f, Math.round(x - w / 2f), Math.round(y - 2 * k + hop), w, h);
+                spriteBlend.draw(batch, f, raised, cheer, x - w / 2f, y - 2 * k + hop, w, h);
             }
         }
         batch.setColor(Color.WHITE);
@@ -1633,7 +1650,18 @@ public class WorldRenderer implements Disposable {
         batch.setColor(Color.WHITE);
     }
 
+    private boolean hasHeroMotion() {
+        return heroMotionAvailable;
+    }
+
+    private TextureRegion motionFrame(String action, Facing facing, int frame) {
+        if (!heroMotionAvailable) return null;
+        return art.cell("sprites/hero-motion/" + action + ".png", 6, 3, HeroMotion.row(facing) * 6 + frame);
+    }
+
     private TextureRegion heroRegion(HeroActor h) {
+        TextureRegion animated = motionFrame("walk", h.facing, h.moving ? HeroMotion.walkFrame(h.walkTime) : 2);
+        if (animated != null) return animated;
         boolean walk = h.moving && ((int) (h.walkTime * 8)) % 2 == 1;
         String name;
         switch (h.facing) {
@@ -1660,22 +1688,26 @@ public class WorldRenderer implements Disposable {
         float alpha = blink ? 0.35f : 1f;
         boolean flip = h.facing == Facing.LEFT;
         TextureRegion r = heroRegion(h);
-        float w = art.width(r) * S * HERO_SCALE, hgt = art.height(r) * S * HERO_SCALE;
+        boolean motion = hasHeroMotion();
+        float w = motion ? HeroMotion.WIDTH : art.width(r) * S * HERO_SCALE;
+        float hgt = motion ? HeroMotion.HEIGHT : art.height(r) * S * HERO_SCALE;
+        float foot = motion ? HeroMotion.FOOT_OFFSET : 2;
         boolean swordBehind = h.facing == Facing.UP;
         if (swordBehind) drawSword(h, alpha);
         if (h.stunT > 0) batch.setColor(0.7f, 0.55f, 0.85f, alpha); // 눈알에 굳음: 잿빛 보라
         else batch.setColor(1f, 1f, 1f, alpha);
         // 휘두를 때 몸을 살짝 찌그러뜨려 힘이 들어간 느낌을 준다
-        float squash = h.swingT > 0 && h.swingKind == 0 ? 1f - 0.08f * (h.swingT / 0.18f) : 1f;
+        float squash = h.swingT > 0 && h.swingKind == 0
+                ? 1f - .035f * MathUtils.sin(MathUtils.PI * HeroMotion.clamp(h.swingT / .18f)) : 1f;
         float bob = heroBob(h);
         float dw = w * (2f - squash), dh = hgt * squash;
-        if (flip) batch.draw(r, h.x + dw / 2f, h.y - 2 + bob, -dw, dh);
-        else batch.draw(r, h.x - dw / 2f, h.y - 2 + bob, dw, dh);
+        if (flip) batch.draw(r, h.x + dw / 2f, h.y - foot * squash + bob, -dw, dh);
+        else batch.draw(r, h.x - dw / 2f, h.y - foot * squash + bob, dw, dh);
         if (h.flash > 0 && !blink) {
             Particles.additive(batch);
             batch.setColor(1f, 0.3f, 0.3f, Math.min(1f, h.flash * 3f) * 0.6f);
-            if (flip) batch.draw(r, h.x + dw / 2f, h.y - 2 + bob, -dw, dh);
-            else batch.draw(r, h.x - dw / 2f, h.y - 2 + bob, dw, dh);
+            if (flip) batch.draw(r, h.x + dw / 2f, h.y - foot * squash + bob, -dw, dh);
+            else batch.draw(r, h.x - dw / 2f, h.y - foot * squash + bob, dw, dh);
             Particles.normal(batch);
         }
         if (!swordBehind) drawSword(h, alpha);
@@ -1710,18 +1742,29 @@ public class WorldRenderer implements Disposable {
         batch.setColor(Color.WHITE);
     }
 
-    /** 구르기: 몸을 한 바퀴 굴리고 살짝 웅크린다. 칼은 그리지 않는다. */
+    /** Authored crouch/tuck/tumble/recovery poses; the roll follows travel, not auto-aim. */
     private void drawRoll(HeroActor h) {
-        float p = 1f - h.rollT / h.rollTotal;
-        TextureRegion r = art.world(h.facing == Facing.UP ? "hero_up" : h.facing == Facing.DOWN ? "hero_down" : "hero_side");
-        float w = art.width(r) * S * HERO_SCALE, hgt = art.height(r) * S * HERO_SCALE;
-        float dir = h.rollX < -0.1f ? 1f : -1f;
-        float angle = dir * 360f * p;
-        float squash = 0.8f + 0.2f * Math.abs(MathUtils.cos(p * MathUtils.PI));
-        float hop = MathUtils.sin(p * MathUtils.PI) * 6f * HERO_SCALE;
-        boolean flip = h.facing == Facing.LEFT;
+        float p = HeroMotion.clamp(1f - h.rollT / h.rollTotal);
+        TextureRegion r = motionFrame("roll", h.rollFacing, HeroMotion.rollFrame(p));
+        TextureRegion upright = motionFrame("walk", h.rollFacing, 2);
+        if (r == null || upright == null) {
+            TextureRegion fallback = art.world(h.rollFacing == Facing.UP ? "hero_up"
+                    : h.rollFacing == Facing.DOWN ? "hero_down" : "hero_side");
+            float w = art.width(fallback) * S * HERO_SCALE, height = art.height(fallback) * S * HERO_SCALE;
+            boolean left = h.rollFacing == Facing.LEFT;
+            batch.setColor(Color.WHITE);
+            batch.draw(fallback, h.x + (left ? w/2 : -w/2), h.y - 2, left ? -w : w,
+                    height * (1 - .23f * MathUtils.sin(p * MathUtils.PI)));
+            return;
+        }
+        float weight = HeroMotion.rollWeight(p);
+        float w = HeroMotion.WIDTH, height = HeroMotion.HEIGHT;
+        boolean flip = h.rollFacing == Facing.LEFT;
+        float x = h.x + (flip ? w / 2 : -w / 2), signedW = flip ? -w : w;
+        float y = h.y - HeroMotion.FOOT_OFFSET;
         batch.setColor(Color.WHITE);
-        batch.draw(r, h.x - w / 2f, h.y - 2 + hop, w / 2f, hgt / 2f, w, hgt, flip ? -squash : squash, squash, angle);
+        spriteBlend.draw(batch, upright, r, weight, x, y, signedW, height);
+        if (weight < 1) drawSword(h, 1 - weight);
         batch.setColor(Color.WHITE);
     }
 
@@ -1730,29 +1773,21 @@ public class WorldRenderer implements Disposable {
         if (w == null) return;
         TextureRegion r = art.worldSword(w.defId, w.awakened);
         float aim = MathUtils.atan2(h.aimY, h.aimX) * MathUtils.radDeg;
-        float angle;
+        float rest = h.facing == Facing.LEFT ? 125 : h.facing == Facing.RIGHT ? 55 : h.facing == Facing.UP ? 100 : 75;
+        rest += MathUtils.sin(time * 2.5f) * 3f;
+        float angle = rest;
         float scale = 1f;
         if (h.mineSwingT > 0) {
-            float p = 1f - h.mineSwingT / 0.22f;
-            angle = aim + 60 - 100 * Math.min(1f, p * 1.6f);
+            float p = HeroMotion.clamp(1f - h.mineSwingT / .22f);
+            angle = HeroMotion.swordAngle(rest, aim, p, 2);
         } else if (h.swingT > 0 && h.swingKind == 0) {
-            float p = 1f - h.swingT / 0.18f;
-            float e = 1f - (1f - p) * (1f - p) * (1f - p); // 처음에 빠르고 끝에 느리게
-            angle = aim + 75 - 150 * e;
-            scale = 1.15f;
+            float p = HeroMotion.clamp(1f - h.swingT / .18f);
+            angle = HeroMotion.swordAngle(rest, aim, p, 0);
+            scale = 1 + .15f * MathUtils.sin(p * MathUtils.PI);
         } else if (h.swingT > 0 && h.swingKind == 1) {
-            // 검 스킬: 검을 높이 들었다가 바라보는 쪽으로 내리꽂는다
-            float p = 1f - h.swingT / 0.25f;
-            angle = p < 0.35f ? 95f : aim;
-            scale = 1.3f;
-        } else {
-            switch (h.facing) {
-                case LEFT: angle = 125; break;
-                case RIGHT: angle = 55; break;
-                case UP: angle = 100; break;
-                default: angle = 75;
-            }
-            angle += MathUtils.sin(time * 2.5f) * 3f;
+            float p = HeroMotion.clamp(1f - h.swingT / .25f);
+            angle = HeroMotion.swordAngle(rest, aim, p, 1);
+            scale = 1 + .3f * MathUtils.sin(p * MathUtils.PI);
         }
         float hx = h.x + (h.facing == Facing.LEFT ? -8 : 8) * HERO_SCALE;
         float hy = h.y + 16 * HERO_SCALE + heroBob(h);
@@ -1768,7 +1803,7 @@ public class WorldRenderer implements Disposable {
     }
 
     private float heroBob(HeroActor h) {
-        return h.moving && ((int) (h.walkTime * 8)) % 2 == 1 ? 2 * HERO_SCALE : 0;
+        return walkBlend * .65f * (1 - MathUtils.cos(h.walkTime * MathUtils.PI2 * 4));
     }
 
     /** Species silhouette at rest: bat ~half hero height, imp ~three quarters, skeleton ~hero. */
@@ -1908,10 +1943,10 @@ public class WorldRenderer implements Disposable {
     private void drawGhosts() {
         Particles.additive(batch);
         for (Ghost gh : ghosts) {
-            float a = 0.25f * (1f - gh.t / 0.2f);
+            float a = 0.12f * (1f - gh.t / 0.2f);
             batch.setColor(0.45f, 0.7f, 1f, a);
-            if (gh.flip) batch.draw(gh.region, gh.x + gh.w / 2f, gh.y - 2, -gh.w, gh.h);
-            else batch.draw(gh.region, gh.x - gh.w / 2f, gh.y - 2, gh.w, gh.h);
+            if (gh.flip) batch.draw(gh.region, gh.x + gh.w / 2f, gh.y - gh.footOffset, -gh.w, gh.h);
+            else batch.draw(gh.region, gh.x - gh.w / 2f, gh.y - gh.footOffset, gh.w, gh.h);
         }
         Particles.normal(batch);
         batch.setColor(Color.WHITE);
@@ -2406,6 +2441,7 @@ public class WorldRenderer implements Disposable {
         for (Texture t : frontTex.values()) if (t != null) t.dispose();
         frontTex.clear();
         sceneForegrounds.dispose();
+        spriteBlend.dispose();
         for (Texture t : gateTex.values()) if (t != null) t.dispose();
         gateTex.clear();
         for (Texture[] ts : corridorSkin.values()) for (Texture t : ts) t.dispose();

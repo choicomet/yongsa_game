@@ -12,6 +12,8 @@ public class HeroActor extends Actor {
     /** 구르기 남은 시간과 방향, 전체 시간 (그리기용). */
     public float rollT, rollTotal = 0.32f;
     public float rollX, rollY;
+    /** Roll art follows travel direction even when automatic combat facing points elsewhere. */
+    public Facing rollFacing = Facing.DOWN;
     public float walkTime;
     public boolean moving;
     /** 그리기용: 지금 휘두르는 공격 종류와 남은 시간. */

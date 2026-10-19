@@ -1,5 +1,7 @@
 # 이야기 스프라이트 B — 2026-10-16
 
+> 2026-10-19: 주민 비율과 기쁨 동작은 [캐릭터 모션 보강](../character-motion/README.md)에서 다시 조정했다. 현재 성인 주민은 용사와 비슷한 몸높이로 표시한다. 아래의 1.35배 설명과 캡처는 당시 제작 이력이다.
+
 마왕의 본모습, 주민 6명, 수정 감옥, 잠든 흰머리 용사를 게임에 연결했다. 기존 `codex/story-sprites`의 `9aafafa` 초안을 최신 통합 브랜치 `95ce69a` 위에서 검수·완성한 작업이다. 작업 브랜치는 `codex/story-sprites-ready`, PR 대상은 `claude/team-integration-m9u9aa`다. 맵 PR #14의 병합 여부와 관계없이 적용할 수 있다.
 
 ![마왕 본모습](boss-phase2-left.jpg)
