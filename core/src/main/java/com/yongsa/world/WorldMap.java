@@ -772,6 +772,17 @@ public class WorldMap {
             return joint.allowsFoot(x,y,radius);
         }
         if (r != null && r.allowsFoot(x, y, radius)) return true;
+        // The soft edge is a blend of two floors. Do not switch back to an old
+        // wall while the new paving is still dominant, or close an existing
+        // route early by treating the entire feather strip as opaque artwork.
+        // Camp facility footprints remain governed by the original camp scene.
+        if(r==null || r.type!=RoomType.CAMP)for(int i=paintedJoints.size()-1;i>=0;i--) {
+            var edge=paintedJoints.get(i);
+            if(edge.alpha(x,y)<.5f)continue;
+            Door door=jointDoors.get(edge);
+            if(!door.link.corridor.closed() && edge.allowsFoot(x,y,radius))return true;
+            break; // Respect the uppermost visible painting, not an older floor underneath.
+        }
         for (Corridor c : corridors) {
             if (x + radius < c.originX || x - radius > c.originX + c.widthPx
                     || y + radius < c.originY || y - radius > c.originY + c.heightPx || c.closed()) continue;

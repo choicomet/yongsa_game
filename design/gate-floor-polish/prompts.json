@@ -1,0 +1,13 @@
+{
+  "mode": "built-in image_gen",
+  "prompts": [
+    {
+      "file": "gate_RIGHT.png",
+      "text": "Edit target: attached front-facing game gate sprite. Redesign ONLY its materials and silhouette details into a fortress portcullis suitable for a ruined medieval stone citadel. Replace both large wooden support posts and wooden braces with compact blue-gray cut-stone masonry piers, square stone capstones, dark iron collars. Make the barrier forged dark steel with closely spaced upright bars, small spear tips, two iron crossbeams and a small muted crimson heraldic shield in the center. No wood grain, logs, planks, mining props or purple magic. Preserve the original front view, symmetric silhouette, left/right post positions, approximately 2:1 wide bounding rectangle, bottom ground baseline, open transparent spaces between bars, and matching high-quality pixel-art texture scale and warm top-left highlights. Whole standalone closed gate only, all corners and piers fully in frame with a small transparent margin, no background, no floor, no scenery, no cast shadow, no text. True transparent background including gaps between bars. This is a production 2D game cutout, crisp pixel clusters, no glossy 3D render."
+    },
+    {
+      "file": "gate_RIGHT_side.png",
+      "text": "Edit target: attached oblique side-view game gate sprite. Redesign ONLY its materials and silhouette details into a fortress portcullis suitable for a ruined medieval stone citadel. Replace both wooden posts and braces with compact blue-gray cut-stone masonry piers, square stone capstones, dark iron collars. Barrier is forged dark steel with upright bars, small spear tips, two iron crossbeams and a small muted crimson heraldic shield in the center. No wood grain, logs, planks, mining props or purple magic. VERY IMPORTANT preserve the reference camera and geometry: tall narrow sprite, near pier at lower left, far pier at upper right; same diagonal connecting direction and ~0.40 width/height bounding ratio, both piers same world height. Preserve their ground attachment positions relative to the sprite. Match the reference's crisp high-quality pixel-art texture scale and warm top-left light. Entire closed gate only, fully framed with small transparent margins. True transparent background including open spaces between bars. No background, floor, scenery, cast shadow, labels or text. Production 2D game cutout, no glossy 3D render."
+    }
+  ]
+}

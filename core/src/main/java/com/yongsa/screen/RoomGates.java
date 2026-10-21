@@ -12,7 +12,7 @@ import com.badlogic.gdx.utils.Disposable;
 import com.yongsa.world.*;
 import java.util.*;
 
-/** The posts remain when a room is open; the matching barrier rises between them in combat. */
+/** Painted architecture and the sill mark open rooms; the complete barrier rises in combat. */
 final class RoomGates implements Disposable {
     record Part(float depth, Runnable draw) {}
     private final WorldMap map;
@@ -20,10 +20,6 @@ final class RoomGates implements Disposable {
     private final Map<Door, Float> closure = new IdentityHashMap<>();
     private Texture thresholdTexture;
     private TextureRegion threshold;
-    private static final float[] FRONT_LEFT = {0,0, .19f,0, .19f,.82f, .23f,1, 0,1};
-    private static final float[] FRONT_RIGHT = {.81f,0, 1,0, 1,1, .77f,1, .81f,.82f};
-    private static final float[] SIDE_NEAR = {0,.35f, .20f,.35f, .38f,.42f, .39f,.85f, .54f,.98f, .35f,1, 0,1};
-    private static final float[] SIDE_FAR = {.70f,0, 1,0, 1,.43f, .78f,.45f, .75f,.16f, .69f,.12f};
 
     RoomGates(WorldMap map) {
         this.map=map;
@@ -58,12 +54,26 @@ final class RoomGates implements Disposable {
             thresholdTexture.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);
             threshold=new TextureRegion(thresholdTexture,left,top,right-left+1,bottom-top+1);
         }
-        batch.setColor(.78f,.76f,.71f,1);
+        batch.setColor(.78f,.76f,.71f,.65f);
         for(var r:map.rooms)for(var d:r.doors) {
             if(!supports(d)||r.type==RoomType.CAMP||d.footX<x0-256||d.footX>x1+256||d.footY<y0-256||d.footY>y1+256)continue;
-            float width=d.halfWidth*2,height=Math.min(12,width*threshold.getRegionHeight()/threshold.getRegionWidth());
-            float angle=d.horizontal()?0:90;
-            batch.draw(threshold,d.gateX()-width/2,d.gateY()-height/2,width/2,height/2,width,height,1,1,angle);
+            float width=d.halfWidth*2,height=Math.min(4,width*threshold.getRegionHeight()/threshold.getRegionWidth());
+            if(d.horizontal())batch.draw(threshold,d.gateX()-width/2,d.gateY()-height/2,width,height);
+            else {
+                // A 90-degree rotated stone strip reads as an upright column.
+                // Project a thin sill diagonally across the floor, like the gate's foot line.
+                float lean=Math.min(30,width*.18f)*(d.dirX<0?1:-1);
+                float ax=d.gateX()+lean,ay=d.gateY()-width/2;
+                float bx=d.gateX()-lean,by=d.gateY()+width/2;
+                float length=(float)Math.hypot(bx-ax,by-ay);
+                float nx=-(by-ay)/length*height/2,ny=(bx-ax)/length*height/2;
+                float color=batch.getPackedColor();
+                batch.draw(thresholdTexture,new float[]{
+                    ax-nx,ay-ny,color,threshold.getU(),threshold.getV2(),
+                    ax+nx,ay+ny,color,threshold.getU(),threshold.getV(),
+                    bx+nx,by+ny,color,threshold.getU2(),threshold.getV(),
+                    bx-nx,by-ny,color,threshold.getU2(),threshold.getV2()},0,20);
+            }
         }
         batch.setColor(Color.WHITE);
     }
@@ -73,6 +83,10 @@ final class RoomGates implements Disposable {
         for(var r:map.rooms)for(var d:r.doors) {
             if(d.footX<x0-256 || d.footX>x1+256 || d.footY<y0-256 || d.footY>y1+256)continue;
             String key=key(d);if(key==null)continue;
+            // Closed-gate art is not an open-frame atlas. Cropping its ends leaves
+            // slices of bars/magic floating beside the already-painted piers.
+            float close=closure.getOrDefault(d,d.isClosed()?1f:0f);
+            if(close<=0)continue;
             Texture texture=textures.computeIfAbsent(key,k->{
                 Texture t=new Texture(Gdx.files.internal(k),true);
                 t.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);return t;
@@ -84,12 +98,6 @@ final class RoomGates implements Disposable {
             float w=side?h*texture.getWidth()/texture.getHeight():span;
             float stretch=side?Math.max(0,span-h*.57f):0;
             float x=d.gateX()-w/2,y=side?d.gateY()-span/2:d.gateY()-map.tileSize*.35f;
-            // Camp entrances already have authored stone piers. Avoid putting extra posts on them.
-            if(r.type!=RoomType.CAMP) {
-                parts.add(new Part(y+h*.05f,()->drawPolygon(batch,texture,x,y,w,h,flip,stretch,side?SIDE_NEAR:FRONT_LEFT)));
-                parts.add(new Part(y+h*(side?.57f:.05f)+stretch,()->drawPolygon(batch,texture,x,y,w,h,flip,stretch,side?SIDE_FAR:FRONT_RIGHT)));
-            }
-            float close=closure.getOrDefault(d,d.isClosed()?1f:0f);
             if(close>0) {
                 float amount=close*close*(3-2*close);
                 parts.add(new Part(d.gateY(),()->{
