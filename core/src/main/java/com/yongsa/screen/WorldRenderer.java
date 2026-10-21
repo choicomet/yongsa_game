@@ -75,6 +75,7 @@ public class WorldRenderer implements Disposable {
     private final List<float[]> torches = new ArrayList<>();
     /** GPT 길·땅 그림. 그림이 있으면 통로 타일과 통로 횃불 대신 쓴다. */
     private final PassagePainter passages;
+    private RoomGates roomGates;
     private final List<Corpse> corpses = new ArrayList<>();
     private final List<Ghost> ghosts = new ArrayList<>();
     private final List<Ring> rings = new ArrayList<>();
@@ -541,6 +542,8 @@ public class WorldRenderer implements Disposable {
         for (float[] b : bolts) b[2] += dt;
         bolts.removeIf(b -> b[2] > 0.3f);
         time += dt;
+        if(roomGates==null)roomGates=new RoomGates(map);
+        roomGates.update(dt);
         sceneForegrounds.expire(time);
         for (Iterator<FloatText> it = floats.iterator(); it.hasNext(); ) {
             FloatText f = it.next();
@@ -885,6 +888,8 @@ public class WorldRenderer implements Disposable {
         drawTiles(tx0, ty0, tx1, ty1);
         if (passages.active) passages.drawFloors(batch, viewX0, viewY0, viewX1, viewY1);
         passages.joints.draw(batch, viewX0, viewY0, viewX1, viewY1);
+        if(roomGates==null)roomGates=new RoomGates(map);
+        roomGates.drawThresholds(batch,viewX0,viewY0,viewX1,viewY1);
         drawSceneDoors();
         drawFloorProps();
         drawTorches();
@@ -905,6 +910,9 @@ public class WorldRenderer implements Disposable {
         }
         for (var front : passages.joints.fronts(viewX0, viewY0, viewX1, viewY1))
             list.add(new Sorted(front.depth, () -> front.draw(batch)));
+        if(roomGates==null)roomGates=new RoomGates(map);
+        for(var gate:roomGates.parts(batch,viewX0,viewY0,viewX1,viewY1))
+            list.add(new Sorted(gate.depth(),()->gate.draw().run()));
         list.sort((a, b) -> Float.compare(b.y, a.y));
         for (Sorted s : list) s.call.draw();
         drawSceneFronts();
@@ -1150,6 +1158,8 @@ public class WorldRenderer implements Disposable {
             if (r.scene == null) continue;
             for (Door d : r.doors) {
                 if (!inView(d.footX, d.footY)) continue;
+                if(roomGates==null)roomGates=new RoomGates(map);
+                if(roomGates.supports(d))continue;
                 float px = -d.dirY, py = d.dirX;
                 if (d.dead()) {
                     float size = d.halfWidth * 2f + 2.5f * T;
@@ -2444,6 +2454,7 @@ public class WorldRenderer implements Disposable {
         spriteBlend.dispose();
         for (Texture t : gateTex.values()) if (t != null) t.dispose();
         gateTex.clear();
+        if(roomGates!=null)roomGates.dispose();
         for (Texture[] ts : corridorSkin.values()) for (Texture t : ts) t.dispose();
         if (potionTex != null) potionTex.dispose();
         corridorSkin.clear();

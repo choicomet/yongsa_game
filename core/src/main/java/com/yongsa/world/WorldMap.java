@@ -14,13 +14,13 @@ import java.util.PriorityQueue;
 /**
  * 캠프와 던전 3개가 들어 있는 통합 맵 하나 (FR-맵-03, 04).
  * 방과 길목은 각각 완성된 그림 한 장이며, 그림의 바닥 경계(다각형)가 이동 경계다.
- * 출구 위치에 맞춰 장면을 연결한다. 통로가 없는 이음(심연 계단)만 짝 문 앞으로 옮겨 간다.
+ * 출구 위치에 맞춰 장면을 연결한다. 동굴 입구와 심연 계단은 어둠 속에서 별도 공간으로 옮겨 간다.
  * 예전 JSON에는 지도 칸 배치와 자동 타일 통로를 지원한다.
  */
 public class WorldMap {
     public static final int VOID = 0, FLOOR = 1, WALL = 2, DOOR = 3, CORRIDOR = 4;
     /** 방 배치가 바뀌면 올린다. 저장 파일의 방 기록(광맥 자리)·이어하기 위치가 다르면 버린다. */
-    public static final int VERSION = 8;
+    public static final int VERSION = 9;
 
     public final int width, height;
     public final int tileSize;
@@ -62,7 +62,33 @@ public class WorldMap {
         for (LinkDef ld : def.links) buildLink(ld);
         buildCorridors();
         buildPaintedJoints();
+        alignPaintedArrivals();
         buildCampProps();
+    }
+
+    private void alignPaintedArrivals() {
+        if(paintedJoints.isEmpty())return;
+        var closed=new ArrayList<Boolean>();
+        for(var l:links){closed.add(l.gateClosed);l.gateClosed=false;}
+        try {
+            for(var j:paintedJoints) {
+                Door d=jointDoors.get(j);
+                search:
+                for(float distance:new float[]{48,64,32,80,96,24})for(float across:new float[]{0,16,-16,32,-32,48,-48}) {
+                    float x=d.footX-d.dirX*distance-d.dirY*across;
+                    float y=d.footY-d.dirY*distance+d.dirX*across;
+                    if(roomAt((int)(x/tileSize),(int)(y/tileSize))!=d.room||!free(x,y,12,12)||d.triggers(x,y))continue;
+                    boolean clear=true;
+                    int n=Math.max(1,(int)(Math.hypot(x-d.footX,y-d.footY)/2));
+                    for(int i=0;i<=n&&clear;i++)clear=free(x+(d.footX-x)*i/n,y+(d.footY-y)*i/n,10,10);
+                    if(clear){d.arriveX=x;d.arriveY=y;break search;}
+                }
+            }
+            for(var l:links) {
+                l.doorA.outsideX=(int)(l.doorB.arriveX/tileSize);l.doorA.outsideY=(int)(l.doorB.arriveY/tileSize);
+                if(!l.oneWay){l.doorB.outsideX=(int)(l.doorA.arriveX/tileSize);l.doorB.outsideY=(int)(l.doorA.arriveY/tileSize);}
+            }
+        }finally{for(int i=0;i<links.size();i++)links.get(i).gateClosed=closed.get(i);}
     }
 
     private void buildPaintedJoints() {
@@ -72,6 +98,20 @@ public class WorldMap {
             Door door = room(j.room).doors.stream().filter(d -> Math.abs(d.footX-j.door[0])<.02f
                     && Math.abs(d.footY-j.door[1])<.02f).findFirst().orElseThrow();
             paintedJoints.add(j);jointDoors.put(j,door);
+            // A repaired opening can be wider than the old painted doorway.
+            // Both the barrier artwork and combat collision must cover its entire floor.
+            float reach=Math.max(j.rect[2],j.rect[3]);
+            float[] edges=new float[2];
+            for(int side=0;side<2;side++)for(float across=0;across<=reach;across+=2) {
+                int sign=side==0?-1:1;
+                float px=door.footX-door.dirY*across*sign,py=door.footY+door.dirX*across*sign;
+                if(!j.owns(px,py)||!j.allowsFoot(px,py,0))break;
+                edges[side]=across+2;
+            }
+            if(edges[0]+edges[1]>0) {
+                door.halfWidth=(edges[0]+edges[1])/2;
+                door.openingOffset=(edges[1]-edges[0])/2;
+            }
             int x0=(int)Math.floor(j.rect[0]/tileSize), y0=(int)Math.floor(j.rect[1]/tileSize);
             int x1=(int)Math.ceil((j.rect[0]+j.rect[2])/tileSize), y1=(int)Math.ceil((j.rect[1]+j.rect[3])/tileSize);
             for(int y=y0;y<y1;y++)for(int x=x0;x<x1;x++) {
@@ -85,7 +125,10 @@ public class WorldMap {
     }
 
     private PaintedJointLayout.Joint jointAt(float x,float y) {
-        for(var j:paintedJoints)if(j.owns(x,y))return j;
+        // Match painter's order where neighboring repair rectangles overlap.
+        for(int i=paintedJoints.size()-1;i>=0;i--) {
+            var j=paintedJoints.get(i);if(j.owns(x,y))return j;
+        }
         return null;
     }
 
@@ -185,7 +228,16 @@ public class WorldMap {
                 roomAt[idx(x, y)] = room;
             }
         }
-        for (RoomSceneLayout.Portal p : sc.portals) room.doors.add(makeSceneDoor(room, p));
+        for (RoomSceneLayout.Portal p : sc.portals) {
+            RoomSceneLayout.Portal placed=p;
+            if(rd.portalFeet!=null && rd.portalFeet.containsKey(p.id)) {
+                placed=new RoomSceneLayout.Portal();placed.id=p.id;placed.kind=p.kind;placed.facing=p.facing;
+                placed.foot=rd.portalFeet.get(p.id);
+                if(placed.foot==null||placed.foot.length!=2)throw new IllegalArgumentException("Invalid placed portal: "+rd.id+"."+p.id);
+                normalized(placed.foot[0]);normalized(placed.foot[1]);
+            }
+            room.doors.add(makeSceneDoor(room, placed));
+        }
     }
 
     private Door makeSceneDoor(Room room, RoomSceneLayout.Portal p) {
@@ -258,6 +310,7 @@ public class WorldMap {
         link.doorA = da;
         link.doorB = db;
         link.oneWay = ld.oneWay;
+        link.transition = ld.transition;
         da.link = link;
         if (!ld.oneWay) db.link = link;
         links.add(link);
@@ -308,7 +361,7 @@ public class WorldMap {
         }
         List<Link> todo = new ArrayList<>();
         for (Link l : links)
-            if (!l.oneWay && l.doorA.room.scene != null && l.doorB.room.scene != null) todo.add(l);
+            if (!l.oneWay && !l.transition && l.doorA.room.scene != null && l.doorB.room.scene != null) todo.add(l);
         int[] owner = new int[width * height];
         java.util.Arrays.fill(owner, -1);
         roomZone = new boolean[width * height];
@@ -377,7 +430,7 @@ public class WorldMap {
         }
         for (int i = 0; i < links.size(); i++) {
             Link l = links.get(i);
-            if (l.oneWay) continue;
+            if (l.oneWay || l.transition) continue;
             MapDef.PassagePlacement p = def.links.get(i).painted;
             if (p == null || !art.containsKey(p.scene) || p.origin == null || p.origin.length != 2
                     || !Float.isFinite(p.origin[0]) || !Float.isFinite(p.origin[1])
@@ -391,6 +444,15 @@ public class WorldMap {
             c.flip = p.flip;
             for (float[] point : c.scene.path) c.centerline.add(new float[]{c.sceneX(point[0]), c.sceneY(point[1])});
             if (p.reverse) Collections.reverse(c.centerline);
+            if(p.route!=null) {
+                if(p.route.size()<2)throw new IllegalArgumentException("Missing repaired route: "+c.key());
+                c.centerline.clear();
+                for(float[] point:p.route) {
+                    if(point==null||point.length!=2||!Float.isFinite(point[0])||!Float.isFinite(point[1]))
+                        throw new IllegalArgumentException("Invalid repaired route: "+c.key());
+                    c.centerline.add(new float[]{point[0]*tileSize,point[1]*tileSize});
+                }
+            }
             float[] first = c.centerline.get(0), last = c.centerline.get(c.centerline.size() - 1);
             if (Math.hypot(first[0] - l.doorA.footX, first[1] - l.doorA.footY) > 1
                     || Math.hypot(last[0] - l.doorB.footX, last[1] - l.doorB.footY) > 1)
@@ -706,6 +768,7 @@ public class WorldMap {
         if(joint!=null) {
             Door door=jointDoors.get(joint);
             if(door.isClosed() && door.blocks(x,y,radius))return false;
+            if(door.link.corridor.closed() && (r!=door.room || door.along(x,y)>=0))return false;
             return joint.allowsFoot(x,y,radius);
         }
         if (r != null && r.allowsFoot(x, y, radius)) return true;

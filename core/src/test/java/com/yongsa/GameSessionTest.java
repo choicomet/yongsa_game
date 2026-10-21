@@ -67,16 +67,17 @@ class GameSessionTest {
     }
 
     @Test
-    void walkingThroughTheCorridorReachesTheLinkedRoom() {
+    void enteringDarknessWalksThroughASeparateCaveBeforeTheOriginalDungeon() {
         GameState s = NewGame.create(b);
         GameSession g = session(s);
         Door d = standAtCampLeftDoor(g);
-        assertNotNull(d.link.corridor, "캠프와 던전 첫 방은 통로로 이어진다");
+        assertNull(d.link.corridor, "캠프 밖을 억지로 연결하는 길을 그리지 않는다");
+        g.deferDoors=true;
         boolean[] inCorridor = {false};
         boolean arrived = TestData.walkThrough(g, d, new ArrayList<>(), () -> {
-            if (g.heroRoom() == null) {
+            if (g.heroRoom() != null && g.heroRoom().type == RoomType.TUNNEL) {
                 inCorridor[0] = true;
-                assertEquals("CAMP", g.currentRoom().id, "통로에서는 떠나온 방이 지금 방");
+                assertFalse(g.fighting(), "짧은 동굴은 전투 없는 연결 공간");
             }
             return false;
         });
@@ -116,16 +117,17 @@ class GameSessionTest {
         g.hero.x = right.arriveX;
         g.hero.y = right.arriveY;
         Controls go = new Controls();
-        go.moveX = 1;
+        go.moveX = right.dirX;
+        go.moveY = right.dirY;
         run(g, go, 1.0f);
         assertTrue(g.inCamp(), "오른쪽 던전은 왼쪽 보스를 잡아야 열린다");
 
-        // 잠긴 던전 입구는 통로 가운데에서도 막혀 있다
-        int[] mid = right.link.corridor.path.get(right.link.corridor.path.size() / 2);
-        assertFalse(g.map.free((mid[0] + 0.5f) * b.tileSize, (mid[1] + 0.5f) * b.tileSize, g.hero.hw, g.hero.hh));
+        // 어두운 입구에서도 기존 진행 조건을 지켜야 한다.
+        float[] mid = {right.footX,right.footY};
+        assertFalse(g.map.free(mid[0],mid[1], g.hero.hw, g.hero.hh));
         s.bossesDefeated.add("LEFT");
         g.map.updateGates(s);
-        assertTrue(g.map.free((mid[0] + 0.5f) * b.tileSize, (mid[1] + 0.5f) * b.tileSize, g.hero.hw, g.hero.hh));
+        assertTrue(g.map.free(mid[0],mid[1], g.hero.hw, g.hero.hh));
 
         // 캠프 아래 문은 마을로 나간다 (잠기지 않지만 용사가 처음엔 나가려 하지 않는다)
         Door down = door(g.map.room("CAMP"), "down");
@@ -175,8 +177,9 @@ class GameSessionTest {
         walkToCenter(g);
         assertTrue(g.fighting());
         g.prepareSave();
-        assertEquals(d.arriveX, s.resumeX, 1e-3, "잠긴 방은 처음 상태로 돌아가고 들어오기 전 문 앞에서 이어 한다");
-        assertEquals(d.arriveY, s.resumeY, 1e-3);
+        Door safe=door(g.map.room("CAVE_LEFT"),"north");
+        assertEquals(safe.arriveX, s.resumeX, 1e-3, "잠긴 방 바깥의 동굴 입구에서 이어 한다");
+        assertEquals(safe.arriveY, s.resumeY, 1e-3);
         assertFalse(s.room("L1").cleared);
     }
 

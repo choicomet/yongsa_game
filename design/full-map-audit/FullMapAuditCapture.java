@@ -43,7 +43,12 @@ public final class FullMapAuditCapture {
     endpoint("entry-"+key,key+" / "+c.link.a.id,c.link.doorA);
     endpoint("exit-"+key,key+" / "+c.link.b.id,c.link.doorB);
    }
-   if(map.rooms.size()!=25 || map.corridors.size()!=23 || shots.size()!=140)
+   for(var link:map.links)if(link.transition) {
+    String key=link.a.id+"-"+link.b.id;
+    endpoint("entry-"+key,key+" / "+link.a.id,link.doorA);
+    endpoint("exit-"+key,key+" / "+link.b.id,link.doorB);
+   }
+   if(map.rooms.size()!=28 || map.corridors.size()!=20 || shots.size()!=152)
       throw new IllegalStateException("Map inventory changed: "+map.rooms.size()+" / "+map.corridors.size()+" / "+shots.size());
   }
   public void render(){

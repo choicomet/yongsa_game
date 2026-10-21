@@ -80,6 +80,14 @@ public final class TestData {
 
     /** 지금 자리에서 문 d 의 통로를 따라 걷는다. stop 이 참이 되거나 짝 문 앞에 닿으면 멈춘다. 다 왔으면 true. */
     public static boolean walkThrough(GameSession g, Door d, List<GameEvent> out, BooleanSupplier stop) {
+        if (d.link.transition) {
+            if (!walkTransition(g, d, out, stop)) return false;
+            if (d.partner().room.type == com.yongsa.world.RoomType.TUNNEL) {
+                Door exit = d.partner().room.doors.stream().filter(x -> x != d.partner()).findFirst().orElseThrow();
+                return walkTransition(g, exit, out, stop);
+            }
+            return true;
+        }
         List<float[]> w = waypoints(d, g.balance.tileSize);
         int i = 0;
         Controls c = new Controls();
@@ -97,6 +105,21 @@ public final class TestData {
             if (stop.getAsBoolean()) return false;
         }
         return i >= w.size();
+    }
+
+    /** Exercise the actual input/door event path, including the deferred fade callback. */
+    public static boolean walkTransition(GameSession g, Door d, List<GameEvent> out, BooleanSupplier stop) {
+        Controls c = new Controls();
+        for (int f=0; f<600; f++) {
+            float dx=d.footX+d.dirX*48-g.hero.x, dy=d.footY+d.dirY*48-g.hero.y;
+            float length=(float)Math.hypot(dx,dy);
+            c.moveX=dx/Math.max(1,length);c.moveY=dy/Math.max(1,length);
+            g.update(1/60f,c);out.addAll(g.pollEvents());
+            if(g.doorPending()) {g.passPendingDoor();g.update(1/60f,new Controls());out.addAll(g.pollEvents());}
+            if(stop.getAsBoolean())return false;
+            if(g.heroRoom()==d.partner().room)return true;
+        }
+        return false;
     }
 
     public static WorldMap map() {

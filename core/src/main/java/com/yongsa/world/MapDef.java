@@ -42,12 +42,16 @@ public class MapDef {
         public float width;
         /** 그림을 좌우로 뒤집어 쓴다. */
         public boolean flip;
+        /** Per-placement doorway positions for terrain repaints; the source scene remains reusable. */
+        public java.util.Map<String,float[]> portalFeet;
         /** 잡몹방 웨이브 수 (지용 버전): 한 무리를 다 잡으면 다음 무리가 나온다. 없으면 1. */
         public int waves = 1;
     }
 
     public static class LinkDef {
         public String a, b, gate;
+        /** Enter darkness and fade to a separate space, instead of painting an outdoor connector. */
+        public boolean transition;
         /** a 문으로만 b 문 앞에 나간다 (b 문은 원래 이음을 그대로 쓴다). */
         public boolean oneWay;
         public PassagePlacement painted;
@@ -66,5 +70,7 @@ public class MapDef {
         public float[] origin;
         public float width;
         public boolean flip, reverse;
+        /** Revised walking route in absolute tile coordinates after a local terrain repaint. */
+        public List<float[]> route;
     }
 }

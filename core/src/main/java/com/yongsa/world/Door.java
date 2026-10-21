@@ -22,6 +22,10 @@ public class Door {
     public final float footX, footY, dirX, dirY;
     /** 출구 폭의 절반 (월드 픽셀): 잠기면 이 폭만큼 막는다. */
     public float halfWidth;
+    /** Sideways center of an asymmetric repainted opening, relative to the route anchor. */
+    public float openingOffset;
+    public float gateX() { return footX-dirY*openingOffset; }
+    public float gateY() { return footY+dirX*openingOffset; }
     /** 출구 자리에서 이만큼 더 나가면 이어진 방으로 옮겨 간다 (음수면 그 전에). */
     public float triggerDepth;
     /** 이 문으로 들어올 때 서는 자리 (월드 좌표). */
@@ -72,7 +76,7 @@ public class Door {
     }
 
     public float across(float x, float y) {
-        return Math.abs(-(x - footX) * dirY + (y - footY) * dirX);
+        return Math.abs(-(x - footX) * dirY + (y - footY) * dirX - openingOffset);
     }
 
     /** 이 자리에 서면 이어진 방으로 넘어가는가. */

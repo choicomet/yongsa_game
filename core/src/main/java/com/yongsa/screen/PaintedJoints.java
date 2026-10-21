@@ -38,6 +38,10 @@ final class PaintedJoints implements Disposable {
 
     void draw(SpriteBatch batch,float x0,float y0,float x1,float y1) {
         batch.setColor(Color.WHITE);
+        // A full-map tour must not retain every high-resolution joint in VRAM.
+        // Keep a small margin so walking back over an edge does not reload it.
+        for(var p:paintings)if(p.texture!=null && !p.joint.visible(x0-512,y0-512,x1+512,y1+512))
+            unload(p);
         for(var p:paintings)if(p.joint.visible(x0,y0,x1,y1)) {
             load(p);float[] r=p.joint.rect;batch.draw(p.texture,r[0],r[1],r[2],r[3]);
         }
@@ -69,7 +73,12 @@ final class PaintedJoints implements Disposable {
                     cut.setBlending(Pixmap.Blending.None);
                     for(int y=y0;y<y1;y++)for(int x=x0;x<x1;x++) {
                         int pixel=src.getPixel(x,y);
-                        if((pixel&255)==255 && mask.contains((x+.5f)/w,(y+.5f)/h))cut.drawPixel(x-x0,y-y0,pixel);
+                        if((pixel&255)==255 && mask.contains((x+.5f)/w,(y+.5f)/h)) {
+                            float opacity=1,wx=j.x((x+.5f)/w),wy=j.y((y+.5f)/h);
+                            for(int k=paintings.indexOf(p)+1;k<paintings.size();k++)
+                                opacity*=1-paintings.get(k).joint.alpha(wx,wy);
+                            cut.drawPixel(x-x0,y-y0,(pixel&0xffffff00)|Math.round(255*opacity));
+                        }
                     }
                     p.fronts.add(new Front(texture(cut),j.x(x0/(float)w),j.y(y1/(float)h),
                             (x1-x0)*j.rect[2]/w,(y1-y0)*j.rect[3]/h,j.y(mask.depth)));
@@ -80,8 +89,13 @@ final class PaintedJoints implements Disposable {
     private static Texture texture(Pixmap pixels) {
         Texture t=new Texture(pixels,true);t.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);return t;
     }
+    private static void unload(Painting p) {
+        if(p.texture!=null){p.texture.dispose();p.texture=null;}
+        for(var f:p.fronts)f.texture.dispose();
+        p.fronts.clear();
+    }
     public void dispose() {
-        for(var p:paintings){if(p.texture!=null)p.texture.dispose();for(var f:p.fronts)f.texture.dispose();}
+        for(var p:paintings)unload(p);
         paintings.clear();
     }
 }

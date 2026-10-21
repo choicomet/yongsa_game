@@ -216,7 +216,8 @@ public class Hud {
         if (boss == null) {
             centered(fonts.small, banner == null ? zone : banner, w / 2, h - 35, Ui.GOLD);
             String sub = village ? (g.villagersFree() ? "모두가 돌아왔다" : "던전 밖 · 모두 수정 속에 잠들어 있다")
-                    : g.inCamp() ? "정비하고, 다음 여정을 준비하세요" : room == null ? "통로" : "탐험 중";
+                    : g.inCamp() ? "정비하고, 다음 여정을 준비하세요"
+                    : room != null && room.type == RoomType.TUNNEL ? "어두운 동굴 통로" : room == null ? "통로" : "탐험 중";
             centered(fonts.small, sub, w / 2, h - 59, Ui.DIM);
         } else {
             float bx = w / 2 - 210;
@@ -490,7 +491,7 @@ public class Hud {
             float sx = 0, sy = 0;
             int n = 0;
             for (Room r : g.map.rooms) {
-                if (!id.equals(r.dungeonId) || r.type == RoomType.FINAL) continue;
+                if (!id.equals(r.dungeonId) || r.type == RoomType.FINAL || hiddenOnMap(r, inVillage)) continue;
                 sx += ox + (r.x0 + r.x1) / 2f * k;
                 sy += oy + r.y1 * k;
                 n++;
@@ -524,6 +525,10 @@ public class Hud {
 
     /** 심연은 땅 밑이라 그 안에 있을 때만 지도에 나온다. */
     private boolean hiddenOnMap(Room r, boolean inVillage) {
+        // Cave interiors occupy a separate space; show a local map while inside.
+        Room here = g.heroRoom();
+        if (here != null && here.type == RoomType.TUNNEL) return r != here;
+        if (r.type == RoomType.TUNNEL) return true;
         return r.type == RoomType.FINAL && r != g.heroRoom();
     }
 

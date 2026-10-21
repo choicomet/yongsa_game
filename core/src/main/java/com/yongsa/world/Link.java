@@ -9,6 +9,7 @@ public class Link {
     public boolean gateClosed;
     /** 한쪽 길: doorA 로만 지나 doorB 앞에 선다. doorB 는 다른 이음에 속한다. */
     public boolean oneWay;
+    public boolean transition;
     /** 두 문 사이에 걸어서 지나는 통로가 있다 (문을 지나도 옮겨 가지 않는다). */
     public Corridor corridor;
 

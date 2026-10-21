@@ -24,7 +24,8 @@ class PaintedPassageTest {
     void everyPaintedCenterlineHasContinuousClearanceAndLockedGatesStayClosed() {
         WorldMap map = TestData.map();
         map.updateGates(unlocked());
-        assertEquals(23, map.corridors.size());
+        assertEquals(20, map.corridors.size());
+        assertEquals(6, map.links.stream().filter(l -> l.transition).count());
         for (Corridor c : map.corridors) {
             assertNotNull(c.scene, c.key());
             assertEquals((float) c.scene.pixelWidth / c.scene.pixelHeight, c.widthPx / c.heightPx, .0001f);

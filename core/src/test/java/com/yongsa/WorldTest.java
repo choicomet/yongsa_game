@@ -85,7 +85,7 @@ class WorldTest {
         for (String id : new String[]{"LEFT", "RIGHT", "TOP"}) all.bossesDefeated.add(id);
         all.unsealed = true;
         map.updateGates(all);
-        assertEquals(24, map.links.size());
+        assertEquals(27, map.links.size());
         for (Link l : map.links) {
             for (Door d : new Door[]{l.doorA, l.doorB}) {
                 String name = d.room.id + "." + d.name;
@@ -121,7 +121,7 @@ class WorldTest {
         queue.add(map.room("CAMP"));
         reached.add(map.room("CAMP"));
         for (Link l : map.links) {
-            assertEquals(!l.oneWay, l.corridor != null, l.a.id + "-" + l.b.id);
+            assertEquals(!l.oneWay && !l.transition, l.corridor != null, l.a.id + "-" + l.b.id);
             if (l.corridor == null) continue;
             for (Door d : new Door[]{l.doorA, l.doorB}) {
                 float[] pos = {d.arriveX, d.arriveY};
@@ -143,7 +143,7 @@ class WorldTest {
         while (!queue.isEmpty()) {
             Room r = queue.remove();
             for (Link l : map.links) {
-                if (l.corridor == null || (l.a != r && l.b != r)) continue;
+                if ((l.corridor == null && !l.transition) || (l.a != r && l.b != r)) continue;
                 if (reached.add(l.other(r))) queue.add(l.other(r));
             }
         }
