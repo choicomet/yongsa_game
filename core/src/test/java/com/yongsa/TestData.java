@@ -110,6 +110,23 @@ public final class TestData {
     /** Exercise the actual input/door event path, including the deferred fade callback. */
     public static boolean walkTransition(GameSession g, Door d, List<GameEvent> out, BooleanSupplier stop) {
         Controls c = new Controls();
+        // Follow the open middle of a cave before approaching the opposite mouth.
+        // Its natural walls need not allow a diagonal shortcut from mouth to mouth.
+        if (g.heroRoom()==d.room && d.room.type==com.yongsa.world.RoomType.TUNNEL
+                && Math.hypot(g.hero.x-d.arriveX,g.hero.y-d.arriveY)>120) {
+            float t=g.balance.tileSize;
+            for(float[] point:new float[][]{{(d.room.centerTileX()+.5f)*t,(d.room.centerTileY()+.5f)*t},{d.arriveX,d.arriveY}}) {
+                boolean reached=false;
+                for(int f=0;f<600;f++) {
+                    float dx=point[0]-g.hero.x,dy=point[1]-g.hero.y,length=(float)Math.hypot(dx,dy);
+                    if(length<4){reached=true;break;}
+                    c.moveX=dx/length;c.moveY=dy/length;
+                    g.update(1/60f,c);out.addAll(g.pollEvents());
+                    if(stop.getAsBoolean())return false;
+                }
+                if(!reached)return false;
+            }
+        }
         for (int f=0; f<600; f++) {
             float dx=d.footX+d.dirX*48-g.hero.x, dy=d.footY+d.dirY*48-g.hero.y;
             float length=(float)Math.hypot(dx,dy);

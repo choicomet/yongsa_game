@@ -9,6 +9,7 @@ import com.yongsa.world.Room;
 final class RoomJoinMask {
     private final Room room;
     private final Door[] doors;
+    private final Door[] transitions;
     private final float tile, fade;
 
     RoomJoinMask(Room room, float tile) {
@@ -16,6 +17,8 @@ final class RoomJoinMask {
         this.tile = tile;
         this.fade = Math.min(room.widthPx, room.heightPx) * .08f;
         this.doors = room.doors.stream().filter(d -> d.link != null && d.link.corridor != null)
+                .toArray(Door[]::new);
+        this.transitions = room.doors.stream().filter(d -> d.link != null && d.link.transition)
                 .toArray(Door[]::new);
     }
 
@@ -34,10 +37,26 @@ final class RoomJoinMask {
                 case DOWN: if (d.footY - room.originY < 4 * tile) bottom = Math.min(bottom, narrow); break;
             }
         }
+        for (Door d : transitions) {
+            // A cave warp has no outdoor corridor, but its painted arch still needs protection.
+            // Use the artwork edge, not travel direction: camp side arches face into the screen.
+            float vertical = Math.max(d.footY - y, y - d.footY - 4 * tile);
+            float sideFade = protectedFade(vertical, tile);
+            float endFade = protectedFade(Math.abs(x - d.footX), d.halfWidth + tile);
+            if (d.footX - room.originX < 4 * tile) left = Math.min(left, sideFade);
+            if (room.originX + room.widthPx - d.footX < 4 * tile) right = Math.min(right, sideFade);
+            if (room.originY + room.heightPx - d.footY < 4 * tile) top = Math.min(top, endFade);
+            if (d.footY - room.originY < 4 * tile) bottom = Math.min(bottom, endFade);
+        }
         float alpha = smooth((x - room.originX) / left) * smooth((room.originX + room.widthPx - x) / right)
                 * smooth((y - room.originY) / bottom) * smooth((room.originY + room.heightPx - y) / top);
         for (Door d : doors) alpha *= 1 - replacement(d, x, y, tile);
         return alpha;
+    }
+
+    private float protectedFade(float distance, float extent) {
+        float protect = 1 - smooth((distance - extent) / tile);
+        return fade + (tile * .25f - fade) * protect;
     }
 
     static float replacement(Door d, float x, float y, float tile) {

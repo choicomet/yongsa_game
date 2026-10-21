@@ -22,7 +22,13 @@ class CaveTransitionTest {
             assertEquals(RoomType.TUNNEL,cave.type);
             assertFalse(g.fighting());
             assertTrue(events.stream().anyMatch(e->e.type==GameEvent.Type.DOOR_ENTER),"Transition must request a fade");
-            Door end=cave.doors.stream().filter(d->d.name.equals("north")).findFirst().orElseThrow();
+            Door end=cave.doors.stream().filter(d->d.name.equals("exit")).findFirst().orElseThrow();
+            Door start=entry.partner();
+            switch(direction) {
+                case "LEFT" -> { assertTrue(end.footX<start.footX-400); assertEquals(-1,end.dirX); }
+                case "RIGHT" -> { assertTrue(end.footX>start.footX+400); assertEquals(1,end.dirX); }
+                case "UP" -> { assertTrue(end.footY>start.footY+400); assertEquals(1,end.dirY); }
+            }
             assertTrue(Math.hypot(end.arriveX-g.hero.x,end.arriveY-g.hero.y)>200,"The cave must be playable, not an immediate second warp");
             g.prepareSave();
             var resumed=new GameSession(TestData.balance(),TestData.map(),state,42);
@@ -35,4 +41,5 @@ class CaveTransitionTest {
             assertTrue(g.inCamp());
         }
     }
+
 }

@@ -177,7 +177,7 @@ class GameSessionTest {
         walkToCenter(g);
         assertTrue(g.fighting());
         g.prepareSave();
-        Door safe=door(g.map.room("CAVE_LEFT"),"north");
+        Door safe=door(g.map.room("CAVE_LEFT"),"exit");
         assertEquals(safe.arriveX, s.resumeX, 1e-3, "잠긴 방 바깥의 동굴 입구에서 이어 한다");
         assertEquals(safe.arriveY, s.resumeY, 1e-3);
         assertFalse(s.room("L1").cleared);

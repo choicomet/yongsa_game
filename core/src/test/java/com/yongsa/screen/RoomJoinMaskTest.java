@@ -8,6 +8,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RoomJoinMaskTest {
     @Test
+    void separateCaveEntrancesKeepTheirFramesEvenWhenTravelFacesAwayFromTheImageEdge() {
+        var map = TestData.map();
+        var camp = map.room("CAMP");
+        var mask = new RoomJoinMask(camp, map.tileSize);
+        for (float[] uv : new float[][]{{.012f,.29f},{.988f,.40f},{.508f,.015f}})
+            assertTrue(mask.alpha(camp.sceneX(uv[0]),camp.sceneY(uv[1])) > .95f,
+                    "The cave arch must not fade into the surrounding rock");
+        assertTrue(mask.alpha(camp.sceneX(.012f),camp.sceneY(.85f)) < .25f,
+                "Unrelated foreground rock keeps its normal soft edge");
+    }
+
+    @Test
     void mineLintelAndSidePostSurviveAtTheirOriginalPaintedPositions() {
         var map = TestData.map();
         var north = map.room("L5"); // flipped mine-mob-b, the first reported screenshot

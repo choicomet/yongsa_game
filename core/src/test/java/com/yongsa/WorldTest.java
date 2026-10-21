@@ -172,7 +172,8 @@ class WorldTest {
             for (int y = r.y0; y <= r.y1; y++) for (int x = r.x0; x <= r.x1; x++) if (r.floor(x, y)) floor++;
             if (r.type == RoomType.BOSS) minBoss = Math.min(minBoss, floor);
             if (r.type == RoomType.MOB) maxMob = Math.max(maxMob, floor);
-            assertTrue(floor > 90, r.id + " 바닥 " + floor);
+            // Transit-only caves are narrow walkways, not combat arenas.
+            assertTrue(floor > (r.type == RoomType.TUNNEL ? 40 : 90), r.id + " 바닥 " + floor);
         }
         assertTrue(widths.size() >= 4, "방 크기가 여러 가지");
         assertTrue(minBoss > maxMob, "보스방이 가장 넓다");

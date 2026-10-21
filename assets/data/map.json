@@ -279,8 +279,8 @@
       "dungeon": "LEFT",
       "cx": 0,
       "cy": 0,
-      "scene": "dark-cave-passage",
-      "width": 20,
+      "scene": "cave-mine",
+      "width": 24,
       "origin": [20, 8]
     },
     {
@@ -289,8 +289,8 @@
       "dungeon": "RIGHT",
       "cx": 0,
       "cy": 0,
-      "scene": "dark-cave-passage",
-      "width": 20,
+      "scene": "cave-citadel",
+      "width": 24,
       "origin": [60, 8]
     },
     {
@@ -299,7 +299,7 @@
       "dungeon": "TOP",
       "cx": 0,
       "cy": 0,
-      "scene": "dark-cave-passage",
+      "scene": "cave-tower",
       "width": 20,
       "origin": [100, 8]
     }
@@ -307,7 +307,7 @@
   "links": [
     {
       "a": "CAMP.LEFT",
-      "b": "CAVE_LEFT.south",
+      "b": "CAVE_LEFT.entry",
       "transition": true,
       "gate": "LEFT"
     },
@@ -452,7 +452,7 @@
     },
     {
       "a": "CAMP.RIGHT",
-      "b": "CAVE_RIGHT.south",
+      "b": "CAVE_RIGHT.entry",
       "transition": true,
       "gate": "RIGHT"
     },
@@ -578,7 +578,7 @@
     },
     {
       "a": "CAMP.UP",
-      "b": "CAVE_TOP.south",
+      "b": "CAVE_TOP.entry",
       "transition": true,
       "gate": "TOP"
     },
@@ -727,17 +727,17 @@
       "_note": "심연 계단으로 올라오면 캠프 아래 문 앞에 선다 (내려가는 길은 봉인 문양에서 떨어지는 것뿐)"
     },
     {
-      "a": "CAVE_LEFT.north",
+      "a": "CAVE_LEFT.exit",
       "b": "L1.east",
       "transition": true
     },
     {
-      "a": "CAVE_RIGHT.north",
+      "a": "CAVE_RIGHT.exit",
       "b": "R1.west",
       "transition": true
     },
     {
-      "a": "CAVE_TOP.north",
+      "a": "CAVE_TOP.exit",
       "b": "T1.south",
       "transition": true
     }
