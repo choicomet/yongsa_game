@@ -24,6 +24,25 @@ public class Monster extends Body {
     protected float stateTime;
     float lungeX, lungeY;
     boolean hitThisAttack;
+    /** 막기 자세 남은 시간 (해골 기사, 그림용). */
+    public float blockTime;
+    /** 공격 방향 (그림용: 베기·찌르기 궤적). */
+    public float attackDirX() { return lungeX; }
+    public float attackDirY() { return lungeY; }
+
+    /** 용사의 공격을 막는다 (해골 기사): 막기 자세 → 곧바로 반격 예고. */
+    public void parry(float fromX) {
+        blockTime = 0.35f;
+        faceLeft = fromX < centerX();
+        setState(State.WINDUP);
+        stateTime = def.windup * 0.4f;   // 반격은 평소보다 빨리
+    }
+
+    /** 공격자가 앞(바라보는 쪽)에 있는지. */
+    public boolean facesTowards(float x) {
+        float dx = x - centerX();
+        return Math.abs(dx) < 8 || (dx < 0) == faceLeft;
+    }
 
     public Monster(MonsterDef def, Room room, float x, float y, float hpMul, float atkMul) {
         super(x, y, def.width, def.height);
@@ -58,6 +77,7 @@ public class Monster extends Body {
         animTime += delta;
         stateTime += delta;
         flash = Math.max(0, flash - delta);
+        blockTime = Math.max(0, blockTime - delta);
         moving = false;
         MonsterAI.update(this, delta, ctx);
         if (state != State.DYING) updateKnockback(delta, ctx.collision());

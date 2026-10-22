@@ -25,11 +25,18 @@ public class SaveData {
     public List<String> defeatedBosses = new ArrayList<>();
     public List<String> orbs = new ArrayList<>();
     public List<OrbSave> orbDrops = new ArrayList<>();
+    /** 아직 열지 않은 보스 보물상자. */
+    public List<ChestSave> chests = new ArrayList<>();
     public boolean sealBroken, finalDefeated, firstOreRoomUsed, tutorialDone;
     public int enhanceCount, destroyCount, awakenCount, kills, deaths;
+    /** 반전 마법진이 바꾸는 키 (한 번 정해지면 고정). */
+    public String inversion = "";
+    /** 마왕 전에 던전 출구에서 되돌아선 횟수. */
+    public int exitRefusals;
 
     public List<RoomSave> rooms = new ArrayList<>();
     public float heroX, heroY;
+    /** 안전한 곳(캠프·마을·출구 통로)에서 저장했는지: 그러면 그 자리에서 다시 시작. */
     public boolean inCamp;
     public String lastRoomId;
     public float playTime;
@@ -51,6 +58,13 @@ public class SaveData {
     public static class VeinSave {
         public float x, y;
         public int hitsLeft, amount;
+    }
+
+    public static class ChestSave {
+        public String dungeon;
+        public float x, y;
+        public int ore;
+        public boolean essence;
     }
 
     public static class OrbSave {

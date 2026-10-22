@@ -2,7 +2,7 @@ package com.yongsa.combat;
 
 /** 맞은 자리에서 떠올랐다 사라지는 글자 (FR-전투-09, FR-채집-06). */
 public class FloatingText {
-    public enum Kind { DAMAGE, HERO_DAMAGE, HEAL, ORE, INFO, IMMUNE, POISON, BURN }
+    public enum Kind { DAMAGE, HERO_DAMAGE, HEAL, ORE, INFO, IMMUNE, POISON, BURN, SHIELD }
 
     public static final float LIFE = 0.9f;
     public final String text;

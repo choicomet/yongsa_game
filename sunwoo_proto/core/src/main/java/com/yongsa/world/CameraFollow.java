@@ -28,8 +28,13 @@ public class CameraFollow {
     }
 
     public void update(OrthographicCamera cam, float tx, float ty, float delta, float mapW, float mapH) {
+        update(cam, tx, ty, delta, mapW, mapH, 1f);
+    }
+
+    /** speedUp: 따라가는 빠르기 배율 (용사가 날아갈 때처럼 빠르게 움직일 때 놓치지 않게). */
+    public void update(OrthographicCamera cam, float tx, float ty, float delta, float mapW, float mapH, float speedUp) {
         if (!initialized) snapTo(tx, ty);
-        float a = 1f - (float) Math.exp(-sharpness * delta);
+        float a = 1f - (float) Math.exp(-sharpness * speedUp * delta);
         x += (tx - x) * a;
         y += (ty - y) * a;
         float hw = cam.viewportWidth * cam.zoom / 2f, hh = cam.viewportHeight * cam.zoom / 2f;

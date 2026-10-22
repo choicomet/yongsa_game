@@ -23,6 +23,8 @@ public class Balance {
     public float[] campLight = {0.3f, 0.48f, 0.66f, 0.84f, 1f};
     public float dungeonLight = 0.42f;
     public float arenaLight = 0.5f;
+    /** 마을 밝기: [마왕 전(수정에 잠든 저녁), 마왕 뒤(되찾은 한낮)]. */
+    public float[] villageLight = {0.55f, 1.0f};
 
     private transient EnhanceTable enhanceTable;
 
@@ -90,7 +92,10 @@ public class Balance {
         if (campLight.length < dungeons.length + 2) {
             throw new IllegalStateException("campLight는 보스 수 + 마왕 + 1칸 이상이어야 함");
         }
-        for (MonsterDef b : bosses) if (b.summonId != null) monster(b.summonId);
+        for (MonsterDef b : bosses) {
+            if (b.summonId != null) monster(b.summonId);
+            if (b.summonExtraId != null) monster(b.summonExtraId);
+        }
         if (enhance.rules.length != enhance.maxLevel) {
             throw new IllegalStateException("강화 표는 +0~+" + (enhance.maxLevel - 1) + "까지 " + enhance.maxLevel + "줄이어야 함");
         }

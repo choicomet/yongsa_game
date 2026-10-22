@@ -90,7 +90,7 @@ class PowerTest {
     }
 
     @Test
-    void 마왕에게_죽으면_대사와_캠프_독백이_나온다() {
+    void 마왕에게_죽으면_마왕_대사만_나오고_검_강화_독백은_없다() {
         GameSession s = TestFiles.session(34);
         var ev = new java.util.ArrayList<com.yongsa.model.GameEvent>();
         s.addListener(ev::add);
@@ -99,8 +99,9 @@ class PowerTest {
         step(s, new Controls(), 2);
         assertTrue(ev.stream().anyMatch(e -> "한심하긴.".equals(e.text())));
         s.respawn();
-        assertTrue(ev.stream().anyMatch(e -> e.type() == com.yongsa.model.GameEvent.Type.SPEECH
-                && "용사".equals(e.id()) && e.text().contains("검을 더 강화해야겠어")));
+        // 2026-10-12 결정: "검을 더 강화해야겠어" 독백은 뺐다
+        assertTrue(ev.stream().noneMatch(e -> e.type() == com.yongsa.model.GameEvent.Type.SPEECH
+                && "용사".equals(e.id()) && e.text().contains("강화")));
     }
 
     @Test
@@ -115,5 +116,23 @@ class PowerTest {
         step(s, c, 60); // 0.9초 안에 오른쪽으로 걸어서 피한다
         assertEquals(x, h.x);
         assertEquals(hp, s.hero.hp());
+    }
+
+    @Test
+    void F1_광물_무한_모드는_제작_강화에_광물이_줄지_않고_끄면_원래대로() {
+        GameSession s = TestFiles.session(36);
+        s.inventory.addOre("blackiron", 3);
+        assertTrue(s.toggleInfiniteOre());
+        Weapon w = s.craft(s.balance.weapon("blackiron")); // 8개 필요하지만 무한
+        assertNotNull(w);
+        s.equip(w);
+        for (int i = 0; i < 20; i++) s.enhanceEquipped();
+        assertEquals("무한", s.inventory.oreText("blackiron"));
+        assertFalse(s.toggleInfiniteOre());
+        // 실제 개수는 줄지 않았다 (파괴 보상으로 늘었을 수는 있다)
+        int real = s.inventory.ore("blackiron");
+        assertTrue(real >= 3 && real < com.yongsa.model.Inventory.INFINITE);
+        // 저장에도 실제 개수만 남는다
+        assertEquals(real, (int) com.yongsa.save.SaveMapper.capture(s).ores.get("blackiron"));
     }
 }

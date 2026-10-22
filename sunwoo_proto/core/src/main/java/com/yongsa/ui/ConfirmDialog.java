@@ -44,6 +44,21 @@ public class ConfirmDialog extends GameWindow {
         pack();
     }
 
+    /** 버튼 위에 체크박스 한 줄을 넣는다 (키보드로도 고를 수 있다). */
+    public CheckToggle check(String text) {
+        CheckToggle c = new CheckToggle(text, skin);
+        c.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                click.run();
+            }
+        });
+        extra.add(c).width(460).height(40).padTop(12).row();
+        nav.add(c);
+        pack();
+        return c;
+    }
+
     @Override
     public void refresh() {
         pack();

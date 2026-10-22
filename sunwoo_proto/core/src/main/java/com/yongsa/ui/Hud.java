@@ -40,12 +40,16 @@ public class Hud implements Disposable {
     private final Map<String, Label> oreLabels = new HashMap<>();
     private final Label areaLabel, bossName, goalLabel, hintLabel, toastLabel, captionLabel;
     private final Table bossTable, hintBox;
-    private final HpBar bossBar;
+    private final HpBar bossBar, armorBar;
+    /** 보스 체력바 위 남은 체력. */
+    private final Label bossHpLabel;
+    private final Label armorLabel;
     private final SkillSlot whirl, dash, dodge, guard;
     private final Table statusRow, speechBox;
     private final Label speechName, speechText;
     private final Map<String, Image> statusIcons = new HashMap<>();
     private final Map<String, Label> statusTimes = new HashMap<>();
+    private Label godLabel;
     public final Minimap minimap;
     private final Table keyGuide;
     private final Group root = new Group();
@@ -70,9 +74,12 @@ public class Hud implements Disposable {
         attackLabel = new Label("", skin, "small");
         orbRow = new Table();
         Table hpRow = new Table();
-        hpRow.add(new Label("HP", skin, "gold")).padRight(8);
-        hpRow.add(hpBar).width(240).height(16).padRight(10);
-        hpRow.add(hpLabel).width(90).left();
+        // 남은 체력은 체력바 위에 (2026-10-12 결정)
+        Table hpCol = new Table();
+        hpCol.add(hpLabel).left().padBottom(1).row();
+        hpCol.add(hpBar).width(300).height(16);
+        hpRow.add(new Label("HP", skin, "gold")).padRight(8).bottom();
+        hpRow.add(hpCol).left();
         status.add(hpRow).left().colspan(2).row();
         status.add(weaponIcon).size(40).padTop(6).padRight(8);
         Table wt = new Table();
@@ -81,7 +88,7 @@ public class Hud implements Disposable {
         status.add(wt).left().padTop(6).row();
         status.add(orbRow).left().colspan(2).padTop(4).row();
         statusRow = new Table();
-        for (String st : new String[]{"poison", "burn", "shock", "freeze"}) {
+        for (String st : new String[]{"poison", "burn", "shock", "freeze", "blind", "slow", "stun", "invert"}) {
             Image icon = new Image(assets.region("status_" + st));
             Label t = new Label("", skin, "small-white");
             statusIcons.put(st, icon);
@@ -118,8 +125,18 @@ public class Hud implements Disposable {
         bossName = new Label("", skin, "large-gold");
         bossBar = new HpBar(skin.getRegion("white"), new Color(0.75f, 0.15f, 0.6f, 1f));
         bossTable = new Table();
+        bossHpLabel = new Label("", skin, "small-white");
         bossTable.add(bossName).row();
-        bossTable.add(bossBar).width(460).height(18).padTop(4);
+        bossTable.add(bossHpLabel).padTop(2).row();
+        bossTable.add(bossBar).width(460).height(18).padTop(1).row();
+        armorBar = new HpBar(skin.getRegion("white"), new Color(0.9f, 0.86f, 0.72f, 1f));
+        armorLabel = new Label("뼈갑옷 — 깨기 전에는 체력이 닳지 않는다", skin, "small-white");
+        Table armorRow = new Table();
+        armorRow.add(armorBar).width(460).height(9).row();
+        armorRow.add(armorLabel).padTop(1);
+        bossTable.add(armorRow).padTop(3);
+        armorBar.setVisible(false);
+        armorLabel.setVisible(false);
         Table tc = new Table();
         tc.setFillParent(true);
         tc.top().padTop(18);
@@ -147,7 +164,7 @@ public class Hud implements Disposable {
         hintBox.add(hintLabel);
         whirl = new SkillSlot(assets.region("skill_whirl"), skin.getRegion("white"), "Q", "회전 베기", skin.getFont("small"), skin.getFont("number"));
         dash = new SkillSlot(assets.region("skill_dash"), skin.getRegion("white"), "L", "돌진 베기", skin.getFont("small"), skin.getFont("number"));
-        dodge = new SkillSlot(assets.region("skill_dodge"), skin.getRegion("white"), "Shift", "회피", skin.getFont("small"), skin.getFont("number"));
+        dodge = new SkillSlot(assets.region("skill_dodge"), skin.getRegion("white"), "Space", "회피", skin.getFont("small"), skin.getFont("number"));
         guard = new SkillSlot(assets.region("skill_guard"), skin.getRegion("white"), "Ctrl", "막기", skin.getFont("small"), skin.getFont("number"));
         Table skills = new Table();
         skills.add(whirl).size(64).padRight(18);
@@ -156,7 +173,7 @@ public class Hud implements Disposable {
         skills.add(guard).size(64);
         keyGuide = new Table(skin);
         keyGuide.setBackground(skin.getDrawable("panel-hud"));
-        keyGuide.add(new Label("WASD 이동   J·Space 공격   Q 회전 베기   L 돌진 베기   Shift 회피   Ctrl 막기(누르고 있기)", skin, "small-white")).row();
+        keyGuide.add(new Label("WASD 이동   J 공격(가까운 적을 자동으로 바라봄)   Q 회전 베기   L 돌진 베기   Space 회피   Ctrl 막기(누르고 있기)", skin, "small-white")).row();
         keyGuide.add(new Label("E 캐기·상호작용   I 가방   M 지도   Esc 메뉴", skin, "small-white"));
         Table bc = new Table();
         bc.setFillParent(true);
@@ -237,9 +254,9 @@ public class Hud implements Disposable {
                 if (!s.progress.hasOrb(d.id)) orb.setColor(0.25f, 0.25f, 0.3f, 0.7f);
                 orbRow.add(orb).size(22).padRight(4);
             }
-            orbRow.add(new Label("보스의 구슬", skin, "small")).padLeft(4);
+            orbRow.add(new Label("보스의 정수", skin, "small")).padLeft(4);
         }
-        for (Map.Entry<String, Label> e : oreLabels.entrySet()) e.getValue().setText(String.valueOf(s.inventory.ore(e.getKey())));
+        for (Map.Entry<String, Label> e : oreLabels.entrySet()) e.getValue().setText(s.inventory.oreText(e.getKey()));
 
         String area = s.areaName();
         if (!area.equals(lastArea)) {
@@ -255,10 +272,23 @@ public class Hud implements Disposable {
         if (boss != null) {
             bossName.setText(boss.def.name + (boss.phase == 2 ? "  — 본모습" : ""));
             bossBar.setRatio(boss.hp() / (float) boss.maxHp());
+            bossHpLabel.setText(boss.hp() + " / " + boss.maxHp());
+            boolean armored = boss.armor > 0;
+            armorBar.setVisible(armored);
+            armorLabel.setVisible(armored || boss.stagger > 0);
+            if (armored) {
+                armorBar.setRatio(boss.armor / (float) Math.max(1, boss.armorMax));
+                armorLabel.setText("뼈갑옷 " + boss.armor + " — 깨기 전에는 체력이 닳지 않는다");
+            } else if (boss.stagger > 0) {
+                armorLabel.setText(boss.stunned ? "돌진 끝에 기절했다! 지금이 기회다" : "갑옷이 깨져 휘청인다! 지금이 기회다");
+            }
         }
 
         goalLabel.setText(s.goal().text());
         String hint = s.interactHint();
+        if (hint.isEmpty() && s.sheltered()) hint = "바위 뒤에 숨어 있다 — 폭풍을 막는 중";
+        Boss cb = s.activeBoss();
+        if (hint.isEmpty() && cb != null && cb.cocoon) hint = "바람의 고치 " + (int) Math.ceil(cb.cocoonTime) + "초  ·  회피 쿨타임 없음";
         hintLabel.setText(hint);
         hintBox.setVisible(!hint.isEmpty() && s.cutscene() == null);
 
@@ -292,6 +322,25 @@ public class Hud implements Disposable {
         addStatus("burn", "화상", s.unit.burn);
         addStatus("shock", "감전", s.unit.shock);
         addStatus("freeze", "빙결", s.unit.freeze);
+        addStatus("blind", "실명", s.unit.blind);
+        addStatus("slow", "둔화", s.unit.slow);
+        addStatus("stun", "기절", s.unit.stun);
+        if (s.hero.invulnerable) {
+            if (godLabel == null) godLabel = new Label("무적 (개발자 도구)", skin, "small-white");
+            godLabel.setColor(1f, 0.85f, 0.35f, 1f);
+            statusRow.add(godLabel).padRight(12);
+        }
+        if (s.inverted()) {
+            Label l = statusTimes.get("invert");
+            l.setText("키 뒤틀림");
+            statusRow.add(statusIcons.get("invert")).size(24).padRight(4);
+            statusRow.add(l).padRight(12);
+        } else if (s.mirrorTime() > 0) {
+            Label l = statusTimes.get("invert");
+            l.setText(String.format("좌우 반전 %.1f", s.mirrorTime()));
+            statusRow.add(statusIcons.get("invert")).size(24).padRight(4);
+            statusRow.add(l).padRight(12);
+        }
     }
 
     private void addStatus(String id, String name, float t) {

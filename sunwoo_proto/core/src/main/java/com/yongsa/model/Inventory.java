@@ -16,9 +16,28 @@ public class Inventory {
     private Weapon equipped;
     private int nextUid = 1;
 
+    /** 테스트·발표용 광물 무한 모드 (F1). 켜져 있으면 광물이 줄지 않고 항상 충분하다. 저장하지 않는다. */
+    private boolean infiniteOre;
+    /** 무한 모드일 때 "가진 개수"로 돌려주는 값. */
+    public static final int INFINITE = 9999;
+
+    public boolean infiniteOre() {
+        return infiniteOre;
+    }
+
+    public void setInfiniteOre(boolean on) {
+        infiniteOre = on;
+    }
+
+    /** 화면에 보여줄 개수: 무한 모드면 "무한". */
+    public String oreText(String id) {
+        return infiniteOre ? "무한" : String.valueOf(ore(id));
+    }
+
     // ---------------------------------------------------------------- 광물
 
     public int ore(String id) {
+        if (infiniteOre) return INFINITE;
         return ores.getOrDefault(id, 0);
     }
 
@@ -33,6 +52,7 @@ public class Inventory {
 
     /** 모자라면 아무것도 빼지 않고 false. */
     public boolean spendOre(String id, int n) {
+        if (infiniteOre) return true; // 무한 모드: 실제 개수는 그대로 둔다
         if (!hasOre(id, n)) return false;
         ores.put(id, ore(id) - n);
         return true;

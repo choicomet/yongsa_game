@@ -9,7 +9,7 @@ public class EnhanceDef {
     /** 분해하면 4개 + 강화에 쓴 광물의 절반. */
     public int dismantleBase = 4;
     public float dismantleEnhanceRatio = 0.5f;
-    /** 강화 단계별 흡혈: 적 최대 체력의 %. 길이 maxLevel+1 (0~10강). */
+    /** 강화 단계별 흡혈: 용사 최대 체력의 %. 길이 maxLevel+1 (0~10강). */
     public float[] lifesteal = new float[0];
     public EnhanceRuleDef[] rules = new EnhanceRuleDef[0];
 }

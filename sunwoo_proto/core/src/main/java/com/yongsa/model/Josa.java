@@ -1,6 +1,6 @@
 package com.yongsa.model;
 
-/** 한국어 조사 고르기: 받침에 따라 "으로/로", "을/를", "이/가", "은/는". */
+/** 한국어 조사 고르기: 받침에 따라 "으로/로", "을/를", "이/가", "은/는", "과/와". */
 public final class Josa {
     private Josa() {
     }
@@ -28,6 +28,11 @@ public final class Josa {
 
     public static String i(String w) {
         return w + (batchim(w) ? "이" : "가");
+    }
+
+    /** "촌장과", "꼬마와" */
+    public static String wa(String w) {
+        return w + (batchim(w) ? "과" : "와");
     }
 
     public static String eun(String w) {

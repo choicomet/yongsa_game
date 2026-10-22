@@ -29,6 +29,11 @@ public class CollisionWorld {
         if (r.width > 0 && r.height > 0) obstacles.add(new Rectangle(r));
     }
 
+    /** 잠깐 생겼던 물체(폭풍 바위)를 없앤다. 같은 위치·크기의 것을 찾는다. */
+    public void removeObstacle(Rectangle r) {
+        obstacles.remove(r);
+    }
+
     public boolean blocked(Rectangle r) {
         int ts = map.tileSize;
         int tx0 = (int) Math.floor(r.x / ts), ty0 = (int) Math.floor(r.y / ts);

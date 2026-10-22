@@ -22,7 +22,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from PIL import Image, ImageDraw  # noqa: E402
 
 import chars  # noqa: E402
+import monsters  # noqa: E402
+import bosses  # noqa: E402
 import props  # noqa: E402
+import village  # noqa: E402
 from art import Canvas, rgb, shade, strip  # noqa: E402
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
@@ -61,9 +64,16 @@ BED = R(68, 40, 68, 41)
 FORGE = R(79, 41, 81, 42)
 SIGIL = (75, 36.5)
 SPAWN = (75, 32.6)
+EXIT = R(74, 26, 76, 29)            # 캠프 아래로 뻗은 던전 출구 통로
+EXIT_TRIGGER = R(74, 26, 76, 27)    # 여기에 닿으면 '나가기' 시도
+VILLAGE = R(2, 2, 25, 22)           # 던전 밖 마을 (다른 맵처럼 떨어져 있다)
+VILLAGE_LAND = (14, 19.4)
+VILLAGE_RETURN = (14, 21.2)         # 던전으로 돌아가는 계단
+VILLAGER_SPOTS = [("baker", 9.0, 8.6), ("redhood", 11.6, 13.4), ("child", 16.6, 9.0),
+                  ("elder", 19.6, 13.2), ("maid", 5.6, 13.6), ("boy", 20.4, 6.4)]
 
 DUNGEONS = [
-    dict(id="left", theme="left", mobs=5, gate=None,
+    dict(id="left", theme="left", mobs=5, gate=R(65, 35, 65, 37),
          rooms=[("L1", "mob", R(46, 30, 59, 41), "camp"),
                 ("L2", "mob", R(26, 30, 39, 41), "L1"),
                 ("L3", "ore", R(28, 14, 39, 23), "L2"),
@@ -110,7 +120,9 @@ def build_layers():
             floor[y][x] = True
 
     carve(CAMP, "camp")
+    carve(EXIT, "camp")
     carve(ARENA, "arena")
+    carve(VILLAGE, "village")
     for d in DUNGEONS:
         for _, _, r, _ in d["rooms"]:
             carve(r, d["theme"])
@@ -128,6 +140,9 @@ def build_layers():
                 v = 0 if roll < 0.72 else (1 if roll < 0.92 else 2)
                 if th == "left" and v == 2 and rnd.random() < 0.6:
                     v = 1
+                if th == "village":
+                    edge = min(x - VILLAGE.x0, VILLAGE.x1 - x, y - VILLAGE.y0, VILLAGE.y1 - y)
+                    v = 2 if edge <= 1 and roll < 0.7 else (0 if roll < 0.74 else (1 if roll < 0.97 else 2))
                 ground[y][x] = props.tile_index(th, v) + 1
                 continue
             near = None
@@ -165,11 +180,13 @@ def inward(room, door):
 # 장식 배치
 # =====================================================================================
 DECOR_SOLID = {"barrel", "crate", "pillar", "pillar_broken", "brazier", "brazier_blue", "brazier_red",
-               "minecart", "rocks", "weapon_rack", "crystal_blue", "crystal_purple", "candelabra", "tent", "campfire"}
+               "minecart", "rocks", "weapon_rack", "crystal_blue", "crystal_purple", "candelabra", "tent", "campfire",
+               "house_0", "house_1", "bell_tower", "well", "market_stall", "lamp_post", "pine"}
 LIGHTS = {
     "torch": (150, "ffb050"), "brazier": (190, "ffa040"), "brazier_blue": (190, "70a0ff"),
     "brazier_red": (200, "ff4030"), "campfire": (230, "ffa040"), "lantern": (150, "ffc860"),
     "candelabra": (150, "ffb050"), "crystal_blue": (140, "70c8ff"), "crystal_purple": (140, "c070ff"),
+    "lamp_post": (170, "ffd080"), "house_0": (120, "ffc860"), "house_1": (120, "ffc860"),
 }
 
 
@@ -238,6 +255,27 @@ def decorate():
                 add(item, x + 0.5, y + 0.25)
                 placed.append((x, y))
 
+    # ---- 던전 출구 (캠프 아래)
+    add("exit_stairs", 75.5, 26.0, flat=True)
+    add("torch", 73.5, 29.6, flat=True); add("torch", 77.5, 29.6, flat=True)
+
+    # ---- 마을 (위쪽 줄 집, 가운데 우물, 왼쪽 노점, 오른쪽 종탑, 가장자리 소나무)
+    v = VILLAGE
+    add("exit_stairs", VILLAGE_RETURN[0], v.y1 + 0.2, flat=True)
+    for (sp, x) in (("house_0", 4.6), ("house_1", 8.6), ("house_1", 19.4), ("house_0", 23.4)):
+        add(sp, x, 17.4)
+    add("bell_tower", 23.6, 8.6)
+    add("well", 14.0, 10.4)
+    add("market_stall", 6.4, 9.6)
+    add("bread_basket", 9.0, 10.0); add("bread_basket", 3.6, 9.4)
+    for (x, y) in ((11.2, 15.0), (16.8, 15.0), (10.4, 5.4), (17.6, 5.4)):
+        add("lamp_post", x, y)
+    for (x, y) in ((2.8, 2.6), (5.6, 2.2), (22.0, 2.4), (25.0, 3.2), (2.6, 6.4), (25.2, 13.6)):
+        add("pine", x, y)
+    for i, (x, y) in enumerate(((12.0, 17.6), (16.0, 17.6), (3.2, 15.4), (8.0, 4.0), (14.0, 3.6), (19.8, 3.8),
+                                (24.6, 16.0), (12.8, 7.4), (6.8, 15.6), (21.2, 10.6))):
+        add(f"flower_bush_{i % 3}", x, y)
+
     # ---- 마왕의 심연
     for (x, y) in ((ARENA.x0 + 1.5, ARENA.y0 + 1.2), (ARENA.x1 - 0.5, ARENA.y0 + 1.2),
                    (ARENA.x0 + 1.5, ARENA.y1 - 0.4), (ARENA.x1 - 0.5, ARENA.y1 - 0.4)):
@@ -285,6 +323,12 @@ def write_tmx(path, ground, walls, decor):
     add_point("arena_land", "arena_land", ARENA.cx, ARENA.y0 + 5)
     add_point("final_boss", "final_boss", ARENA.cx, ARENA.y1 - 7)
     add_point("arena_portal", "arena_portal", ARENA.cx, ARENA.cy - 1)
+    add_rect("exit", "exit", EXIT_TRIGGER)
+    add_rect("village", "village", VILLAGE)
+    add_point("village_land", "village_land", *VILLAGE_LAND)
+    add_point("village_return", "village_return", *VILLAGE_RETURN)
+    for kind, x, y in VILLAGER_SPOTS:
+        add_point(f"villager_{kind}", "villager", x, y, {"kind": kind})
 
     for d in DUNGEONS:
         for order, (rid, kind, r, parent) in enumerate(d["rooms"]):
@@ -343,7 +387,7 @@ def write_tmx(path, ground, walls, decor):
     def csv(layer):
         return ",\n".join(",".join(str(v) for v in layer[y]) for y in range(H - 1, -1, -1))
 
-    n = 26
+    n = len(props.THEMES) * 5 + 1
     tmx = f"""<?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="{W}" height="{H}" tilewidth="{T}" tileheight="{T}" infinite="0" nextlayerid="4" nextobjectid="{oid[0]}">
  <tileset firstgid="1" name="tiles" tilewidth="{T}" tileheight="{T}" tilecount="{n}" columns="{n}">
@@ -463,6 +507,21 @@ def fire_bolt():
     return c
 
 
+def tornado(frame):
+    """마룡의 태풍 32x40: 아래가 좁고 위가 넓은 회오리 (3프레임으로 돈다)."""
+    c = Canvas(32, 40)
+    for k in range(9):
+        y = 36 - k * 4
+        w = 4 + k * 1.6
+        off = math.sin((k + frame * 1.3) * 1.1) * 3
+        col = rgb("#b8e0d8") if (k + frame) % 2 == 0 else rgb("#7fb8b0")
+        c.flat_ellipse((16 + off - w, y - 2, 16 + off + w, y + 2), col)
+    for k in range(3):
+        y = 30 - k * 10 - frame * 3
+        c.line([(6 + k * 3, y), (26 - k * 2, y - 3)], rgb("#e8fff8"), 1)
+    return c.outline(rgb("#2a4a48"))
+
+
 def shadow():
     c = Canvas(48, 14)
     ImageDraw.Draw(c.img).ellipse([0, 0, 47, 13], fill=(0, 0, 0, 95))
@@ -503,6 +562,26 @@ def status_icon(kind):
         c.poly([(10, 26), (14, 14), (18, 26)], rgb("#ffe080"))
     elif kind == "shock":
         c.poly([(16, 2), (6, 16), (13, 16), (10, 26), (22, 10), (15, 10)], rgb("#ffe040"))
+    elif kind == "blind":
+        c.ellipse((3, 8, 25, 20), rgb("#3a1830"))
+        c.flat_ellipse((10, 10, 18, 18), rgb("#ff3060"))
+        c.flat_ellipse((12, 12, 16, 16), rgb("#200810"))
+        c.line([(3, 24), (25, 4)], rgb("#c0c0c8"), 2)
+    elif kind == "slow":
+        c.ellipse((3, 14, 25, 26), rgb("#3e4a20"))
+        c.ellipse((7, 16, 21, 23), rgb("#5a6a2a"))
+        c.poly([(10, 4), (18, 4), (18, 12), (22, 12), (14, 18), (6, 12), (10, 12)], rgb("#c8d070"))
+    elif kind == "stun":
+        for i, (x, y) in enumerate(((6, 8), (14, 4), (22, 8))):
+            c.poly([(x, y - 4), (x + 1.5, y - 1), (x + 4, y), (x + 1.5, y + 1), (x, y + 4), (x - 1.5, y + 1), (x - 4, y), (x - 1.5, y - 1)],
+                   rgb("#ffe060"))
+        c.ellipse((6, 14, 22, 26), rgb("#c8b8a0"))
+        c.line([(10, 19), (13, 22)], rgb("#3a2a20"), 1); c.line([(13, 19), (10, 22)], rgb("#3a2a20"), 1)
+        c.line([(15, 19), (18, 22)], rgb("#3a2a20"), 1); c.line([(18, 19), (15, 22)], rgb("#3a2a20"), 1)
+    elif kind == "invert":
+        c.ellipse((2, 2, 26, 26), rgb("#3a1050"))
+        c.line([(6, 10), (22, 10)], rgb("#e080ff"), 2); c.poly([(22, 6), (26, 10), (22, 14)], rgb("#e080ff"))
+        c.line([(6, 18), (22, 18)], rgb("#e080ff"), 2); c.poly([(6, 14), (2, 18), (6, 22)], rgb("#e080ff"))
     elif kind == "freeze":
         for a in range(0, 180, 60):
             r = math.radians(a)
@@ -523,14 +602,19 @@ def make_sprites(out):
     m = {}
     for d in ("down", "up", "side"):
         save(f"hero_{d}", [chars.hero(d, f) for f in range(3)], out, m)
-    save("mob_left", [chars.zombie_miner(f) for f in range(2)], out, m)
-    save("mob_right", [chars.skeleton_warrior(f) for f in range(2)], out, m)
-    save("mob_top", [chars.drakeling(f) for f in range(2)], out, m)
-    save("boss_left", [chars.zombie_king(p) for p in range(3)], out, m)       # 대기, 대기, 돌진
-    save("boss_right", [chars.lich(p) for p in range(3)], out, m)             # 대기, 대기, 시전
-    save("boss_top", [chars.dragon(p) for p in range(5)], out, m)             # 대기, 대기, 아래 포효, 위 포효, 꼬리 들기
-    save("demon_king", [chars.demon_king(f) for f in range(2)], out, m)
-    save("demon_eldritch", [chars.eldritch(f) for f in range(2)], out, m)
+    save("bed_sleep", [chars.bed_sleep()], out, m)
+    save("hero_forge", [chars.hero_forge(p) for p in range(7)], out, m)   # 서기, 망치 들기, 내려치기, 성공, 하락, 파괴, 유지
+    # 잡몹: 걷기1, 걷기2, 공격 준비, 공격
+    save("mob_left", [monsters.zombie(f) for f in range(4)], out, m)
+    save("mob_right", [monsters.skeleton_soldier(f) for f in range(4)], out, m)
+    save("mob_knight", [monsters.skeleton_knight(f) for f in range(5)], out, m)   # 대기2, 예고, 베기, 막기
+    save("mob_top", [monsters.drakeling(f) for f in range(4)], out, m)
+    # 보스: bosses.py의 13프레임 순서
+    save("boss_left", [bosses.zombie_king(f) for f in range(bosses.FRAMES)], out, m)
+    save("boss_right", [bosses.lich(f) for f in range(bosses.FRAMES)], out, m)
+    save("boss_top", [bosses.dragon(f) for f in range(bosses.FRAMES)], out, m)
+    save("demon_king", [bosses.demon_king(f) for f in range(bosses.FRAMES)], out, m)
+    save("demon_eldritch", [bosses.eldritch_frame(f) for f in range(bosses.FRAMES)], out, m)
 
     swords = {
         "sealed": sword(rgb("#8a8a94"), rgb("#6a5a44"), gem=rgb("#4a4a52")),
@@ -563,9 +647,10 @@ def make_sprites(out):
     save("ice_chunk", [ice_chunk()], out, m)
     save("bone_spike", [bone_spike()], out, m)
     save("shadow", [shadow()], out, m)
+    save("tornado", [tornado(f) for f in range(3)], out, m)
     for k in ("whirl", "dash", "dodge", "guard"):
         save(f"skill_{k}", [skill_icon(k)], out, m)
-    for k in ("poison", "burn", "shock", "freeze"):
+    for k in ("poison", "burn", "shock", "freeze", "blind", "slow", "stun", "invert"):
         save(f"status_{k}", [status_icon(k)], out, m)
 
     # 캠프 시설·장식
@@ -591,6 +676,25 @@ def make_sprites(out):
     save("crystal_blue", [props.crystal("#70c8ff")], out, m)
     save("crystal_purple", [props.crystal("#c070ff")], out, m)
     save("flesh_spike", [props.flesh_spike()], out, m)
+    for th in ("left", "right", "top"):
+        save(f"chest_{th}", [props.chest(th, f) for f in range(3)], out, m)   # 닫힘, 열리는 중, 열림
+    save("fire_orb", [props.fire_orb()], out, m)
+
+    # 마을
+    save("house_0", [village.house(0)], out, m)
+    save("house_1", [village.house(1)], out, m)
+    save("bell_tower", [village.bell_tower()], out, m)
+    save("well", [village.well()], out, m)
+    save("market_stall", [village.market_stall()], out, m)
+    save("bread_basket", [village.bread_basket()], out, m)
+    for v in range(3):
+        save(f"flower_bush_{v}", [village.flower_bush(v)], out, m)
+    save("lamp_post", [village.lamp_post(f) for f in range(3)], out, m)
+    save("pine", [village.pine()], out, m)
+    save("exit_stairs", [village.exit_stairs()], out, m)
+    save("crystal_prison", [village.crystal_prison(f) for f in range(2)], out, m)
+    for k in village.VILLAGERS:
+        save(f"villager_{k}", [village.villager(k, p) for p in range(3)], out, m)   # 웃음, 환호, 수정 속
     with open(f"{out}/manifest.json", "w", encoding="utf-8") as f:
         json.dump(m, f, ensure_ascii=False, indent=1, sort_keys=True)
 

@@ -13,6 +13,7 @@ public class AbsorbService {
      * 보스 처치 결과 (결과창에 그대로 보여준다).
      * 첫 처치면 흡수(최대 체력)·광물·다음 던전·구슬, 다시 생긴 보스면 광물만.
      */
+    /** oreReward: 보물상자에 든 광물 수 (상자를 열어야 들어온다). */
     public record BossAbsorb(DungeonDef dungeon, int hpGain, int oreReward, DungeonDef opened, boolean firstClear) {
     }
 
@@ -24,17 +25,14 @@ public class AbsorbService {
 
     /** 보스 처치. 처음 잡았을 때만 흡수가 일어나고, 다시 생긴 보스는 광물 4~5개만 준다. */
     public BossAbsorb absorbBoss(DungeonDef d, Hero hero, Progress progress, Inventory inv, java.util.Random random) {
-        if (progress.defeated(d.id)) {
-            int ore = d.respawnOreMin + random.nextInt(Math.max(1, d.respawnOreMax - d.respawnOreMin + 1));
-            inv.addOre(d.ore, ore);
-            return new BossAbsorb(d, 0, ore, null, false);
-        }
+        // 광물은 보물상자에 들어 있다 (2026-10-12 결정: 처치할 때마다 chestOreMin~chestOreMax). 여기서는 개수만 정한다
+        int ore = d.chestOreMin + random.nextInt(Math.max(1, d.chestOreMax - d.chestOreMin + 1));
+        if (progress.defeated(d.id)) return new BossAbsorb(d, 0, ore, null, false);
         progress.markDefeated(d.id);
         hero.raiseMaxHp(d.maxHpGain);
-        inv.addOre(d.ore, d.bossOreReward);
         DungeonDef opened = null;
         for (DungeonDef other : balance.dungeons) if (d.id.equals(other.requires)) opened = other;
-        return new BossAbsorb(d, d.maxHpGain, d.bossOreReward, opened, true);
+        return new BossAbsorb(d, d.maxHpGain, ore, opened, true);
     }
 
     public boolean canAbsorbWeapon(Weapon w) {

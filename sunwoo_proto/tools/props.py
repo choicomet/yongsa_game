@@ -6,7 +6,7 @@ from art import Canvas, rgb, shade, mix
 OUT = (14, 10, 18, 255)
 T = 32
 
-THEMES = ["camp", "left", "right", "top", "arena"]
+THEMES = ["camp", "left", "right", "top", "arena", "village"]
 
 
 # ===================================================================== 타일
@@ -65,6 +65,26 @@ def floor_tile(theme, variant):
             c.px(16, 16, rgb("#8a9aff"))
         if variant == 2:
             c.line([(5, 26), (13, 20), (20, 23)], shade(base, -20))
+    elif theme == "village":                       # 둥근 자갈길 + 이끼·꽃
+        base = rgb("#8a8478")
+        c.flat_rect((0, 0, 31, 31), shade(base, -34))
+        for row, y in enumerate(range(0, 32, 8)):
+            off = 0 if row % 2 == 0 else 5
+            for x in range(-5 + off, 32, 10):
+                st = shade(base, rnd.choice((-10, -4, 0, 6)))
+                c.ellipse((x + 1, y + 1, x + 9, y + 7), st, hi=20, lo=-22)
+        if variant == 1:
+            for _ in range(7):
+                x, y = rnd.randrange(1, 30), rnd.randrange(1, 30)
+                c.px(x, y, rgb("#6a9a48")); c.px(x + 1, y, rgb("#88b85a"))
+        if variant == 2:
+            grass = rgb("#5f9a46")
+            c.flat_ellipse((3, 14, 28, 30), grass)
+            _noise(c, grass, 30, rnd, 16)
+            for _ in range(4):
+                x, y = rnd.randrange(6, 25), rnd.randrange(17, 27)
+                col = rgb(rnd.choice(("#ffd84a", "#ff7aa0", "#ffffff", "#8ac8ff")))
+                c.px(x, y, col); c.px(x - 1, y, col); c.px(x + 1, y, col); c.px(x, y - 1, col); c.px(x, y, rgb("#ffe080"))
     else:  # arena
         base = rgb("#2e1218")
         c.flat_rect((0, 0, 31, 31), base)
@@ -83,6 +103,7 @@ WALL = {
     "right": (rgb("#3a2a34"), rgb("#5a4652")),
     "top": (rgb("#1e1c34"), rgb("#3a3864")),
     "arena": (rgb("#1a080c"), rgb("#4a1820")),
+    "village": (rgb("#2e5a2a"), rgb("#5a9a46")),
 }
 
 
@@ -95,6 +116,16 @@ def wall_top(theme):
         for x in range(0, 32, 8):
             c.flat_ellipse((x + 1, 10, x + 7, 22), shade(light, -10))
             c.flat_ellipse((x + 2, 12, x + 5, 16), light)
+    if theme == "village":                               # 다듬은 산울타리 윗면
+        rnd = random.Random(9)
+        c.flat_rect((0, 0, 31, 31), dark)
+        for _ in range(14):
+            x, y = rnd.randrange(-2, 28), rnd.randrange(-2, 28)
+            c.flat_ellipse((x, y, x + 8, y + 7), shade(light, rnd.choice((-18, -8, 0))))
+            c.px(x + 3, y + 2, shade(light, 26))
+        for _ in range(3):
+            x, y = rnd.randrange(3, 28), rnd.randrange(3, 28)
+            c.px(x, y, rgb("#ff8aa8")); c.px(x + 1, y, rgb("#ffd0e0"))
     return c
 
 
@@ -123,6 +154,20 @@ def wall_face(theme):
         c.rect((2, 8, 14, 30), light, hi=18, lo=-16, dither=False)
         c.rect((17, 8, 29, 30), light, hi=18, lo=-16, dither=False)
         c.flat_rect((15, 8, 16, 30), rgb("#5a6aff"))
+    elif theme == "village":                             # 낮은 돌담 + 담쟁이 + 꽃
+        c.flat_rect((0, 0, 31, 9), shade(light, -6))     # 산울타리 윗부분
+        for x in range(-2, 32, 6):
+            c.flat_ellipse((x, 1, x + 7, 10), shade(light, rnd.choice((-14, 0, 8))))
+        stone = rgb("#a89c8a")
+        for row, y in enumerate(range(10, 30, 6)):
+            off = 0 if row % 2 == 0 else 6
+            for x in range(-6 + off, 32, 12):
+                c.rect((x + 1, y, x + 11, y + 5), shade(stone, rnd.choice((-14, -6, 4))), hi=18, lo=-20, dither=False)
+        for x in (3, 19, 27):                             # 늘어진 담쟁이
+            for k in range(rnd.randrange(6, 14)):
+                c.px(x + (k % 3 == 0), 10 + k, rgb("#4f8a3a")); c.px(x + 1, 10 + k, rgb("#6aaa48"))
+        for x in (9, 23):
+            c.px(x, 8, rgb("#ff7aa0")); c.px(x + 1, 8, rgb("#ffd0e0")); c.px(x, 7, rgb("#ff7aa0"))
     else:                                                # 심연: 살덩이 바위
         for _ in range(5):
             x, y = rnd.randrange(0, 26), rnd.randrange(8, 26)
@@ -396,4 +441,65 @@ def rug():
     c.rrect((8, 8, 87, 55), 4, rgb("#8a3a32"))
     for x in range(12, 86, 12):
         c.flat_poly([(x, 32), (x + 6, 26), (x + 12, 32), (x + 6, 38)], rgb("#c8a050"))
+    return c
+
+
+# ===================================================================== 보스 보물상자 (던전 테마)
+def chest(theme, frame):
+    """44x40. frame 0 닫힘, 1 반쯤 열림, 2 활짝 열림(빛)."""
+    c = Canvas(44, 40)
+    if theme == "left":      # 갱도: 철띠 두른 나무 상자 + 등불, 광석 박힘
+        body, band, trim = rgb("#7a4e2a"), rgb("#5a5a62"), rgb("#c8a040")
+        gem, glow = rgb("#8a8ab8"), rgb("#ffd890")
+    elif theme == "right":   # 성채: 검붉은 고딕 상자 + 뼈 장식, 붉은 보석
+        body, band, trim = rgb("#4a1e2a"), rgb("#2a1a22"), rgb("#ddd6c4")
+        gem, glow = rgb("#e0304a"), rgb("#ff8090")
+    else:                    # 탑: 푸른 마법 상자 + 금테, 하늘빛 수정
+        body, band, trim = rgb("#2a3a6a"), rgb("#1a2246"), rgb("#e6c060")
+        gem, glow = rgb("#70d8ff"), rgb("#c8f0ff")
+    # 몸통
+    c.rrect((4, 18, 40, 38), 3, body, hi=24, lo=-30)
+    for x in (8, 34):
+        c.rect((x, 18, x + 3, 38), band, flat=True)
+    c.rect((4, 34, 40, 36), band, flat=True)
+    if theme == "right":
+        c.ellipse((18, 24, 26, 32), trim)                 # 해골 장식
+        c.px(20, 27, rgb("#200a10")); c.px(24, 27, rgb("#200a10"))
+    else:
+        c.rrect((18, 22, 26, 30), 1, trim)                # 자물쇠
+        c.flat_rect((21, 25, 23, 27), band)
+    for (x, y) in ((13, 31), (31, 31)):
+        c.flat_poly([(x, y - 2), (x + 2, y), (x, y + 2), (x - 2, y)], gem)
+    # 뚜껑
+    if frame == 0:
+        c.poly([(4, 18), (6, 8), (38, 8), (40, 18)], body, hi=30)
+        c.rect((4, 16, 40, 18), trim, flat=True)
+        for x in (8, 34):
+            c.poly([(x, 18), (x + 1, 8), (x + 4, 8), (x + 3, 18)], band, flat=True)
+        if theme == "right":
+            c.poly([(16, 8), (22, 2), (28, 8)], trim)
+        if theme == "top":
+            c.flat_poly([(22, 3), (25, 8), (22, 12), (19, 8)], gem)
+    else:
+        lift = 6 if frame == 1 else 12
+        c.poly([(4, 18 - lift), (6, 10 - lift * 1.5), (38, 10 - lift * 1.5), (40, 18 - lift)], shade(body, -20))
+        c.rect((4, 16 - lift, 40, 18 - lift), trim, flat=True)
+        c.flat_rect((6, 18, 38, 22), rgb("#140c10"))
+    c.outline(OUT)
+    if frame == 2:
+        c.glow(22, 16, 22, glow, 0.8)
+        c.glow(22, 10, 12, rgb("#ffffff"), 0.6)
+    elif theme == "top":
+        c.glow(22, 8, 8, gem, 0.4)
+    return c
+
+
+def fire_orb(frame=0):
+    """마룡이 뿌리는 화염 구슬 (보랏빛 테두리의 불덩이)."""
+    c = Canvas(20, 20)
+    c.glow(10, 10, 10, rgb("#ff7a20"), 0.7)
+    c.ellipse((4, 4, 16, 16), rgb("#ff8a20"), hi=60)
+    c.ellipse((7, 6, 13, 12), rgb("#ffe080"))
+    c.px(8, 7, rgb("#ffffff"))
+    c.glow(10, 10, 9, rgb("#c050ff"), 0.25)
     return c

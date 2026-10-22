@@ -15,6 +15,7 @@ import com.yongsa.save.SaveMapper;
 import com.yongsa.ui.BagWindow;
 import com.yongsa.ui.ConfirmDialog;
 import com.yongsa.ui.ControlsWindow;
+import com.yongsa.ui.DevToolsWindow;
 import com.yongsa.ui.ForgeWindow;
 import com.yongsa.ui.Hud;
 import com.yongsa.ui.MapWindow;
@@ -42,6 +43,7 @@ public class GameScreen extends BaseScreen {
     private final ForgeWindow forge;
     private final BagWindow bag;
     private final MapWindow map;
+    private final DevToolsWindow devTools;
     private final PauseMenu pause;
     private float endingTimer = -1;
     /** 마왕에게 쓰러졌을 때: 마왕의 말을 다 보여준 뒤 결과창. */
@@ -57,6 +59,12 @@ public class GameScreen extends BaseScreen {
         forge = new ForgeWindow(game.skin, s, game.assets, windows::open, game.settings::effectSpeed, game.sounds::play);
         bag = new BagWindow(game.skin, s, game.assets);
         map = new MapWindow(game.skin, s);
+        devTools = new DevToolsWindow(game.skin, s, then -> {
+            windows.closeAll();
+            then.run();
+        }, () -> {
+            if (windows.any()) windows.top().refresh();
+        });
         pause = new PauseMenu(game.skin, s, new PauseMenu.Actions() {
             @Override public void bag() { windows.open(bag); }
 
@@ -68,12 +76,6 @@ public class GameScreen extends BaseScreen {
             @Override public void settings() { windows.open(new SettingsWindow(game.skin, game.settings, game.sounds::applyVolume)); }
 
             @Override public void controls() { windows.open(new ControlsWindow(game.skin)); }
-
-            @Override
-            public void exitDungeon() {
-                windows.closeAll();
-                s.exitDungeon();
-            }
 
             @Override
             public void title() {
@@ -110,8 +112,8 @@ public class GameScreen extends BaseScreen {
                 Room r = (Room) e.data();
                 if (r.kind != com.yongsa.world.RoomKind.BOSS) hud.toast("문이 잠겼다! 몬스터를 모두 쓰러뜨리자.", Color.ORANGE, 1.6f);
             }
-            case ORB_PICKED -> hud.toast("보스의 구슬을 얻었다! (" + e.amount() + " / 3)"
-                    + (e.amount() == 3 ? "\n캠프 바닥의 문양이 구슬을 부르고 있다…" : ""), new Color(0.8f, 0.7f, 1f, 1f), 3.5f);
+            case ORB_PICKED -> hud.toast("보스의 정수를 얻었다! (" + e.amount() + " / 3)"
+                    + (e.amount() == 3 ? "\n캠프 바닥의 문양이 정수를 부르고 있다…" : ""), new Color(0.8f, 0.7f, 1f, 1f), 3.5f);
             case BOSS_CONFIRM -> {
                 Room r = (Room) e.data();
                 String boss = s.balance.boss(s.balance.dungeon(r.dungeon).boss).name;
@@ -201,7 +203,7 @@ public class GameScreen extends BaseScreen {
         }
         if (s.inArena()) game.sounds.playMusic(s.progress.finalDefeated() ? "bgm_ending" : "bgm_final");
         else if (s.activeBoss() != null) game.sounds.playMusic("bgm_boss");
-        else if (s.inCamp()) game.sounds.playMusic("bgm_camp");
+        else if (s.inCamp() || s.inVillage()) game.sounds.playMusic("bgm_camp");
         else if (s.overlapRoom() != null) game.sounds.playMusic("bgm_" + s.overlapRoom().dungeon);
     }
 
@@ -231,6 +233,12 @@ public class GameScreen extends BaseScreen {
     private class GameInput extends InputAdapter {
         @Override
         public boolean keyDown(int key) {
+            // F1: 개발자 도구 (광물 무한·무적·바로 가기). 대장간 등 다른 창 위에서도 열린다.
+            if (key == Input.Keys.F1) {
+                if (windows.top() instanceof DevToolsWindow dev) dev.close();
+                else if (s.cutscene() == null) windows.open(devTools);
+                return true;
+            }
             if (windows.any()) {
                 windows.keyDown(key);
                 return true;
@@ -240,10 +248,10 @@ public class GameScreen extends BaseScreen {
                 case Input.Keys.ESCAPE -> windows.open(pause);
                 case Input.Keys.M -> windows.open(map);
                 case Input.Keys.I, Input.Keys.TAB -> windows.open(bag);
-                case Input.Keys.J, Input.Keys.SPACE -> controls.attack = true;
+                case Input.Keys.J -> controls.attack = true;
                 case Input.Keys.Q -> controls.whirl = true;
                 case Input.Keys.L -> controls.dash = true;
-                case Input.Keys.SHIFT_LEFT, Input.Keys.SHIFT_RIGHT -> controls.dodge = true;
+                case Input.Keys.SPACE -> controls.dodge = true;
                 case Input.Keys.E -> controls.interact = true;
                 default -> {
                     return false;

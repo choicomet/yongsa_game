@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.yongsa.model.AwakenAbility;
 import com.yongsa.model.GameSession;
+import com.yongsa.model.TreasureChest;
 import com.yongsa.model.Weapon;
 import com.yongsa.world.Room;
 import com.yongsa.world.RoomKind;
@@ -49,6 +50,16 @@ public final class SaveMapper {
             os.y = o.y();
             d.orbDrops.add(os);
         }
+        for (TreasureChest c : s.chests) {
+            if (c.opened) continue;
+            SaveData.ChestSave cs = new SaveData.ChestSave();
+            cs.dungeon = c.dungeon;
+            cs.x = c.x;
+            cs.y = c.y;
+            cs.ore = c.ore;
+            cs.essence = c.essence;
+            d.chests.add(cs);
+        }
         d.sealBroken = s.progress.sealBroken();
         d.finalDefeated = s.progress.finalDefeated();
         d.firstOreRoomUsed = s.progress.firstOreRoomUsed();
@@ -58,6 +69,8 @@ public final class SaveMapper {
         d.awakenCount = s.progress.awakenCount;
         d.kills = s.progress.kills;
         d.deaths = s.progress.deaths;
+        d.exitRefusals = s.progress.exitRefusals;
+        d.inversion = s.progress.inversion();
 
         for (Room r : s.rooms) {
             SaveData.RoomSave rs = new SaveData.RoomSave();
@@ -78,7 +91,7 @@ public final class SaveMapper {
         }
         d.heroX = s.unit.footX();
         d.heroY = s.unit.footY();
-        d.inCamp = s.inCamp();
+        d.inCamp = s.inSafeArea();
         d.lastRoomId = s.lastRoomId();
         d.playTime = s.playTime();
         return d;
@@ -109,6 +122,8 @@ public final class SaveMapper {
         s.progress.awakenCount = d.awakenCount;
         s.progress.kills = d.kills;
         s.progress.deaths = d.deaths;
+        s.progress.setInversion(d.inversion);
+        s.progress.exitRefusals = d.exitRefusals;
 
         for (SaveData.RoomSave rs : d.rooms) {
             Room r = s.roomById.get(rs.id);
@@ -130,9 +145,14 @@ public final class SaveMapper {
 
         s.orbDrops.clear();
         for (SaveData.OrbSave os : d.orbDrops) s.orbDrops.add(new GameSession.OrbDrop(os.dungeon, os.x, os.y));
-        // 보스는 잡았는데 구슬을 못 주운 채 저장했다면 보스방에 다시 떨어뜨린다
+        s.chests.clear();
+        if (d.chests != null) {
+            for (SaveData.ChestSave cs : d.chests) s.chests.add(new TreasureChest(cs.dungeon, cs.x, cs.y, cs.ore, cs.essence));
+        }
+        // 보스는 잡았는데 정수를 못 주운 채 저장했다면 (상자에도 없으면) 보스방에 다시 떨어뜨린다
         for (String b : d.defeatedBosses) {
-            boolean dropped = s.orbDrops.stream().anyMatch(o -> o.dungeon().equals(b));
+            boolean dropped = s.orbDrops.stream().anyMatch(o -> o.dungeon().equals(b))
+                    || s.chests.stream().anyMatch(c -> c.essence && c.dungeon.equals(b));
             if (!s.progress.hasOrb(b) && !dropped) {
                 Room boss = s.bossRoom(b);
                 s.orbDrops.add(new GameSession.OrbDrop(b, boss.portal.x, boss.portal.y + 56));

@@ -60,9 +60,9 @@ public class BagWindow extends GameWindow {
         for (OreDef o : s.balance.ores) {
             side.add(new Image(assets.region("ore_" + o.id))).size(26).padRight(8);
             side.add(new Label(o.name, skin)).width(110).left();
-            side.add(new Label(s.inventory.ore(o.id) + "개", skin, "large")).right().row();
+            side.add(new Label(s.inventory.oreText(o.id) + (s.inventory.infiniteOre() ? "" : "개"), skin, "large")).right().row();
         }
-        side.add(new Label("보스의 구슬", skin, "gold")).left().colspan(3).padTop(14).row();
+        side.add(new Label("보스의 정수", skin, "gold")).left().colspan(3).padTop(14).row();
         Table orbs = new Table();
         for (DungeonDef d : s.balance.dungeons) {
             Image orb = new Image(assets.region("orb_" + d.id));
@@ -70,7 +70,7 @@ public class BagWindow extends GameWindow {
             orbs.add(orb).size(30).padRight(8);
         }
         side.add(orbs).left().colspan(3).row();
-        side.add(new Label(s.progress.sealBroken() ? "구슬은 캠프 문양에 박혔다." : s.progress.orbs().size() + " / 3  — 셋을 모으면 봉인된 검을 성검으로 해방할 수 있다.",
+        side.add(new Label(s.progress.sealBroken() ? "정수는 캠프 문양에 박혔다." : s.progress.orbs().size() + " / 3  — 셋을 모으면 봉인된 검을 성검으로 해방할 수 있다.",
                 skin, "small")).left().colspan(3).row();
         side.add(new Label("흡수한 힘", skin, "gold")).left().colspan(3).padTop(14).row();
         side.add(new Label("최대 체력 " + s.hero.maxHp() + "   공격력 +" + (s.hero.absorbedCount() * 10) + "%", skin)).left().colspan(3).row();
