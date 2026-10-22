@@ -1,0 +1,124 @@
+{
+  "_comment": "모든 수치는 여기서 고친다 (NFR-06). 요구사항 명세서 5장의 임시값 + 2026-10-10 결정 반영. 거리 단위 px(타일 1칸 = 32px), 시간 단위 초.",
+
+  "hero": {
+    "maxHp": 100,
+    "speed": 128,
+    "invincibleTime": 0.6,
+    "knockback": 16,
+    "campRegenPerSecond": 8,
+    "attackCooldown": 0.4,
+    "attackRange": 52,
+    "attackArcDegrees": 120,
+    "damageVariance": 0.1
+  },
+
+  "skills": {
+    "whirl":  { "name": "회전 베기", "multiplier": 1.5, "cooldown": 6.0, "radius": 68 },
+    "dash":   { "name": "돌진 베기", "multiplier": 2.0, "cooldown": 8.0, "distance": 120, "duration": 0.2, "width": 40 },
+    "dodge":  { "name": "회피", "cooldown": 0.8, "distance": 88, "duration": 0.25 }
+  },
+
+  "ores": [
+    { "id": "blackiron", "name": "흑철석", "dungeon": "left"  },
+    { "id": "bloodmoon", "name": "혈월석", "dungeon": "right" },
+    { "id": "sky",       "name": "천공석", "dungeon": "top"   }
+  ],
+
+  "weapons": [
+    { "id": "sealed", "name": "봉인된 성검", "icon": "weapon_sealed", "ore": "", "craftCost": 0,
+      "attack": 10, "attackPerLevel": 0, "enhanceable": false, "starter": true },
+    { "id": "holy", "name": "깨어난 성검", "icon": "weapon_holy", "ore": "", "craftCost": 0,
+      "attack": 200, "attackPerLevel": 0, "enhanceable": false, "holy": true },
+    { "id": "blackiron", "name": "흑철검", "icon": "weapon_blackiron", "ore": "blackiron", "craftCost": 8,
+      "attack": 22, "attackPerLevel": 3, "enhanceable": true,
+      "awakenedName": "흑철 분쇄검", "awakenedIcon": "weapon_blackiron_aw", "ability": "SHOCKWAVE" },
+    { "id": "bloodmoon", "name": "혈월검", "icon": "weapon_bloodmoon", "ore": "bloodmoon", "craftCost": 8,
+      "attack": 55, "attackPerLevel": 5, "enhanceable": true,
+      "awakenedName": "혈월 탐식검", "awakenedIcon": "weapon_bloodmoon_aw", "ability": "LIFESTEAL" },
+    { "id": "sky", "name": "천공검", "icon": "weapon_sky", "ore": "sky", "craftCost": 8,
+      "attack": 110, "attackPerLevel": 8, "enhanceable": true,
+      "awakenedName": "천공 뇌격검", "awakenedIcon": "weapon_sky_aw", "ability": "CHAIN_LIGHTNING" }
+  ],
+
+  "abilities": {
+    "shockwaveEvery": 3, "shockwaveMultiplier": 1.2, "shockwaveRange": 96, "shockwaveArcDegrees": 150,
+    "lifestealRatio": 0.04,
+    "chainChance": 0.25, "chainMultiplier": 0.6, "chainTargets": 2, "chainRange": 150
+  },
+
+  "enhance": {
+    "maxLevel": 10,
+    "absorbAttackBonus": 0.10,
+    "destroyRefundRatio": 0.5,
+    "dismantleBase": 4,
+    "dismantleEnhanceRatio": 0.5,
+    "rules": [
+      { "success": 95, "keep": 100, "down": 0,  "destroy": 0,  "cost": 1 },
+      { "success": 88, "keep": 100, "down": 0,  "destroy": 0,  "cost": 1 },
+      { "success": 81, "keep": 100, "down": 0,  "destroy": 0,  "cost": 1 },
+      { "success": 74, "keep": 50,  "down": 50, "destroy": 0,  "cost": 2 },
+      { "success": 67, "keep": 50,  "down": 50, "destroy": 0,  "cost": 2 },
+      { "success": 60, "keep": 50,  "down": 50, "destroy": 0,  "cost": 2 },
+      { "success": 53, "keep": 40,  "down": 45, "destroy": 15, "cost": 3 },
+      { "success": 46, "keep": 40,  "down": 45, "destroy": 15, "cost": 3 },
+      { "success": 39, "keep": 40,  "down": 45, "destroy": 15, "cost": 3 },
+      { "success": 32, "keep": 40,  "down": 45, "destroy": 15, "cost": 3 }
+    ]
+  },
+
+  "mining": {
+    "hitsPerVein": 3,
+    "oreMin": 1, "oreMax": 2,
+    "veinsMin": 6, "veinsMax": 10,
+    "clearedVeinsMin": 8, "clearedVeinsMax": 12,
+    "firstRoomGuarantee": 8
+  },
+
+  "monsters": [
+    { "id": "miner", "name": "광부 해골", "sprite": "mob_left", "kind": "MELEE",
+      "hp": 40, "attack": 8, "speed": 70, "detectRange": 260, "attackRange": 40,
+      "windup": 0.5, "cooldown": 1.0, "lunge": 230, "width": 18, "height": 10 },
+    { "id": "knight", "name": "저주받은 기사", "sprite": "mob_right", "kind": "MELEE",
+      "hp": 130, "attack": 22, "speed": 80, "detectRange": 280, "attackRange": 44,
+      "windup": 0.5, "cooldown": 0.9, "lunge": 250, "width": 20, "height": 10 },
+    { "id": "mage", "name": "탑의 마도사", "sprite": "mob_top", "kind": "RANGED",
+      "hp": 280, "attack": 40, "speed": 60, "detectRange": 320, "attackRange": 220,
+      "windup": 0.5, "cooldown": 1.6, "projectileSpeed": 190, "width": 18, "height": 10 }
+  ],
+
+  "bosses": [
+    { "id": "golem", "name": "갱도의 골렘", "sprite": "boss_left", "kind": "MELEE",
+      "hp": 500, "attack": 15, "speed": 55, "detectRange": 900, "attackRange": 60,
+      "windup": 0.6, "cooldown": 1.2, "lunge": 200, "width": 44, "height": 16,
+      "patterns": ["SLAM"], "patternInterval": 4.5, "slamRadius": 80, "slamWarning": 1.0, "slamMultiplier": 1.6 },
+    { "id": "bloodlord", "name": "피의 성주", "sprite": "boss_right", "kind": "MELEE",
+      "hp": 1500, "attack": 35, "speed": 70, "detectRange": 900, "attackRange": 60,
+      "windup": 0.5, "cooldown": 1.0, "lunge": 230, "width": 40, "height": 16,
+      "patterns": ["SLAM", "CHARGE"], "patternInterval": 4.0, "slamRadius": 88, "slamWarning": 1.0, "slamMultiplier": 1.5,
+      "chargeSpeed": 420, "chargeWarning": 0.8 },
+    { "id": "skydragon", "name": "천공룡", "sprite": "boss_top", "kind": "MELEE",
+      "hp": 4000, "attack": 60, "speed": 75, "detectRange": 900, "attackRange": 64,
+      "windup": 0.5, "cooldown": 1.0, "lunge": 240, "width": 52, "height": 18,
+      "patterns": ["SLAM", "CHARGE", "NOVA"], "patternInterval": 3.6, "slamRadius": 96, "slamWarning": 1.0, "slamMultiplier": 1.5,
+      "chargeSpeed": 440, "chargeWarning": 0.8, "novaCount": 12, "projectileSpeed": 170 }
+  ],
+
+  "finalBoss": { "id": "demonking", "name": "마왕", "sprite": "demon_king", "kind": "MELEE",
+      "hp": 6000, "attack": 100, "speed": 80, "detectRange": 1200, "attackRange": 72,
+      "windup": 0.5, "cooldown": 1.0, "lunge": 260, "width": 60, "height": 20,
+      "patterns": ["SLAM", "CHARGE", "NOVA"], "patternInterval": 3.2, "slamRadius": 104, "slamWarning": 1.0, "slamMultiplier": 1.4,
+      "chargeSpeed": 460, "chargeWarning": 0.8, "novaCount": 16, "projectileSpeed": 180, "phase2Ratio": 0.5 },
+
+  "dungeons": [
+    { "id": "left",  "name": "무너진 갱도",   "ore": "blackiron", "monster": "miner",  "boss": "golem",
+      "requires": "", "maxHpGain": 150, "bossOreReward": 5, "weapon": "blackiron",
+      "buffHpMultiplier": 1.4, "buffAttackMultiplier": 1.25 },
+    { "id": "right", "name": "저주받은 성채", "ore": "bloodmoon", "monster": "knight", "boss": "bloodlord",
+      "requires": "left", "maxHpGain": 200, "bossOreReward": 5, "weapon": "bloodmoon",
+      "buffHpMultiplier": 1.4, "buffAttackMultiplier": 1.25 },
+    { "id": "top",   "name": "마왕의 탑",     "ore": "sky",       "monster": "mage",   "boss": "skydragon",
+      "requires": "right", "maxHpGain": 250, "bossOreReward": 5, "weapon": "sky",
+      "buffHpMultiplier": 1.4, "buffAttackMultiplier": 1.25 }
+  ]
+}
