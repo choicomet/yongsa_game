@@ -5,6 +5,8 @@ public class Controls {
     public float moveX, moveY;
     /** 아래는 "이번 프레임에 눌렀는지" */
     public boolean attack, whirl, dash, dodge, interact;
+    /** 막기: "누르고 있는지" (Ctrl). */
+    public boolean guard;
 
     public void clearPresses() {
         attack = whirl = dash = dodge = interact = false;
@@ -12,6 +14,7 @@ public class Controls {
 
     public void clearAll() {
         moveX = moveY = 0;
+        guard = false;
         clearPresses();
     }
 }

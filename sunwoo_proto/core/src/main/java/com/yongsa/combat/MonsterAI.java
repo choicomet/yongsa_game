@@ -38,7 +38,8 @@ public final class MonsterAI {
                 ctx.collision().move(m.body, m.lungeX * m.def.lunge * delta, m.lungeY * m.def.lunge * delta);
                 if (!m.hitThisAttack && touching(m, hero, 4)) {
                     m.hitThisAttack = true;
-                    ctx.hitHero(m.attack, m.centerX(), m.centerY());
+                    if (m.isBoss()) ctx.hitHeroHeavy(m.attack, m.centerX(), m.centerY());
+                    else ctx.hitHero(m.attack, m.centerX(), m.centerY());
                 }
                 if (m.stateTime >= Monster.ATTACK_TIME) m.setState(Monster.State.RECOVER);
             }
@@ -75,7 +76,7 @@ public final class MonsterAI {
         float len = Math.max(0.01f, (float) Math.sqrt(dx * dx + dy * dy));
         float sp = m.def.projectileSpeed;
         ctx.spawnProjectile(new Projectile(m.centerX(), m.centerY() + 14, dx / len * sp, dy / len * sp, 8,
-                m.attack, "bolt_blue", 3f));
+                m.attack, m.def.projectile, 3f));
         ctx.sound("bolt");
     }
 

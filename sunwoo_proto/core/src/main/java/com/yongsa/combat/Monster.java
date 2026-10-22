@@ -16,8 +16,8 @@ public class Monster extends Body {
     public final MonsterDef def;
     public final Room room;
     protected int hp;
-    protected final int maxHp;
-    public final int attack;
+    protected int maxHp;
+    public int attack;
     public final boolean buffed;
 
     protected State state = State.SPAWNING;
@@ -40,7 +40,12 @@ public class Monster extends Body {
     public int hp() { return hp; }
     public int maxHp() { return maxHp; }
     public boolean alive() { return hp > 0; }
-    public boolean gone() { return state == State.DYING && stateTime >= DYING_TIME; }
+    public boolean gone() { return state == State.DYING && stateTime >= dyingTime(); }
+    protected float dyingTime() { return DYING_TIME; }
+    /** 그릴 그림 이름. */
+    public String sprite() { return def.sprite; }
+    /** 리치가 불러낸 잡몹 (보스가 쓰러지면 같이 무너진다). */
+    public boolean summoned;
     public boolean canBeHit() { return alive() && state != State.SPAWNING; }
     public boolean isBoss() { return false; }
 
@@ -70,6 +75,13 @@ public class Monster extends Body {
             return true;
         }
         return false;
+    }
+
+    /** 바로 쓰러뜨린다 (주인 보스가 죽었을 때 소환수). */
+    public void kill() {
+        if (!alive()) return;
+        hp = 0;
+        setState(State.DYING);
     }
 
     /** 체력 가득으로 되돌린다 (사망 후 보스방 초기화 등). */

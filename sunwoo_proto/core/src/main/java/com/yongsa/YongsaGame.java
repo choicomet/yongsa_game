@@ -14,6 +14,7 @@ import com.yongsa.save.SaveMapper;
 import com.yongsa.screen.EndingScreen;
 import com.yongsa.screen.GameScreen;
 import com.yongsa.screen.IntroScreen;
+import com.yongsa.screen.StoryScreen;
 import com.yongsa.screen.TitleScreen;
 import com.yongsa.ui.UiSkin;
 import com.yongsa.world.WorldMap;
@@ -57,7 +58,7 @@ public class YongsaGame extends Game {
 
     public void startNewGame() {
         saves.delete();
-        switchTo(new IntroScreen(this));
+        switchTo(IntroScreen.create(this));
     }
 
     public void startGame(GameSession s) {
@@ -82,8 +83,9 @@ public class YongsaGame extends Game {
         startGame(s);
     }
 
+    /** 마왕을 쓰러뜨림: 이야기 그림 3장(속박된 사람들의 해방) → 플레이 기록. */
     public void showEnding(GameSession s) {
-        switchTo(new EndingScreen(this, s));
+        switchTo(new StoryScreen(this, EndingScreen.STORY, "bgm_ending", () -> switchTo(new EndingScreen(this, s))));
     }
 
     /** 엔딩 뒤 "계속하기": 같은 판으로 돌아간다 (FR-던전-10). */

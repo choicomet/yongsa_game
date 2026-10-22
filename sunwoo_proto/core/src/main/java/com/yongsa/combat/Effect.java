@@ -2,7 +2,8 @@ package com.yongsa.combat;
 
 /** 잠깐 그렸다 사라지는 연출 (공격 범위, 충격파, 번개 등). 규칙에는 영향이 없다. */
 public class Effect {
-    public enum Type { SLASH, WHIRL, SHOCKWAVE, LIGHTNING, SLAM, HIT, DASH_TRAIL, BOUNCE, ORB_BURST, HEAL }
+    public enum Type { SLASH, WHIRL, SHOCKWAVE, LIGHTNING, SLAM, HIT, DASH_TRAIL, BOUNCE, ORB_BURST, HEAL,
+        BLOOD_BURST, BLOCK, GUARD_BREAK, FREEZE, PHASE_SHIFT }
 
     public final Type type;
     public float x, y, x2, y2, radius, dirX, dirY, arc;

@@ -36,6 +36,7 @@ public final class SaveMapper {
         }
         d.equippedUid = s.inventory.equipped().uid();
         for (AwakenAbility a : s.hero.absorbed()) d.absorbed.add(a.name());
+        d.absorbedSwords.putAll(s.hero.absorbedSwords());
         d.maxHp = s.hero.maxHp();
         d.hp = s.hero.hpExact();
 
@@ -97,8 +98,8 @@ public final class SaveMapper {
         s.inventory.equip(eq != null ? eq : s.inventory.sword());
 
         List<AwakenAbility> abs = new ArrayList<>();
-        for (String a : d.absorbed) abs.add(AwakenAbility.valueOf(a));
-        s.hero.restoreAbsorbed(abs);
+        for (String a : d.absorbed) abs.add(AwakenAbility.parse(a));
+        s.hero.restoreAbsorbed(abs, d.absorbedSwords);
         s.hero.setMaxHp(Math.max(d.maxHp, s.balance.hero.maxHp));
         s.hero.setHp(d.hp <= 0 ? s.hero.maxHp() : d.hp);
 
@@ -113,8 +114,7 @@ public final class SaveMapper {
             Room r = s.roomById.get(rs.id);
             if (r == null) continue;
             r.monsters.clear();
-            boolean bossDone = r.kind == RoomKind.BOSS && s.progress.defeated(r.dungeon);
-            r.setState(rs.cleared || bossDone ? RoomState.CLEARED : RoomState.IDLE);
+            r.setState(rs.cleared ? RoomState.CLEARED : RoomState.IDLE);
             r.seen = rs.seen;
             r.veinsGenerated = rs.veinsGenerated;
             r.veins.clear();
@@ -124,7 +124,8 @@ public final class SaveMapper {
                 v.setHitsLeft(vs.hitsLeft);
                 r.veins.add(v);
             }
-            if (r.portal != null) r.portal.setActive(bossDone);
+            // 보스방 포탈은 그 방을 비운 동안만 (침대로 쉬면 보스가 다시 생긴다)
+            if (r.portal != null) r.portal.setActive(r.kind == RoomKind.BOSS && rs.cleared);
         }
 
         s.orbDrops.clear();

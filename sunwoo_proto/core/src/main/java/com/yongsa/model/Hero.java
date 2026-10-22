@@ -2,7 +2,9 @@ package com.yongsa.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 용사의 영구 능력치. 힘은 무기가 아니라 용사에게 쌓인다 (FR-대장간-20, FR-던전-12).
@@ -14,6 +16,8 @@ public class Hero {
     private float hp;
     /** 흡수한 각성 능력. 어떤 무기를 들어도 쓴다. */
     private final List<AwakenAbility> absorbed = new ArrayList<>();
+    /** 흡수한 검의 종류 → 강화 단계. 검은 사라져도 성검이 그 힘을 나눠 갖는다. */
+    private final Map<String, Integer> absorbedSwords = new LinkedHashMap<>();
 
     public Hero(int maxHp) {
         this.maxHp = maxHp;
@@ -26,6 +30,11 @@ public class Hero {
     public boolean alive() { return hp > 0; }
 
     public void damage(int amount) {
+        hp = Math.max(0, hp - amount);
+    }
+
+    /** 독·화상처럼 조금씩 닳는 피해. */
+    public void damageExact(float amount) {
         hp = Math.max(0, hp - amount);
     }
 
@@ -54,13 +63,20 @@ public class Hero {
         return Collections.unmodifiableList(absorbed);
     }
 
-    void absorb(AwakenAbility a) {
-        if (!absorbed.contains(a)) absorbed.add(a);
+    void absorb(AwakenAbility a, String swordId, int level) {
+        if (a != null && !absorbed.contains(a)) absorbed.add(a);
+        if (swordId != null) absorbedSwords.merge(swordId, level, Math::max);
     }
 
-    public void restoreAbsorbed(List<AwakenAbility> list) {
+    public Map<String, Integer> absorbedSwords() {
+        return Collections.unmodifiableMap(absorbedSwords);
+    }
+
+    public void restoreAbsorbed(List<AwakenAbility> list, Map<String, Integer> swords) {
         absorbed.clear();
         absorbed.addAll(list);
+        absorbedSwords.clear();
+        if (swords != null) absorbedSwords.putAll(swords);
     }
 
     /** 흡수한 각성 무기 수. 공격력 보너스 = 수 × 10%. */

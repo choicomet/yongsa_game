@@ -40,7 +40,8 @@ public class BagWindow extends GameWindow {
             boolean eq = w == s.inventory.equipped();
             weapons.add(new Image(assets.region(w.icon()))).size(40).padRight(10);
             weapons.add(new Label(w.displayName(), skin, eq ? "large-gold" : "large")).width(300).left();
-            weapons.add(new Label("공격력 " + s.attackOf(w), skin, "dim")).width(140).left();
+            float ls = s.lifestealOf(w);
+            weapons.add(new Label("공격력 " + s.attackOf(w) + (ls > 0 ? "\n흡혈 " + ls + "%" : ""), skin, "dim")).width(140).left();
             TextButton b = button(eq ? "장착 중" : "장착", () -> {
                 s.equip(w);
                 refresh();
@@ -69,7 +70,7 @@ public class BagWindow extends GameWindow {
             orbs.add(orb).size(30).padRight(8);
         }
         side.add(orbs).left().colspan(3).row();
-        side.add(new Label(s.progress.sealBroken() ? "구슬은 캠프 문양에 박혔다." : s.progress.orbs().size() + " / 3  — 셋을 모으면 성검의 봉인을 풀 수 있다.",
+        side.add(new Label(s.progress.sealBroken() ? "구슬은 캠프 문양에 박혔다." : s.progress.orbs().size() + " / 3  — 셋을 모으면 봉인된 검을 성검으로 해방할 수 있다.",
                 skin, "small")).left().colspan(3).row();
         side.add(new Label("흡수한 힘", skin, "gold")).left().colspan(3).padTop(14).row();
         side.add(new Label("최대 체력 " + s.hero.maxHp() + "   공격력 +" + (s.hero.absorbedCount() * 10) + "%", skin)).left().colspan(3).row();

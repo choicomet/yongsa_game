@@ -6,12 +6,14 @@ import com.yongsa.combat.Boss;
 import com.yongsa.combat.CombatContext;
 import com.yongsa.combat.Effect;
 import com.yongsa.combat.FloatingText;
+import com.yongsa.combat.Hazard;
 import com.yongsa.combat.HeroUnit;
 import com.yongsa.combat.Monster;
 import com.yongsa.combat.Projectile;
 import com.yongsa.config.AbilityDef;
 import com.yongsa.config.Balance;
 import com.yongsa.config.DungeonDef;
+import com.yongsa.config.MonsterDef;
 import com.yongsa.config.SkillDef;
 import com.yongsa.config.WeaponDef;
 import com.yongsa.world.CollisionWorld;
@@ -56,6 +58,7 @@ public final class GameSession implements CombatContext {
     public final CraftService craftService = new CraftService();
     public final DismantleService dismantleService;
     public final AbsorbService absorbService;
+    public final SwordPower power;
 
     public final List<Room> rooms = new ArrayList<>();
     public final Map<String, Room> roomById = new LinkedHashMap<>();
@@ -68,6 +71,10 @@ public final class GameSession implements CombatContext {
     public final List<Projectile> projectiles = new ArrayList<>();
     public final List<Effect> effects = new ArrayList<>();
     public final List<FloatingText> texts = new ArrayList<>();
+    /** 바닥 위험 지대 (뼈 가시, 번개, 독구름, 촉수). */
+    public final List<Hazard> hazards = new ArrayList<>();
+    /** 몬스터 갱신 중에 불러낸 소환수 (갱신이 끝난 뒤 방에 넣는다). */
+    private final List<Monster> pendingSpawns = new ArrayList<>();
     /** 보스가 떨어뜨린 구슬 (아직 줍지 않은 것). */
     public final List<OrbDrop> orbDrops = new ArrayList<>();
     public final Portal arenaPortal;
@@ -94,6 +101,12 @@ public final class GameSession implements CombatContext {
     private int basicCount;
     private Attack dashAttack;
     private float playTime;
+    /** 독·화상 피해를 모아서 0.5초마다 숫자로 보여준다. */
+    private float dotAccum, dotTextTimer;
+    private float shockMsgCooldown;
+    /** 마왕에게 죽었는지 (캠프에서 깨어나면 독백). */
+    private boolean diedToDemon;
+    private boolean bursting;
 
     /** 지금 E를 누르면 할 수 있는 일. */
     public enum Interact { NONE, VEIN, BED, FORGE, PORTAL, SIGIL_UNSEAL, SIGIL_RETURN }
@@ -108,6 +121,8 @@ public final class GameSession implements CombatContext {
         this.enhanceService = new EnhanceService(balance.enhanceTable(), balance.enhance, random);
         this.dismantleService = new DismantleService(balance.enhance);
         this.absorbService = new AbsorbService(balance);
+        this.power = new SwordPower(balance);
+        this.enhanceService.setPower(power);
 
         for (WorldMap.RoomDef d : map.rooms) {
             Room r = new Room(d);
@@ -128,12 +143,13 @@ public final class GameSession implements CombatContext {
 
         collision = new CollisionWorld(map, doors, gates, rooms);
         collision.addObstacle(new Rectangle(map.bed.x + 2, map.bed.y, map.bed.width - 4, map.bed.height - 20));
-        collision.addObstacle(new Rectangle(map.forge.x + 2, map.forge.y, map.forge.width - 4, map.forge.height - 4));
+        collision.addObstacle(new Rectangle(map.forge.x + 4, map.forge.y, map.forge.width - 8, map.forge.height - 24));
+        for (WorldMap.DecorDef d : map.decor) if (d.solid()) collision.addObstacle(d.footprint());
         visibility = new Visibility(roomById);
         graph = new RoomGraph(map);
 
         hero = new Hero(balance.hero.maxHp);
-        unit = new HeroUnit(balance.hero, balance.skills, map.spawn.x, map.spawn.y);
+        unit = new HeroUnit(balance.hero, balance.skills, balance.guard, map.spawn.x, map.spawn.y);
         inventory.add(balance.sealedSword());
         refreshGates();
         resetRooms();
@@ -167,6 +183,7 @@ public final class GameSession implements CombatContext {
     public void update(float delta, Controls in) {
         playTime += delta;
         gateMsgCooldown = Math.max(0, gateMsgCooldown - delta);
+        shockMsgCooldown = Math.max(0, shockMsgCooldown - delta);
         updateEffects(delta);
 
         if (cutscene != null) {
@@ -179,7 +196,9 @@ public final class GameSession implements CombatContext {
         if (bossConfirmRoom != null) return; // 확인창이 떠 있는 동안 정지
 
         if (hero.alive()) {
-            unit.update(delta, in.moveX, in.moveY, collision);
+            boolean wasGuardBroken = unit.guardBroken > 0;
+            unit.update(delta, in.moveX, in.moveY, in.guard, collision);
+            if (!wasGuardBroken && unit.guardBroken > 0) onGuardBreak();
             locate();
             if (unit.dashing() && dashAttack != null) {
                 dashAttack.ex = unit.centerX();
@@ -189,11 +208,21 @@ public final class GameSession implements CombatContext {
                 dashAttack = null;
             }
             if (unit.free()) {
+                boolean skill = in.dash || in.whirl;
                 if (in.dodge && unit.dodge(in.moveX, in.moveY)) sound("dodge");
+                else if (skill && unit.skillsSealed()) {
+                    if (shockMsgCooldown <= 0) {
+                        texts.add(new FloatingText("감전! 스킬 봉인", FloatingText.Kind.INFO, unit.centerX(), unit.body.y + 44));
+                        sound("denied");
+                        shockMsgCooldown = 1.2f;
+                    }
+                }
+                else if (unit.guarding) { /* 막는 동안에는 공격하지 않는다 */ }
                 else if (in.dash) startDash();
                 else if (in.whirl) startWhirl();
                 else if (in.attack) basicAttack();
             }
+            updateStatuses(delta);
             updateFocus();
             if (in.interact) interact();
             checkGateBump(in);
@@ -205,11 +234,17 @@ public final class GameSession implements CombatContext {
         updateRooms(delta);
         updateArena(delta);
         updateProjectiles(delta);
+        updateHazards(delta);
 
         if (!hero.alive() && !deathReported) {
             deathReported = true;
             progress.deaths++;
             projectiles.clear();
+            hazards.clear();
+            if (inArena && demonKing != null) {
+                diedToDemon = true;
+                emit(GameEvent.speech("마왕", demonKing.phase == 2 ? "꽤나 즐거운 여흥이었다." : "한심하긴.", 3.5f));
+            }
             emit(GameEvent.of(GameEvent.Type.HERO_DIED));
         }
     }
@@ -260,7 +295,7 @@ public final class GameSession implements CombatContext {
     // =================================================================== 공격·스킬
 
     private int weaponAttack() {
-        return DamageCalc.attack(inventory.equipped(), hero, balance.enhance);
+        return power.attack(inventory.equipped(), inventory, hero);
     }
 
     private boolean hasAbility(AwakenAbility a) {
@@ -302,6 +337,7 @@ public final class GameSession implements CombatContext {
         effects.add(e);
         sound("whirl");
         applyAttack(Attack.circle(Attack.Kind.WHIRL, unit.centerX(), unit.centerY() + 6, s.radius, s.multiplier));
+        unit.attackCooldown = Math.max(unit.attackCooldown, 0.2f);
     }
 
     private void startDash() {
@@ -321,18 +357,19 @@ public final class GameSession implements CombatContext {
     private void applyAttack(Attack a) {
         for (Monster m : activeMonsters()) {
             if (!m.canBeHit() || !a.tryHit(m, m.body)) continue;
-            damageMonster(m, a.multiplier, a.kind == Attack.Kind.BASIC);
+            damageMonster(m, a.multiplier, a.kind == Attack.Kind.BASIC, true);
         }
     }
 
-    private void damageMonster(Monster m, float mult, boolean basic) {
+    /** direct: 용사가 직접 벤 공격 (흡혈은 이때만). */
+    private void damageMonster(Monster m, float mult, boolean basic, boolean direct) {
         if (m instanceof Boss b && b.finalBoss && !inventory.equipped().def().holy) {
             texts.add(new FloatingText("튕겨 나갔다!", FloatingText.Kind.IMMUNE, m.centerX(), m.body.y + 64));
             Effect e = new Effect(Effect.Type.BOUNCE, m.centerX(), m.centerY() + 20, 0.25f);
             effects.add(e);
             sound("bounce");
             unit.knockback(m.centerX(), m.centerY(), 20);
-            toast("이 검으로는 상처를 낼 수 없다. 깨어난 성검을 들자!");
+            toast("이 검으로는 상처를 낼 수 없다. 성검을 들자!");
             return;
         }
         int dmg = DamageCalc.roll(weaponAttack() * mult, balance.hero.damageVariance, random);
@@ -342,19 +379,48 @@ public final class GameSession implements CombatContext {
         Effect hit = new Effect(Effect.Type.HIT, m.centerX(), m.centerY() + 10, 0.15f);
         effects.add(hit);
         sound(died ? "monster_die" : "hit");
-        if (died) progress.kills++;
-
-        AbilityDef ab = balance.abilities;
-        if (hasAbility(AwakenAbility.LIFESTEAL)) {
-            float heal = dmg * ab.lifestealRatio;
-            if (heal >= 0.5f && hero.hp() < hero.maxHp()) {
-                hero.heal(heal);
-                effects.add(new Effect(Effect.Type.HEAL, unit.centerX(), unit.centerY() + 16, 0.4f));
+        if (died) {
+            progress.kills++;
+            if (m instanceof Boss b && b.finalBoss) {
+                emit(GameEvent.speech("마왕", "이런 풋내기에게 당하다니!", 3.5f));
+                shake(8, 1.2f);
             }
         }
+
+        AbilityDef ab = balance.abilities;
+        if (direct) lifesteal(m);
+        if (died && !bursting && hasAbility(AwakenAbility.BLOOD_BURST)) bloodBurst(m);
         if (basic && hasAbility(AwakenAbility.CHAIN_LIGHTNING) && random.nextFloat() < ab.chainChance) {
             chainLightning(m);
         }
+    }
+
+    /** 흡혈: 맞은 적 최대 체력의 n% (6강부터). 한 번에 용사 최대 체력의 4%까지. */
+    private void lifesteal(Monster m) {
+        float pct = power.lifesteal(inventory.equipped(), inventory, hero);
+        if (pct <= 0 || hero.hp() >= hero.maxHp()) return;
+        float heal = m.maxHp() * pct / 100f;
+        if (balance.hero.lifestealCapRatio > 0) heal = Math.min(heal, hero.maxHp() * balance.hero.lifestealCapRatio);
+        if (heal < 0.5f) return;
+        hero.heal(heal);
+        texts.add(new FloatingText("+" + Math.round(heal), FloatingText.Kind.HEAL, unit.centerX() + 10, unit.body.y + 34));
+        effects.add(new Effect(Effect.Type.HEAL, unit.centerX(), unit.centerY() + 16, 0.4f));
+    }
+
+    /** 혈월 폭주: 쓰러진 적 자리에서 피의 폭발. 폭발로 쓰러진 적은 다시 터지지 않는다. */
+    private void bloodBurst(Monster from) {
+        AbilityDef ab = balance.abilities;
+        Effect e = new Effect(Effect.Type.BLOOD_BURST, from.centerX(), from.centerY() + 8, 0.4f);
+        e.radius = ab.burstRadius;
+        effects.add(e);
+        sound("burst");
+        bursting = true;
+        Attack a = Attack.circle(Attack.Kind.SHOCKWAVE, from.centerX(), from.centerY() + 8, ab.burstRadius, ab.burstMultiplier);
+        for (Monster m : activeMonsters()) {
+            if (m == from || !m.canBeHit() || !a.tryHit(m, m.body)) continue;
+            damageMonster(m, ab.burstMultiplier, false, false);
+        }
+        bursting = false;
     }
 
     private void chainLightning(Monster from) {
@@ -380,7 +446,7 @@ public final class GameSession implements CombatContext {
             px = best.centerX();
             py = best.centerY() + 10;
             sound("lightning");
-            damageMonster(best, ab.chainMultiplier, false);
+            damageMonster(best, ab.chainMultiplier, false, false);
         }
     }
 
@@ -407,13 +473,148 @@ public final class GameSession implements CombatContext {
     }
 
     @Override
-    public void hitHero(int damage, float fromX, float fromY) {
-        if (!hero.alive() || unit.invincible() || cutscene != null) return;
+    public boolean hitHero(int damage, float fromX, float fromY) {
+        return hitHero(damage, fromX, fromY, false, true);
+    }
+
+    @Override
+    public boolean hitHeroHeavy(int damage, float fromX, float fromY) {
+        return hitHero(damage, fromX, fromY, true, true);
+    }
+
+    @Override
+    public boolean hitHeroArea(int damage, float fromX, float fromY) {
+        return hitHero(damage, fromX, fromY, false, false);
+    }
+
+    /** 피해가 실제로 들어갔으면 true. 앞에서 온 공격은 막기(Ctrl)로 막는다. */
+    private boolean hitHero(int damage, float fromX, float fromY, boolean heavy, boolean blockable) {
+        if (!hero.alive() || unit.invincible() || cutscene != null) return false;
+        if (blockable && unit.canBlock(fromX, fromY)) {
+            boolean broke = unit.onBlocked(fromX, fromY, heavy);
+            Effect e = new Effect(Effect.Type.BLOCK, unit.centerX() + unit.dirX * 12, unit.centerY() + 10 + unit.dirY * 10, 0.22f);
+            e.dirX = unit.dirX;
+            e.dirY = unit.dirY;
+            effects.add(e);
+            if (broke) onGuardBreak();
+            else {
+                texts.add(new FloatingText("막음", FloatingText.Kind.INFO, unit.centerX(), unit.body.y + 40));
+                sound("block");
+            }
+            return false;
+        }
         int dmg = DamageCalc.roll(damage, balance.hero.damageVariance, random);
         hero.damage(dmg);
         unit.onHit(fromX, fromY);
         texts.add(new FloatingText(String.valueOf(dmg), FloatingText.Kind.HERO_DAMAGE, unit.centerX(), unit.body.y + 40));
         sound("hero_hurt");
+        return true;
+    }
+
+    private void onGuardBreak() {
+        texts.add(new FloatingText("막기 깨짐!", FloatingText.Kind.IMMUNE, unit.centerX(), unit.body.y + 46));
+        effects.add(new Effect(Effect.Type.GUARD_BREAK, unit.centerX(), unit.centerY() + 12, 0.35f));
+        sound("guard_break");
+    }
+
+    @Override
+    public void addHazard(Hazard h) {
+        hazards.add(h);
+    }
+
+    @Override
+    public Rectangle arenaOf(Monster m) {
+        return m.room != null ? m.room.bounds : map.arena;
+    }
+
+    @Override
+    public void summon(Monster owner, String monsterId, int count, int max) {
+        Room room = owner.room;
+        if (room == null) return;
+        int living = 0;
+        for (Monster m : room.monsters) if (m.summoned && m.alive()) living++;
+        for (Monster m : pendingSpawns) if (m.room == room) living++;
+        int n = Math.min(count, max - living);
+        MonsterDef def = balance.monster(monsterId);
+        for (int i = 0; i < n; i++) {
+            for (int tries = 0; tries < 12; tries++) {
+                double a = random.nextFloat() * Math.PI * 2;
+                float r = 50 + random.nextFloat() * 60;
+                float x = owner.centerX() + (float) Math.cos(a) * r, y = owner.footY() + (float) Math.sin(a) * r * 0.7f;
+                Rectangle probe = new Rectangle(x - def.width / 2, y, def.width, def.height);
+                if (!room.bounds.contains(probe) || collision.blocked(probe)) continue;
+                DungeonDef d = balance.dungeon(room.dungeon);
+                boolean buffed = progress.defeated(d.id);
+                Monster m = new Monster(def, room, x, y, buffed ? d.buffHpMultiplier : 1f, buffed ? d.buffAttackMultiplier : 1f);
+                m.summoned = true;
+                pendingSpawns.add(m);
+                Effect e = new Effect(Effect.Type.ORB_BURST, x, y + 8, 0.5f);
+                effects.add(e);
+                break;
+            }
+        }
+        if (n > 0) sound("summon");
+    }
+
+    // =================================================================== 상태이상·위험 지대
+
+    private void updateStatuses(float delta) {
+        float dot = 0;
+        if (unit.poison > 0) dot += hero.maxHp() * balance.statuses.poisonMaxHpRatioPerSecond * delta;
+        if (unit.burn > 0) dot += balance.statuses.burnPerSecond * delta;
+        if (dot > 0) {
+            hero.damageExact(dot);
+            dotAccum += dot;
+        }
+        dotTextTimer += delta;
+        if (dotTextTimer >= 0.5f) {
+            dotTextTimer = 0;
+            if (dotAccum >= 1f) {
+                int n = Math.round(dotAccum);
+                dotAccum -= n;
+                texts.add(new FloatingText(String.valueOf(n), unit.poison > 0 ? FloatingText.Kind.POISON : FloatingText.Kind.BURN,
+                        unit.centerX() - 8, unit.body.y + 36));
+            }
+        }
+    }
+
+    private void updateHazards(float delta) {
+        for (Hazard h : hazards) {
+            h.time += delta;
+            if (!h.visible()) continue;
+            if (h.type == Hazard.Type.POISON_CLOUD) {
+                if (h.cloudActive() && hero.alive() && cutscene == null && h.contains(unit.footX(), unit.footY() + 4)) {
+                    if (unit.poison <= 0) sound("poison_hit");
+                    unit.applyPoison(balance.statuses.poisonDuration);
+                }
+                continue;
+            }
+            if (!h.fired && h.activeTime() >= 0) {
+                h.fired = true;
+                switch (h.type) {
+                    case LIGHTNING -> { sound("thunder"); shake(3, 0.15f); }
+                    case BONE_SPIKE -> sound("spike");
+                    case TENTACLE -> { sound("tentacle"); shake(2, 0.12f); }
+                    default -> { }
+                }
+                if (hero.alive() && h.contains(unit.footX(), unit.footY() + 4)
+                        && hitHeroArea(h.damage, h.x, h.y) && h.type == Hazard.Type.LIGHTNING) {
+                    unit.applyShock(balance.statuses.shockDuration);
+                    texts.add(new FloatingText("감전!", FloatingText.Kind.INFO, unit.centerX(), unit.body.y + 52));
+                }
+            }
+        }
+        hazards.removeIf(Hazard::done);
+    }
+
+    /** 지금 밝기 (0~1). 캠프는 보스를 처음 잡을 때마다 밝아진다. */
+    public float ambientLight() {
+        if (inArena) return balance.arenaLight;
+        if (inCamp() || overlapRoom == null && currentCorridor == null) {
+            float[] t = balance.campLight;
+            return t[Math.min(t.length - 1, progress.firstClears())];
+        }
+        return balance.dungeonLight;
     }
 
     // =================================================================== 상호작용 (E)
@@ -523,8 +724,7 @@ public final class GameSession implements CombatContext {
 
     private void updateRooms(float delta) {
         if (currentRoom != null && currentRoom.state() == RoomState.IDLE && hero.alive()) {
-            if (currentRoom.kind == RoomKind.MOB) startFight(currentRoom);
-            else if (currentRoom.kind == RoomKind.BOSS && !progress.defeated(currentRoom.dungeon)) startFight(currentRoom);
+            if (currentRoom.kind == RoomKind.MOB || currentRoom.kind == RoomKind.BOSS) startFight(currentRoom);
         }
         for (Room r : rooms) {
             if (r.monsters.isEmpty()) continue;
@@ -534,9 +734,26 @@ public final class GameSession implements CombatContext {
                 if (fighting || m.state() == Monster.State.DYING) m.update(delta, this);
                 if (fighting) separate(m);
             }
-            r.monsters.removeIf(Monster::gone);
-            if (fighting && !r.hasLivingMonsters()) clearRoom(r);
+            // 보스가 쓰러지면 불러낸 해골도 같이 무너진다
+            if (fighting && r.kind == RoomKind.BOSS) {
+                boolean bossAlive = false;
+                for (Monster m : r.monsters) if (m.isBoss() && m.alive()) bossAlive = true;
+                if (!bossAlive) for (Monster m : r.monsters) if (m.summoned) m.kill();
+            }
+            if (fighting && !pendingSpawns.isEmpty()) {
+                for (Monster m : pendingSpawns) if (m.room == r) r.monsters.add(m);
+                pendingSpawns.removeIf(m -> m.room == r);
+            }
+            r.monsters.removeIf(m -> m.gone() && !(m.isBoss() && r.state() == RoomState.FIGHTING && !r.hasLivingMonsters()));
+            if (fighting && !r.hasLivingMonsters() && !bossDying(r)) clearRoom(r);
         }
+        pendingSpawns.clear();
+    }
+
+    /** 보스가 쓰러지는 연출이 끝날 때까지 방을 비운 것으로 치지 않는다. */
+    private boolean bossDying(Room r) {
+        for (Monster m : r.monsters) if (m.isBoss() && !m.gone()) return true;
+        return false;
     }
 
     private void separate(Monster m) {
@@ -568,7 +785,10 @@ public final class GameSession implements CombatContext {
         bossConfirmedRoom = null;
         sound("door_lock");
         emit(new GameEvent(GameEvent.Type.ROOM_LOCKED, null, room.id, 0, room));
-        if (room.kind == RoomKind.BOSS) toast(balance.boss(d.boss).name + " 등장!");
+        if (room.kind == RoomKind.BOSS) {
+            toast(balance.boss(d.boss).name + (progress.defeated(d.id) ? "이(가) 다시 나타났다!" : " 등장!"));
+            sound("boss_roar");
+        }
     }
 
     private void clearRoom(Room room) {
@@ -579,8 +799,10 @@ public final class GameSession implements CombatContext {
             return;
         }
         DungeonDef d = balance.dungeon(room.dungeon);
-        AbsorbService.BossAbsorb result = absorbService.absorbBoss(d, hero, progress, inventory);
+        AbsorbService.BossAbsorb result = absorbService.absorbBoss(d, hero, progress, inventory, random);
         refreshGates();
+        hazards.clear();
+        projectiles.clear();
         if (room.portal != null) room.portal.setActive(true);
         // 구슬은 보스가 쓰러진 자리 근처에 떨어진다
         Boss boss = null;
@@ -588,10 +810,17 @@ public final class GameSession implements CombatContext {
         float ox = room.portal != null ? room.portal.x : room.bounds.x + room.bounds.width / 2;
         float oy = room.portal != null ? room.portal.y + 56 : room.bounds.y + room.bounds.height / 2;
         if (boss != null) { ox = boss.centerX(); oy = boss.footY(); }
-        if (!progress.hasOrb(d.id)) orbDrops.add(new OrbDrop(d.id, ox, oy));
+        if (result.firstClear() && !progress.hasOrb(d.id)
+                && orbDrops.stream().noneMatch(o -> o.dungeon().equals(d.id))) orbDrops.add(new OrbDrop(d.id, ox, oy));
         Effect burst = new Effect(Effect.Type.ORB_BURST, ox, oy + 10, 0.8f);
         effects.add(burst);
         sound("boss_down");
+        if (result.firstClear()) {
+            emit(new GameEvent(GameEvent.Type.CAMP_BRIGHTER, null, d.id, progress.firstClears(), null));
+        } else {
+            texts.add(new FloatingText("+" + result.oreReward(), FloatingText.Kind.ORE, ox, oy + 40, "ore_" + d.ore));
+            emit(new GameEvent(GameEvent.Type.ORE_GAINED, null, d.ore, result.oreReward(), null));
+        }
         emit(new GameEvent(GameEvent.Type.BOSS_DEFEATED, null, d.id, 0, result));
         emit(GameEvent.of(GameEvent.Type.SAVE_REQUEST));
     }
@@ -612,11 +841,12 @@ public final class GameSession implements CombatContext {
             r.seen = false;
             r.veins.clear();
             r.veinsGenerated = false;
-            boolean bossDone = r.kind == RoomKind.BOSS && progress.defeated(r.dungeon);
-            r.setState(bossDone ? RoomState.CLEARED : RoomState.IDLE);
-            if (r.portal != null) r.portal.setActive(bossDone);
+            // 마왕을 뺀 보스는 침대로 쉬면 다시 생긴다 (보상은 광물뿐)
+            r.setState(RoomState.IDLE);
+            if (r.portal != null) r.portal.setActive(false);
         }
         projectiles.clear();
+        hazards.clear();
     }
 
     /** 광맥 생성 (침대 이후 처음 들어갈 때 한 번). */
@@ -671,7 +901,7 @@ public final class GameSession implements CombatContext {
     private void checkBossDoor() {
         if (overlapRoom == null || overlapRoom.kind != RoomKind.BOSS) return;
         Room r = overlapRoom;
-        if (r.state() != RoomState.IDLE || progress.defeated(r.dungeon) || r.id.equals(bossConfirmedRoom)) return;
+        if (r.state() != RoomState.IDLE || r.id.equals(bossConfirmedRoom)) return;
         if (r.bounds.contains(unit.body)) return;
         bossConfirmRoom = r;
         emit(new GameEvent(GameEvent.Type.BOSS_CONFIRM, null, r.id, 0, r));
@@ -763,6 +993,7 @@ public final class GameSession implements CombatContext {
         unit.teleport(map.arenaLand.x, map.arenaLand.y);
         unit.resetTimers();
         demonKing = new Boss(balance.finalBoss, null, map.finalBossSpawn.x, map.finalBossSpawn.y, 1f, 1f, true);
+        hazards.clear();
         arenaPortal.setActive(false);
         locate();
         shake(6, 0.4f);
@@ -772,6 +1003,7 @@ public final class GameSession implements CombatContext {
     private void leaveArena() {
         inArena = false;
         demonKing = null;
+        hazards.clear();
         arenaPortal.setActive(false);
     }
 
@@ -779,6 +1011,16 @@ public final class GameSession implements CombatContext {
         if (!inArena || demonKing == null) return;
         demonKing.update(delta, this);
         separate(demonKing);
+        if (demonKing.consumeTransitionStart()) {
+            projectiles.clear();
+            hazards.clear();
+            Effect e = new Effect(Effect.Type.PHASE_SHIFT, demonKing.centerX(), demonKing.centerY() + 30, Boss.TRANSITION_TIME);
+            e.radius = 160;
+            effects.add(e);
+            sound("phase_shift");
+            emit(GameEvent.speech("마왕", "이번 용사는 강하군. 나도 본격적으로 해주마!", 3.6f));
+        }
+        if (demonKing.consumeTransitionEnd()) toast("마왕이 본모습을 드러냈다!");
         if (!demonKing.alive() && demonKing.gone()) {
             demonKing = null;
             progress.markFinalDefeated();
@@ -799,12 +1041,32 @@ public final class GameSession implements CombatContext {
             p.life -= delta;
             probe.set(p.x - 3, p.y - 3, 6, 6);
             if (p.life <= 0 || collision.blocked(probe)) p.dead = true;
-            else if (Math.hypot(p.x - unit.centerX(), p.y - (unit.centerY() + 8)) < p.radius + 8 && !unit.invincible()) {
-                hitHero(p.damage, p.x - p.vx, p.y - p.vy);
+            else if (Math.hypot(p.x - unit.centerX(), p.y - (unit.centerY() + 8)) < p.radius + 8 && !unit.invincible()
+                    && hero.alive() && cutscene == null) {
+                boolean hit = hitHero(p.damage, p.x - p.vx, p.y - p.vy);
                 p.dead = true;
+                if (hit) applyProjectileStatus(p);
             }
+            p.age += delta;
         }
         projectiles.removeIf(p -> p.dead);
+    }
+
+    private void applyProjectileStatus(Projectile p) {
+        switch (p.status) {
+            case FREEZE -> {
+                if (unit.applyFreeze(balance.statuses.freezeDuration)) {
+                    effects.add(new Effect(Effect.Type.FREEZE, unit.centerX(), unit.centerY() + 12, balance.statuses.freezeDuration));
+                    texts.add(new FloatingText("빙결!", FloatingText.Kind.INFO, unit.centerX(), unit.body.y + 52));
+                    sound("freeze");
+                }
+            }
+            case BURN -> {
+                if (unit.burn <= 0) texts.add(new FloatingText("화상!", FloatingText.Kind.INFO, unit.centerX(), unit.body.y + 52));
+                unit.applyBurn(balance.statuses.burnDuration);
+            }
+            default -> { }
+        }
     }
 
     private void updateEffects(float delta) {
@@ -824,11 +1086,17 @@ public final class GameSession implements CombatContext {
         bossConfirmRoom = null;
         bossConfirmedRoom = null;
         projectiles.clear();
+        hazards.clear();
+        pendingSpawns.clear();
         hero.fullHeal();
         unit.teleport(map.spawn.x, map.spawn.y);
         unit.resetTimers();
         deathReported = false;
         locate();
+        if (diedToDemon) {
+            diedToDemon = false;
+            emit(GameEvent.speech("용사", "검을 더 강화해야겠어. 성검은 다른 검들의 힘을 가질 수 있는 모양이니.", 5f));
+        }
     }
 
     // =================================================================== 대장간 요청 (화면은 이것만 부른다)
@@ -872,7 +1140,12 @@ public final class GameSession implements CombatContext {
     }
 
     public int attackOf(Weapon w) {
-        return DamageCalc.attack(w, hero, balance.enhance);
+        return power.attack(w, inventory, hero);
+    }
+
+    /** 흡혈 (적 최대 체력의 %). */
+    public float lifestealOf(Weapon w) {
+        return power.lifesteal(w, inventory, hero);
     }
 
     // =================================================================== 다음 할 일 (FR-공통-07)
@@ -881,7 +1154,7 @@ public final class GameSession implements CombatContext {
         if (inArena) {
             return progress.finalDefeated()
                     ? new Goal("포탈(E)을 타고 캠프로 돌아가자", Goal.Target.PORTAL, "arena")
-                    : new Goal("깨어난 성검으로 마왕을 쓰러뜨리자", Goal.Target.NONE, null);
+                    : new Goal("성검으로 마왕을 쓰러뜨리자", Goal.Target.NONE, null);
         }
         if (progress.finalDefeated()) return new Goal("마왕을 쓰러뜨렸다! 자유롭게 던전을 돌아보자", Goal.Target.NONE, null);
         if (progress.sealBroken()) return new Goal("캠프 문양에서 마왕에게 가자", Goal.Target.SIGIL, null);

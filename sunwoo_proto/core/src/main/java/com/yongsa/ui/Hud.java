@@ -41,7 +41,11 @@ public class Hud implements Disposable {
     private final Label areaLabel, bossName, goalLabel, hintLabel, toastLabel, captionLabel;
     private final Table bossTable, hintBox;
     private final HpBar bossBar;
-    private final SkillSlot whirl, dash, dodge;
+    private final SkillSlot whirl, dash, dodge, guard;
+    private final Table statusRow, speechBox;
+    private final Label speechName, speechText;
+    private final Map<String, Image> statusIcons = new HashMap<>();
+    private final Map<String, Label> statusTimes = new HashMap<>();
     public final Minimap minimap;
     private final Table keyGuide;
     private final Group root = new Group();
@@ -75,7 +79,15 @@ public class Hud implements Disposable {
         wt.add(weaponLabel).left().row();
         wt.add(attackLabel).left();
         status.add(wt).left().padTop(6).row();
-        status.add(orbRow).left().colspan(2).padTop(4);
+        status.add(orbRow).left().colspan(2).padTop(4).row();
+        statusRow = new Table();
+        for (String st : new String[]{"poison", "burn", "shock", "freeze"}) {
+            Image icon = new Image(assets.region("status_" + st));
+            Label t = new Label("", skin, "small-white");
+            statusIcons.put(st, icon);
+            statusTimes.put(st, t);
+        }
+        status.add(statusRow).left().colspan(2).padTop(4);
         Table tl = new Table();
         tl.setFillParent(true);
         tl.top().left().pad(14);
@@ -136,13 +148,15 @@ public class Hud implements Disposable {
         whirl = new SkillSlot(assets.region("skill_whirl"), skin.getRegion("white"), "Q", "회전 베기", skin.getFont("small"), skin.getFont("number"));
         dash = new SkillSlot(assets.region("skill_dash"), skin.getRegion("white"), "L", "돌진 베기", skin.getFont("small"), skin.getFont("number"));
         dodge = new SkillSlot(assets.region("skill_dodge"), skin.getRegion("white"), "Shift", "회피", skin.getFont("small"), skin.getFont("number"));
+        guard = new SkillSlot(assets.region("skill_guard"), skin.getRegion("white"), "Ctrl", "막기", skin.getFont("small"), skin.getFont("number"));
         Table skills = new Table();
         skills.add(whirl).size(64).padRight(18);
         skills.add(dash).size(64).padRight(18);
-        skills.add(dodge).size(64);
+        skills.add(dodge).size(64).padRight(18);
+        skills.add(guard).size(64);
         keyGuide = new Table(skin);
         keyGuide.setBackground(skin.getDrawable("panel-hud"));
-        keyGuide.add(new Label("WASD 이동   J·Space 공격   Q 회전 베기   L 돌진 베기   Shift 회피", skin, "small-white")).row();
+        keyGuide.add(new Label("WASD 이동   J·Space 공격   Q 회전 베기   L 돌진 베기   Shift 회피   Ctrl 막기(누르고 있기)", skin, "small-white")).row();
         keyGuide.add(new Label("E 캐기·상호작용   I 가방   M 지도   Esc 메뉴", skin, "small-white"));
         Table bc = new Table();
         bc.setFillParent(true);
@@ -170,6 +184,34 @@ public class Hud implements Disposable {
         caption.add(captionLabel).width(1000);
         root.addActor(caption);
         toastLabel.getColor().a = 0;
+
+        // ---- 대사 (마왕·용사)
+        speechBox = new Table(skin);
+        speechBox.setBackground(skin.getDrawable("panel-hud"));
+        speechName = new Label("", skin, "gold");
+        speechText = new Label("", skin, "heading");
+        speechText.setWrap(true);
+        speechText.setAlignment(Align.center);
+        speechBox.add(speechName).padBottom(4).row();
+        speechBox.add(speechText).width(760);
+        Table sp = new Table();
+        sp.setFillParent(true);
+        sp.bottom().padBottom(250);
+        sp.add(speechBox);
+        root.addActor(sp);
+        speechBox.getColor().a = 0;
+    }
+
+    /** 대사 상자. 마왕은 붉게, 용사의 독백은 옅은 금색 기울임 느낌으로. */
+    public void speech(String speaker, String text, float seconds) {
+        boolean demon = "마왕".equals(speaker);
+        speechName.setText(demon ? "마왕" : speaker);
+        speechName.setColor(demon ? new Color(1f, 0.35f, 0.35f, 1f) : new Color(0.95f, 0.85f, 0.55f, 1f));
+        speechText.setText(demon ? "「 " + text + " 」" : "( " + text + " )");
+        speechText.setColor(demon ? new Color(1f, 0.85f, 0.85f, 1f) : new Color(0.92f, 0.92f, 0.95f, 1f));
+        speechBox.clearActions();
+        speechBox.getColor().a = 0;
+        speechBox.addAction(Actions.sequence(Actions.fadeIn(0.25f), Actions.delay(seconds), Actions.fadeOut(0.6f)));
     }
 
     public void resize(float w, float h) {
@@ -211,7 +253,7 @@ public class Hud implements Disposable {
         Boss boss = s.activeBoss();
         bossTable.setVisible(boss != null);
         if (boss != null) {
-            bossName.setText(boss.def.name + (boss.phase2 ? "  (분노)" : ""));
+            bossName.setText(boss.def.name + (boss.phase == 2 ? "  — 본모습" : ""));
             bossBar.setRatio(boss.hp() / (float) boss.maxHp());
         }
 
@@ -223,6 +265,12 @@ public class Hud implements Disposable {
         whirl.setCooldown(s.unit.whirlCooldown, s.balance.skills.whirl.cooldown);
         dash.setCooldown(s.unit.dashCooldown, s.balance.skills.dash.cooldown);
         dodge.setCooldown(s.unit.dodgeCooldown, s.balance.skills.dodge.cooldown);
+        guard.setCooldown(s.unit.guardBroken, s.balance.guard.breakTime);
+        guard.setMeter(s.unit.guardRatio(), s.unit.guardBroken > 0, s.unit.guarding);
+        boolean sealed = s.unit.skillsSealed();
+        whirl.setSealed(sealed);
+        dash.setSealed(sealed);
+        updateStatuses();
 
         Cutscene c = s.cutscene();
         captionLabel.setText(c != null ? c.caption() : "");
@@ -236,6 +284,22 @@ public class Hud implements Disposable {
             }
         }
         root.setVisible(c == null || c.fall() < 0.5f);
+    }
+
+    private void updateStatuses() {
+        statusRow.clearChildren();
+        addStatus("poison", "중독", s.unit.poison);
+        addStatus("burn", "화상", s.unit.burn);
+        addStatus("shock", "감전", s.unit.shock);
+        addStatus("freeze", "빙결", s.unit.freeze);
+    }
+
+    private void addStatus(String id, String name, float t) {
+        if (t <= 0) return;
+        Label l = statusTimes.get(id);
+        l.setText(name + " " + (int) Math.ceil(t) + "초");
+        statusRow.add(statusIcons.get(id)).size(24).padRight(4);
+        statusRow.add(l).padRight(12);
     }
 
     public void toast(String msg) {

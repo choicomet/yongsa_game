@@ -45,6 +45,9 @@ public class Progress {
     void breakSeal() { sealBroken = true; }
 
     public boolean finalDefeated() { return finalDefeated; }
+
+    /** 처음 잡은 보스 수 (마왕 포함). 캠프가 이만큼 밝아진다. */
+    public int firstClears() { return defeatedBosses.size() + (finalDefeated ? 1 : 0); }
     public void markFinalDefeated() { finalDefeated = true; }
 
     public boolean firstOreRoomUsed() { return firstOreRoomUsed; }
