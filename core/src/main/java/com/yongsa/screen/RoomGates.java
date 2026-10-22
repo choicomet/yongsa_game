@@ -29,7 +29,8 @@ final class RoomGates implements Disposable {
     void update(float dt) {
         for(var r:map.rooms)for(var d:r.doors) {
             float old=closure.getOrDefault(d,d.isClosed()?1f:0f),target=d.isClosed()?1:0;
-            closure.put(d,MathUtils.clamp(old+Math.signum(target-old)*Math.min(Math.abs(target-old),Math.max(0,dt)/.28f),0,1));
+            float duration=target>old?.28f:.36f;
+            closure.put(d,MathUtils.clamp(old+Math.signum(target-old)*Math.min(Math.abs(target-old),Math.max(0,dt)/duration),0,1));
         }
     }
 

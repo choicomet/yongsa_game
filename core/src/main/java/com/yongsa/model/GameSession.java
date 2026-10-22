@@ -54,6 +54,7 @@ public class GameSession {
     /** 용사가 지금 서 있는 방, 캠프 문 밖이면 null. */
     private Room heroRoom;
     private Room fightRoom;
+    private Door entryDoor;
     private float entryX, entryY, outsideX, outsideY;
     /** 문을 지나 막 옮겨 왔으면 잠깐 다시 넘어가지 않는다. */
     private float doorCd;
@@ -681,9 +682,9 @@ public class GameSession {
         if (r != heroRoom) {
             Room prevDungeonRoom = currentRoom;
             heroRoom = r;
+            if (r != null) setEntry(nearestDoor(r));
             if (r != null && r != currentRoom) {
                 currentRoom = r;
-                setEntry(nearestDoor(r));
                 state.room(r.id).visited = true;
                 if (r.type == RoomType.ORE) ensureVeins(r);
                 if (r.dungeonId != null && r.type != RoomType.FINAL
@@ -710,20 +711,28 @@ public class GameSession {
         }
     }
 
-    /** 문 앞에서 방 안으로 한 걸음 들어섰나 (그러면 문이 잠기고 싸움이 시작된다). */
+    /** Cross the entry plane inward, then take one step beyond the safe arrival point. */
     private boolean steppedIn(Room r) {
         int tx = tileX(hero.x), ty = tileY(hero.y);
         if (r.scene == null) return r.insideWithMargin(tx, ty, 1);
         if (!r.inside(tx, ty)) return false;
+        if (entryDoor != null && entryDoor.room == r) {
+            // A radial distance also grows when walking sideways along a wide doorway.
+            // Only inward progress counts, including for left/right and upper entrances.
+            float arrivalDepth = -entryDoor.along(entryDoor.arriveX, entryDoor.arriveY);
+            float clearance = Math.max(2.6f*T, arrivalDepth + .5f*T);
+            if (entryDoor.along(hero.x, hero.y) > -clearance) return false;
+        }
         for (Door d : r.doors) {
             if (d.dead()) continue;
-            float dx = hero.x - d.footX, dy = hero.y - d.footY;
-            if (dx * dx + dy * dy < (2.6f * T) * (2.6f * T)) return false;
+            // Do not close another nearby exit through the hero's footprint either.
+            if (d.blocks(hero.x, hero.y, Math.max(hero.hw, hero.hh) + .5f*T)) return false;
         }
         return true;
     }
 
     private void setEntry(Door d) {
+        entryDoor = d;
         if (d == null) {
             entryX = outsideX = hero.x;
             entryY = outsideY = hero.y;
@@ -848,8 +857,16 @@ public class GameSession {
             for (Monster m : monsters) if (m.finalBoss && !m.dead) speech(m, "봉인을 풀고 여기까지 내려오다니. 어디 한번 놀아 주마.");
             return;
         }
-        events.add(new GameEvent(GameEvent.Type.ROOM_LOCKED));
-        events.add(GameEvent.sound("door"));
+        roomGateEvent(GameEvent.Type.ROOM_LOCKED, r);
+        events.add(GameEvent.sound("gateClose_" + r.dungeonId));
+    }
+
+    private void roomGateEvent(GameEvent.Type type, Room room) {
+        GameEvent e = new GameEvent(type);
+        e.text = room.id;
+        e.dungeonId = room.dungeonId;
+        e.boss = room.type != RoomType.MOB;
+        events.add(e);
     }
 
     /** 다음 웨이브: 한 무리를 다 잡으면 조금 작은 무리가 다시 나온다 (지용 버전). */
@@ -936,8 +953,8 @@ public class GameSession {
         blindT = 0;
         hero.stunT = 0;
         state.room(r.id).cleared = true;
-        events.add(GameEvent.sound("door"));
-        events.add(new GameEvent(GameEvent.Type.ROOM_CLEARED));
+        if (r.type != RoomType.FINAL) events.add(GameEvent.sound("gateOpen_" + r.dungeonId));
+        roomGateEvent(GameEvent.Type.ROOM_CLEARED, r);
         if (r.type == RoomType.BOSS) {
             DungeonDef d = balance.dungeon(r.dungeonId);
             revived.remove(d.id);

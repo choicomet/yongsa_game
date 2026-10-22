@@ -21,6 +21,7 @@ import com.yongsa.combat.HeroShot;
 import com.yongsa.combat.Monster;
 import com.yongsa.combat.Projectile;
 import com.yongsa.gfx.Art;
+import com.yongsa.gfx.ActorInk;
 import com.yongsa.gfx.Fonts;
 import com.yongsa.gfx.HeroMotion;
 import com.yongsa.gfx.SpriteBlend;
@@ -93,6 +94,7 @@ public class WorldRenderer implements Disposable {
     private float walkBlend;
     private final boolean heroMotionAvailable;
     private final SpriteBlend spriteBlend = new SpriteBlend();
+    private final ActorInk actorInk = new ActorInk();
     private int lastStep = -1;
     private float viewX0, viewY0, viewX1, viewY1;
 
@@ -222,7 +224,7 @@ public class WorldRenderer implements Disposable {
         if (appear <= 0f) return;
         float k = sheetScale(m) * appear;
         float size = BOSS_CELL * k;
-        drawShadow(m.x, m.y, BOSS_BODY * k * 0.8f);
+        drawActorShadow(m.x, m.y, BOSS_BODY * k * 0.8f, appear, false);
         float jx = m.state == Monster.State.STUNNED ? MathUtils.sin(time * 14f) * 1.5f
                 : m.state == Monster.State.CHARGE_TELEGRAPH ? MathUtils.sin(time * 60f) * 2f * m.progress() : 0;
         boolean faceRight = m.dirX > 0.2f;
@@ -231,8 +233,7 @@ public class WorldRenderer implements Disposable {
         else if (m.finalBoss && m.phase2 && sheet.endsWith("boss_lich.png")) batch.setColor(0.95f, 0.62f + 0.08f * MathUtils.sin(time * 6f), 0.95f, appear); // 시트가 없는 경우만 임시 색상을 쓴다.
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
-        if (faceRight) batch.draw(r, x0 + size, y0, -size, size);
-        else batch.draw(r, x0, y0, size, size);
+        actorInk.draw(batch, r, faceRight ? x0 + size : x0, y0, faceRight ? -size : size, size);
         if (m.flash > 0) {
             Particles.additive(batch);
             batch.setColor(1f, 1f, 1f, Math.min(1f, m.flash / 0.15f));
@@ -1618,6 +1619,20 @@ public class WorldRenderer implements Disposable {
         batch.draw(art.world("shadow"), x - w / 2f, y - w * 0.18f, w, w * 0.38f);
     }
 
+    /** Broad low-contrast grounding, plus a smaller contact shadow under planted feet. */
+    private void drawActorShadow(float x, float y, float width, float alpha, boolean flying) {
+        TextureRegion shadow = art.world("shadow");
+        float w = width * (flying ? .72f : 1.18f);
+        batch.setColor(1, 1, 1, alpha * (flying ? .65f : .85f));
+        batch.draw(shadow, x-w/2, y-w*.16f, w, w*.34f);
+        if (!flying) {
+            float contact = width*.58f;
+            batch.setColor(1, 1, 1, alpha);
+            batch.draw(shadow, x-contact/2, y-contact*.13f, contact, contact*.28f);
+        }
+        batch.setColor(Color.WHITE);
+    }
+
     private void drawProp(Prop p) {
         batch.setColor(Color.WHITE);
         float px = p.x(T), py = p.y(T);
@@ -1689,7 +1704,7 @@ public class WorldRenderer implements Disposable {
             drawSleepingHero(g.sleepBed());
             return;
         }
-        drawShadow(h.x, h.y, 26 * HERO_SCALE);
+        drawActorShadow(h.x, h.y, 26 * HERO_SCALE, 1, false);
         if (h.rolling()) {
             drawRoll(h);
             return;
@@ -1711,8 +1726,7 @@ public class WorldRenderer implements Disposable {
                 ? 1f - .035f * MathUtils.sin(MathUtils.PI * HeroMotion.clamp(h.swingT / .18f)) : 1f;
         float bob = heroBob(h);
         float dw = w * (2f - squash), dh = hgt * squash;
-        if (flip) batch.draw(r, h.x + dw / 2f, h.y - foot * squash + bob, -dw, dh);
-        else batch.draw(r, h.x - dw / 2f, h.y - foot * squash + bob, dw, dh);
+        actorInk.draw(batch, r, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
         if (h.flash > 0 && !blink) {
             Particles.additive(batch);
             batch.setColor(1f, 0.3f, 0.3f, Math.min(1f, h.flash * 3f) * 0.6f);
@@ -1763,7 +1777,7 @@ public class WorldRenderer implements Disposable {
             float w = art.width(fallback) * S * HERO_SCALE, height = art.height(fallback) * S * HERO_SCALE;
             boolean left = h.rollFacing == Facing.LEFT;
             batch.setColor(Color.WHITE);
-            batch.draw(fallback, h.x + (left ? w/2 : -w/2), h.y - 2, left ? -w : w,
+            actorInk.draw(batch, fallback, h.x + (left ? w/2 : -w/2), h.y - 2, left ? -w : w,
                     height * (1 - .23f * MathUtils.sin(p * MathUtils.PI)));
             return;
         }
@@ -1773,7 +1787,7 @@ public class WorldRenderer implements Disposable {
         float x = h.x + (flip ? w / 2 : -w / 2), signedW = flip ? -w : w;
         float y = h.y - HeroMotion.FOOT_OFFSET;
         batch.setColor(Color.WHITE);
-        spriteBlend.draw(batch, upright, r, weight, x, y, signedW, height);
+        actorInk.draw(batch, upright, r, weight, x, y, signedW, height);
         if (weight < 1) drawSword(h, 1 - weight);
         batch.setColor(Color.WHITE);
     }
@@ -1879,7 +1893,7 @@ public class WorldRenderer implements Disposable {
         float appear = m.state == Monster.State.SPAWN ? Math.max(0f, (m.progress() - 0.35f) / 0.65f) : 1f;
         if (appear <= 0f) return;
         float w = art.width(r) * scale, hgt = art.height(r) * scale;
-        drawShadow(m.x, m.y, w * 0.8f * appear);
+        drawActorShadow(m.x, m.y, w * 0.8f * appear, appear, "bat".equals(m.def.sprite));
         float bob = monsterBob(m);
         // 공격 예고: 뒤로 살짝 움츠렸다가 친다
         float sx = 1f, sy = monsterStretchY(m);
@@ -1908,8 +1922,7 @@ public class WorldRenderer implements Disposable {
         else if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
-        if (flip) batch.draw(r, mx + dw / 2f, m.y - 2 + bob, -dw, dh);
-        else batch.draw(r, mx - dw / 2f, m.y - 2 + bob, dw, dh);
+        actorInk.draw(batch, r, mx + (flip ? dw/2 : -dw/2), m.y-2+bob, flip ? -dw : dw, dh);
         if (m.flash > 0) {
             // 맞은 순간 하얗게 번쩍인다
             Particles.additive(batch);
@@ -2452,6 +2465,7 @@ public class WorldRenderer implements Disposable {
         frontTex.clear();
         sceneForegrounds.dispose();
         spriteBlend.dispose();
+        actorInk.dispose();
         for (Texture t : gateTex.values()) if (t != null) t.dispose();
         gateTex.clear();
         if(roomGates!=null)roomGates.dispose();

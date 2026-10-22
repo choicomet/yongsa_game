@@ -360,6 +360,9 @@ public class GameScreen extends ScreenAdapter {
                 case ROOM_LOCKED:
                     hud.toast("문이 잠겼다! 몬스터를 모두 쓰러뜨리자");
                     break;
+                case ROOM_CLEARED:
+                    if (!e.boss) hud.toast("방을 정리했다 · 길이 다시 열렸다");
+                    break;
                 case OPEN_FORGE:
                     modals.push(new ForgeWindow(this));
                     break;
