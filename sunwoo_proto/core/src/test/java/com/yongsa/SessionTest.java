@@ -118,7 +118,7 @@ class SessionTest {
     }
 
     @Test
-    void 보스를_처음_잡으면_체력이_오르고_구슬과_포탈이_나오고_잡몹이_한_번만_강해진다() {
+    void 보스를_처음_잡으면_체력이_오르고_보물상자에서_광물과_정수가_나오고_잡몹이_한_번만_강해진다() {
         GameSession s = TestFiles.session(4);
         List<GameEvent> ev = record(s);
         Room l1 = s.roomById.get("L1");
@@ -135,12 +135,30 @@ class SessionTest {
         assertEquals(RoomState.FIGHTING, boss.state());
         step(s, new Controls(), 40);
         killAll(s, boss);
-        step(s, new Controls(), 90); // 보스 쓰러지는 연출 1.1초
+        step(s, new Controls(), 160); // 보스 쓰러지는 연출 2.4초
 
         assertEquals(250, s.hero.maxHp());
-        assertEquals(5, s.inventory.ore("blackiron"));
         assertTrue(boss.portal.active());
-        assertEquals(1, s.orbDrops.size());
+        // 보상은 보물상자 안: 열기 전에는 광물도 정수도 없다
+        int oreBefore = s.inventory.ore("blackiron");
+        assertTrue(s.orbDrops.isEmpty());
+        assertEquals(1, s.chests.size());
+        com.yongsa.model.TreasureChest chest = s.chests.get(0);
+        assertEquals("left", chest.dungeon);
+        assertTrue(chest.essence);
+        assertTrue(chest.ore >= 30 && chest.ore <= 40);
+        s.unit.teleport(chest.x, chest.y - 20);
+        step(s, new Controls(), 2);
+        assertEquals(GameSession.Interact.CHEST, s.focus());
+        Controls open = new Controls();
+        open.interact = true;
+        step(s, open, 1);
+        assertTrue(chest.opened);
+        assertEquals(oreBefore + chest.ore, s.inventory.ore("blackiron"));
+        // 정수가 상자에서 (상자 앞으로) 튀어나오고, 바로 앞에 서 있으니 곧 줍는다
+        assertTrue(s.orbDrops.size() == 1 || s.progress.hasOrb("left"));
+        step(s, new Controls(), 10);
+        assertTrue(s.progress.hasOrb("left"));
         AbsorbService.BossAbsorb result = (AbsorbService.BossAbsorb) ev.stream()
                 .filter(e -> e.type() == GameEvent.Type.BOSS_DEFEATED).findFirst().orElseThrow().data();
         assertTrue(result.firstClear());
@@ -164,7 +182,7 @@ class SessionTest {
     }
 
     @Test
-    void 다시_생긴_보스는_광물_4에서_5개만_준다() {
+    void 다시_생긴_보스도_보물상자에_광물_30에서_40개를_주고_정수는_한_번만() {
         GameSession s = TestFiles.session(15);
         List<GameEvent> ev = record(s);
         Room boss = s.roomById.get("L5");
@@ -173,11 +191,14 @@ class SessionTest {
             step(s, new Controls(), 2);
             assertEquals(RoomState.FIGHTING, boss.state());
             killAll(s, boss);
-            step(s, new Controls(), 90);
+            step(s, new Controls(), 160);
             assertEquals(RoomState.CLEARED, boss.state());
             if (round == 0) {
+                s.openChest(s.chests.get(0));
                 s.orbDrops.clear();
+                s.progress.addOrb("left");
                 s.useBed();
+                assertTrue(s.chests.isEmpty(), "연 상자는 침대로 쉬면 사라진다");
             }
         }
         List<AbsorbService.BossAbsorb> results = ev.stream().filter(e -> e.type() == GameEvent.Type.BOSS_DEFEATED)
@@ -185,9 +206,13 @@ class SessionTest {
         assertEquals(2, results.size());
         assertFalse(results.get(1).firstClear());
         assertEquals(0, results.get(1).hpGain());
-        assertTrue(results.get(1).oreReward() >= 4 && results.get(1).oreReward() <= 5);
+        assertTrue(results.get(1).oreReward() >= 30 && results.get(1).oreReward() <= 40);
         assertEquals(250, s.hero.maxHp());         // 체력은 한 번만
-        assertTrue(s.orbDrops.isEmpty());          // 구슬도 한 번만
+        assertFalse(s.chests.get(0).essence);      // 정수는 한 번만
+        int before = s.inventory.ore("blackiron");
+        s.openChest(s.chests.get(0));
+        assertEquals(before + results.get(1).oreReward(), s.inventory.ore("blackiron"));
+        assertTrue(s.orbDrops.isEmpty());
         assertEquals(1, s.progress.firstClears()); // 캠프 밝기도 한 번만
     }
 
@@ -254,13 +279,13 @@ class SessionTest {
     }
 
     @Test
-    void 구슬_세_개를_모아_성검을_해방하면_마왕전으로_떨어진다() {
+    void 정수_세_개를_모아_성검을_해방하면_캠프가_마왕의_영역으로_바뀐다() {
         GameSession s = TestFiles.session(5);
         for (String d : new String[]{"left", "right", "top"}) {
             s.absorbService.absorbBoss(s.balance.dungeon(d), s.hero, s.progress, s.inventory, s.random);
             s.progress.addOrb(d);
         }
-        assertEquals(700, s.hero.maxHp());
+        assertEquals(600, s.hero.maxHp());   // 100 + 150 + 200 + 150 (세 번째 보스는 150)
         s.unit.teleport(s.map.sigil.x, s.map.sigil.y - 10);
         step(s, new Controls(), 2);
         assertEquals(GameSession.Interact.SIGIL_UNSEAL, s.focus());

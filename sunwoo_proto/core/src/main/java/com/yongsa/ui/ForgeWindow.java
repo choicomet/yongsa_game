@@ -51,6 +51,8 @@ public class ForgeWindow extends GameWindow {
     private float busy;
     private final Image flash;
     private final TextButton closeBtn;
+    /** 직접 강화하는 용사 (망치질·결과 자세). 탭을 다시 그려도 같은 것을 쓴다. */
+    private final ForgeHero forgeHero;
 
     public ForgeWindow(Skin skin, GameSession s, Assets assets, Consumer<GameWindow> openDialog,
                        Supplier<Float> effectSpeed, Consumer<String> sound) {
@@ -65,6 +67,7 @@ public class ForgeWindow extends GameWindow {
         result.setWrap(true);
         flash = new Image(skin.newDrawable("white", new Color(1f, 0.95f, 0.75f, 1f)));
         flash.setTouchable(com.badlogic.gdx.scenes.scene2d.Touchable.disabled);
+        forgeHero = new ForgeHero(assets, skin.getRegion("white"));
 
         add(tabs).left().padBottom(10).row();
         add(content).width(1000).height(440).row();
@@ -86,6 +89,7 @@ public class ForgeWindow extends GameWindow {
             TextButton b = button(name, "tab", () -> {
                 if (busy > 0) return;
                 tab = t;
+                forgeHero.idle();
                 result.setText("");
                 refresh();
             });
@@ -136,7 +140,7 @@ public class ForgeWindow extends GameWindow {
             info.add(new Label(d.name + (owned > 0 ? "   (가진 것 " + owned + "자루)" : ""), skin, "large")).left().row();
             info.add(new Label("공격력 " + d.attack + "  (강화 1단계당 +" + d.attackPerLevel + ")", skin, "small")).left();
             row.add(info).width(420).left();
-            Label cost = new Label(ore + " " + d.craftCost + "개   (보유 " + have + ")", skin);
+            Label cost = new Label(ore + " " + d.craftCost + "개   (보유 " + s.inventory.oreText(d.ore) + ")", skin);
             if (have < d.craftCost) cost.setColor(UiSkin.SHORT);
             row.add(cost).width(250).left();
             TextButton make = button(open ? "만들기" : "던전 봉인됨", () -> craft(d));
@@ -174,6 +178,7 @@ public class ForgeWindow extends GameWindow {
             TextButton b = button(w.displayName(), () -> {
                 if (busy > 0) return;
                 s.equip(w);
+                forgeHero.idle();
                 result.setText("");
                 refresh();
             });
@@ -196,6 +201,8 @@ public class ForgeWindow extends GameWindow {
         Table right = new Table(skin);
         right.setBackground(skin.getDrawable("panel-light"));
         right.top().pad(14);
+        Table main = new Table(skin);
+        main.top().left();
         Weapon w = s.inventory.equipped();
         EnhancePreview p = s.previewEnhance();
 
@@ -213,37 +220,80 @@ public class ForgeWindow extends GameWindow {
         }
         names.add(new Label(lifestealText(p.lifestealNow(), p.lifestealAfter(), p.enhanceable() && !p.maxed()), skin, "small")).left();
         head.add(names).left();
-        right.add(head).left().colspan(2).padBottom(14).row();
+        main.add(head).left().colspan(2).padBottom(14).row();
 
         if (!w.def().enhanceable) {
             String why = w.def().starter ? "봉인 때문에 힘이 약하다. 강화·분해할 수 없다.\n세 보스의 힘을 흡수하면 봉인이 풀린다."
                     : "성검은 강화하지 않는다. 용사가 만든 검들의 힘을 나눠 받아 강해진다.";
-            right.add(new Label(why, skin, "dim")).left().colspan(2).row();
-            if (w.def().holy) buildHolyBreakdown(right);
-            right.add(new Label("왼쪽에서 다른 무기를 골라 장착하면 그 무기를 강화한다.", skin, "small")).left().colspan(2).padTop(12).row();
+            main.add(new Label(why, skin, "dim")).left().colspan(2).row();
+            if (w.def().holy) buildHolyBreakdown(main);
+            main.add(new Label("왼쪽에서 다른 무기를 골라 장착하면 그 무기를 강화한다.", skin, "small")).left().colspan(2).padTop(12).row();
         } else if (p.maxed()) {
-            buildAwakened(right, w);
+            buildAwakened(main, w);
         } else {
             EnhanceOdds o = p.odds();
-            right.add(oddsBar("성공", o.success(), UiSkin.SUCCESS)).left().colspan(2).row();
-            right.add(oddsBar("유지", o.keep(), UiSkin.KEEP)).left().colspan(2).row();
-            right.add(oddsBar("하락", o.down(), UiSkin.DOWN)).left().colspan(2).row();
-            right.add(oddsBar("파괴", o.destroy(), UiSkin.DESTROY)).left().colspan(2).padBottom(10).row();
+            main.add(oddsBar("성공", o.success(), UiSkin.SUCCESS)).left().colspan(2).row();
+            main.add(oddsBar("유지", o.keep(), UiSkin.KEEP)).left().colspan(2).row();
+            main.add(oddsBar("하락", o.down(), UiSkin.DOWN)).left().colspan(2).row();
+            main.add(oddsBar("파괴", o.destroy(), UiSkin.DESTROY)).left().colspan(2).padBottom(10).row();
             String oreName = s.balance.ore(w.ore()).name;
-            Label cost = new Label("비용: " + oreName + " " + p.cost() + "개   (보유 " + p.have() + "개)", skin, "large");
+            Label cost = new Label("비용: " + oreName + " " + p.cost() + "개   (보유 " + s.inventory.oreText(w.ore()) + ")", skin, "large");
             if (!p.enoughOre()) cost.setColor(UiSkin.SHORT);
-            right.add(cost).left().colspan(2).row();
-            Label refund = new Label(o.risky() ? "파괴되면 " + oreName + " " + p.refundIfDestroyed() + "개를 돌려받고 성검을 든다."
+            main.add(cost).left().colspan(2).row();
+            Label refund = new Label(o.risky() ? "파괴되면 " + oreName + " " + p.refundIfDestroyed() + "개를 돌려받고 " + s.inventory.sword().def().name + "을 든다."
                     : "이 단계에서는 파괴되지 않는다.", skin, "small");
-            right.add(refund).left().colspan(2).padTop(4).row();
+            main.add(refund).left().colspan(2).padTop(4).row();
             TextButton go = button(o.risky() ? "강화하기 (파괴 위험)" : "강화하기", o.risky() ? "danger" : "default", this::askEnhance);
             go.setDisabled(!p.canEnhance());
-            right.add(go).width(300).height(56).left().padTop(14).colspan(2).row();
+            main.add(go).width(300).height(56).left().padTop(14).colspan(2).row();
             nav.focus(go);
         }
 
+        forgeHero.setSword(assets.region(w.icon()));
+        // 글이 길어도 네모 칸(오른쪽 판) 밖으로 나가지 않게: 폭을 고정하고 긴 줄은 접고, 넘치는 그림은 잘라 낸다
+        fitInside(main, MAIN_W);
+        right.add(main).top().left().width(MAIN_W);
+        right.add(forgeHero).size(230, 230).top().right();
+        right.setClip(true);
         content.add(scroll).width(300).growY().padRight(12);
         content.add(right).width(688).growY();
+    }
+
+    /** 강화 탭 오른쪽 판에서 글·그림이 쓸 수 있는 폭 (판 688 - 안쪽 여백 28 - 대장간 용사 230). */
+    private static final float MAIN_W = 688 - 28 - 230;
+
+    /**
+     * 표 안의 글이 maxW보다 넓으면 줄을 바꾸게 한다 (안쪽 표까지 모두). 무기 그림·이름 줄처럼
+     * 옆에 다른 칸이 있는 표는 그 칸만큼 뺀 폭으로 접는다.
+     */
+    private static void fitInside(Table t, float maxW) {
+        t.layout();
+        var cells = t.getCells();
+        for (int i = 0; i < cells.size; i++) {
+            com.badlogic.gdx.scenes.scene2d.ui.Cell<?> c = cells.get(i);
+            com.badlogic.gdx.scenes.scene2d.Actor a = c.getActor();
+            float avail = maxW;
+            if (c.getColspan() == 1 && t.getColumns() > 1) {
+                // 같은 줄 다른 칸(그림 등)의 폭만큼 줄인다
+                for (int j = 0; j < cells.size; j++) {
+                    com.badlogic.gdx.scenes.scene2d.ui.Cell<?> o = cells.get(j);
+                    if (o != c && o.getRow() == c.getRow() && o.getActor() != null) {
+                        avail -= o.getPrefWidth() + o.getPadLeft() + o.getPadRight();
+                    }
+                }
+                avail -= c.getPadLeft() + c.getPadRight();
+            }
+            if (a instanceof Label l && l.getPrefWidth() > avail) {
+                l.setWrap(true);
+                c.width(avail);
+            } else if (a instanceof Table inner) {
+                fitInside(inner, avail);
+                if (inner.getPrefWidth() > avail) c.width(avail);
+            } else if (a != null && c.getPrefWidth() > avail && !(a instanceof com.badlogic.gdx.scenes.scene2d.ui.Image)) {
+                c.width(avail);
+            }
+        }
+        t.invalidateHierarchy();
     }
 
     private static String pct(float v) {
@@ -252,7 +302,7 @@ public class ForgeWindow extends GameWindow {
 
     private String lifestealText(float now, float after, boolean preview) {
         if (now <= 0 && (!preview || after <= 0)) return "흡혈 없음 (+6강부터 생긴다)";
-        String t = "흡혈: 적 최대 체력의 " + pct(now);
+        String t = "흡혈: 한 번 벨 때마다 용사 최대 체력의 " + pct(now);
         if (preview && after != now) t += "  →  " + pct(after);
         return t;
     }
@@ -303,7 +353,7 @@ public class ForgeWindow extends GameWindow {
         Label n = new Label(name, skin);
         t.add(n).width(56).left();
         Bar bar = new Bar(skin.getRegion("white"), pct > 0 ? color : UiSkin.KEEP, (float) pct / 100f);
-        t.add(bar).width(380).height(18).padRight(12);
+        t.add(bar).width(250).height(18).padRight(12);
         Label v = new Label(fmt(pct) + "%", skin);
         if (pct <= 0) {
             n.setColor(0.45f, 0.45f, 0.5f, 1f);
@@ -318,33 +368,46 @@ public class ForgeWindow extends GameWindow {
         return String.format(Locale.ROOT, "%.2f", v).replaceAll("0$", "");
     }
 
+    /**
+     * 파괴 위험 확인창에서 "다시 묻지 않기"를 체크하고 강화했으면, 게임을 다시 켤 때까지 확인창을 건너뛴다.
+     * 일부러 저장하지 않는다 (재접속하면 다시 묻는다).
+     */
+    private static boolean skipDestroyConfirm;
+
     private void askEnhance() {
         if (busy > 0) return;
         EnhancePreview p = s.previewEnhance();
         if (!p.canEnhance()) return;
-        if (!p.odds().risky()) {
+        if (!p.odds().risky() || skipDestroyConfirm) {
             doEnhance();
             return;
         }
         // 파괴 위험: 누를 때마다 확인창 (기본 선택 "취소", FR-대장간-11, UI-05)
         EnhanceOdds o = p.odds();
         Weapon w = s.inventory.equipped();
+        CheckToggle[] dontAsk = new CheckToggle[1];
         ConfirmDialog d = new ConfirmDialog(skin, "파괴 위험",
                 com.yongsa.model.Josa.eul(w.displayName()) + " 강화할까?\n실패하면 무기가 부서질 수 있다.", "강화한다", true,
-                this::doEnhance, "취소", () -> { });
+                () -> {
+                    if (dontAsk[0] != null && dontAsk[0].isChecked()) skipDestroyConfirm = true;
+                    doEnhance();
+                }, "취소", () -> { });
         d.extra.add(oddsBar("성공", o.success(), UiSkin.SUCCESS)).row();
         d.extra.add(oddsBar("유지", o.keep(), UiSkin.KEEP)).row();
         d.extra.add(oddsBar("하락", o.down(), UiSkin.DOWN)).row();
         d.extra.add(oddsBar("파괴", o.destroy(), UiSkin.DESTROY)).row();
-        d.extra.add(new Label("파괴되면 " + s.balance.ore(w.ore()).name + " " + p.refundIfDestroyed() + "개를 돌려받는다.", skin, "small")).padTop(6);
+        d.extra.add(new Label("파괴되면 " + s.balance.ore(w.ore()).name + " " + p.refundIfDestroyed() + "개를 돌려받는다.", skin, "small")).padTop(6).row();
+        dontAsk[0] = d.check("게임을 다시 켤 때까지 이 확인창 띄우지 않기");
         d.pack();
         d.setClickSound(click);
         openDialog.accept(d);
     }
 
     private void doEnhance() {
+        com.badlogic.gdx.graphics.g2d.TextureRegion icon = assets.region(s.inventory.equipped().icon());
         EnhanceResult r = s.enhanceEquipped();
         if (!r.attempted()) return;
+        forgeHero.hammer(icon);
         float hammer = 0.6f / effectSpeed.get();
         busy = hammer;
         sound.accept("hammer");
@@ -379,6 +442,7 @@ public class ForgeWindow extends GameWindow {
                 sound.accept("destroy");
             }
         }
+        forgeHero.result(kind);
         log.addFirst(new String[]{r.weaponName() + ": " + text, kind});
         while (log.size() > 5) log.removeLast();
         showResult(text, color(kind));

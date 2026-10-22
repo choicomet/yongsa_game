@@ -11,4 +11,8 @@ public class StatusDef {
     public float shockDuration = 5f;
     /** 빙결: 움직이지도 행동하지도 못한다. 다시 맞아도 연장되지 않는다. */
     public float freezeDuration = 3f;
+    /** 둔화: 늪. 걸려 있는 동안 다시 밟아도 늘어나지 않고, 풀린 뒤 늪 위에 slowRetouchTime초 계속 있으면 다시 걸린다. */
+    public float slowDuration = 5f;
+    public float slowRatio = 0.3f;
+    public float slowRetouchTime = 2f;
 }

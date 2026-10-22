@@ -1,7 +1,7 @@
 package com.yongsa.model;
 
 /**
- * 성검 해방 → 구슬이 땅에 박힘 → 땅이 갈라져 추락 → 마왕전 (2026-10-10 결정).
+ * 성검 해방 → 정수가 땅에 박힘 → 땅이 갈라져 추락 → 마왕전 (2026-10-10 결정).
  * 시간만 흐르고, 그리는 쪽은 각 값(0~1)을 읽어 연출한다. 연출 속도 설정이 speed에 들어온다.
  */
 public class Cutscene {
@@ -35,7 +35,7 @@ public class Cutscene {
     public float swordGlow() { return ramp(0.3f, SWORD_END); }
     /** 바닥 문양 빛 (0~1). */
     public float sigilGlow() { return ramp(SWORD_END - 0.4f, SIGIL_END); }
-    /** 구슬이 떠올랐다 박히는 진행 (0~1). */
+    /** 정수가 떠올랐다 박히는 진행 (0~1). */
     public float orbs() { return ramp(SIGIL_END, ORBS_END); }
     /** 땅 갈라짐 (0~1). */
     public float crack() { return ramp(ORBS_END, CRACK_END); }
@@ -50,7 +50,7 @@ public class Cutscene {
         if (!full) return t < CRACK_END ? "땅이 다시 갈라진다…" : "";
         if (t < SWORD_END) return "봉인이 풀린다… 성검이 깨어났다!";
         if (t < SIGIL_END) return "캠프 바닥의 문양이 빛나기 시작한다.";
-        if (t < ORBS_END) return "세 보스의 구슬이 손을 떠나 땅에 박힌다!";
+        if (t < ORBS_END) return "세 보스의 정수가 손을 떠나 땅에 박힌다!";
         if (t < CRACK_END) return "땅이 갈라진다!";
         return "";
     }

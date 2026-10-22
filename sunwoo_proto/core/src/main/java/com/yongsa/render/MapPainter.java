@@ -63,6 +63,18 @@ public class MapPainter {
         if (s.inArena()) {
             sh.setColor(0.35f, 0.12f, 0.18f, 1f);
             rect(sh, s.map.arena, 0);
+        } else if (s.inVillage()) {
+            // 마을은 던전과 떨어진 다른 지도: 마을만 그린다
+            boolean free = s.villagersFree();
+            sh.setColor(free ? 0.42f : 0.3f, free ? 0.62f : 0.36f, free ? 0.36f : 0.44f, 1f);
+            rect(sh, s.map.village, 0);
+            sh.setColor(0.75f, 0.72f, 0.66f, 1f);
+            sh.circle(tx(s.map.villageReturn.x), ty(s.map.villageReturn.y), Math.max(3f, 26 * scale), 12);
+            for (com.yongsa.world.WorldMap.VillagerDef v : s.map.villagers) {
+                if (free) sh.setColor(1f, 0.85f, 0.4f, 1f);
+                else sh.setColor(0.75f, 0.55f, 1f, 0.7f + 0.3f * MathUtils.sin(time * 3 + v.pos().x));
+                sh.circle(tx(v.pos().x), ty(v.pos().y), Math.max(2f, 12 * scale), 10);
+            }
         } else {
             // 통로
             for (WorldMap.CorridorDef cd : s.map.corridors) {
@@ -76,6 +88,7 @@ public class MapPainter {
             // 캠프
             sh.setColor(0.72f, 0.64f, 0.5f, 1f);
             rect(sh, s.map.camp, 0);
+            rect(sh, s.map.exit, 0);
             // 방
             for (Room r : s.rooms) {
                 boolean vis = s.visibility.room(r);

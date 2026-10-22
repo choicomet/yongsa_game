@@ -87,7 +87,9 @@ public class MapWindow extends GameWindow implements Disposable {
             shapes.begin(ShapeRenderer.ShapeType.Filled);
             shapes.setColor(0.04f, 0.035f, 0.06f, 1f);
             shapes.rect(getX(), getY(), getWidth(), getHeight());
-            Rectangle area = s.inArena() ? new Rectangle(s.map.arena) : openArea();
+            Rectangle area = s.inArena() ? new Rectangle(s.map.arena)
+                    : s.inVillage() ? new Rectangle(s.map.village.x - 64, s.map.village.y - 64, s.map.village.width + 128, s.map.village.height + 128)
+                    : openArea();
             float scale = Math.min((getWidth() - 20) / area.width, (getHeight() - 20) / area.height);
             MapPainter p = new MapPainter(s);
             p.setTransform(area.x + area.width / 2, area.y + area.height / 2, getX() + getWidth() / 2, getY() + getHeight() / 2, scale);
@@ -95,7 +97,12 @@ public class MapWindow extends GameWindow implements Disposable {
             shapes.end();
             batch.begin();
             // 던전 이름
-            if (!s.inArena()) {
+            if (s.inVillage()) {
+                var font = skin.getFont("small");
+                font.setColor(1, 0.9f, 0.6f, alpha);
+                font.draw(batch, s.areaName(), p.tx(s.map.village.x) + 4, p.ty(s.map.village.y + s.map.village.height) + 18);
+                font.setColor(1, 1, 1, alpha);
+            } else if (!s.inArena()) {
                 var font = skin.getFont("small");
                 for (DungeonDef d : s.balance.dungeons) {
                     boolean open = s.progress.isOpen(d);

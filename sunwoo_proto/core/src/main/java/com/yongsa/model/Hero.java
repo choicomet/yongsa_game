@@ -14,6 +14,8 @@ public class Hero {
 
     private int maxHp;
     private float hp;
+    /** 무적 (F2, 테스트·발표용): 어떤 피해도 받지 않는다. 저장하지 않는다. */
+    public boolean invulnerable;
     /** 흡수한 각성 능력. 어떤 무기를 들어도 쓴다. */
     private final List<AwakenAbility> absorbed = new ArrayList<>();
     /** 흡수한 검의 종류 → 강화 단계. 검은 사라져도 성검이 그 힘을 나눠 갖는다. */
@@ -30,11 +32,13 @@ public class Hero {
     public boolean alive() { return hp > 0; }
 
     public void damage(int amount) {
+        if (invulnerable) return;
         hp = Math.max(0, hp - amount);
     }
 
     /** 독·화상처럼 조금씩 닳는 피해. */
     public void damageExact(float amount) {
+        if (invulnerable) return;
         hp = Math.max(0, hp - amount);
     }
 

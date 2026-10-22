@@ -4,7 +4,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.yongsa.model.GameSession;
 
-/** Esc 메뉴 (UI-09): 계속하기, 가방, 저장, 설정, 조작 키, (던전 나가기), 타이틀로. */
+/** Esc 메뉴 (UI-09): 계속하기, 가방, 저장, 설정, 조작 키, 타이틀로. */
 public class PauseMenu extends GameWindow {
 
     public interface Actions {
@@ -16,7 +16,6 @@ public class PauseMenu extends GameWindow {
 
         void controls();
 
-        void exitDungeon();
 
         void title();
     }
@@ -42,11 +41,6 @@ public class PauseMenu extends GameWindow {
         add(save).row();
         add(button("설정", actions::settings)).row();
         add(button("조작 키 보기", actions::controls)).row();
-        if (!s.inCamp() && !s.inArena()) {
-            TextButton exit = button(s.canExitDungeon() ? "던전 나가기" : "던전 나가기 (전투 중 불가)", actions::exitDungeon);
-            exit.setDisabled(!s.canExitDungeon());
-            add(exit).row();
-        }
         add(button("타이틀로", actions::title)).row();
         nav.focusFirstEnabled();
         pack();

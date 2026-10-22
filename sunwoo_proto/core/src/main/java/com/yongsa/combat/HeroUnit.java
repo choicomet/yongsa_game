@@ -30,6 +30,12 @@ public class HeroUnit extends Body {
     /** 상태이상 남은 시간. */
     public float poison, burn, shock, freeze;
     private float freezeImmune;
+    /** 둔화(늪)·실명(리치)·기절(마왕 눈알) 남은 시간. */
+    public float slow, blind, stun;
+    private float slowRatio;
+    /** 늪 위에 계속 서 있은 시간 / 둔화가 늪 위에서 풀렸는지 (그러면 2초를 버텨야 다시 걸린다). */
+    private float swampHold;
+    private boolean swampNeedsHold, inSwamp;
 
     /** 바라보는 방향 (8방향, 정규화). 공격 방향이 된다. */
     public float dirX = 0, dirY = -1;
@@ -44,6 +50,9 @@ public class HeroUnit extends Body {
     public float swingTime, swingDuration, swingRange, swingArc, swingDirX, swingDirY;
     public Attack.Kind swingKind = Attack.Kind.BASIC;
     public float mineTime;
+    /** 바람기둥에 맞아 날아가는 중 (빙글빙글 구르며 날아간다). 방향: 1 오른쪽, -1 왼쪽. */
+    public float tumble, tumbleDir = 1;
+    public static final float TUMBLE_TIME = 0.85f;
 
     public HeroUnit(HeroDef def, SkillDefs skills, GuardDef guard, float x, float y) {
         super(x, y, W, H);
@@ -63,11 +72,19 @@ public class HeroUnit extends Body {
         flash = Math.max(0, flash - delta);
         swingTime = Math.max(0, swingTime - delta);
         mineTime = Math.max(0, mineTime - delta);
+        tumble = Math.max(0, tumble - delta);
         blockFlash = Math.max(0, blockFlash - delta);
         poison = Math.max(0, poison - delta);
         burn = Math.max(0, burn - delta);
         shock = Math.max(0, shock - delta);
         freezeImmune = Math.max(0, freezeImmune - delta);
+        blind = Math.max(0, blind - delta);
+        stun = Math.max(0, stun - delta);
+        if (slow > 0) {
+            slow = Math.max(0, slow - delta);
+            // 늪 위에서 풀렸으면 바로 다시 걸리지 않는다
+            if (slow == 0 && inSwamp) swampNeedsHold = true;
+        }
         if (freeze > 0) {
             freeze = Math.max(0, freeze - delta);
             if (freeze == 0) freezeImmune = 1.0f;
@@ -75,7 +92,7 @@ public class HeroUnit extends Body {
 
         updateGuard(delta, guardHeld && free() && freeze <= 0);
 
-        if (freeze > 0) {
+        if (freeze > 0 || stun > 0) {
             moving = false;
             updateKnockback(delta, col);
             return;
@@ -101,7 +118,8 @@ public class HeroUnit extends Body {
                 dirY = inY;
                 updateFacing();
             }
-            float speed = def.speed * (swingTime > 0 ? 0.6f : 1f) * (guarding ? guardDef.moveMultiplier : 1f);
+            float speed = def.speed * (swingTime > 0 ? 0.6f : 1f) * (guarding ? guardDef.moveMultiplier : 1f)
+                    * (slow > 0 ? 1f - slowRatio : 1f);
             col.move(body, inX * speed * delta, inY * speed * delta);
         }
         updateKnockback(delta, col);
@@ -150,8 +168,17 @@ public class HeroUnit extends Body {
         return Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, cos)))) <= guardDef.frontArcDegrees / 2f;
     }
 
-    /** 막았다: 게이지가 닳고 살짝 밀린다. 게이지가 바닥나면 막기가 깨진다. 깨졌으면 true. */
-    public boolean onBlocked(float fromX, float fromY, boolean heavy) {
+    /**
+     * 막았다: 게이지가 닳고 살짝 밀린다. 게이지가 바닥나면 막기가 깨진다. 깨졌으면 true.
+     * bossHit이면 스치기만 해도 한 번에 깨진다 (피해는 막는다).
+     */
+    public boolean onBlocked(float fromX, float fromY, boolean heavy, boolean bossHit) {
+        if (bossHit) {
+            blockFlash = 0.18f;
+            knockback(fromX, fromY, 14);
+            breakGuard();
+            return true;
+        }
         guardMeter -= heavy ? guardDef.heavyHitCost : guardDef.hitCost;
         blockFlash = 0.18f;
         knockback(fromX, fromY, heavy ? 12 : 6);
@@ -183,16 +210,64 @@ public class HeroUnit extends Body {
     }
 
     public boolean frozen() { return freeze > 0; }
+
+    /** 기절: 빙결처럼 아무것도 못 한다. */
+    public void applyStun(float t) {
+        stun = Math.max(stun, t);
+        guarding = false;
+        dodgeTime = dashTime = 0;
+    }
+
+    public boolean stunned() { return stun > 0; }
+
+    /** 실명: 시간을 다시 채운다 (겹쳐서 늘어나지 않음). */
+    public void applyBlind(float t) { blind = t; }
+    public boolean blinded() { return blind > 0; }
+    public boolean slowed() { return slow > 0; }
+
+    /**
+     * 늪 판정 (매 프레임). 둔화 규칙:
+     * 걸려 있는 동안 다시 밟아도 늘어나지 않는다. 늪 위에서 풀렸으면 retouch초 동안 계속 서 있어야 다시 걸린다.
+     * 늪 밖으로 나갔다가 다시 들어오면 바로 걸린다. 걸렸으면 true.
+     */
+    public boolean updateSwamp(boolean onSwamp, float delta, float duration, float ratio, float retouch) {
+        inSwamp = onSwamp;
+        if (!onSwamp) {
+            swampHold = 0;
+            swampNeedsHold = false;
+            return false;
+        }
+        if (slow > 0) {
+            swampHold = 0;
+            return false;
+        }
+        if (swampNeedsHold) {
+            swampHold += delta;
+            if (swampHold < retouch) return false;
+        }
+        slow = duration;
+        slowRatio = ratio;
+        swampHold = 0;
+        swampNeedsHold = false;
+        return true;
+    }
     /** 감전: Q·L 스킬을 못 쓴다. */
     public boolean skillsSealed() { return shock > 0; }
 
     public void clearStatuses() {
-        poison = burn = shock = freeze = freezeImmune = 0;
+        poison = burn = shock = freeze = freezeImmune = slow = blind = stun = swampHold = 0;
+        swampNeedsHold = inSwamp = false;
     }
 
-    /** 회피·돌진·빙결 중이 아니면 행동할 수 있다. */
+    /** 회피·돌진·빙결·기절·날아가는 중이 아니면 행동할 수 있다. */
     public boolean free() {
-        return dodgeTime <= 0 && dashTime <= 0 && freeze <= 0;
+        return dodgeTime <= 0 && dashTime <= 0 && freeze <= 0 && stun <= 0 && tumble <= 0;
+    }
+
+    /** 바람에 맞아 날아가기 시작 (vx: 날아가는 쪽 가로 속도). */
+    public void startTumble(float vx) {
+        tumble = TUMBLE_TIME;
+        tumbleDir = vx >= 0 ? 1 : -1;
     }
 
     public boolean dashing() {
@@ -213,7 +288,7 @@ public class HeroUnit extends Body {
         swingDirY = dirY;
     }
 
-    /** 회피: 바라보는(또는 누르는) 방향으로 짧게 구르며 무적 (Shift). */
+    /** 회피: 바라보는(또는 누르는) 방향으로 짧게 구르며 무적 (Space). */
     public boolean dodge(float inX, float inY) {
         if (!free() || dodgeCooldown > 0) return false;
         float len = (float) Math.sqrt(inX * inX + inY * inY);
@@ -242,6 +317,11 @@ public class HeroUnit extends Body {
         return true;
     }
 
+    /** 테스트용: 무적 시간을 정한다. */
+    public void invincibleForTest(float t) {
+        invincible = t;
+    }
+
     public boolean invincible() {
         return invincible > 0;
     }
@@ -255,7 +335,7 @@ public class HeroUnit extends Body {
 
     public void resetTimers() {
         attackCooldown = whirlCooldown = dashCooldown = dodgeCooldown = 0;
-        invincible = dodgeTime = dashTime = swingTime = 0;
+        invincible = dodgeTime = dashTime = swingTime = tumble = 0;
         guarding = false;
         guardBroken = 0;
         guardMeter = guardDef.max;

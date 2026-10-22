@@ -29,6 +29,14 @@ public class WorldMap {
     public final Vector2 arenaLand = new Vector2();
     public final Vector2 finalBossSpawn = new Vector2();
     public final Vector2 arenaPortal = new Vector2();
+    /** 캠프 아래 던전 출구: 닿으면 '나가기' 시도. */
+    public final Rectangle exit = new Rectangle();
+    /** 던전 밖 마을 (같은 지도의 떨어진 구역). */
+    public final Rectangle village = new Rectangle();
+    public final Vector2 villageLand = new Vector2();
+    /** 마을에서 던전으로 돌아가는 계단. */
+    public final Vector2 villageReturn = new Vector2();
+    public final List<VillagerDef> villagers = new ArrayList<>();
 
     public final List<RoomDef> rooms = new ArrayList<>();
     public final List<DoorDef> doors = new ArrayList<>();
@@ -55,6 +63,10 @@ public class WorldMap {
     public record SpawnDef(String roomId, boolean boss, Vector2 pos) {
     }
 
+    /** 마을 사람 자리. kind는 그림 이름(villager_&lt;kind&gt;)과 대사 묶음을 고른다. */
+    public record VillagerDef(String kind, Vector2 pos) {
+    }
+
     /**
      * 장식 하나. pos는 발밑 가운데. flat이면 바닥·벽에 붙은 것(정렬 없이 먼저 그림).
      * light > 0이면 그 반지름(px)으로 빛을 낸다. solid면 footprint만큼 지나갈 수 없다.
@@ -70,6 +82,12 @@ public class WorldMap {
                 case "weapon_rack" -> { w = 34; h = 10; }
                 case "rocks" -> { w = 26; h = 12; }
                 case "pillar", "pillar_broken" -> { w = 22; h = 12; }
+                case "house_0", "house_1" -> { w = 98; h = 44; }
+                case "bell_tower" -> { w = 52; h = 30; }
+                case "well" -> { w = 78; h = 34; }
+                case "market_stall" -> { w = 88; h = 22; }
+                case "lamp_post" -> { w = 8; h = 6; }
+                case "pine" -> { w = 16; h = 10; }
                 default -> { w = 18; h = 10; }
             }
             return new Rectangle(pos.x - w / 2, pos.y, w, h);
@@ -130,6 +148,11 @@ public class WorldMap {
                     case "arena_land" -> m.arenaLand.set(pt);
                     case "final_boss" -> m.finalBossSpawn.set(pt);
                     case "arena_portal" -> m.arenaPortal.set(pt);
+                    case "exit" -> m.exit.set(rect);
+                    case "village" -> m.village.set(rect);
+                    case "village_land" -> m.villageLand.set(pt);
+                    case "village_return" -> m.villageReturn.set(pt);
+                    case "villager" -> m.villagers.add(new VillagerDef(prop(o, "kind"), pt));
                     case "room" -> m.rooms.add(new RoomDef(name, RoomKind.parse(prop(o, "kind")), prop(o, "dungeon"),
                             prop(o, "parent"), Integer.parseInt(prop(o, "order")), rect,
                             tile(m, prop(o, "entryX"), prop(o, "entryY")), tile(m, prop(o, "outX"), prop(o, "outY"))));

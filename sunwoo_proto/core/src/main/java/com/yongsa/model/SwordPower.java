@@ -46,7 +46,7 @@ public final class SwordPower {
         return b.holySword().attack + Math.round(sum * b.holy.shareRatio);
     }
 
-    /** 흡혈: 적 최대 체력의 %. */
+    /** 흡혈: 용사 최대 체력의 %. */
     public float lifesteal(Weapon w, Inventory inv, Hero hero) {
         if (w.def().holy) return holyLifesteal(inv, hero);
         if (!w.def().isSword()) return 0;

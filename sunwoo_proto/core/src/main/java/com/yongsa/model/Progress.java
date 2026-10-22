@@ -21,6 +21,17 @@ public class Progress {
     /** 처음 들어가는 광물방 보장(FR-채집-09)을 이미 썼는지. */
     private boolean firstOreRoomUsed;
     private boolean tutorialDone;
+    /**
+     * 마왕 본모습의 반전 마법진이 뒤바꾸는 키. 처음 밟을 때 무작위로 정하고 그 뒤로는 고정 (저장된다).
+     * 예: "LR|WHIRL_DODGE" = 좌우 반전 + Q와 회피(Space) 교환. 비어 있으면 아직 안 정함.
+     */
+    private String inversion = "";
+
+    public String inversion() { return inversion; }
+    public void setInversion(String s) { inversion = s == null ? "" : s; }
+
+    /** 마왕 전에 던전 출구로 나가려다 되돌아선 횟수 (5번을 넘기면 나갈 수 있다). */
+    public int exitRefusals;
 
     public int enhanceCount, destroyCount, awakenCount, kills, deaths;
 

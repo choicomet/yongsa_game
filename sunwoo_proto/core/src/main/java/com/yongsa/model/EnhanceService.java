@@ -45,7 +45,9 @@ public class EnhanceService {
                     inv.ore(w.ore()), atkNow, atkNow, 0, 0, lsNow, lsNow);
         }
         int atkAfter = DamageCalc.attack(w.baseAttack() + w.def().attackPerLevel, hero, def);
-        return new EnhancePreview(true, false, table.odds(w.level()), table.cost(w.level()), inv.ore(w.ore()),
+        // 개발자 도구 "강화 성공 100%"가 켜져 있으면 창에도 100%로 보인다
+        EnhanceOdds odds = alwaysSucceed ? new EnhanceOdds(100, 0, 0, 0) : table.odds(w.level());
+        return new EnhancePreview(true, false, odds, table.cost(w.level()), inv.ore(w.ore()),
                 atkNow, atkAfter, destroyRefund(w), table.maxLevel() - w.level(), lsNow, lifesteal(w.level() + 1));
     }
 
@@ -89,7 +91,19 @@ public class EnhanceService {
     }
 
     /** 1차: 성공 여부. 2차: 실패를 유지·하락·파괴 비중으로 나눈다. */
+    /** 개발자 도구: 강화가 항상 성공 (확률 100%). 저장하지 않는다. */
+    private boolean alwaysSucceed;
+
+    public boolean alwaysSucceed() {
+        return alwaysSucceed;
+    }
+
+    public void setAlwaysSucceed(boolean on) {
+        alwaysSucceed = on;
+    }
+
     private EnhanceOutcome roll(EnhanceRuleDef r) {
+        if (alwaysSucceed) return EnhanceOutcome.SUCCESS;
         if (random.nextInt(100) < r.success) return EnhanceOutcome.SUCCESS;
         int total = r.keep + r.down + r.destroy;
         int x = random.nextInt(total);
