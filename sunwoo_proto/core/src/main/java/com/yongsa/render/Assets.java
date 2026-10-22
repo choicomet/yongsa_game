@@ -8,29 +8,26 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.utils.Disposable;
+import com.badlogic.gdx.utils.JsonReader;
+import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.ObjectMap;
 
 /**
  * 그림 불러오기. 스프라이트는 프레임을 가로로 이어 붙인 PNG다.
- * 진짜 그림으로 바꿀 때는 같은 이름으로 덮어쓰고, 프레임 수가 바뀌면 FRAMES만 고친다.
+ * 진짜 그림으로 바꿀 때는 같은 이름으로 덮어쓰고, 프레임 수는 sprites/manifest.json에 적는다.
  */
 public class Assets implements Disposable {
 
-    private static final ObjectMap<String, Integer> FRAMES = new ObjectMap<>();
-
-    static {
-        for (String d : new String[]{"hero_down", "hero_up", "hero_side"}) FRAMES.put(d, 3); // 대기, 걷기1, 걷기2
-        for (String m : new String[]{"mob_left", "mob_right", "mob_top", "boss_left", "boss_right", "boss_top", "demon_king"}) {
-            FRAMES.put(m, 2);
-        }
-        FRAMES.put("portal", 4);
-    }
+    /** sprites/manifest.json: 그림 이름 → 프레임 수 (tools/gen_assets.py가 만든다). */
+    private final ObjectMap<String, Integer> frameCounts = new ObjectMap<>();
 
     private final ObjectMap<String, Texture> textures = new ObjectMap<>();
     private final ObjectMap<String, TextureRegion[]> frames = new ObjectMap<>();
     private Texture whiteTex;
     private TextureRegion white;
     private TiledMap tiledMap;
+    private Texture lightTex;
+    private TextureRegion light;
 
     public void load() {
         Pixmap p = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -43,13 +40,41 @@ public class Assets implements Disposable {
         params.textureMinFilter = Texture.TextureFilter.Nearest;
         params.textureMagFilter = Texture.TextureFilter.Nearest;
         tiledMap = new TmxMapLoader().load("maps/world.tmx", params);
+        JsonValue manifest = new JsonReader().parse(Gdx.files.internal("sprites/manifest.json"));
+        for (JsonValue v = manifest.child; v != null; v = v.next) frameCounts.put(v.name, v.asInt());
+        light = radial(128);
+    }
+
+    /** 빛 그림: 가운데가 밝고 가장자리로 갈수록 부드럽게 사라지는 원. */
+    private TextureRegion radial(int size) {
+        Pixmap p = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+        p.setBlending(Pixmap.Blending.None);
+        float c = (size - 1) / 2f;
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                float d = (float) Math.hypot(x - c, y - c) / c;
+                float a = d >= 1 ? 0 : (1 - d) * (1 - d) * (3 - 2 * (1 - d)) ;
+                a = Math.max(0, Math.min(1, a));
+                p.drawPixel(x, y, Color.rgba8888(a, a, a, 1f));
+            }
+        }
+        lightTex = new Texture(p);
+        lightTex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        p.dispose();
+        return new TextureRegion(lightTex);
+    }
+
+    public TextureRegion light() { return light; }
+
+    public boolean has(String name) {
+        return frameCounts.containsKey(name);
     }
 
     public TextureRegion[] frames(String name) {
         TextureRegion[] f = frames.get(name);
         if (f != null) return f;
         Texture t = texture("sprites/" + name + ".png");
-        int n = FRAMES.get(name, 1);
+        int n = frameCounts.get(name, 1);
         int fw = t.getWidth() / n;
         f = new TextureRegion[n];
         for (int i = 0; i < n; i++) f[i] = new TextureRegion(t, i * fw, 0, fw, t.getHeight());
@@ -87,6 +112,7 @@ public class Assets implements Disposable {
         textures.clear();
         frames.clear();
         if (whiteTex != null) whiteTex.dispose();
+        if (lightTex != null) lightTex.dispose();
         if (tiledMap != null) tiledMap.dispose();
     }
 }

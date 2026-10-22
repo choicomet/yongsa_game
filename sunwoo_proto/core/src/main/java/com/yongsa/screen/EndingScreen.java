@@ -17,6 +17,16 @@ import com.yongsa.ui.KeyNav;
 /** 엔딩 (UI-11): 마무리 글, 플레이 기록, 계속하기(FR-던전-10) / 타이틀로. */
 public class EndingScreen extends BaseScreen {
 
+    /** 엔딩 이야기: 마왕이 쓰러지고, 속박된 사람들이 풀려난다. */
+    public static final StoryScreen.Page[] STORY = {
+            new StoryScreen.Page("ending1.jpg",
+                    "성검이 마왕의 심장 수정을 꿰뚫었다.\n「 이런 풋내기에게 당하다니! 」"),
+            new StoryScreen.Page("ending2.jpg",
+                    "마왕이 무너지자 사람들을 가두던 수정이 산산이 부서졌다.\n속박되어 있던 마을 사람들이 모두 풀려났다."),
+            new StoryScreen.Page("ending3.jpg",
+                    "다시 해가 떴다. 갓 구운 빵 냄새가 광장에 퍼진다.\n이제 용사가 다 하지 않아도 되는 날이 왔다."),
+    };
+
     private final KeyNav nav;
     private final Table root = new Table();
 
@@ -27,8 +37,8 @@ public class EndingScreen extends BaseScreen {
         stage.addActor(root);
 
         Label title = new Label("마왕이 쓰러졌다", game.skin, "title");
-        Label body = new Label("깨어난 성검의 빛이 심연을 갈랐다.\n던전을 감싸던 어둠이 걷히고, 캠프의 불씨는 다시 따뜻해졌다.\n"
-                + "이제 용사가 다 하지 않아도 되는 날이 올지도 모른다.", game.skin, "large");
+        Label body = new Label("마왕에게 속박되었던 마을 사람들이 모두 풀려났다.\n"
+                + "던전은 아직 남아 있다. 계속하기를 고르면 남은 던전을 더 돌아볼 수 있다.", game.skin, "large");
         body.setAlignment(Align.center);
         int min = (int) (s.playTime() / 60), sec = (int) (s.playTime() % 60);
         Table stats = new Table(game.skin);

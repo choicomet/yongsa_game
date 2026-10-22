@@ -21,6 +21,13 @@ public class EnhanceService {
         this.random = random;
     }
 
+    /** 성검 공격력·흡혈 계산 (없으면 무기 자체 값만). */
+    private SwordPower power;
+
+    public void setPower(SwordPower power) {
+        this.power = power;
+    }
+
     public EnhanceTable table() {
         return table;
     }
@@ -30,15 +37,22 @@ public class EnhanceService {
     }
 
     public EnhancePreview preview(Weapon w, Inventory inv, Hero hero) {
-        int atkNow = DamageCalc.attack(w, hero, def);
+        int atkNow = power != null ? power.attack(w, inv, hero) : DamageCalc.attack(w, hero, def);
+        float lsNow = power != null ? power.lifesteal(w, inv, hero) : lifesteal(w.level());
         boolean maxed = w.level() >= table.maxLevel();
         if (!w.def().enhanceable || maxed) {
             return new EnhancePreview(w.def().enhanceable, maxed, new EnhanceOdds(0, 0, 0, 0), 0,
-                    inv.ore(w.ore()), atkNow, atkNow, 0, 0);
+                    inv.ore(w.ore()), atkNow, atkNow, 0, 0, lsNow, lsNow);
         }
         int atkAfter = DamageCalc.attack(w.baseAttack() + w.def().attackPerLevel, hero, def);
         return new EnhancePreview(true, false, table.odds(w.level()), table.cost(w.level()), inv.ore(w.ore()),
-                atkNow, atkAfter, destroyRefund(w), table.maxLevel() - w.level());
+                atkNow, atkAfter, destroyRefund(w), table.maxLevel() - w.level(), lsNow, lifesteal(w.level() + 1));
+    }
+
+    private float lifesteal(int level) {
+        float[] t = def.lifesteal;
+        if (t.length == 0) return 0;
+        return t[Math.max(0, Math.min(t.length - 1, level))];
     }
 
     public EnhanceResult enhance(Weapon w, Inventory inv) {

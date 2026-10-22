@@ -15,4 +15,6 @@ public class HeroDef {
     public float attackArcDegrees = 120;
     /** 피해량 무작위 폭: 0.1이면 90~110% (FR-전투-09). */
     public float damageVariance = 0.1f;
+    /** 흡혈 한 번에 회복하는 양의 상한 (용사 최대 체력 대비). 0이면 제한 없음. */
+    public float lifestealCapRatio = 0.04f;
 }

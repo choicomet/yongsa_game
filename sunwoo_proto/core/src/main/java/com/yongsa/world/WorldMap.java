@@ -37,6 +37,7 @@ public class WorldMap {
     public final List<SpawnDef> monsterSpawns = new ArrayList<>();
     public final Map<String, List<Vector2>> veinSpots = new HashMap<>();
     public final Map<String, Vector2> portals = new HashMap<>();
+    public final List<DecorDef> decor = new ArrayList<>();
 
     public record RoomDef(String id, RoomKind kind, String dungeon, String parent, int order,
                           Rectangle bounds, Vector2 entry, Vector2 outside) {
@@ -52,6 +53,27 @@ public class WorldMap {
     }
 
     public record SpawnDef(String roomId, boolean boss, Vector2 pos) {
+    }
+
+    /**
+     * 장식 하나. pos는 발밑 가운데. flat이면 바닥·벽에 붙은 것(정렬 없이 먼저 그림).
+     * light > 0이면 그 반지름(px)으로 빛을 낸다. solid면 footprint만큼 지나갈 수 없다.
+     */
+    public record DecorDef(String sprite, Vector2 pos, boolean flat, boolean solid, float light, int lightColor) {
+        /** 막히는 발밑 사각형 (그림 크기와 무관하게 이름으로 정한다). */
+        public Rectangle footprint() {
+            float w, h;
+            switch (sprite) {
+                case "tent" -> { w = 84; h = 30; }
+                case "campfire" -> { w = 26; h = 12; }
+                case "minecart" -> { w = 30; h = 12; }
+                case "weapon_rack" -> { w = 34; h = 10; }
+                case "rocks" -> { w = 26; h = 12; }
+                case "pillar", "pillar_broken" -> { w = 22; h = 12; }
+                default -> { w = 18; h = 10; }
+            }
+            return new Rectangle(pos.x - w / 2, pos.y, w, h);
+        }
     }
 
     public WorldMap(int w, int h, int tileSize) {
@@ -117,6 +139,10 @@ public class WorldMap {
                     case "monster" -> m.monsterSpawns.add(new SpawnDef(prop(o, "room"), Boolean.parseBoolean(prop(o, "boss")), pt));
                     case "vein_spot" -> m.veinSpots.computeIfAbsent(prop(o, "room"), k -> new ArrayList<>()).add(pt);
                     case "portal" -> m.portals.put(prop(o, "room"), pt);
+                    case "decor" -> m.decor.add(new DecorDef(prop(o, "sprite"), pt,
+                            Boolean.parseBoolean(prop(o, "flat")), Boolean.parseBoolean(prop(o, "solid")),
+                            Float.parseFloat(propOr(o, "light", "0")),
+                            (int) Long.parseLong(propOr(o, "lightColor", "ffffff"), 16)));
                     default -> { }
                 }
             }
@@ -127,6 +153,16 @@ public class WorldMap {
     /** 생성기가 적어 둔 타일 좌표(실수) → px. */
     private static Vector2 tile(WorldMap m, String tx, String ty) {
         return new Vector2(Float.parseFloat(tx) * m.tileSize, Float.parseFloat(ty) * m.tileSize);
+    }
+
+    private static String propOr(Element o, String key, String fallback) {
+        Element props = o.getChildByName("properties");
+        if (props != null) {
+            for (Element p : props.getChildrenByName("property")) {
+                if (key.equals(p.getAttribute("name"))) return p.getAttribute("value");
+            }
+        }
+        return fallback;
     }
 
     private static String prop(Element o, String key) {

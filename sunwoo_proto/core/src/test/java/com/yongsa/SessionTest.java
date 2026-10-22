@@ -135,7 +135,7 @@ class SessionTest {
         assertEquals(RoomState.FIGHTING, boss.state());
         step(s, new Controls(), 40);
         killAll(s, boss);
-        step(s, new Controls(), 60);
+        step(s, new Controls(), 90); // 보스 쓰러지는 연출 1.1초
 
         assertEquals(250, s.hero.maxHp());
         assertEquals(5, s.inventory.ore("blackiron"));
@@ -148,22 +148,116 @@ class SessionTest {
         Gate right = s.gates.stream().filter(g -> g.dungeon.equals("right")).findFirst().orElseThrow();
         assertTrue(right.open());
 
-        // 잡몹 강화는 1.4배 / 1.25배 한 번만
+        // 첫 처치 뒤 캠프가 한 단계 밝아진다
+        assertEquals(1, s.progress.firstClears());
+        assertTrue(ev.stream().anyMatch(e -> e.type() == GameEvent.Type.CAMP_BRIGHTER));
+
+        // 잡몹 강화는 1.3배 / 1.2배 한 번만
         s.useBed();
         enter(s, l1);
         step(s, new Controls(), 2);
-        assertEquals(Math.round(baseHp * 1.4f), l1.monsters.get(0).maxHp());
-        assertEquals(Math.round(baseAtk * 1.25f), l1.monsters.get(0).attack);
-        // 보스방은 침대를 써도 다시 생기지 않는다
-        assertEquals(RoomState.CLEARED, boss.state());
-        assertTrue(boss.portal.active());
+        assertEquals(Math.round(baseHp * 1.3f), l1.monsters.get(0).maxHp());
+        assertEquals(Math.round(baseAtk * 1.2f), l1.monsters.get(0).attack);
+        // 침대로 쉬면 보스는 다시 생기고 포탈은 닫힌다
+        assertEquals(RoomState.IDLE, boss.state());
+        assertFalse(boss.portal.active());
+    }
+
+    @Test
+    void 다시_생긴_보스는_광물_4에서_5개만_준다() {
+        GameSession s = TestFiles.session(15);
+        List<GameEvent> ev = record(s);
+        Room boss = s.roomById.get("L5");
+        for (int round = 0; round < 2; round++) {
+            s.unit.teleport(boss.def.entry().x, boss.def.entry().y);
+            step(s, new Controls(), 2);
+            assertEquals(RoomState.FIGHTING, boss.state());
+            killAll(s, boss);
+            step(s, new Controls(), 90);
+            assertEquals(RoomState.CLEARED, boss.state());
+            if (round == 0) {
+                s.orbDrops.clear();
+                s.useBed();
+            }
+        }
+        List<AbsorbService.BossAbsorb> results = ev.stream().filter(e -> e.type() == GameEvent.Type.BOSS_DEFEATED)
+                .map(e -> (AbsorbService.BossAbsorb) e.data()).toList();
+        assertEquals(2, results.size());
+        assertFalse(results.get(1).firstClear());
+        assertEquals(0, results.get(1).hpGain());
+        assertTrue(results.get(1).oreReward() >= 4 && results.get(1).oreReward() <= 5);
+        assertEquals(250, s.hero.maxHp());         // 체력은 한 번만
+        assertTrue(s.orbDrops.isEmpty());          // 구슬도 한 번만
+        assertEquals(1, s.progress.firstClears()); // 캠프 밝기도 한 번만
+    }
+
+    @Test
+    void 앞에서_오는_공격은_막고_뒤에서_오는_공격은_못_막는다() {
+        GameSession s = TestFiles.session(16);
+        Controls c = new Controls();
+        s.unit.lookAt(1, 0);
+        c.guard = true;
+        step(s, c, 2);
+        assertTrue(s.unit.guarding);
+        int hp = s.hero.hp();
+        float meter = s.unit.guardMeter;
+        assertFalse(s.hitHero(30, s.unit.centerX() + 40, s.unit.centerY()));
+        assertEquals(hp, s.hero.hp());
+        assertTrue(s.unit.guardMeter < meter - 0.3f);
+        assertTrue(s.hitHero(30, s.unit.centerX() - 40, s.unit.centerY()));
+        assertTrue(s.hero.hp() < hp);
+    }
+
+    @Test
+    void 막기는_3초를_넘게_유지할_수_없다() {
+        GameSession s = TestFiles.session(17);
+        Controls c = new Controls();
+        c.guard = true;
+        step(s, c, 60 * 3 + 10);
+        assertFalse(s.unit.guarding);
+        assertTrue(s.unit.guardBroken > 0);
+        step(s, c, 60 * 2 + 10); // 깨진 시간이 지나야 다시 막는다
+        step(s, new Controls(), 60 * 4);
+        assertEquals(s.balance.guard.max, s.unit.guardMeter, 0.01f);
+    }
+
+    @Test
+    void 감전되면_스킬은_못_쓰고_기본_공격과_이동은_된다() {
+        GameSession s = TestFiles.session(18);
+        s.unit.applyShock(5);
+        Controls c = new Controls();
+        c.whirl = true;
+        step(s, c, 1);
+        assertEquals(0, s.unit.whirlCooldown, 0.001f);
+        c.attack = true;
+        step(s, c, 1);
+        assertTrue(s.unit.attackCooldown > 0);
+        float x = s.unit.footX();
+        c.moveX = 1;
+        step(s, c, 10);
+        assertTrue(s.unit.footX() > x);
+    }
+
+    @Test
+    void 독은_초당_최대_체력의_1퍼센트이고_다시_닿으면_5초로_돌아간다() {
+        GameSession s = TestFiles.session(19);
+        s.unit.teleport(s.map.spawn.x + 200, s.map.spawn.y); // 캠프 회복 영향 없게 캠프 밖으로
+        s.unit.teleport(s.roomById.get("L1").bounds.x + 40, s.roomById.get("L1").bounds.y + 40);
+        s.unit.applyPoison(s.balance.statuses.poisonDuration);
+        float hp = s.hero.hpExact();
+        step(s, new Controls(), 60);
+        assertEquals(hp - s.hero.maxHp() * 0.01f, s.hero.hpExact(), 0.2f);
+        step(s, new Controls(), 120);
+        assertTrue(s.unit.poison < 3.1f);
+        s.unit.applyPoison(s.balance.statuses.poisonDuration);
+        assertEquals(5f, s.unit.poison, 0.01f);
     }
 
     @Test
     void 구슬_세_개를_모아_성검을_해방하면_마왕전으로_떨어진다() {
         GameSession s = TestFiles.session(5);
         for (String d : new String[]{"left", "right", "top"}) {
-            s.absorbService.absorbBoss(s.balance.dungeon(d), s.hero, s.progress, s.inventory);
+            s.absorbService.absorbBoss(s.balance.dungeon(d), s.hero, s.progress, s.inventory, s.random);
             s.progress.addOrb(d);
         }
         assertEquals(700, s.hero.maxHp());
@@ -185,7 +279,7 @@ class SessionTest {
     void 마왕은_깨어난_성검이_아니면_피해를_받지_않는다() {
         GameSession s = TestFiles.session(6);
         for (String d : new String[]{"left", "right", "top"}) {
-            s.absorbService.absorbBoss(s.balance.dungeon(d), s.hero, s.progress, s.inventory);
+            s.absorbService.absorbBoss(s.balance.dungeon(d), s.hero, s.progress, s.inventory, s.random);
             s.progress.addOrb(d);
         }
         s.unit.teleport(s.map.sigil.x, s.map.sigil.y - 10);
@@ -327,7 +421,7 @@ class SessionTest {
         s.craft(s.balance.weapon("blackiron"));
         assertEquals("흑철검 장착하기 (I 가방)", s.goal().text());
         s.equip(s.inventory.weapons().get(1));
-        assertTrue(s.goal().text().contains("갱도의 골렘"));
+        assertTrue(s.goal().text().contains("좀비킹"));
         assertFalse(s.routeToGoal().isEmpty());
         assertEquals("L5", s.routeToGoal().get(s.routeToGoal().size() - 1));
     }

@@ -17,6 +17,8 @@ public class SaveData {
     public List<WeaponSave> weapons = new ArrayList<>();
     public int equippedUid;
     public List<String> absorbed = new ArrayList<>();
+    /** 흡수한 검 종류 → 강화 단계 (성검이 나눠 갖는 힘). */
+    public Map<String, Integer> absorbedSwords = new LinkedHashMap<>();
     public int maxHp;
     public float hp;
 

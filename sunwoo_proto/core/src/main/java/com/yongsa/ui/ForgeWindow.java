@@ -207,17 +207,19 @@ public class ForgeWindow extends GameWindow {
             names.add(new Label("+" + w.level() + "  →  +" + (w.level() + 1) + "      공격력 " + p.attackNow() + "  →  " + p.attackAfter(),
                     skin, "large")).left().row();
             String awaken = w.def().awakenedName != null ? "???" : "";
-            names.add(new Label("각성까지 " + p.levelsToAwaken() + "단계  ·  각성하면: " + awaken, skin, "small")).left();
+            names.add(new Label("각성까지 " + p.levelsToAwaken() + "단계  ·  각성하면: " + awaken, skin, "small")).left().row();
         } else {
-            names.add(new Label("공격력 " + p.attackNow(), skin, "large")).left();
+            names.add(new Label("공격력 " + p.attackNow(), skin, "large")).left().row();
         }
+        names.add(new Label(lifestealText(p.lifestealNow(), p.lifestealAfter(), p.enhanceable() && !p.maxed()), skin, "small")).left();
         head.add(names).left();
         right.add(head).left().colspan(2).padBottom(14).row();
 
         if (!w.def().enhanceable) {
             String why = w.def().starter ? "봉인 때문에 힘이 약하다. 강화·분해할 수 없다.\n세 보스의 힘을 흡수하면 봉인이 풀린다."
-                    : "깨어난 성검은 강화하지 않는다. 용사가 흡수한 힘으로 강해진다.";
+                    : "성검은 강화하지 않는다. 용사가 만든 검들의 힘을 나눠 받아 강해진다.";
             right.add(new Label(why, skin, "dim")).left().colspan(2).row();
+            if (w.def().holy) buildHolyBreakdown(right);
             right.add(new Label("왼쪽에서 다른 무기를 골라 장착하면 그 무기를 강화한다.", skin, "small")).left().colspan(2).padTop(12).row();
         } else if (p.maxed()) {
             buildAwakened(right, w);
@@ -231,7 +233,7 @@ public class ForgeWindow extends GameWindow {
             Label cost = new Label("비용: " + oreName + " " + p.cost() + "개   (보유 " + p.have() + "개)", skin, "large");
             if (!p.enoughOre()) cost.setColor(UiSkin.SHORT);
             right.add(cost).left().colspan(2).row();
-            Label refund = new Label(o.risky() ? "파괴되면 " + oreName + " " + p.refundIfDestroyed() + "개를 돌려받고 봉인된 성검을 든다."
+            Label refund = new Label(o.risky() ? "파괴되면 " + oreName + " " + p.refundIfDestroyed() + "개를 돌려받고 성검을 든다."
                     : "이 단계에서는 파괴되지 않는다.", skin, "small");
             right.add(refund).left().colspan(2).padTop(4).row();
             TextButton go = button(o.risky() ? "강화하기 (파괴 위험)" : "강화하기", o.risky() ? "danger" : "default", this::askEnhance);
@@ -242,6 +244,31 @@ public class ForgeWindow extends GameWindow {
 
         content.add(scroll).width(300).growY().padRight(12);
         content.add(right).width(688).growY();
+    }
+
+    private static String pct(float v) {
+        return fmt(v) + "%";
+    }
+
+    private String lifestealText(float now, float after, boolean preview) {
+        if (now <= 0 && (!preview || after <= 0)) return "흡혈 없음 (+6강부터 생긴다)";
+        String t = "흡혈: 적 최대 체력의 " + pct(now);
+        if (preview && after != now) t += "  →  " + pct(after);
+        return t;
+    }
+
+    /** 성검: 만든 검들에게서 나눠 받는 힘. */
+    private void buildHolyBreakdown(Table right) {
+        var shares = s.power.shares(s.inventory, s.hero);
+        right.add(new Label("성검이 나눠 받는 힘 (종류마다 가장 센 검)", skin, "gold")).left().colspan(2).padTop(12).row();
+        if (shares.isEmpty()) right.add(new Label("아직 만든 검이 없다. 검을 만들고 강화할수록 성검이 강해진다.", skin, "small")).left().colspan(2).row();
+        for (var sh : shares.values()) {
+            String line = sh.def().name + " +" + sh.level() + (sh.absorbed() ? " (흡수)" : "") + "  ·  공격력 " + sh.attack()
+                    + " × " + fmt(s.balance.holy.shareRatio) + "  ·  흡혈 " + pct(sh.lifesteal());
+            right.add(new Label(line, skin, "small-white")).left().colspan(2).row();
+        }
+        right.add(new Label("기본 " + s.balance.holySword().attack + " + 나눠 받은 공격력 = " + s.power.holyBase(s.inventory, s.hero)
+                + "   (흡수한 힘 보너스 전)", skin, "small")).left().colspan(2).padTop(4).row();
     }
 
     private void buildAwakened(Table right, Weapon w) {

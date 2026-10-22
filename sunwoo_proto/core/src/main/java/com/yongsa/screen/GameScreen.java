@@ -44,6 +44,8 @@ public class GameScreen extends BaseScreen {
     private final MapWindow map;
     private final PauseMenu pause;
     private float endingTimer = -1;
+    /** 마왕에게 쓰러졌을 때: 마왕의 말을 다 보여준 뒤 결과창. */
+    private float deathTimer = -1;
 
     public GameScreen(YongsaGame game, GameSession session) {
         super(game);
@@ -120,10 +122,12 @@ public class GameScreen extends BaseScreen {
                 AbsorbService.BossAbsorb r = (AbsorbService.BossAbsorb) e.data();
                 if (r != null) windows.open(ResultWindow.bossCleared(game.skin, s, game.assets, r, () -> { }));
             }
-            case HERO_DIED -> windows.open(ResultWindow.died(game.skin, () -> {
-                s.respawn();
-                renderer.snapCamera();
-            }));
+            case HERO_DIED -> {
+                if (s.inArena()) deathTimer = 2.4f;
+                else openDeathWindow();
+            }
+            case SPEECH -> hud.speech(e.id(), e.text(), (Float) e.data());
+            case CAMP_BRIGHTER -> { }
             case CUTSCENE_STARTED -> windows.closeAll();
             case ARENA_ENTERED -> {
                 renderer.startArenaFade();
@@ -135,6 +139,13 @@ public class GameScreen extends BaseScreen {
             }
             default -> { }
         }
+    }
+
+    private void openDeathWindow() {
+        windows.open(ResultWindow.died(game.skin, () -> {
+            s.respawn();
+            renderer.snapCamera();
+        }));
     }
 
     // ================================================================== 한 프레임
@@ -156,6 +167,10 @@ public class GameScreen extends BaseScreen {
         stage.getViewport().apply();
         stage.draw();
 
+        if (deathTimer > 0) {
+            deathTimer -= delta;
+            if (deathTimer <= 0) openDeathWindow();
+        }
         if (endingTimer > 0 && !windows.any()) {
             endingTimer -= delta;
             if (endingTimer <= 0) game.showEnding(s);
@@ -165,8 +180,11 @@ public class GameScreen extends BaseScreen {
     private void readMovement() {
         if (s.cutscene() != null) {
             controls.moveX = controls.moveY = 0;
+            controls.guard = false;
             return;
         }
+        controls.guard = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT)
+                || Gdx.input.isKeyPressed(Input.Keys.K);
         float x = 0, y = 0;
         if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) x -= 1;
         if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) x += 1;

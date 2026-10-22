@@ -1,11 +1,12 @@
 package com.yongsa.combat;
 
+import com.yongsa.config.GuardDef;
 import com.yongsa.config.HeroDef;
 import com.yongsa.config.SkillDefs;
 import com.yongsa.world.CollisionWorld;
 
 /**
- * 용사의 몸: 8방향 이동, 바라보는 방향, 회피·돌진, 쿨타임, 무적 (FR-맵-01, FR-전투-02~08).
+ * 용사의 몸: 8방향 이동, 바라보는 방향, 회피·돌진, 막기, 상태이상, 쿨타임, 무적 (FR-맵-01, FR-전투-02~08).
  * 체력·흡수한 힘은 model.Hero가 가진다.
  */
 public class HeroUnit extends Body {
@@ -16,6 +17,19 @@ public class HeroUnit extends Body {
 
     private final HeroDef def;
     private final SkillDefs skills;
+    private final GuardDef guardDef;
+
+    /** 막기 게이지(초), 막기 중인지, 깨진 뒤 남은 시간, 손 뗀 뒤 지난 시간. */
+    public float guardMeter;
+    public boolean guarding;
+    public float guardBroken;
+    private float guardIdle;
+    /** 막은 순간 연출. */
+    public float blockFlash;
+
+    /** 상태이상 남은 시간. */
+    public float poison, burn, shock, freeze;
+    private float freezeImmune;
 
     /** 바라보는 방향 (8방향, 정규화). 공격 방향이 된다. */
     public float dirX = 0, dirY = -1;
@@ -31,13 +45,15 @@ public class HeroUnit extends Body {
     public Attack.Kind swingKind = Attack.Kind.BASIC;
     public float mineTime;
 
-    public HeroUnit(HeroDef def, SkillDefs skills, float x, float y) {
+    public HeroUnit(HeroDef def, SkillDefs skills, GuardDef guard, float x, float y) {
         super(x, y, W, H);
         this.def = def;
         this.skills = skills;
+        this.guardDef = guard;
+        this.guardMeter = guard.max;
     }
 
-    public void update(float delta, float inX, float inY, CollisionWorld col) {
+    public void update(float delta, float inX, float inY, boolean guardHeld, CollisionWorld col) {
         animTime += delta;
         attackCooldown = Math.max(0, attackCooldown - delta);
         whirlCooldown = Math.max(0, whirlCooldown - delta);
@@ -47,6 +63,23 @@ public class HeroUnit extends Body {
         flash = Math.max(0, flash - delta);
         swingTime = Math.max(0, swingTime - delta);
         mineTime = Math.max(0, mineTime - delta);
+        blockFlash = Math.max(0, blockFlash - delta);
+        poison = Math.max(0, poison - delta);
+        burn = Math.max(0, burn - delta);
+        shock = Math.max(0, shock - delta);
+        freezeImmune = Math.max(0, freezeImmune - delta);
+        if (freeze > 0) {
+            freeze = Math.max(0, freeze - delta);
+            if (freeze == 0) freezeImmune = 1.0f;
+        }
+
+        updateGuard(delta, guardHeld && free() && freeze <= 0);
+
+        if (freeze > 0) {
+            moving = false;
+            updateKnockback(delta, col);
+            return;
+        }
 
         if (dodgeTime > 0 || dashTime > 0) {
             dodgeTime = Math.max(0, dodgeTime - delta);
@@ -62,10 +95,13 @@ public class HeroUnit extends Body {
             // 대각선도 직선과 같은 속도 (FR-맵-01)
             inX /= len;
             inY /= len;
-            dirX = inX;
-            dirY = inY;
-            updateFacing();
-            float speed = def.speed * (swingTime > 0 ? 0.6f : 1f);
+            // 막는 동안에는 바라보는 방향을 유지한 채 천천히 움직인다
+            if (!guarding) {
+                dirX = inX;
+                dirY = inY;
+                updateFacing();
+            }
+            float speed = def.speed * (swingTime > 0 ? 0.6f : 1f) * (guarding ? guardDef.moveMultiplier : 1f);
             col.move(body, inX * speed * delta, inY * speed * delta);
         }
         updateKnockback(delta, col);
@@ -77,9 +113,86 @@ public class HeroUnit extends Body {
         if (Math.abs(dirX) > 0.01f) faceLeft = dirX < 0;
     }
 
-    /** 회피·돌진 중이 아니면 행동할 수 있다. */
+    // ------------------------------------------------------------------ 막기
+
+    private void updateGuard(float delta, boolean held) {
+        if (guardBroken > 0) {
+            guardBroken = Math.max(0, guardBroken - delta);
+            guarding = false;
+            guardIdle = 0;
+            return;
+        }
+        if (held && guardMeter > 0) {
+            guarding = true;
+            guardIdle = 0;
+            guardMeter -= delta;
+            if (guardMeter <= 0) breakGuard();
+            return;
+        }
+        guarding = false;
+        guardIdle += delta;
+        if (guardIdle >= guardDef.regenDelay) guardMeter = Math.min(guardDef.max, guardMeter + guardDef.regenPerSecond * delta);
+    }
+
+    private void breakGuard() {
+        guardMeter = 0;
+        guarding = false;
+        guardBroken = guardDef.breakTime;
+    }
+
+    /** (fromX, fromY)에서 온 공격을 지금 막을 수 있는지: 막기 중이고 앞쪽에서 왔을 때. */
+    public boolean canBlock(float fromX, float fromY) {
+        if (!guarding) return false;
+        float dx = fromX - centerX(), dy = fromY - centerY();
+        float len = (float) Math.sqrt(dx * dx + dy * dy);
+        if (len < 1f) return true;
+        float cos = (dx * dirX + dy * dirY) / len;
+        return Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, cos)))) <= guardDef.frontArcDegrees / 2f;
+    }
+
+    /** 막았다: 게이지가 닳고 살짝 밀린다. 게이지가 바닥나면 막기가 깨진다. 깨졌으면 true. */
+    public boolean onBlocked(float fromX, float fromY, boolean heavy) {
+        guardMeter -= heavy ? guardDef.heavyHitCost : guardDef.hitCost;
+        blockFlash = 0.18f;
+        knockback(fromX, fromY, heavy ? 12 : 6);
+        if (guardMeter <= 0) {
+            breakGuard();
+            return true;
+        }
+        return false;
+    }
+
+    public float guardRatio() {
+        return guardMeter / guardDef.max;
+    }
+
+    // ------------------------------------------------------------------ 상태이상
+
+    public void applyPoison(float t) { poison = Math.max(poison, t); }
+    public void applyBurn(float t) { burn = t; }
+    public void applyShock(float t) { shock = t; }
+
+    /** 빙결은 걸려 있는 동안·풀린 직후 잠깐은 다시 걸리지 않는다. */
+    public boolean applyFreeze(float t) {
+        if (freeze > 0 || freezeImmune > 0) return false;
+        freeze = t;
+        guarding = false;
+        dodgeTime = dashTime = 0;
+        stopKnockback();
+        return true;
+    }
+
+    public boolean frozen() { return freeze > 0; }
+    /** 감전: Q·L 스킬을 못 쓴다. */
+    public boolean skillsSealed() { return shock > 0; }
+
+    public void clearStatuses() {
+        poison = burn = shock = freeze = freezeImmune = 0;
+    }
+
+    /** 회피·돌진·빙결 중이 아니면 행동할 수 있다. */
     public boolean free() {
-        return dodgeTime <= 0 && dashTime <= 0;
+        return dodgeTime <= 0 && dashTime <= 0 && freeze <= 0;
     }
 
     public boolean dashing() {
@@ -143,6 +256,10 @@ public class HeroUnit extends Body {
     public void resetTimers() {
         attackCooldown = whirlCooldown = dashCooldown = dodgeCooldown = 0;
         invincible = dodgeTime = dashTime = swingTime = 0;
+        guarding = false;
+        guardBroken = 0;
+        guardMeter = guardDef.max;
+        clearStatuses();
         stopKnockback();
     }
 

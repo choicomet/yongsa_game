@@ -2,7 +2,9 @@
 
 효과음
   전투   swing  hit  monster_die  hero_hurt  whirl  dash  dodge  shockwave  lightning  bounce
-  몬스터  bolt  slam  charge  nova  boss_roar  boss_down
+  몬스터  bolt  slam  charge  nova  boss_roar  boss_down  cast  summon  spike  tentacle  phase_shift
+  마룡   poison  poison_hit  thunder  ice_charge  ice_burst  freeze  fire_spin
+  막기   block  guard_break  denied  burst
   던전   door_lock  door_open  mine  ore_get  orb  portal  rest
   대장간  hammer  enhance_success  enhance_fail  destroy  awaken  absorb  craft  dismantle
   연출   unseal  crack
