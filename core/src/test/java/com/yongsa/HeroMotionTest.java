@@ -50,6 +50,31 @@ class HeroMotionTest {
         assertFalse(g.hero.moving, "Walking must not keep cycling during a tumble");
     }
 
+    @Test void facingHasEightDirections() {
+        assertEquals(Facing.RIGHT, Facing.of(1, 0));
+        assertEquals(Facing.UP_RIGHT, Facing.of(1, 1));
+        assertEquals(Facing.UP, Facing.of(0, 1));
+        assertEquals(Facing.UP_LEFT, Facing.of(-1, 1));
+        assertEquals(Facing.LEFT, Facing.of(-1, 0));
+        assertEquals(Facing.DOWN_LEFT, Facing.of(-1, -1));
+        assertEquals(Facing.DOWN, Facing.of(0, -1));
+        assertEquals(Facing.DOWN_RIGHT, Facing.of(1, -1));
+        assertEquals(Facing.RIGHT, Facing.of(1, .3f), "Within 22.5 degrees stays straight");
+        assertEquals(2, HeroMotion.row(Facing.UP_LEFT), "Diagonals reuse the side sprite row");
+        assertTrue(Facing.DOWN_LEFT.leftward());
+        assertFalse(Facing.UP_RIGHT.leftward());
+    }
+
+    @Test void diagonalInputFacesDiagonallyAtNormalSpeed() {
+        var g = session();
+        var input = new Controls(); input.moveX = 1; input.moveY = 1;
+        g.update(1 / 60f, input);
+        assertEquals(Facing.UP_RIGHT, g.hero.facing);
+        float r = (float) Math.sqrt(.5);
+        assertEquals(r, g.hero.aimX, .0001f);
+        assertEquals(r, g.hero.aimY, .0001f);
+    }
+
     @Test void blockedFeetDoNotContinueTheWalkCycle() {
         var g = session();
         var input = new Controls(); input.moveX = 1;

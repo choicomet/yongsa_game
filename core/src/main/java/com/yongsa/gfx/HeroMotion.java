@@ -7,8 +7,23 @@ public final class HeroMotion {
     public static final float WIDTH = 64, HEIGHT = 72, FOOT_OFFSET = 4;
     private HeroMotion() {}
 
+    /** 그림 줄: 0 앞, 1 뒤, 2 옆. 대각선 그림이 없어 대각선은 옆모습을 쓴다. */
     public static int row(Facing facing) {
         return facing == Facing.UP ? 1 : facing == Facing.DOWN ? 0 : 2;
+    }
+
+    /** 가만히 들고 있을 때 칼 각도. 대각선은 옆과 위/아래 사이로 기울인다. */
+    public static float restAngle(Facing facing) {
+        switch (facing) {
+            case RIGHT: return 55;
+            case LEFT: return 125;
+            case UP: return 100;
+            case UP_RIGHT: return 75;
+            case UP_LEFT: return 105;
+            case DOWN_RIGHT: return 40;
+            case DOWN_LEFT: return 140;
+            default: return 75;
+        }
     }
 
     public static int walkFrame(float time) {
