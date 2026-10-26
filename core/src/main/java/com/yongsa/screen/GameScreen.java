@@ -85,6 +85,10 @@ public class GameScreen extends ScreenAdapter {
         InputAdapter keys = new InputAdapter() {
             @Override
             public boolean keyDown(int keycode) {
+                if (keycode == Input.Keys.F2) {
+                    renderer.showCollision = !renderer.showCollision;
+                    return true;
+                }
                 if (keycode == Input.Keys.F1 && endingDelay < 0) {
                     toggleDevMenu();
                     return true;

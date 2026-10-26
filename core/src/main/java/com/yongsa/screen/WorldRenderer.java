@@ -77,6 +77,8 @@ public class WorldRenderer implements Disposable {
     /** GPT 길·땅 그림. 그림이 있으면 통로 타일과 통로 횃불 대신 쓴다. */
     private final PassagePainter passages;
     private RoomGates roomGates;
+    /** F2: 충돌 격자를 화면에 겹쳐 본다 (맵 점검용). 빨강 = 벽 경계, 초록 = 용사 발. */
+    public boolean showCollision;
     private final List<Corpse> corpses = new ArrayList<>();
     private final List<Ghost> ghosts = new ArrayList<>();
     private final List<Ring> rings = new ArrayList<>();
@@ -927,6 +929,7 @@ public class WorldRenderer implements Disposable {
         shapes.setProjectionMatrix(cam.combined);
         drawGlow();
         drawOverlays();
+        if (showCollision) drawCollision();
 
         batch.setProjectionMatrix(screenProj);
         batch.begin();
@@ -2280,6 +2283,29 @@ public class WorldRenderer implements Disposable {
     }
 
     // ───────────────────────── 체력 막대
+
+    /** 바닥 칸과 닿아 있는 벽 칸만 칠해 이동 경계를 보여 준다. 닫힌 문·광맥은 칸 판정에 없어 따로 막힌다. */
+    private void drawCollision() {
+        if (!map.usesCollisionGrid()) return;
+        int c = WorldMap.CELL;
+        int cx0 = (int) Math.floor(viewX0 / c), cx1 = (int) Math.ceil(viewX1 / c);
+        int cy0 = (int) Math.floor(viewY0 / c), cy1 = (int) Math.ceil(viewY1 / c);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.setColor(1f, 0.15f, 0.1f, 0.55f);
+        for (int cy = cy0; cy <= cy1; cy++) {
+            for (int cx = cx0; cx <= cx1; cx++) {
+                if (map.walkableCell(cx, cy)) continue;
+                if (map.walkableCell(cx - 1, cy) || map.walkableCell(cx + 1, cy)
+                        || map.walkableCell(cx, cy - 1) || map.walkableCell(cx, cy + 1))
+                    shapes.rect(cx * c, cy * c, c, c);
+            }
+        }
+        shapes.setColor(map.free(g.hero.x, g.hero.y, g.hero.hw, g.hero.hh) ? 0.2f : 1f, 0.9f, 0.2f, 0.7f);
+        shapes.ellipse(g.hero.x - g.hero.hw, g.hero.y - g.hero.hh, g.hero.hw * 2, g.hero.hh * 2, 24);
+        shapes.end();
+    }
 
     private void drawOverlays() {
         Gdx.gl.glEnable(GL20.GL_BLEND);

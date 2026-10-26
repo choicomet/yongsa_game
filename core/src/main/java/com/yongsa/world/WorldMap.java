@@ -62,6 +62,7 @@ public class WorldMap {
         for (LinkDef ld : def.links) buildLink(ld);
         buildCorridors();
         buildPaintedJoints();
+        gridChunks = null; // 이음 그림까지 다 놓인 뒤의 바닥으로 격자를 다시 만든다
         alignPaintedArrivals();
         buildCampProps();
     }
@@ -735,7 +736,7 @@ public class WorldMap {
      * 그림 방에서는 바닥 경계 다각형으로 정확히 보고, 닫힌 출구와 광맥 칸도 막는다.
      */
     public boolean free(float x, float y, float hw, float hh) {
-        if (def.passageScenes != null && !def.passageScenes.isEmpty()) return paintedFree(x, y, hw, hh);
+        if (usesCollisionGrid()) return paintedFree(x, y, hw, hh);
         int T = tileSize;
         int tx0 = (int) Math.floor((x - hw) / T), tx1 = (int) Math.floor((x + hw - 0.01f) / T);
         int ty0 = (int) Math.floor((y - hh) / T), ty1 = (int) Math.floor((y + hh - 0.01f) / T);
@@ -768,43 +769,119 @@ public class WorldMap {
         if(joint!=null) {
             Door door=jointDoors.get(joint);
             if(door.isClosed() && door.blocks(x,y,radius))return false;
-            if(door.link.corridor.closed() && (r!=door.room || door.along(x,y)>=0))return false;
-            return joint.allowsFoot(x,y,radius);
         }
-        if (r != null && r.allowsFoot(x, y, radius)) return true;
-        // The soft edge is a blend of two floors. Do not switch back to an old
-        // wall while the new paving is still dominant, or close an existing
-        // route early by treating the entire feather strip as opaque artwork.
-        // Camp facility footprints remain governed by the original camp scene.
-        if(r==null || r.type!=RoomType.CAMP)for(int i=paintedJoints.size()-1;i>=0;i--) {
-            var edge=paintedJoints.get(i);
-            if(edge.alpha(x,y)<.5f)continue;
-            Door door=jointDoors.get(edge);
-            if(!door.link.corridor.closed() && edge.allowsFoot(x,y,radius))return true;
-            break; // Respect the uppermost visible painting, not an older floor underneath.
-        }
-        for (Corridor c : corridors) {
-            if (x + radius < c.originX || x - radius > c.originX + c.widthPx
-                    || y + radius < c.originY || y - radius > c.originY + c.heightPx || c.closed()) continue;
-            if (c.allowsFoot(x, y, radius)) return true;
-            // At a doorway the foot straddles two polygons. Check their union only
-            // in that small overlap; never let the coarse minimap cells open a wall.
-            Door d = null;
-            for (Door end : new Door[]{c.link.doorA, c.link.doorB})
-                if (Math.hypot(x - end.footX, y - end.footY) < 2 * tileSize) { d = end; break; }
-            if (d == null || !onJoinedFloor(c, d.room, x, y)) continue;
-            boolean fits = true;
-            for (int i = 0; i < 32 && fits; i++) {
-                double angle = i * Math.PI / 16;
-                fits = onJoinedFloor(c, d.room, x + radius * (float) Math.cos(angle), y + radius * (float) Math.sin(angle));
-            }
-            if (fits) return true;
-        }
-        return false;
+        // 발(가로 hw, 세로 hh 의 타원)의 가운데와 둘레 16곳이 모두 바닥 칸 위여야 한다.
+        // 방·통로·이음 그림의 바닥을 한 격자로 합쳐 두었으므로 그림끼리 맞닿는 선에서 걸리지 않는다.
+        // 둘레는 발에 붙어 같이 움직이므로, 곧은 벽을 따라 걸을 때 칸 계단에 걸려 서지 않는다.
+        // 칸으로 굳힐 때 생기는 오차만큼 발을 줄여 잰다. 세로는 위에서 내려다보는 시점이라 발끝이
+        // 벽 그림에 조금 겹쳐도 자연스러우므로 한 칸 줄인다 (예전 다각형 판정의 통로 폭과 맞춘다).
+        float ax = Math.max(0, hw - CELL * .5f), ay = Math.max(0, hh - CELL);
+        if (!walkableAt(x, y)) return false;
+        for (int k = 0; k < FOOT_SAMPLES; k++)
+            if (!walkableAt(x + ax * FOOT_COS[k], y + ay * FOOT_SIN[k])) return false;
+        return true;
     }
 
-    private static boolean onJoinedFloor(Corridor c, Room r, float x, float y) {
-        return r.allowsFoot(x, y, 0) || c.allowsFoot(x, y, 0);
+    private static final int FOOT_SAMPLES = 16;
+    private static final float[] FOOT_COS = new float[FOOT_SAMPLES], FOOT_SIN = new float[FOOT_SAMPLES];
+    static {
+        for (int k = 0; k < FOOT_SAMPLES; k++) {
+            FOOT_COS[k] = (float) Math.cos(k * 2 * Math.PI / FOOT_SAMPLES);
+            FOOT_SIN[k] = (float) Math.sin(k * 2 * Math.PI / FOOT_SAMPLES);
+        }
+    }
+
+    /** 그림 맵이면 이동 판정을 충돌 격자로 한다. */
+    public boolean usesCollisionGrid() {
+        return def.passageScenes != null && !def.passageScenes.isEmpty();
+    }
+
+    private boolean walkableAt(float x, float y) {
+        return walkableCell((int) Math.floor(x / CELL), (int) Math.floor(y / CELL));
+    }
+
+    /** 충돌 격자 한 칸의 크기 (월드 픽셀). 그림의 바닥 경계를 이 크기의 칸으로 굳혀서 이동 판정에 쓴다. */
+    public static final int CELL = 4;
+    /** 타일 하나 안의 격자 칸들. 처음 물어볼 때 만든다 (걷는 곳만 계산). */
+    private GridChunk[] gridChunks;
+
+    private static final class GridChunk {
+        final boolean[] floor;
+        /** 이 칸이 속한 통로: 통로가 닫히면(봉인, 전투 잠금) 막힌다. 방 바닥이면 null. */
+        final Corridor[] owner;
+
+        GridChunk(int n) {
+            floor = new boolean[n];
+            owner = new Corridor[n];
+        }
+    }
+
+    /** 격자 칸 (cx, cy) 를 지금 지나갈 수 있는가. 닫힌 문·광맥은 paintedFree 가 따로 본다. */
+    public boolean walkableCell(int cx, int cy) {
+        int per = tileSize / CELL;
+        if (cx < 0 || cy < 0) return false;
+        int tx = cx / per, ty = cy / per;
+        if (!inBounds(tx, ty)) return false;
+        GridChunk chunk = gridChunk(tx, ty);
+        int i = (cx - tx * per) + (cy - ty * per) * per;
+        if (!chunk.floor[i]) return false;
+        Corridor c = chunk.owner[i];
+        return c == null || !c.closed();
+    }
+
+    private GridChunk gridChunk(int tx, int ty) {
+        if (gridChunks == null) gridChunks = new GridChunk[width * height];
+        GridChunk chunk = gridChunks[idx(tx, ty)];
+        if (chunk != null) return chunk;
+        int per = tileSize / CELL;
+        chunk = new GridChunk(per * per);
+        for (int y = 0; y < per; y++) {
+            for (int x = 0; x < per; x++) {
+                float px = tx * tileSize + (x + .5f) * CELL, py = ty * tileSize + (y + .5f) * CELL;
+                bakeCell(chunk, x + y * per, px, py);
+            }
+        }
+        gridChunks[idx(tx, ty)] = chunk;
+        return chunk;
+    }
+
+    /**
+     * 한 점이 그림 바닥인가를 정한다 (문·봉인이 모두 열렸다고 보고). 판정 순서는 그림을 그리는 순서와 같다:
+     * 이음 보수 그림 → 방 그림 → 이음의 부드러운 가장자리 → 통로 그림.
+     */
+    private void bakeCell(GridChunk chunk, int i, float px, float py) {
+        Room r = roomAt((int) Math.floor(px / tileSize), (int) Math.floor(py / tileSize));
+        var joint = jointAt(px, py);
+        if (joint != null) {
+            Door door = jointDoors.get(joint);
+            if (!joint.allowsFoot(px, py, 0)) return;
+            chunk.floor[i] = true;
+            // 방 쪽 바닥은 통로가 닫혀도 남는다
+            chunk.owner[i] = r == door.room && door.along(px, py) < 0 ? null : door.link.corridor;
+            return;
+        }
+        if (r != null && r.allowsFoot(px, py, 0)) {
+            chunk.floor[i] = true;
+            return;
+        }
+        if (r == null || r.type != RoomType.CAMP) for (int k = paintedJoints.size() - 1; k >= 0; k--) {
+            var edge = paintedJoints.get(k);
+            if (edge.alpha(px, py) < .5f) continue;
+            if (edge.allowsFoot(px, py, 0)) {
+                chunk.floor[i] = true;
+                chunk.owner[i] = jointDoors.get(edge).link.corridor;
+                return;
+            }
+            break; // 가장 위에 보이는 그림을 따른다
+        }
+        for (Corridor c : corridors) {
+            if (px < c.originX || px > c.originX + c.widthPx || py < c.originY || py > c.originY + c.heightPx) continue;
+            if (c.allowsFoot(px, py, 0)) {
+                chunk.floor[i] = true;
+                chunk.owner[i] = c;
+                return;
+            }
+        }
     }
 
     /**
