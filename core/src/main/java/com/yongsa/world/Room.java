@@ -21,6 +21,8 @@ public class Room {
     /** 그림을 놓는 자리와 크기 (월드 픽셀), 좌우 뒤집기. */
     public final float originX, originY, widthPx, heightPx;
     public final boolean flip;
+    /** 잡몹방 웨이브 수 (1 이면 한 번에 다 나온다). */
+    public int waves = 1;
     /** 그림 방: 칸 가운데가 바닥인가 / 벽에서 넉넉히 떨어진 안쪽인가. */
     private boolean[] floorMask, innerMask;
     private float centerX, centerY;

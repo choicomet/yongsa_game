@@ -1,0 +1,10 @@
+{
+  "captureEachVersion": 96,
+  "collisionSurfaces": 55,
+  "paintedJoins": 35,
+  "passages": 20,
+  "tests": 117,
+  "failures": 0,
+  "errors": 0,
+  "note": "Green probes show actual foot clearance. Red source-overlay probes at image edges/overlaps alone are not confirmed defects; runtime composite and locks determine the final result."
+}

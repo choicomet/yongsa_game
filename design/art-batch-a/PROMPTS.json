@@ -1,0 +1,51 @@
+{
+  "mode": "built-in image_gen",
+  "postprocessing": "None. Generated PNG files copied byte-for-byte; no image resize, repacking or recolor scripts.",
+  "accepted": [
+    {
+      "key": "A1-world",
+      "path": "assets/world/hero-harmony-v1.png",
+      "prompt": "Edit ONLY the hair color on all six poses of this exact game sprite sheet. Output exact 1536 by 1024 pixels, true transparent RGBA PNG. Convert the brown spiky hair to ivory white/silver with cool slate gray shadows, warm cream highlights, preserving every spike silhouette, strand group, expression and hair geometry. Keep EVERYTHING else pixel-for-pixel as closely as possible: pose positions, six pose silhouettes, red scarf, navy clothing, skin, eyes, belts, boots, dark colored outlines, scale, blank margins and existing alpha. This is a production drop-in replacement, NOT a redesigned character or a new layout. Absolutely no added words, symbols, background, ground shadows, glows or checkerboard. Do not rearrange, zoom, resize, reframe, shift feet, add frames or crop. Same 3 columns and 2 rows. Existing crop boxes are x 95,590,1085; y10 and512; width360 height500. All characters must remain fully within those same boxes. Change only hair color to white.",
+      "output": "exec-c5151eaf-8aee-402d-b839-bec56c880853.png"
+    },
+    {
+      "key": "A1-hd",
+      "path": "assets/hd/hero.png",
+      "prompt": "Edit ONLY the hair color on all six poses of this exact detailed game hero sprite sheet. Output exact 1536 by 1024 pixels, true transparent RGBA PNG. Convert all brown spiky hair into ivory white/silver hair with cool slate gray shadows and warm cream highlights. Preserve the original hair geometry and individual character poses and all non-hair pixels as closely as possible. Keep the exact original 3-column 2-row layout, size, position, foot location, margins, silhouettes, faces, red scarf, navy tunic, cream trim, brown belts and boots and transparent background. Do not redesign, enlarge, shift, crop or rearrange the characters. No text, no solid background, no glow or checkerboard. Production drop-in art replacement, only brown hair becomes white.",
+      "output": "exec-74a92d70-4732-497f-960e-5e0c0bc6c3b9.png"
+    },
+    {
+      "key": "A5-village",
+      "path": "assets/scenes/team/village.png",
+      "prompt": "Use case: style-transfer. Production game room background, EXACT 1536x1344 pixels, aspect8:7. Image1 is EDIT TARGET village layout; Image2 is STYLE REFERENCE only, existing central camp. Redraw the village into coherent natural pixel-art matching camp's crisp chunky painted pixel clusters and consistent dark outlines, but warm clear daytime instead of underground nighttime. Preserve image1's gameplay arrangement closely: FOUR timber plaster houses with terracotta roofs across upper edge, two to left and two right, building bases around y=.27; open north-center staircase at x=.50,y=.06 leading out top edge. Spacious walkable cobblestone and earth plaza. Stone well centered at (.50,.55), its footprint x.445-.555,y.55-.60; bakery stall lower left x.12-.25,y.54-.64; modest bell tower right x.86-.93,y.44-.69; four small lampposts at (.383,.38),(.618,.38),(.35,.84),(.65,.84). Pine trees and small wildflower patches around outer border. Break up monotonous tiled floor with sparse dirt paths, moss and uneven cobbles, but retain open visible traversable floor through most plaza. Six NPC foot positions must stay completely empty visible walkable floor: (.29,.69),(.40,.46),(.61,.67),(.73,.47),(.15,.45),(.77,.79). No people or baked characters or monsters. Do not add new large obstacles. No text, UI, grid, labels, watermarks. Top-down oblique view like existing camp reference, no horizon, no perspective vanishing point, no 3D render gloss or cinematic blur. Warm cozy lived-in hometown, ordinary medieval village, natural irregular details but visual readability. Full opaque rectangular scene, no vignette.",
+      "output": "exec-e399fd26-b7db-4670-b9e8-5099dcc2131b.png",
+      "nativeSize": [
+        1340,
+        1174
+      ]
+    }
+  ],
+  "held": {
+    "items": [
+      "A2-golem",
+      "A3-knight",
+      "A4-lich"
+    ],
+    "reason": "Generated boss atlases are 1586x992, not required 2048x1280. One native-size retry was also 1586x992. User requested no image scaling and to finish the village first. No boss output copied into game assets.",
+    "prompts": [
+      {
+        "key": "A2-golem",
+        "prompt": "Use case: precise-object-edit. Edit the supplied game animation atlas in-place. Output EXACTLY 2048x1280 RGBA with genuinely transparent background, no painted backdrop, no halo, no grid or labels. Preserve all 40 frames: 8 columns x 5 rows of 256x256, character grounded at local foot anchor (128,224). Preserve original small character size about 128px tall, original frame positions and large empty padding. Never enlarge sprites to fill cells. Keep left-facing oblique top-down pixel illustration style. Row 0 idle 4 then hurt 4; row 1 walk 8; row 2 basic attack 8; row 3 special attack 8; row 4 death 8. Preserve poses and frame timing except specified changes. Change the existing golem's material and details only: rough crumbled brown-gray stone and packed earth, jagged blue-black blackiron ore embedded into shoulders and fists, a few broken timber support and rail scraps integrated into body. Orange eyes and subdued orange core. It should belong to an old timber mine, not polished mechanical armor. Retain chunky weight and every existing walk, punch, ground-slam, collapse pose, same outline scale and foot positions."
+      },
+      {
+        "key": "A3-knight",
+        "prompt": "Use case: precise-object-edit. Edit the supplied game animation atlas in-place. Output EXACTLY 2048x1280 RGBA with genuinely transparent background, no painted backdrop, no halo, no grid or labels. Preserve all 40 frames: 8 columns x 5 rows of 256x256, character grounded at local foot anchor (128,224). Preserve original small character size about 128px tall, original frame positions and large empty padding. Never enlarge sprites to fill cells. Keep left-facing oblique top-down pixel illustration style. Row 0 idle 4 then hurt 4; row 1 walk 8; row 2 basic attack 8; row 3 special attack 8; row 4 death 8. Preserve poses and frame timing except specified changes. Change only visual design: darker blackened charcoal armor, deep blood-red cape instead of blue, red bloodmoon crystal instead of blue crystal, a clear red crescent moon emblem on shield replacing the gold cross. Sword blade remains steel; magic hit sparks and attack arc become restrained blood-red. Retain all existing 40 poses, sword and shield silhouette, frame placement, foot positions, death poses."
+      },
+      {
+        "key": "A4-lich",
+        "prompt": "Use case: precise-object-edit. Edit the supplied game animation atlas in-place. Output EXACTLY 2048x1280 RGBA with genuinely transparent background, no painted backdrop, no halo, no grid or labels. Preserve all 40 frames: 8 columns x 5 rows of 256x256, character grounded at local foot anchor (128,224). Preserve original small character size about 128px tall, original frame positions and large empty padding. Never enlarge sprites to fill cells. Keep left-facing oblique top-down pixel illustration style. Row 0 idle 4 then hurt 4; row 1 walk 8; row 2 basic attack 8; row 3 special attack 8; row 4 death 8. Preserve poses and frame timing except specified changes. Polish skeleton priest: preserve purple robes and aged gold trims, make ivory skeletal face clear and readable, cyan cores in purple magic. Retain first three rows and death row poses. ONLY fourth row (special attack eight frames): priest holds dark staff with cyan crystal head, raises staff in frames 1-4, plants staff tip into ground at frame5, violet/cyan energy pulses in frame6, returns to idle frames7-8. Ground-bone attack cue, not oversized magic circles. Keep body scale same as original and ground anchor local (128,224)."
+      }
+    ],
+    "retry": "MANDATORY NATIVE OUTPUT SIZE: width 2048 pixels, height 1280 pixels. Generate at 2048x1280 resolution, not 1586x992 or 1536x1024. The game cannot use a smaller image or an upscaled one. The previous attempt was 1586x992 and is rejected. Start from the original reference again at its actual original dimensions 2048x1280. Use case: precise-object-edit. Edit the supplied game animation atlas in-place. Output EXACTLY 2048x1280 RGBA with genuinely transparent background, no painted backdrop, no halo, no grid or labels. Preserve all 40 frames: 8 columns x 5 rows of 256x256, character grounded at local foot anchor (128,224). Preserve original small character size about 128px tall, original frame positions and large empty padding. Never enlarge sprites to fill cells. Keep left-facing oblique top-down pixel illustration style. Row 0 idle 4 then hurt 4; row 1 walk 8; row 2 basic attack 8; row 3 special attack 8; row 4 death 8. Preserve poses and frame timing except specified changes. Change the existing golem's material and details only: rough crumbled brown-gray stone and packed earth, jagged blue-black blackiron ore embedded into shoulders and fists, a few broken timber support and rail scraps integrated into body. Orange eyes and subdued orange core. It should belong to an old timber mine, not polished mechanical armor. Retain chunky weight and every existing walk, punch, ground-slam, collapse pose, same outline scale and foot positions. Use the full native 2048 by 1280 image canvas, exact 256-pixel cells. Preserve original pose scale and placement, pixel foot coordinates (128+256*column,224+256*row). Native pixel art, do not resize after generation."
+  }
+}

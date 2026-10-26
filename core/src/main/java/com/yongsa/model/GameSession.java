@@ -54,6 +54,7 @@ public class GameSession {
     /** 용사가 지금 서 있는 방, 캠프 문 밖이면 null. */
     private Room heroRoom;
     private Room fightRoom;
+    private Door entryDoor;
     private float entryX, entryY, outsideX, outsideY;
     /** 문을 지나 막 옮겨 왔으면 잠깐 다시 넘어가지 않는다. */
     private float doorCd;
@@ -112,9 +113,11 @@ public class GameSession {
         this.T = balance.tileSize;
 
         map.updateGates(state);
+        absorb.migrateImprints(state);
         if (state.mapVersion != WorldMap.VERSION) {
             // 방 배치가 바뀐 예전 저장: 광맥 자리와 이어하기 위치는 새 맵에 맞지 않는다
             for (RoomRecord rec : state.rooms.values()) rec.veins = null;
+            state.potionDrops.clear(); // 바닥 보상도 이전 맵의 월드 좌표다.
             state.resumeX = state.resumeY = 0;
             state.mapVersion = WorldMap.VERSION;
         }
@@ -124,12 +127,11 @@ public class GameSession {
         } else {
             hero.x = state.resumeX;
             hero.y = state.resumeY;
-            boolean onMap = map.roomAt(tileX(hero.x), tileY(hero.y)) != null || map.corridor(tileX(hero.x), tileY(hero.y));
-            if (!onMap || !Physics.free(map, hero.x, hero.y, hero, T)) placeAtCampSpawn();
+            if (!Physics.free(map, hero.x, hero.y, hero, T)) placeAtCampSpawn();
         }
         if (state.hp <= 0) state.hp = rules.maxHp(state);
         heroRoom = map.roomAt(tileX(hero.x), tileY(hero.y));
-        Corridor cor = map.corridorAt(tileX(hero.x), tileY(hero.y));
+        Corridor cor = map.corridorAtWorld(hero.x, hero.y);
         currentRoom = heroRoom != null ? heroRoom : cor != null ? cor.link.a : map.room("CAMP");
         if (heroRoom != null) {
             Door d = nearestDoor(heroRoom);
@@ -216,6 +218,7 @@ public class GameSession {
             }
             c = new Controls();
         }
+        noteOpenedSkills();
         updateHero(dt, c);
         if (checkDoors()) return;
         updateRooms();
@@ -224,6 +227,7 @@ public class GameSession {
         if (!justDied) updateProjectiles(dt);
         if (!justDied) updateHazards(dt);
         if (!justDied) resolveFight();
+        if (!justDied) updatePotionDrops(dt);
         if (inCamp() || inVillage()) {
             hpAcc += rules.maxHp(state) * balance.hero.campRegenFractionPerSec * dt;
             int add = (int) hpAcc;
@@ -246,8 +250,7 @@ public class GameSession {
 
     private void updateHero(float dt, Controls c) {
         hero.attackCd -= dt;
-        hero.skillCd -= dt;
-        hero.potionCd -= dt;
+        for (int i = 0; i < hero.skillCd.length; i++) hero.skillCd[i] -= dt;
         hero.rollCd -= dt;
         hero.mineCd -= dt;
         hero.invuln -= dt;
@@ -265,13 +268,14 @@ public class GameSession {
         }
 
         if (hero.rolling()) {
-            // 처음에 빠르고 끝으로 갈수록 느려진다 (평균 속도 = 거리 / 시간)
-            float total = balance.attack.rollTime;
-            float p = 1f - hero.rollT / total;
-            float speed = balance.attack.rollDistanceTiles * T / total * 2f * (1f - p);
-            Physics.move(map, hero, hero.rollX * speed * dt, hero.rollY * speed * dt, T);
-            hero.rollT -= dt;
-            hero.walkTime += dt;
+            // Integrate the deceleration curve over this frame, including the partial final frame.
+            float total = hero.rollTotal;
+            float left = Math.max(0, hero.rollT - dt);
+            float a = Math.max(0, 1f - hero.rollT / total), z = 1f - left / total;
+            float distance = balance.attack.rollDistanceTiles * T * ((2*z-z*z) - (2*a-a*a));
+            Physics.move(map, hero, hero.rollX * distance, hero.rollY * distance, T);
+            hero.rollT = left;
+            hero.moving = false;
             return;
         }
 
@@ -282,21 +286,27 @@ public class GameSession {
         float mx = c.moveX, my = c.moveY;
         float len = (float) Math.sqrt(mx * mx + my * my);
         hero.moving = len > 0.01f;
+        if (hero.moving) { mx /= len; my /= len; }
+        if (c.roll && hero.rollCd <= 0) {
+            roll(mx, my);
+            return;
+        }
         if (hero.moving) {
-            mx /= len;
-            my /= len; // 대각선도 직선과 같은 속도 (FR-맵-01)
             hero.aimX = mx;
             hero.aimY = my;
             hero.facing = Facing.of(mx, my);
             float speed = balance.hero.moveSpeedTiles * T * (hero.slowT > 0 ? 1f - balance.monster.slowRatio : 1f);
+            float oldX = hero.x, oldY = hero.y;
             Physics.move(map, hero, mx * speed * dt, my * speed * dt, T);
-            hero.walkTime += dt;
+            float dx = hero.x - oldX, dy = hero.y - oldY;
+            float travelled = (float) Math.sqrt(dx * dx + dy * dy);
+            hero.moving = travelled > .001f;
+            // A wall or slow pool must not leave the legs running at full speed.
+            hero.walkTime += travelled / (balance.hero.moveSpeedTiles * T);
         }
         autoFace();
 
-        if (c.potion) drinkPotion();
-        if (c.roll && hero.rollCd <= 0) roll(mx, my);
-        else if (c.skill) useSkill();
+        if (c.skill >= 0) useSkill(c.skill);
         else if (c.attack && hero.attackCd <= 0) basic();
     }
 
@@ -347,26 +357,36 @@ public class GameSession {
         events.add(GameEvent.sound("swing"));
     }
 
-    // ───────────────────────── 검 스킬 (Q)
+    // ───────────────────────── 검 스킬 (L, U, I, O)
 
     private float skillMsgCd;
 
-    /** 들고 있는 검의 스킬을 쓴다. 아직 안 열렸으면 언제 열리는지 알려 준다. */
-    private void useSkill() {
-        Balance.SkillDef sk = rules.skill(state);
-        if (sk == null || !rules.skillUnlocked(state)) {
+    /** 스킬 칸 키 이름 (화면 안내용). */
+    public static final String[] SKILL_KEYS = {"L", "U", "I", "O"};
+
+    /**
+     * 스킬 칸 하나를 쓴다. 칸은 검 스킬이 열린 차례대로 채워진다 (+10 강화·각성 또는 흡수).
+     * 흡수해서 익힌 스킬은 어떤 검을 들어도 쓰고, 아니면 그 검을 들고 있어야 쓴다.
+     */
+    private void useSkill(int index) {
+        if (index < 0 || index >= Rules.SKILL_SLOTS) return;
+        Rules.SkillSlot slot = rules.skillSlots(state)[index];
+        if (slot == null || !slot.usable) {
             if (skillMsgCd <= 0) {
                 skillMsgCd = 1.5f;
-                events.add(GameEvent.toast(sk == null ? "봉인된 성검에는 스킬이 없다. 광물로 검을 만들자"
-                        : "+" + balance.enhance.skillUnlockLevel + " 까지 강화하면 「" + sk.name + "」을(를) 쓸 수 있다"));
+                events.add(GameEvent.toast(slot == null ? (index == Rules.HOLY_SLOT ? "성검의 봉인을 풀면 열리는 칸이다"
+                        : "검을 +" + balance.enhance.skillUnlockLevel + " 까지 강화하면 스킬 칸이 열린다")
+                        : index == Rules.HOLY_SLOT ? "「" + slot.def.name + "」은(는) 깨어난 성검을 들어야 쓴다"
+                        : "「" + slot.def.name + "」은(는) " + balance.weapon(slot.weaponId).name + "을 들거나, 대장간에서 흡수하면 늘 쓴다"));
             }
             return;
         }
-        if (hero.skillCd > 0) return;
-        hero.skillCd = sk.cooldown;
+        Balance.SkillDef sk = slot.def;
+        if (hero.skillCd[index] > 0) return;
+        hero.skillCd[index] = sk.cooldown;
         hero.swingKind = 1;
         hero.swingT = 0.25f;
-        boolean aw = rules.skillAwakened(state);
+        boolean aw = slot.awakened;
         int n = aw ? sk.awakenedCount : sk.count;
         float mult = sk.multiplier * (aw ? sk.awakenedMultiplier : 1f);
         if ("strike".equals(sk.kind)) {
@@ -424,6 +444,17 @@ public class GameSession {
         e.dirY = hero.aimY;
         events.add(e);
         events.add(GameEvent.sound("strike".equals(sk.kind) ? "cast" : "slam"));
+    }
+
+    /** 새로 열린 검 스킬을 빈 칸에 넣고 어느 키인지 알려 준다. */
+    private void noteOpenedSkills() {
+        int before = state.skillOrder.size();
+        if (!rules.noteOpenedSkills(state)) return;
+        for (int i = before; i < state.skillOrder.size(); i++) {
+            Balance.SkillDef sk = balance.weapon(state.skillOrder.get(i)).skill;
+            events.add(GameEvent.toast("새 스킬 「" + sk.name + "」 열림: " + SKILL_KEYS[i] + " 키"));
+        }
+        events.add(GameEvent.sound("awaken"));
     }
 
     private float dist2(Monster m) {
@@ -491,14 +522,20 @@ public class GameSession {
         if (len > 0.01f) {
             hero.rollX = mx;
             hero.rollY = my;
+            hero.aimX = mx;
+            hero.aimY = my;
         } else {
             hero.rollX = hero.aimX;
             hero.rollY = hero.aimY;
         }
         hero.rollCd = balance.attack.rollTime + balance.attack.rollCooldown;
+        hero.rollFacing = Facing.of(hero.rollX, hero.rollY);
+        hero.facing = hero.rollFacing;
+        hero.moving = false;
         hero.rollT = hero.rollTotal = balance.attack.rollTime;
         hero.invuln = Math.max(hero.invuln, balance.attack.rollInvulnTime);
         hero.swingT = 0;
+        hero.mineSwingT = 0;
         events.add(GameEvent.sound("dash"));
     }
 
@@ -571,9 +608,11 @@ public class GameSession {
             state.stats.monstersKilled++;
             GameEvent died = GameEvent.fx(GameEvent.Type.MONSTER_DIED, m.x, m.y);
             died.sprite = m.def.sprite;
-            died.size = m.finalBoss ? 2.0f : m.boss ? 1.7f : 1f;
+            died.size = m.finalBoss ? (m.phase2 ? 2.3f : 2.0f) : m.boss ? 1.7f : 1f;
             died.boss = m.boss;
             died.flip = m.dirX < -0.2f;
+            died.dirX = m.dirX;
+            died.phase2 = m.phase2;
             events.add(died);
             if (rules.hasAbility(state, "bloodmoon")) {
                 int heal = Math.max(1, Math.round(rules.maxHp(state) * 0.05f));
@@ -637,13 +676,15 @@ public class GameSession {
     // ───────────────────────── 방
 
     private void updateRooms() {
+        com.yongsa.world.Corridor walking = map.corridorAtWorld(hero.x, hero.y);
+        if (walking != null && !state.seenCorridors.contains(walking.key())) state.seenCorridors.add(walking.key());
         Room r = map.roomAt(tileX(hero.x), tileY(hero.y));
         if (r != heroRoom) {
             Room prevDungeonRoom = currentRoom;
             heroRoom = r;
+            if (r != null) setEntry(nearestDoor(r));
             if (r != null && r != currentRoom) {
                 currentRoom = r;
-                setEntry(nearestDoor(r));
                 state.room(r.id).visited = true;
                 if (r.type == RoomType.ORE) ensureVeins(r);
                 if (r.dungeonId != null && r.type != RoomType.FINAL
@@ -670,20 +711,28 @@ public class GameSession {
         }
     }
 
-    /** 문 앞에서 방 안으로 한 걸음 들어섰나 (그러면 문이 잠기고 싸움이 시작된다). */
+    /** Cross the entry plane inward, then take one step beyond the safe arrival point. */
     private boolean steppedIn(Room r) {
         int tx = tileX(hero.x), ty = tileY(hero.y);
         if (r.scene == null) return r.insideWithMargin(tx, ty, 1);
         if (!r.inside(tx, ty)) return false;
+        if (entryDoor != null && entryDoor.room == r) {
+            // A radial distance also grows when walking sideways along a wide doorway.
+            // Only inward progress counts, including for left/right and upper entrances.
+            float arrivalDepth = -entryDoor.along(entryDoor.arriveX, entryDoor.arriveY);
+            float clearance = Math.max(2.6f*T, arrivalDepth + .5f*T);
+            if (entryDoor.along(hero.x, hero.y) > -clearance) return false;
+        }
         for (Door d : r.doors) {
             if (d.dead()) continue;
-            float dx = hero.x - d.footX, dy = hero.y - d.footY;
-            if (dx * dx + dy * dy < (2.6f * T) * (2.6f * T)) return false;
+            // Do not close another nearby exit through the hero's footprint either.
+            if (d.blocks(hero.x, hero.y, Math.max(hero.hw, hero.hh) + .5f*T)) return false;
         }
         return true;
     }
 
     private void setEntry(Door d) {
+        entryDoor = d;
         if (d == null) {
             entryX = outsideX = hero.x;
             entryY = outsideY = hero.y;
@@ -775,8 +824,14 @@ public class GameSession {
         return best;
     }
 
+    /** 이 싸움에서 아직 안 나온 웨이브 수. */
+    private int wavesLeft;
+    private int waveTotal;
+
     private void startFight(Room r) {
         fightRoom = r;
+        waveTotal = r.type == RoomType.MOB ? r.waves : 1;
+        wavesLeft = waveTotal - 1;
         r.setFightLock(true);
         monsters.clear();
         projectiles.clear();
@@ -802,8 +857,31 @@ public class GameSession {
             for (Monster m : monsters) if (m.finalBoss && !m.dead) speech(m, "봉인을 풀고 여기까지 내려오다니. 어디 한번 놀아 주마.");
             return;
         }
-        events.add(new GameEvent(GameEvent.Type.ROOM_LOCKED));
-        events.add(GameEvent.sound("door"));
+        roomGateEvent(GameEvent.Type.ROOM_LOCKED, r);
+        events.add(GameEvent.sound("gateClose_" + r.dungeonId));
+    }
+
+    private void roomGateEvent(GameEvent.Type type, Room room) {
+        GameEvent e = new GameEvent(type);
+        e.text = room.id;
+        e.dungeonId = room.dungeonId;
+        e.boss = room.type != RoomType.MOB;
+        events.add(e);
+    }
+
+    /** 다음 웨이브: 한 무리를 다 잡으면 조금 작은 무리가 다시 나온다 (지용 버전). */
+    private void nextWave(Room r) {
+        wavesLeft--;
+        monsters.removeIf(m -> m.dead);
+        DungeonDef d = balance.dungeon(r.dungeonId);
+        int n = Math.max(2, d.mobsPerRoom - 1);
+        for (int i = 0; i < n; i++) spawn(r, d.mob, false, false, false);
+        int wave = waveTotal - wavesLeft;
+        GameEvent e = new GameEvent(GameEvent.Type.WAVE_STARTED);
+        e.text = "몬스터가 또 몰려온다!  웨이브 " + wave + " / " + waveTotal;
+        e.amount = wave;
+        events.add(e);
+        events.add(GameEvent.sound("cast"));
     }
 
     private void spawn(Room r, Balance.MonsterDef def, boolean boss, boolean fin, boolean farSide) {
@@ -861,6 +939,10 @@ public class GameSession {
     private void resolveFight() {
         if (fightRoom == null) return;
         for (Monster m : monsters) if (!m.dead) return;
+        if (wavesLeft > 0) {
+            nextWave(fightRoom);
+            return;
+        }
         Room r = fightRoom;
         fightRoom = null;
         r.setFightLock(false);
@@ -871,8 +953,8 @@ public class GameSession {
         blindT = 0;
         hero.stunT = 0;
         state.room(r.id).cleared = true;
-        events.add(GameEvent.sound("door"));
-        events.add(new GameEvent(GameEvent.Type.ROOM_CLEARED));
+        if (r.type != RoomType.FINAL) events.add(GameEvent.sound("gateOpen_" + r.dungeonId));
+        roomGateEvent(GameEvent.Type.ROOM_CLEARED, r);
         if (r.type == RoomType.BOSS) {
             DungeonDef d = balance.dungeon(r.dungeonId);
             revived.remove(d.id);
@@ -911,26 +993,27 @@ public class GameSession {
         }
     }
 
-    /** 포션을 마신다 (R): 최대 체력의 일부를 채운다. */
-    private void drinkPotion() {
-        if (hero.potionCd > 0) return;
+    private float potionMsgCd;
+
+    /** 바닥의 포션 위를 지나가면 주워 바로 마신다. 체력이 가득하면 그대로 남는다. */
+    private void updatePotionDrops(float dt) {
+        potionMsgCd -= dt;
         int max = rules.maxHp(state);
-        if (state.potions <= 0) {
-            events.add(GameEvent.toast("포션이 없다. 던전의 보물상자에서 얻을 수 있다"));
-            hero.potionCd = 0.5f;
-            return;
+        float reach = balance.potion.pickupRadiusTiles * T;
+        for (java.util.Iterator<float[]> it = state.potionDrops.iterator(); it.hasNext(); ) {
+            float[] p = it.next();
+            if (Math.hypot(p[0] - hero.x, p[1] - hero.y) > reach) continue;
+            if (state.hp >= max) {
+                if (potionMsgCd <= 0) events.add(GameEvent.toast("체력이 가득해서 포션은 남겨 둔다"));
+                potionMsgCd = 4f;
+                continue;
+            }
+            it.remove();
+            int heal = Math.min(max - state.hp, Math.max(1, Math.round(max * balance.potion.healRatio)));
+            state.hp += heal;
+            events.add(GameEvent.floatText(hero.x, hero.y + 40, "+" + heal, GameEvent.Tone.HEAL));
+            events.add(GameEvent.sound("potion"));
         }
-        if (state.hp >= max) {
-            events.add(GameEvent.toast("체력이 가득하다"));
-            hero.potionCd = 0.5f;
-            return;
-        }
-        state.potions--;
-        int heal = Math.min(max - state.hp, Math.max(1, Math.round(max * balance.potion.healRatio)));
-        state.hp += heal;
-        hero.potionCd = balance.potion.cooldown;
-        events.add(GameEvent.floatText(hero.x, hero.y + 40, "+" + heal, GameEvent.Tone.HEAL));
-        events.add(GameEvent.sound("potion"));
     }
 
     private static int indexOf(String dungeonId) {
@@ -1566,7 +1649,8 @@ public class GameSession {
     /** 실명 (해골 사제): 쿨타임이 지났으면 화면을 어둡게 한다. */
     private void blind(Monster m) {
         Balance.MonsterCfg mc = balance.monster;
-        if (!"warden".equals(m.def.sprite) || blindCd > 0 || mc.blindSeconds <= 0) return;
+        // 실명은 뼈 가시를 쓰는 보스(선우 버전 리치)만 건다
+        if (m.def.patterns == null || !m.def.patterns.contains("bonespike") || blindCd > 0 || mc.blindSeconds <= 0) return;
         blindT = mc.blindSeconds;
         blindCd = mc.blindCooldown;
         events.add(GameEvent.toast("앞이 캄캄해졌다! 바닥의 빛을 보고 피하자"));
@@ -1852,15 +1936,21 @@ public class GameSession {
         if (rec.veins != null) return;
         Balance.MiningCfg mc = balance.mining;
         boolean cleared = state.bossDefeated(r.dungeonId);
-        int min = cleared ? mc.veinsMinCleared : mc.veinsMin;
-        int max = cleared ? mc.veinsMaxCleared : mc.veinsMax;
-        int count = min + random.nextInt(max - min + 1);
-        int guarantee = state.firstOreRoomDone ? 0 : mc.firstOreRoomGuarantee;
+        int count = cleared ? mc.veinsCleared : mc.veins;
+        int min = cleared ? mc.oreTotalMinCleared : mc.oreTotalMin;
+        int max = cleared ? mc.oreTotalMaxCleared : mc.oreTotalMax;
+        int total = min + random.nextInt(max - min + 1);
+        if (!state.firstOreRoomDone) total = Math.max(total, mc.firstOreRoomGuarantee);
         OreType ore = OreType.valueOf(balance.dungeon(r.dungeonId).ore);
-        rec.veins = VeinGenerator.generate(r, random, count, ore, mc.orePerVeinMin, mc.orePerVeinMax,
-                mc.hitsToBreak, guarantee);
+        if (r.scene != null && !r.scene.oreSpots.isEmpty()) {
+            // 그림 속 광석 덩어리 앞에 몇 개만, 대신 한 곳에서 많이 나온다
+            rec.veins = VeinGenerator.generateAtSpots(r, random, count, ore, total, mc.hitsToBreak, T);
+        } else {
+            rec.veins = VeinGenerator.generate(r, random, count, ore, 1, 1, mc.hitsToBreak, 0);
+            VeinGenerator.spread(rec.veins, total, random);
+        }
         state.firstOreRoomDone = true;
-        for (Vein v : rec.veins) map.setBlocked(v.tileX, v.tileY, true);
+        for (Vein v : rec.veins) if (!v.painted()) map.setBlocked(v.tileX, v.tileY, true);
     }
 
     private void applyVeinOverlay() {
@@ -1869,7 +1959,7 @@ public class GameSession {
             clearOverlay(r);
             RoomRecord rec = state.rooms.get(r.id);
             if (rec != null && rec.veins != null) {
-                for (Vein v : rec.veins) map.setBlocked(v.tileX, v.tileY, true);
+                for (Vein v : rec.veins) if (!v.painted()) map.setBlocked(v.tileX, v.tileY, true);
             }
         }
     }
@@ -2036,11 +2126,12 @@ public class GameSession {
         if (hero.mineCd > 0) return;
         hero.mineCd = 0.28f;
         hero.mineSwingT = 0.22f;
-        float dx = center(v.tileX) - hero.x, dy = center(v.tileY) - hero.y;
+        float vx = v.painted() ? v.spotX : center(v.tileX), vy = v.painted() ? v.spotY : center(v.tileY);
+        float dx = vx - hero.x, dy = vy - hero.y;
         if (Math.abs(dx) + Math.abs(dy) > 1) hero.facing = Facing.of(dx, dy);
         v.hitsLeft--;
         events.add(GameEvent.sound("mine"));
-        GameEvent fx = GameEvent.fx(GameEvent.Type.MINE_FX, center(v.tileX), center(v.tileY));
+        GameEvent fx = GameEvent.fx(GameEvent.Type.MINE_FX, vx, vy);
         fx.ore = v.ore;
         fx.size = v.hitsLeft;
         events.add(fx);
@@ -2048,7 +2139,7 @@ public class GameSession {
         state.addOre(v.ore, v.amount);
         state.stats.oreMined += v.amount;
         veinsOf(heroRoom).remove(v);
-        map.setBlocked(v.tileX, v.tileY, false);
+        if (!v.painted()) map.setBlocked(v.tileX, v.tileY, false);
         GameEvent e = new GameEvent(GameEvent.Type.ORE_GAINED);
         e.ore = v.ore;
         e.amount = v.amount;
@@ -2175,7 +2266,7 @@ public class GameSession {
         return new int[]{cx, cy};
     }
 
-    /** 상자를 열면 그 던전 광물과 포션을 받는다 (보스방은 광물이 많고, 잡몹방은 조금). */
+    /** 상자를 열면 그 던전 광물을 받고, 상자 앞 바닥에 회복 포션이 떨어진다 (보스방은 광물이 많고, 잡몹방은 조금). */
     public void openChest(Room r) {
         if (!hasChest(r)) return;
         state.chests.remove(r.id);
@@ -2185,9 +2276,11 @@ public class GameSession {
         int lo = boss ? rw.chestOreMin : rw.mobChestOreMin, hi = boss ? rw.chestOreMax : rw.mobChestOreMax;
         int n = lo + random.nextInt(Math.max(1, hi - lo + 1));
         state.addOre(ore, n);
-        int potions = Math.max(0, Math.min(boss ? rw.bossChestPotions : rw.mobChestPotions, balance.potion.max - state.potions));
-        state.potions += potions;
+        int potions = boss ? rw.bossChestPotions : rw.mobChestPotions;
+        dropPotions(chestX(r), chestY(r), potions);
         GameEvent e = new GameEvent(GameEvent.Type.CHEST_OPENED);
+        e.dungeonId = r.dungeonId;
+        e.opened = r.id;
         e.ore = ore;
         e.amount = n;
         e.potions = potions;
@@ -2197,6 +2290,20 @@ public class GameSession {
         events.add(GameEvent.floatText(e.x, e.y, ore.displayName + " +" + n, GameEvent.Tone.ORE));
         events.add(GameEvent.sound("ore"));
         events.add(new GameEvent(GameEvent.Type.AUTOSAVE));
+    }
+
+    /** 상자 앞 바닥에 포션 n 개를 떨어뜨린다 (설 수 있는 자리에). */
+    private void dropPotions(float cx, float cy, int n) {
+        float[][] offs = {{0, -1.2f}, {-1.1f, -0.9f}, {1.1f, -0.9f}, {0, -2.2f}, {-1.4f, 0}, {1.4f, 0}};
+        int placed = 0;
+        for (float[] o : offs) {
+            if (placed >= n) break;
+            float x = cx + o[0] * T, y = cy + o[1] * T;
+            if (!map.free(x, y, hero.hw, hero.hh)) continue;
+            state.potionDrops.add(new float[]{x, y});
+            placed++;
+        }
+        for (; placed < n; placed++) state.potionDrops.add(new float[]{cx, cy - T});
     }
 
     /** 침대에 눕는다: 화면이 어두워지는 동안 쉬고 (useBed) 다시 밝아지면 일어난다. */

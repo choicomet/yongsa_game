@@ -1,0 +1,240 @@
+{
+  "baseline": "6f406a6",
+  "date": "2026-10-21",
+  "sites": [
+    {
+      "id": "entry-CAMP-L1",
+      "previous": "다시 그리기",
+      "resolution": "separate-cave-transition",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-CAMP-L1",
+      "previous": "다시 그리기",
+      "resolution": "separate-cave-transition",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-L1-L2",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-L1-L8",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-L1-L8",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-L2-L3",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-L3-L4",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-L3-L4",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-L5-L7",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-L5-L7",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-L7-L6",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-CAMP-R1",
+      "previous": "다시 그리기",
+      "resolution": "separate-cave-transition",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-CAMP-R1",
+      "previous": "다시 그리기",
+      "resolution": "separate-cave-transition",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-R1-R2",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-R2-R7",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-R2-R7",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-R7-R3",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-R7-R3",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-R3-R4",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-R3-R4",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-R3-R5",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-R3-R5",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-R5-R6",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-R5-R6",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-CAMP-T1",
+      "previous": "다시 그리기",
+      "resolution": "separate-cave-transition",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-CAMP-T1",
+      "previous": "부분 보정",
+      "resolution": "separate-cave-transition",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-T1-T2",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-T1-T2",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-T2-T3",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-T2-T3",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-T3-T4",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-T3-T4",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-T3-T5",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-T3-T5",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-T5-T7",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-T5-T7",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-T7-T6",
+      "previous": "다시 그리기",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "exit-T7-T6",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    },
+    {
+      "id": "entry-CAMP-V",
+      "previous": "부분 보정",
+      "resolution": "repaint-and-collision",
+      "status": "implemented"
+    }
+  ]
+}

@@ -4,13 +4,12 @@ package com.yongsa.model;
 public class Controls {
     public float moveX, moveY;
     public boolean attack, roll, interact;
-    /** 검 스킬 (Q). */
-    public boolean skill;
-    /** 포션 마시기 (R). */
-    public boolean potion;
+    /** 누른 스킬 칸 (0=L, 1=U, 2=I, 3=O). 안 눌렀으면 -1. */
+    public int skill = -1;
 
     public void clear() {
         moveX = moveY = 0;
-        attack = roll = interact = skill = potion = false;
+        attack = roll = interact = false;
+        skill = -1;
     }
 }

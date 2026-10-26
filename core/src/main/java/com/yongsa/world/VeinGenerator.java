@@ -11,7 +11,8 @@ import java.util.Random;
 
 /**
  * 광물방의 광맥을 무작위로 놓는다 (FR-채집-03, 04, 09).
- * 아무 좌표가 아니라 후보 칸(벽에서 한 칸, 문 앞 두 칸을 비운 바닥) 중에서 뽑고,
+ * 그림 광물방은 그림 속 광석 덩어리 앞에만 놓는다 ({@link #generateAtSpots}).
+ * 자리가 정해지지 않은 방은 후보 칸(벽에서 한 칸, 문 앞 두 칸을 비운 바닥) 중에서 뽑고,
  * 광맥끼리 붙지 않게 한다. 뽑은 뒤 입구에서 넓이 우선 탐색(BFS)으로
  * 모든 문과 모든 광맥에 닿는지 검사하고, 막히면 다시 뽑는다.
  */
@@ -53,6 +54,53 @@ public final class VeinGenerator {
             return veins;
         }
         throw new IllegalStateException("광맥을 놓을 자리가 없습니다: " + room.id);
+    }
+
+    /**
+     * 그림 광물방: 광맥은 그림 속 광석 덩어리(scene.oreSpots) 바로 앞 바닥에만 놓는다.
+     * 자리 중 count 곳만 골라 total 개를 나눠 담는다. 광석 덩어리는 그림에 있으니 칸을 막지 않는다.
+     */
+    public static List<Vein> generateAtSpots(Room room, Random rnd, int count, OreType ore,
+                                             int total, int hits, int tileSize) {
+        List<float[]> spots = new ArrayList<>(room.scene.oreSpots);
+        Collections.shuffle(spots, rnd);
+        List<Vein> veins = new ArrayList<>();
+        List<int[]> used = new ArrayList<>();
+        for (float[] spot : spots) {
+            if (veins.size() >= count) break;
+            float wx = room.sceneX(spot[0]), wy = room.sceneY(spot[1]);
+            int[] best = null;
+            float bestD = 5.5f * tileSize; // 광석 덩어리에서 너무 먼 바닥이면 그 자리는 쓰지 않는다
+            for (int y = room.y0; y <= room.y1; y++) {
+                for (int x = room.x0; x <= room.x1; x++) {
+                    if (!room.inside(x, y) || nearDoor(room, x, y)) continue;
+                    int[] c = {x, y};
+                    if (touches(used, c)) continue;
+                    float d = (float) Math.hypot((x + 0.5f) * tileSize - wx, (y + 0.5f) * tileSize - wy);
+                    if (d < bestD) {
+                        bestD = d;
+                        best = c;
+                    }
+                }
+            }
+            if (best == null) continue;
+            used.add(best);
+            Vein v = new Vein(best[0], best[1], ore, 0, hits);
+            v.spotX = wx;
+            v.spotY = wy;
+            veins.add(v);
+        }
+        spread(veins, total, rnd);
+        return veins;
+    }
+
+    /** total 개를 광맥에 고르게 나눈다 (나머지는 무작위로 한 개씩). */
+    public static void spread(List<Vein> veins, int total, Random rnd) {
+        if (veins.isEmpty()) return;
+        for (Vein v : veins) v.amount = total / veins.size();
+        List<Vein> order = new ArrayList<>(veins);
+        Collections.shuffle(order, rnd);
+        for (int i = 0; i < total % veins.size(); i++) order.get(i).amount++;
     }
 
     /** 바닥 경계에서 한 칸 떨어지고, 출구 앞 두 칸을 비운 바닥 칸. */

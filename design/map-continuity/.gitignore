@@ -1,0 +1,3 @@
+# Full-resolution intermediate captures remain local. Review JPGs and layouts are versioned.
+before/*.png
+after/*.png

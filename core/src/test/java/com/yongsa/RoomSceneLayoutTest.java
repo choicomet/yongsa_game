@@ -15,7 +15,7 @@ class RoomSceneLayoutTest {
 
     @Test void sourceImagesMatchGeometryAndEveryAnchorFitsFeet() throws Exception {
         RoomSceneLayout data = data();
-        assertEquals(21, data.scenes.size());
+        assertEquals(29, data.scenes.size());
         for (var s : data.scenes) {
             var image = ImageIO.read(Path.of("assets", s.image).toFile());
             assertEquals(s.pixelWidth, image.getWidth(), s.id);

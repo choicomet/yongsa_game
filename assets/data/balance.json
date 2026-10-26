@@ -28,8 +28,8 @@
   "reward": { "chestOreMin": 30, "chestOreMax": 40, "bossChestPotions": 1,
               "mobChestChance": 0.3, "mobChestOreMin": 3, "mobChestOreMax": 6, "mobChestPotions": 1 },
 
-  "_potion": "던전 상자에서 얻는 회복 포션. R 로 마신다. 최대 체력의 healRatio 만큼 회복, 최대 max 개까지 들 수 있다",
-  "potion": { "healRatio": 0.4, "max": 5, "cooldown": 1.0 },
+  "_potion": "던전 상자를 열면 상자 앞 바닥에 회복 포션이 떨어진다. 지나가며 주우면(pickupRadiusTiles 칸 안) 바로 최대 체력의 healRatio 만큼 회복. 체력이 가득하면 줍지 않고 남는다 (들고 다니지 않는다)",
+  "potion": { "healRatio": 0.4, "pickupRadiusTiles": 0.8 },
 
   "weapons": [
     { "id": "holy_sealed", "name": "봉인된 성검", "baseAttack": 10, "perLevel": 0, "craftCost": 0, "enhanceable": false, "holy": true },
@@ -73,17 +73,18 @@
     "dismantleRefund": 3,
     "hammerSeconds": 0.6,
     "awakenSeconds": 1.5,
-    "skillUnlockLevel": 5
+    "skillUnlockLevel": 10
   },
 
+  "_mining": "광맥은 광물방 그림 속 광석 덩어리 앞에만 몇 개 놓이고, 한 곳에서 많이 나온다. oreTotal = 방 하나에서 나오는 광석 합계 (예전 6~10개 x 1~2개와 비슷)",
   "mining": {
-    "hitsToBreak": 3,
-    "orePerVeinMin": 1,
-    "orePerVeinMax": 2,
-    "veinsMin": 6,
-    "veinsMax": 10,
-    "veinsMinCleared": 8,
-    "veinsMaxCleared": 12,
+    "hitsToBreak": 5,
+    "veins": 3,
+    "veinsCleared": 4,
+    "oreTotalMin": 10,
+    "oreTotalMax": 14,
+    "oreTotalMinCleared": 13,
+    "oreTotalMaxCleared": 17,
     "firstOreRoomGuarantee": 8
   },
 
@@ -135,7 +136,7 @@
     "rushCount": 3,
     "rushTelegraph": 0.55,
     "rushStun": 2.5,
-    "_lich": "해골 사제 (선우 버전 리치): 뼈 가시는 용사 발밑 하나 + 주변. 뼈 가시·소환을 쓸 때 실명 (blindCooldown 동안 다시 안 건다)",
+    "_lich": "뼈 가시 (선우 버전 리치 패턴, 지금은 쓰는 보스 없음): 용사 발밑 하나 + 주변. 뼈 가시를 쓰는 보스는 뼈 가시·소환 때 실명도 건다 (blindCooldown 동안 다시 안 건다)",
     "spikeCount": 5,
     "spikeRadiusTiles": 1.25,
     "spikeSpreadTiles": 2.6,
@@ -220,9 +221,8 @@
     { "id": "TOP", "name": "마왕의 탑", "ore": "SKY", "recommended": "혈월검 +6 이상",
       "mob":  { "name": "탑의 마족병", "hp": 300, "attack": 44, "speedTiles": 2.5, "sprite": "imp", "ai": "caster",
                 "telegraph": 0.45, "cooldown": 1.1 },
-      "boss": { "name": "탑의 해골 사제", "hp": 7200, "attack": 52, "speedTiles": 1.8, "sprite": "warden",
-                "patterns": ["lightning", "firespin", "bonespike", "volley", "bonespike"], "phase2Patterns": ["summon"],
-                "summonFrom": "RIGHT", "summonCount": 3, "cornerBlink": true },
+      "boss": { "name": "탑의 수문장", "hp": 7200, "attack": 52, "speedTiles": 1.8, "sprite": "warden",
+                "patterns": ["lightning", "firespin", "volley", "slam"], "phase2Patterns": ["summon"], "cornerBlink": true },
       "mobsPerRoom": 4 }
   ],
 

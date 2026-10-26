@@ -32,8 +32,10 @@ public class GameEvent {
         FALL,
         /** 문을 지나 다른 방으로 넘어감 (deferDoors 일 때). 화면이 어두워진 뒤 GameSession.passPendingDoor 를 부른다. */
         DOOR_ENTER,
-        /** 보스 보물상자를 열었다 (ore, amount). */
+        /** 상자를 열었다 (ore, amount, dungeonId, opened=room id; x, y는 보상 글자 위치). */
         CHEST_OPENED,
+        /** 잡몹방의 다음 웨이브가 나왔다. text = 알림 글. */
+        WAVE_STARTED,
         /** 검 스킬을 씀 (text = 종류, dirX·dirY = 방향) / 검 스킬이 맞음·낙뢰가 떨어짐 (size = 크기). */
         SKILL_CAST, SKILL_HIT
     }
@@ -60,6 +62,8 @@ public class GameEvent {
     public float dirX, dirY, size;
     public String sprite;
     public boolean boss, flip;
+    /** MONSTER_DIED: 쓰러질 때의 본모습을 유지한다. */
+    public boolean phase2;
 
     public GameEvent(Type type) {
         this.type = type;

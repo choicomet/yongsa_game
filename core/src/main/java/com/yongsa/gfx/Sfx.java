@@ -50,6 +50,14 @@ public class Sfx implements Disposable {
             add("cast", mix(sweep(500, 1300, 0.18f, 0.18f, 0), noise(0.12f, 0.15f, 0.5f)));
             add("step", mix(noise(0.22f, 0.16f, 0.12f), sweep(240, 150, 0.22f, 0.08f, 2)));
             add("death", seq(new float[]{392, 330, 262, 196}, 0.18f, 0.35f, 2));
+            // Same short duration as the gate movement; opening has a lighter rising tail.
+            // Append after existing cues so their seeded noise stays unchanged.
+            add("gateClose_LEFT", mix(sweep(125, 55, .28f, .38f, 2), noise(.28f, .22f, .13f)));
+            add("gateOpen_LEFT", mix(sweep(70, 145, .36f, .25f, 2), noise(.27f, .15f, .10f)));
+            add("gateClose_RIGHT", mix(sweep(150, 65, .28f, .32f, 2), sweep(1600, 900, .16f, .17f, 0)));
+            add("gateOpen_RIGHT", mix(sweep(90, 170, .36f, .23f, 2), sweep(700, 1100, .25f, .10f, 0)));
+            add("gateClose_TOP", mix(sweep(540, 190, .28f, .25f, 0), sweep(810, 285, .28f, .12f, 0)));
+            add("gateOpen_TOP", mix(sweep(260, 780, .36f, .21f, 0), sweep(390, 1170, .36f, .10f, 0)));
         } catch (Exception e) {
             Gdx.app.log("Sfx", "효과음을 만들지 못했습니다: " + e.getMessage());
         }

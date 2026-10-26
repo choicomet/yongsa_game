@@ -1,0 +1,167 @@
+[
+  {
+    "file": "assets/sprites/gate_LEFT.png",
+    "width": 1774,
+    "height": 887,
+    "alphaZero": 472414,
+    "alphaPartial": 1099888,
+    "alphaOpaque": 1236,
+    "bbox": [
+      0,
+      0,
+      1774,
+      887
+    ],
+    "sha256": "45b08ae22058ae64b54d8614ea4ede3743a7e53bdd695ddc746bd703e3f8238c"
+  },
+  {
+    "file": "assets/sprites/gate_LEFT_side.png",
+    "width": 793,
+    "height": 1983,
+    "alphaZero": 773492,
+    "alphaPartial": 798746,
+    "alphaOpaque": 281,
+    "bbox": [
+      22,
+      0,
+      793,
+      1983
+    ],
+    "sha256": "1966c959797d829407a921f95ff22845de2e06c062503c003c575a40d695e28e"
+  },
+  {
+    "file": "assets/sprites/gate_RIGHT.png",
+    "width": 1774,
+    "height": 887,
+    "alphaZero": 587644,
+    "alphaPartial": 982204,
+    "alphaOpaque": 3690,
+    "bbox": [
+      0,
+      23,
+      1774,
+      887
+    ],
+    "sha256": "45526b78c05fceb432a9e786a307a0dd14971e6c017a280e3c447dcc5a377619"
+  },
+  {
+    "file": "assets/sprites/gate_RIGHT_side.png",
+    "width": 793,
+    "height": 1983,
+    "alphaZero": 792141,
+    "alphaPartial": 779138,
+    "alphaOpaque": 1240,
+    "bbox": [
+      0,
+      3,
+      793,
+      1964
+    ],
+    "sha256": "835292c97dc874e63ef5b02c9c2b4e1a059d8cf663365a2d226edfdb894bb3a7"
+  },
+  {
+    "file": "assets/sprites/gate_TOP.png",
+    "width": 1774,
+    "height": 887,
+    "alphaZero": 650525,
+    "alphaPartial": 922853,
+    "alphaOpaque": 160,
+    "bbox": [
+      0,
+      1,
+      1758,
+      887
+    ],
+    "sha256": "0451283252df8e7f38845dc993020b9810f06ebdcff183aa8bcf047cf8714e63"
+  },
+  {
+    "file": "assets/sprites/gate_TOP_side.png",
+    "width": 793,
+    "height": 1983,
+    "alphaZero": 874673,
+    "alphaPartial": 697470,
+    "alphaOpaque": 376,
+    "bbox": [
+      0,
+      11,
+      793,
+      1951
+    ],
+    "sha256": "3601e35c4d0ce209582c5a2c5c34108c28e9d4b045c533291bb5d7e503cd3152"
+  },
+  {
+    "file": "assets/sprites/skill/icon_beam.png",
+    "width": 1254,
+    "height": 1254,
+    "alphaZero": 860256,
+    "alphaPartial": 708505,
+    "alphaOpaque": 3755,
+    "bbox": [
+      0,
+      18,
+      1254,
+      1254
+    ],
+    "sha256": "3f459b9c1c82bff5fa3710f3e4819da16d30b5f3323d9386951c915702a8ef63"
+  },
+  {
+    "file": "assets/sprites/skill/icon_cleave.png",
+    "width": 1254,
+    "height": 1254,
+    "alphaZero": 757167,
+    "alphaPartial": 812855,
+    "alphaOpaque": 2494,
+    "bbox": [
+      0,
+      49,
+      1251,
+      1254
+    ],
+    "sha256": "22a038c69871a3f657bc9e89164dfdd66da9d6f29b64fd62586187b873e3e32c"
+  },
+  {
+    "file": "assets/sprites/skill/icon_crescent.png",
+    "width": 1254,
+    "height": 1254,
+    "alphaZero": 1073443,
+    "alphaPartial": 495963,
+    "alphaOpaque": 3110,
+    "bbox": [
+      0,
+      17,
+      1253,
+      1254
+    ],
+    "sha256": "d402ed3541eca5ae39ea06aa349ffe986e026de6c1b9020a2765c29424ae18f9"
+  },
+  {
+    "file": "assets/sprites/skill/icon_strike.png",
+    "width": 1254,
+    "height": 1254,
+    "alphaZero": 1262421,
+    "alphaPartial": 308023,
+    "alphaOpaque": 2072,
+    "bbox": [
+      0,
+      19,
+      1246,
+      1254
+    ],
+    "sha256": "21040224a1cd9a230f8944af9027677126e7393fe7d35cd4c24de2d79bc0df6a"
+  },
+  {
+    "file": "assets/sprites/potion.png",
+    "width": 1086,
+    "height": 1448,
+    "alphaZero": 710050,
+    "alphaPartial": 860269,
+    "alphaOpaque": 2209,
+    "bbox": [
+      0,
+      17,
+      1072,
+      1448
+    ],
+    "sha256": "8389298d56fba9e5ae88100fd960958022c3c97eb1ef5b989396e7a1fb6420d3"
+  }
+]

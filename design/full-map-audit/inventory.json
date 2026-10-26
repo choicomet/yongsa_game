@@ -1,0 +1,2102 @@
+[
+  {
+    "location": "CAMP",
+    "camera": [
+      9344.0,
+      4896.1533,
+      0.8964763
+    ],
+    "name": "room-CAMP",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      9359.36,
+      4809.707
+    ]
+  },
+  {
+    "location": "L1",
+    "camera": [
+      7271.296,
+      5023.088,
+      0.8964763
+    ],
+    "name": "room-L1",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      7271.296,
+      4994.2725
+    ]
+  },
+  {
+    "location": "L2",
+    "camera": [
+      5241.856,
+      5303.8247,
+      0.8404466
+    ],
+    "name": "room-L2",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      5241.856,
+      5276.8105
+    ]
+  },
+  {
+    "location": "L8",
+    "camera": [
+      7288.896,
+      3544.2012,
+      0.84094954
+    ],
+    "name": "room-L8",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      7288.896,
+      3544.2012
+    ]
+  },
+  {
+    "location": "L3",
+    "camera": [
+      5414.08,
+      3808.8486,
+      0.9525061
+    ],
+    "name": "room-L3",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      5414.08,
+      3710.8767
+    ]
+  },
+  {
+    "location": "L4",
+    "camera": [
+      4113.664,
+      4813.845,
+      0.7844168
+    ],
+    "name": "room-L4",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      4113.664,
+      4813.845
+    ]
+  },
+  {
+    "location": "L5",
+    "camera": [
+      5224.64,
+      1969.0056,
+      0.86846143
+    ],
+    "name": "room-L5",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      5274.24,
+      1885.2611
+    ]
+  },
+  {
+    "location": "L7",
+    "camera": [
+      3190.4,
+      1974.3759,
+      0.8404466
+    ],
+    "name": "room-L7",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      3190.4,
+      1947.3615
+    ]
+  },
+  {
+    "location": "L6",
+    "camera": [
+      3109.76,
+      3525.7217,
+      1.0925806
+    ],
+    "name": "room-L6",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      3109.76,
+      3455.4844
+    ]
+  },
+  {
+    "location": "R1",
+    "camera": [
+      11352.448,
+      4382.6167,
+      0.9525061
+    ],
+    "name": "room-R1",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      11352.448,
+      4290.768
+    ]
+  },
+  {
+    "location": "R2",
+    "camera": [
+      11299.008,
+      3361.6458,
+      0.8404466
+    ],
+    "name": "room-R2",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      11347.008,
+      3318.4229
+    ]
+  },
+  {
+    "location": "R7",
+    "camera": [
+      12067.008,
+      2227.9343,
+      0.8404466
+    ],
+    "name": "room-R7",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      12067.008,
+      2200.92
+    ]
+  },
+  {
+    "location": "R3",
+    "camera": [
+      14008.128,
+      1801.3842,
+      0.8404466
+    ],
+    "name": "room-R3",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      14008.128,
+      1774.3698
+    ]
+  },
+  {
+    "location": "R4",
+    "camera": [
+      13547.328,
+      662.27026,
+      0.8404466
+    ],
+    "name": "room-R4",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      13547.328,
+      662.27026
+    ]
+  },
+  {
+    "location": "R5",
+    "camera": [
+      16033.728,
+      1463.9816,
+      0.9525061
+    ],
+    "name": "room-R5",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      15924.928,
+      1390.5024
+    ]
+  },
+  {
+    "location": "R6",
+    "camera": [
+      16842.688,
+      2667.3896,
+      1.0925806
+    ],
+    "name": "room-R6",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      16842.688,
+      2597.1523
+    ]
+  },
+  {
+    "location": "T1",
+    "camera": [
+      9021.312,
+      6372.7593,
+      0.9525061
+    ],
+    "name": "room-T1",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      9021.312,
+      6342.143
+    ]
+  },
+  {
+    "location": "T2",
+    "camera": [
+      11057.152,
+      6362.8726,
+      0.7844168
+    ],
+    "name": "room-T2",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      11057.152,
+      6362.8726
+    ]
+  },
+  {
+    "location": "T3",
+    "camera": [
+      11359.232,
+      7806.7007,
+      0.9525061
+    ],
+    "name": "room-T3",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      11359.232,
+      7739.3447
+    ]
+  },
+  {
+    "location": "T4",
+    "camera": [
+      11695.552,
+      9265.657,
+      0.8404466
+    ],
+    "name": "room-T4",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      11743.552,
+      9265.657
+    ]
+  },
+  {
+    "location": "T5",
+    "camera": [
+      9596.672,
+      8447.426,
+      0.8964763
+    ],
+    "name": "room-T5",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      9596.672,
+      8418.61
+    ]
+  },
+  {
+    "location": "T7",
+    "camera": [
+      7596.992,
+      8435.52,
+      0.8404466
+    ],
+    "name": "room-T7",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      7596.992,
+      8435.52
+    ]
+  },
+  {
+    "location": "T6",
+    "camera": [
+      7237.312,
+      9990.853,
+      1.092
+    ],
+    "name": "room-T6",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      7237.312,
+      9955.771
+    ]
+  },
+  {
+    "location": "V",
+    "camera": [
+      9366.272,
+      3359.4568,
+      1.0466707
+    ],
+    "name": "room-V",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      9366.272,
+      3581.5005
+    ]
+  },
+  {
+    "location": "F",
+    "camera": [
+      1029.76,
+      8159.1865,
+      1.0925806
+    ],
+    "name": "room-F",
+    "footFree": true,
+    "category": "room",
+    "hero": [
+      1029.76,
+      8039.783
+    ]
+  },
+  {
+    "location": "CAMP-L1",
+    "camera": [
+      8319.936,
+      4859.5493,
+      1.05
+    ],
+    "name": "link-CAMP-L1",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      8319.936,
+      4859.5493
+    ]
+  },
+  {
+    "location": "CAMP-L1 / CAMP",
+    "camera": [
+      8897.536,
+      4922.087,
+      0.85
+    ],
+    "name": "entry-CAMP-L1",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      8897.536,
+      4922.087
+    ]
+  },
+  {
+    "location": "CAMP-L1 / CAMP",
+    "camera": [
+      8897.536,
+      4922.087,
+      0.85
+    ],
+    "name": "entry-CAMP-L1-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      8897.536,
+      4922.087
+    ]
+  },
+  {
+    "location": "CAMP-L1 / L1",
+    "camera": [
+      7742.336,
+      5074.955,
+      0.85
+    ],
+    "name": "exit-CAMP-L1",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      7742.336,
+      5074.955
+    ]
+  },
+  {
+    "location": "CAMP-L1 / L1",
+    "camera": [
+      7742.336,
+      5074.955,
+      0.85
+    ],
+    "name": "exit-CAMP-L1-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      7742.336,
+      5074.955
+    ]
+  },
+  {
+    "location": "L1-L2",
+    "camera": [
+      6222.656,
+      5018.181,
+      1.05
+    ],
+    "name": "link-L1-L2",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      6222.656,
+      5018.181
+    ]
+  },
+  {
+    "location": "L1-L2 / L1",
+    "camera": [
+      6800.256,
+      5080.7183,
+      0.85
+    ],
+    "name": "entry-L1-L2",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      6800.256,
+      5080.7183
+    ]
+  },
+  {
+    "location": "L1-L2 / L1",
+    "camera": [
+      6800.256,
+      5080.7183,
+      0.85
+    ],
+    "name": "entry-L1-L2-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      6800.256,
+      5080.7183
+    ]
+  },
+  {
+    "location": "L1-L2 / L2",
+    "camera": [
+      5645.056,
+      5233.5874,
+      0.85
+    ],
+    "name": "exit-L1-L2",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      5645.056,
+      5233.5874
+    ]
+  },
+  {
+    "location": "L1-L2 / L2",
+    "camera": [
+      5645.056,
+      5233.5874,
+      0.85
+    ],
+    "name": "exit-L1-L2-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      5645.056,
+      5233.5874
+    ]
+  },
+  {
+    "location": "L1-L8",
+    "camera": [
+      7331.456,
+      4261.667,
+      1.05
+    ],
+    "name": "link-L1-L8",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      7331.456,
+      4261.667
+    ]
+  },
+  {
+    "location": "L1-L8 / L1",
+    "camera": [
+      7261.0557,
+      4757.987,
+      0.85
+    ],
+    "name": "entry-L1-L8",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      7261.0557,
+      4757.987
+    ]
+  },
+  {
+    "location": "L1-L8 / L1",
+    "camera": [
+      7261.0557,
+      4757.987,
+      0.85
+    ],
+    "name": "entry-L1-L8-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      7261.0557,
+      4757.987
+    ]
+  },
+  {
+    "location": "L1-L8 / L8",
+    "camera": [
+      7303.296,
+      3744.227,
+      0.85
+    ],
+    "name": "exit-L1-L8",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      7303.296,
+      3744.227
+    ]
+  },
+  {
+    "location": "L1-L8 / L8",
+    "camera": [
+      7303.296,
+      3744.227,
+      0.85
+    ],
+    "name": "exit-L1-L8-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      7303.296,
+      3744.227
+    ]
+  },
+  {
+    "location": "L2-L3",
+    "camera": [
+      5382.6562,
+      4558.9727,
+      1.05
+    ],
+    "name": "link-L2-L3",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      5382.6562,
+      4558.9727
+    ]
+  },
+  {
+    "location": "L2-L3 / L2",
+    "camera": [
+      5453.056,
+      5055.2925,
+      0.85
+    ],
+    "name": "entry-L2-L3",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      5453.056,
+      5055.2925
+    ]
+  },
+  {
+    "location": "L2-L3 / L2",
+    "camera": [
+      5453.056,
+      5055.2925,
+      0.85
+    ],
+    "name": "entry-L2-L3-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      5453.056,
+      5055.2925
+    ]
+  },
+  {
+    "location": "L2-L3 / L3",
+    "camera": [
+      5410.816,
+      4041.5322,
+      0.85
+    ],
+    "name": "exit-L2-L3",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      5410.816,
+      4041.5322
+    ]
+  },
+  {
+    "location": "L2-L3 / L3",
+    "camera": [
+      5410.816,
+      4041.5322,
+      0.85
+    ],
+    "name": "exit-L2-L3-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      5410.816,
+      4041.5322
+    ]
+  },
+  {
+    "location": "L3-L4",
+    "camera": [
+      4482.304,
+      4353.374,
+      1.05
+    ],
+    "name": "link-L3-L4",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      4482.304,
+      4353.374
+    ]
+  },
+  {
+    "location": "L3-L4 / L3",
+    "camera": [
+      5019.136,
+      3961.9302,
+      0.85
+    ],
+    "name": "entry-L3-L4",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      5019.136,
+      3961.9302
+    ]
+  },
+  {
+    "location": "L3-L4 / L3",
+    "camera": [
+      5019.136,
+      3961.9302,
+      0.85
+    ],
+    "name": "entry-L3-L4-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      5019.136,
+      3961.9302
+    ]
+  },
+  {
+    "location": "L3-L4 / L4",
+    "camera": [
+      4113.664,
+      4586.925,
+      0.85
+    ],
+    "name": "exit-L3-L4",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      4113.664,
+      4586.925
+    ]
+  },
+  {
+    "location": "L3-L4 / L4",
+    "camera": [
+      4113.664,
+      4586.925,
+      0.85
+    ],
+    "name": "exit-L3-L4-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      4113.664,
+      4586.925
+    ]
+  },
+  {
+    "location": "L3-L5",
+    "camera": [
+      5520.96,
+      2914.673,
+      1.05
+    ],
+    "name": "link-L3-L5",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      5520.96,
+      2914.673
+    ]
+  },
+  {
+    "location": "L3-L5 / L3",
+    "camera": [
+      5424.96,
+      3591.4731,
+      0.85
+    ],
+    "name": "entry-L3-L5",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      5424.96,
+      3591.4731
+    ]
+  },
+  {
+    "location": "L3-L5 / L3",
+    "camera": [
+      5424.96,
+      3591.4731,
+      0.85
+    ],
+    "name": "entry-L3-L5-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      5424.96,
+      3591.4731
+    ]
+  },
+  {
+    "location": "L3-L5 / L5",
+    "camera": [
+      5482.56,
+      2209.0732,
+      0.85
+    ],
+    "name": "exit-L3-L5",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      5482.56,
+      2209.0732
+    ]
+  },
+  {
+    "location": "L3-L5 / L5",
+    "camera": [
+      5482.56,
+      2209.0732,
+      0.85
+    ],
+    "name": "exit-L3-L5-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      5482.56,
+      2209.0732
+    ]
+  },
+  {
+    "location": "L5-L7",
+    "camera": [
+      4210.56,
+      1772.4773,
+      1.05
+    ],
+    "name": "link-L5-L7",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      4210.56,
+      1772.4773
+    ]
+  },
+  {
+    "location": "L5-L7 / L5",
+    "camera": [
+      4788.16,
+      1835.0144,
+      0.85
+    ],
+    "name": "entry-L5-L7",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      4788.16,
+      1835.0144
+    ]
+  },
+  {
+    "location": "L5-L7 / L5",
+    "camera": [
+      4788.16,
+      1835.0144,
+      0.85
+    ],
+    "name": "entry-L5-L7-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      4788.16,
+      1835.0144
+    ]
+  },
+  {
+    "location": "L5-L7 / L7",
+    "camera": [
+      3632.96,
+      1987.883,
+      0.85
+    ],
+    "name": "exit-L5-L7",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      3632.96,
+      1987.883
+    ]
+  },
+  {
+    "location": "L5-L7 / L7",
+    "camera": [
+      3632.96,
+      1987.883,
+      0.85
+    ],
+    "name": "exit-L5-L7-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      3632.96,
+      1987.883
+    ]
+  },
+  {
+    "location": "L7-L6",
+    "camera": [
+      3229.44,
+      2766.1333,
+      1.05
+    ],
+    "name": "link-L7-L6",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      3229.44,
+      2766.1333
+    ]
+  },
+  {
+    "location": "L7-L6 / L7",
+    "camera": [
+      3152.0,
+      2195.8936,
+      0.85
+    ],
+    "name": "entry-L7-L6",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      3152.0,
+      2195.8936
+    ]
+  },
+  {
+    "location": "L7-L6 / L7",
+    "camera": [
+      3152.0,
+      2195.8936,
+      0.85
+    ],
+    "name": "entry-L7-L6-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      3152.0,
+      2195.8936
+    ]
+  },
+  {
+    "location": "L7-L6 / L6",
+    "camera": [
+      3109.76,
+      3209.6538,
+      0.85
+    ],
+    "name": "exit-L7-L6",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      3109.76,
+      3209.6538
+    ]
+  },
+  {
+    "location": "L7-L6 / L6",
+    "camera": [
+      3109.76,
+      3209.6538,
+      0.85
+    ],
+    "name": "exit-L7-L6-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      3109.76,
+      3209.6538
+    ]
+  },
+  {
+    "location": "CAMP-R1",
+    "camera": [
+      10370.6875,
+      4664.9087,
+      1.05
+    ],
+    "name": "link-CAMP-R1",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      10370.6875,
+      4664.9087
+    ]
+  },
+  {
+    "location": "CAMP-R1 / CAMP",
+    "camera": [
+      9811.968,
+      4855.8115,
+      0.85
+    ],
+    "name": "entry-CAMP-R1",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      9811.968,
+      4855.8115
+    ]
+  },
+  {
+    "location": "CAMP-R1 / CAMP",
+    "camera": [
+      9811.968,
+      4855.8115,
+      0.85
+    ],
+    "name": "entry-CAMP-R1-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      9811.968,
+      4855.8115
+    ]
+  },
+  {
+    "location": "CAMP-R1 / R1",
+    "camera": [
+      10906.368,
+      4480.589,
+      0.85
+    ],
+    "name": "exit-CAMP-R1",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      10906.368,
+      4480.589
+    ]
+  },
+  {
+    "location": "CAMP-R1 / R1",
+    "camera": [
+      10906.368,
+      4480.589,
+      0.85
+    ],
+    "name": "exit-CAMP-R1-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      10906.368,
+      4480.589
+    ]
+  },
+  {
+    "location": "R1-R2",
+    "camera": [
+      11086.849,
+      3852.2695,
+      1.05
+    ],
+    "name": "link-R1-R2",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      11086.849,
+      3852.2695
+    ]
+  },
+  {
+    "location": "R1-R2 / R1",
+    "camera": [
+      11363.328,
+      4156.0566,
+      0.85
+    ],
+    "name": "entry-R1-R2",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      11363.328,
+      4156.0566
+    ]
+  },
+  {
+    "location": "R1-R2 / R1",
+    "camera": [
+      11363.328,
+      4156.0566,
+      0.85
+    ],
+    "name": "entry-R1-R2-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      11363.328,
+      4156.0566
+    ]
+  },
+  {
+    "location": "R1-R2 / R2",
+    "camera": [
+      10902.527,
+      3507.5232,
+      0.85
+    ],
+    "name": "exit-R1-R2",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      10902.527,
+      3507.5232
+    ]
+  },
+  {
+    "location": "R1-R2 / R2",
+    "camera": [
+      10902.527,
+      3507.5232,
+      0.85
+    ],
+    "name": "exit-R1-R2-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      10902.527,
+      3507.5232
+    ]
+  },
+  {
+    "location": "R2-R7",
+    "camera": [
+      11901.888,
+      2814.7297,
+      1.05
+    ],
+    "name": "link-R2-R7",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      11901.888,
+      2814.7297
+    ]
+  },
+  {
+    "location": "R2-R7 / R2",
+    "camera": [
+      11625.408,
+      3118.5166,
+      0.85
+    ],
+    "name": "entry-R2-R7",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      11625.408,
+      3118.5166
+    ]
+  },
+  {
+    "location": "R2-R7 / R2",
+    "camera": [
+      11625.408,
+      3118.5166,
+      0.85
+    ],
+    "name": "entry-R2-R7-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      11625.408,
+      3118.5166
+    ]
+  },
+  {
+    "location": "R2-R7 / R7",
+    "camera": [
+      12086.208,
+      2469.983,
+      0.85
+    ],
+    "name": "exit-R2-R7",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      12086.208,
+      2469.983
+    ]
+  },
+  {
+    "location": "R2-R7 / R7",
+    "camera": [
+      12086.208,
+      2469.983,
+      0.85
+    ],
+    "name": "exit-R2-R7-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      12086.208,
+      2469.983
+    ]
+  },
+  {
+    "location": "R7-R3",
+    "camera": [
+      13040.447,
+      2055.9417,
+      1.05
+    ],
+    "name": "link-R7-R3",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      13040.447,
+      2055.9417
+    ]
+  },
+  {
+    "location": "R7-R3 / R7",
+    "camera": [
+      12481.728,
+      2246.8442,
+      0.85
+    ],
+    "name": "entry-R7-R3",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      12481.728,
+      2246.8442
+    ]
+  },
+  {
+    "location": "R7-R3 / R7",
+    "camera": [
+      12481.728,
+      2246.8442,
+      0.85
+    ],
+    "name": "entry-R7-R3-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      12481.728,
+      2246.8442
+    ]
+  },
+  {
+    "location": "R7-R3 / R3",
+    "camera": [
+      13576.128,
+      1871.6215,
+      0.85
+    ],
+    "name": "exit-R7-R3",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      13576.128,
+      1871.6215
+    ]
+  },
+  {
+    "location": "R7-R3 / R3",
+    "camera": [
+      13576.128,
+      1871.6215,
+      0.85
+    ],
+    "name": "exit-R7-R3-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      13576.128,
+      1871.6215
+    ]
+  },
+  {
+    "location": "R3-R4",
+    "camera": [
+      13722.048,
+      1249.0654,
+      1.05
+    ],
+    "name": "link-R3-R4",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      13722.048,
+      1249.0654
+    ]
+  },
+  {
+    "location": "R3-R4 / R3",
+    "camera": [
+      13998.528,
+      1552.852,
+      0.85
+    ],
+    "name": "entry-R3-R4",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      13998.528,
+      1552.852
+    ]
+  },
+  {
+    "location": "R3-R4 / R3",
+    "camera": [
+      13998.528,
+      1552.852,
+      0.85
+    ],
+    "name": "entry-R3-R4-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      13998.528,
+      1552.852
+    ]
+  },
+  {
+    "location": "R3-R4 / R4",
+    "camera": [
+      13537.729,
+      904.3189,
+      0.85
+    ],
+    "name": "exit-R3-R4",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      13537.729,
+      904.3189
+    ]
+  },
+  {
+    "location": "R3-R4 / R4",
+    "camera": [
+      13537.729,
+      904.3189,
+      0.85
+    ],
+    "name": "exit-R3-R4-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      13537.729,
+      904.3189
+    ]
+  },
+  {
+    "location": "R3-R5",
+    "camera": [
+      15008.447,
+      1648.3014,
+      1.05
+    ],
+    "name": "link-R3-R5",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      15008.447,
+      1648.3014
+    ]
+  },
+  {
+    "location": "R3-R5 / R3",
+    "camera": [
+      14449.728,
+      1839.2042,
+      0.85
+    ],
+    "name": "entry-R3-R5",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      14449.728,
+      1839.2042
+    ]
+  },
+  {
+    "location": "R3-R5 / R3",
+    "camera": [
+      14449.728,
+      1839.2042,
+      0.85
+    ],
+    "name": "entry-R3-R5-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      14449.728,
+      1839.2042
+    ]
+  },
+  {
+    "location": "R3-R5 / R5",
+    "camera": [
+      15544.128,
+      1463.9816,
+      0.85
+    ],
+    "name": "exit-R3-R5",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      15544.128,
+      1463.9816
+    ]
+  },
+  {
+    "location": "R3-R5 / R5",
+    "camera": [
+      15544.128,
+      1463.9816,
+      0.85
+    ],
+    "name": "exit-R3-R5-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      15544.128,
+      1463.9816
+    ]
+  },
+  {
+    "location": "R5-R6",
+    "camera": [
+      16566.207,
+      2047.5349,
+      1.05
+    ],
+    "name": "link-R5-R6",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      16566.207,
+      2047.5349
+    ]
+  },
+  {
+    "location": "R5-R6 / R5",
+    "camera": [
+      16381.888,
+      1702.7885,
+      0.85
+    ],
+    "name": "entry-R5-R6",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      16381.888,
+      1702.7885
+    ]
+  },
+  {
+    "location": "R5-R6 / R5",
+    "camera": [
+      16381.888,
+      1702.7885,
+      0.85
+    ],
+    "name": "entry-R5-R6-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      16381.888,
+      1702.7885
+    ]
+  },
+  {
+    "location": "R5-R6 / R6",
+    "camera": [
+      16842.688,
+      2351.3218,
+      0.85
+    ],
+    "name": "exit-R5-R6",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      16842.688,
+      2351.3218
+    ]
+  },
+  {
+    "location": "R5-R6 / R6",
+    "camera": [
+      16842.688,
+      2351.3218,
+      0.85
+    ],
+    "name": "exit-R5-R6-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      16842.688,
+      2351.3218
+    ]
+  },
+  {
+    "location": "CAMP-T1",
+    "camera": [
+      9091.712,
+      5674.8125,
+      1.05
+    ],
+    "name": "link-CAMP-T1",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      9091.712,
+      5674.8125
+    ]
+  },
+  {
+    "location": "CAMP-T1 / CAMP",
+    "camera": [
+      9352.192,
+      5083.4526,
+      0.85
+    ],
+    "name": "entry-CAMP-T1",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      9352.192,
+      5083.4526
+    ]
+  },
+  {
+    "location": "CAMP-T1 / CAMP",
+    "camera": [
+      9352.192,
+      5083.4526,
+      0.85
+    ],
+    "name": "entry-CAMP-T1-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      9352.192,
+      5083.4526
+    ]
+  },
+  {
+    "location": "CAMP-T1 / T1",
+    "camera": [
+      9021.312,
+      6097.213,
+      0.85
+    ],
+    "name": "exit-CAMP-T1",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      9021.312,
+      6097.213
+    ]
+  },
+  {
+    "location": "CAMP-T1 / T1",
+    "camera": [
+      9021.312,
+      6097.213,
+      0.85
+    ],
+    "name": "exit-CAMP-T1-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      9021.312,
+      6097.213
+    ]
+  },
+  {
+    "location": "T1-T2",
+    "camera": [
+      10091.393,
+      6240.1826,
+      1.05
+    ],
+    "name": "link-T1-T2",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      10091.393,
+      6240.1826
+    ]
+  },
+  {
+    "location": "T1-T2 / T1",
+    "camera": [
+      9532.672,
+      6385.006,
+      0.85
+    ],
+    "name": "entry-T1-T2",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      9532.672,
+      6385.006
+    ]
+  },
+  {
+    "location": "T1-T2 / T1",
+    "camera": [
+      9532.672,
+      6385.006,
+      0.85
+    ],
+    "name": "entry-T1-T2-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      9532.672,
+      6385.006
+    ]
+  },
+  {
+    "location": "T1-T2 / T2",
+    "camera": [
+      10627.072,
+      6398.1714,
+      0.85
+    ],
+    "name": "exit-T1-T2",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      10627.072,
+      6398.1714
+    ]
+  },
+  {
+    "location": "T1-T2 / T2",
+    "camera": [
+      10627.072,
+      6398.1714,
+      0.85
+    ],
+    "name": "exit-T1-T2-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      10627.072,
+      6398.1714
+    ]
+  },
+  {
+    "location": "T2-T3",
+    "camera": [
+      11299.712,
+      7176.1104,
+      1.05
+    ],
+    "name": "link-T2-T3",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      11299.712,
+      7176.1104
+    ]
+  },
+  {
+    "location": "T2-T3 / T2",
+    "camera": [
+      11039.232,
+      6584.7505,
+      0.85
+    ],
+    "name": "entry-T2-T3",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      11039.232,
+      6584.7505
+    ]
+  },
+  {
+    "location": "T2-T3 / T2",
+    "camera": [
+      11039.232,
+      6584.7505,
+      0.85
+    ],
+    "name": "entry-T2-T3-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      11039.232,
+      6584.7505
+    ]
+  },
+  {
+    "location": "T2-T3 / T3",
+    "camera": [
+      11370.112,
+      7598.5103,
+      0.85
+    ],
+    "name": "exit-T2-T3",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      11370.112,
+      7598.5103
+    ]
+  },
+  {
+    "location": "T2-T3 / T3",
+    "camera": [
+      11370.112,
+      7598.5103,
+      0.85
+    ],
+    "name": "exit-T2-T3-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      11370.112,
+      7598.5103
+    ]
+  },
+  {
+    "location": "T3-T4",
+    "camera": [
+      11625.152,
+      8600.129,
+      1.05
+    ],
+    "name": "link-T3-T4",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      11625.152,
+      8600.129
+    ]
+  },
+  {
+    "location": "T3-T4 / T3",
+    "camera": [
+      11364.673,
+      8008.768,
+      0.85
+    ],
+    "name": "entry-T3-T4",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      11364.673,
+      8008.768
+    ]
+  },
+  {
+    "location": "T3-T4 / T3",
+    "camera": [
+      11364.673,
+      8008.768,
+      0.85
+    ],
+    "name": "entry-T3-T4-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      11364.673,
+      8008.768
+    ]
+  },
+  {
+    "location": "T3-T4 / T4",
+    "camera": [
+      11695.552,
+      9022.528,
+      0.85
+    ],
+    "name": "exit-T3-T4",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      11695.552,
+      9022.528
+    ]
+  },
+  {
+    "location": "T3-T4 / T4",
+    "camera": [
+      11695.552,
+      9022.528,
+      0.85
+    ],
+    "name": "exit-T3-T4-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      11695.552,
+      9022.528
+    ]
+  },
+  {
+    "location": "T3-T5",
+    "camera": [
+      10608.512,
+      8283.388,
+      1.05
+    ],
+    "name": "link-T3-T5",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      10608.512,
+      8283.388
+    ]
+  },
+  {
+    "location": "T3-T5 / T3",
+    "camera": [
+      10882.688,
+      7987.337,
+      0.85
+    ],
+    "name": "entry-T3-T5",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      10882.688,
+      7987.337
+    ]
+  },
+  {
+    "location": "T3-T5 / T3",
+    "camera": [
+      10882.688,
+      7987.337,
+      0.85
+    ],
+    "name": "entry-T3-T5-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      10882.688,
+      7987.337
+    ]
+  },
+  {
+    "location": "T3-T5 / T5",
+    "camera": [
+      10072.832,
+      8467.597,
+      0.85
+    ],
+    "name": "exit-T3-T5",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      10072.832,
+      8467.597
+    ]
+  },
+  {
+    "location": "T3-T5 / T5",
+    "camera": [
+      10072.832,
+      8467.597,
+      0.85
+    ],
+    "name": "exit-T3-T5-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      10072.832,
+      8467.597
+    ]
+  },
+  {
+    "location": "T5-T7",
+    "camera": [
+      8584.832,
+      8309.607,
+      1.05
+    ],
+    "name": "link-T5-T7",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      8584.832,
+      8309.607
+    ]
+  },
+  {
+    "location": "T5-T7 / T5",
+    "camera": [
+      9120.512,
+      8467.597,
+      0.85
+    ],
+    "name": "entry-T5-T7",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      9120.512,
+      8467.597
+    ]
+  },
+  {
+    "location": "T5-T7 / T5",
+    "camera": [
+      9120.512,
+      8467.597,
+      0.85
+    ],
+    "name": "entry-T5-T7-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      9120.512,
+      8467.597
+    ]
+  },
+  {
+    "location": "T5-T7 / T7",
+    "camera": [
+      8026.1123,
+      8454.43,
+      0.85
+    ],
+    "name": "exit-T5-T7",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      8026.1123,
+      8454.43
+    ]
+  },
+  {
+    "location": "T5-T7 / T7",
+    "camera": [
+      8026.1123,
+      8454.43,
+      0.85
+    ],
+    "name": "exit-T5-T7-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      8026.1123,
+      8454.43
+    ]
+  },
+  {
+    "location": "T7-T6",
+    "camera": [
+      7307.712,
+      9252.721,
+      1.05
+    ],
+    "name": "link-T7-T6",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      7307.712,
+      9252.721
+    ]
+  },
+  {
+    "location": "T7-T6 / T7",
+    "camera": [
+      7568.1924,
+      8661.36,
+      0.85
+    ],
+    "name": "entry-T7-T6",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      7568.1924,
+      8661.36
+    ]
+  },
+  {
+    "location": "T7-T6 / T7",
+    "camera": [
+      7568.1924,
+      8661.36,
+      0.85
+    ],
+    "name": "entry-T7-T6-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      7568.1924,
+      8661.36
+    ]
+  },
+  {
+    "location": "T7-T6 / T6",
+    "camera": [
+      7237.312,
+      9675.12,
+      0.85
+    ],
+    "name": "exit-T7-T6",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      7237.312,
+      9675.12
+    ]
+  },
+  {
+    "location": "T7-T6 / T6",
+    "camera": [
+      7237.312,
+      9675.12,
+      0.85
+    ],
+    "name": "exit-T7-T6-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      7237.312,
+      9675.12
+    ]
+  },
+  {
+    "location": "CAMP-V",
+    "camera": [
+      9281.792,
+      4157.115,
+      1.05
+    ],
+    "name": "link-CAMP-V",
+    "footFree": true,
+    "category": "passage",
+    "hero": [
+      9281.792,
+      4157.115
+    ]
+  },
+  {
+    "location": "CAMP-V / CAMP",
+    "camera": [
+      9352.192,
+      4658.715,
+      0.85
+    ],
+    "name": "entry-CAMP-V",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      9352.192,
+      4658.715
+    ]
+  },
+  {
+    "location": "CAMP-V / CAMP",
+    "camera": [
+      9352.192,
+      4658.715,
+      0.85
+    ],
+    "name": "entry-CAMP-V-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      9352.192,
+      4658.715
+    ]
+  },
+  {
+    "location": "CAMP-V / V",
+    "camera": [
+      9366.272,
+      3655.515,
+      0.85
+    ],
+    "name": "exit-CAMP-V",
+    "footFree": true,
+    "category": "endpoint",
+    "hero": [
+      9366.272,
+      3655.515
+    ]
+  },
+  {
+    "location": "CAMP-V / V",
+    "camera": [
+      9366.272,
+      3655.515,
+      0.85
+    ],
+    "name": "exit-CAMP-V-floor",
+    "footFree": true,
+    "category": "floor",
+    "hero": [
+      9366.272,
+      3655.515
+    ]
+  }
+]

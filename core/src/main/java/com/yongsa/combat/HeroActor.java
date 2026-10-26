@@ -6,13 +6,14 @@ public class HeroActor extends Actor {
     /** 공격 방향 (마지막으로 움직인 8방향). */
     public float aimX = 0, aimY = -1;
     public float attackCd, rollCd, mineCd;
-    /** 검 스킬 (Q) 쿨타임. */
-    public float skillCd;
-    public float potionCd;
+    /** 스킬 칸마다 남은 재사용 시간 (Rules.SKILL_SLOTS 칸). */
+    public final float[] skillCd = new float[4];
     public float invuln;
     /** 구르기 남은 시간과 방향, 전체 시간 (그리기용). */
     public float rollT, rollTotal = 0.32f;
     public float rollX, rollY;
+    /** Roll art follows travel direction even when automatic combat facing points elsewhere. */
+    public Facing rollFacing = Facing.DOWN;
     public float walkTime;
     public boolean moving;
     /** 그리기용: 지금 휘두르는 공격 종류와 남은 시간. */

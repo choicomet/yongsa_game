@@ -1,0 +1,17 @@
+{
+  "tool": "built-in image_gen",
+  "generated": [
+    {
+      "id": "gate_LEFT",
+      "prompt": "Use case: stylized-concept. Asset type: production transparent sprite for the existing top-down oblique Java dungeon game. A CLOSED GATE viewed from the front, horizontal 2:1 canvas, requested native 1024x512. Single isolated complete object with minimal transparent margin, lower edge near bottom of canvas, exact transparent alpha outside the gate. Restrained high quality pixel-cluster fantasy art matching the attached mine stone and timber material style; coarse readable shapes, earthy colors, not photorealistic, no polished 3D, no soft bloom. Gate spans whole horizontal passage. No ground plane, floor, background, character, writing, UI, labels, or shadow outside object. Keep all wood, stone, metal opaque. Abandoned mine barricade: thick dark weathered upright timber supports at both ends, rough wide horizontal wooden planks with one diagonal brace, iron nails, rope bindings, a few small rocks at the foot. Solidly closed and sturdy, readable across a roughly 3 tile wide mine passage. Warm brown wood and muted steel, no magic."
+    },
+    {
+      "id": "gate_RIGHT",
+      "prompt": "Use case: stylized-concept. Asset type: production transparent sprite for the existing top-down oblique Java dungeon game. A CLOSED GATE viewed from the front, horizontal 2:1 canvas, requested native 1024x512. Single isolated complete object with minimal transparent margin, lower edge near bottom of canvas, exact transparent alpha outside the gate. Restrained high quality pixel-cluster fantasy art matching the attached mine stone and timber material style; coarse readable shapes, earthy colors, not photorealistic, no polished 3D, no soft bloom. Gate spans whole horizontal passage. No ground plane, floor, background, character, writing, UI, labels, or shadow outside object. Keep all wood, stone, metal opaque. Cursed citadel closed portcullis: dark wrought iron vertical bars, heavy horizontal iron crosspieces, a thick dark iron perimeter frame, subtle red crescent-shaped metal emblem at top center, rusty edges. Clear transparent openings between bars, dark gray iron and restrained crimson accents. Sturdy fortress obstacle, no masonry arch."
+    },
+    {
+      "id": "gate_TOP",
+      "prompt": "Use case: stylized-concept. Asset type: production transparent sprite for the existing top-down oblique Java dungeon game. A CLOSED GATE viewed from the front, horizontal 2:1 canvas, requested native 1024x512. Single isolated complete object with minimal transparent margin, lower edge near bottom of canvas, exact transparent alpha outside the gate. Restrained high quality pixel-cluster fantasy art matching the attached mine stone and timber material style; coarse readable shapes, earthy colors, not photorealistic, no polished 3D, no soft bloom. Gate spans whole horizontal passage. No ground plane, floor, background, character, writing, UI, labels, or shadow outside object. Keep all wood, stone, metal opaque. Sorcerer tower closed arcane barrier: two narrow broken violet stone rune posts supporting a translucent violet magical curtain, crisp geometric diamond seal at center, small cyan-violet runic shapes (abstract marks, not text), luminous perimeter with restrained glow. Clearly visible transparent alpha through the membrane, glowing but readable. No yellow or red."
+    }
+  ]
+}
