@@ -612,7 +612,7 @@ public class WorldRenderer implements Disposable {
                 gh.footOffset = motion ? HeroMotion.FOOT_OFFSET : 2;
                 gh.x = h.x;
                 gh.y = h.y;
-                gh.flip = h.rollFacing == Facing.LEFT;
+                gh.flip = h.rollFacing.leftward();
                 ghosts.add(gh);
             }
         }
@@ -1689,10 +1689,9 @@ public class WorldRenderer implements Disposable {
         if (animated != null) return animated;
         boolean walk = h.moving && ((int) (h.walkTime * 8)) % 2 == 1;
         String name;
-        switch (h.facing) {
-            case UP: name = "hero_up"; break;
-            case LEFT:
-            case RIGHT: name = "hero_side"; break;
+        switch (HeroMotion.row(h.facing)) {
+            case 1: name = "hero_up"; break;
+            case 2: name = "hero_side"; break;
             default: name = "hero_down";
         }
         return art.world(walk ? name + "_walk" : name);
@@ -1711,7 +1710,7 @@ public class WorldRenderer implements Disposable {
         }
         boolean blink = h.invuln > 0 && h.stunT <= 0 && ((int) (h.invuln * 20)) % 2 == 0;
         float alpha = blink ? 0.35f : 1f;
-        boolean flip = h.facing == Facing.LEFT;
+        boolean flip = h.facing.leftward();
         TextureRegion r = heroRegion(h);
         boolean motion = hasHeroMotion();
         float w = motion ? HeroMotion.WIDTH : art.width(r) * S * HERO_SCALE;
@@ -1772,10 +1771,10 @@ public class WorldRenderer implements Disposable {
         TextureRegion r = motionFrame("roll", h.rollFacing, HeroMotion.rollFrame(p));
         TextureRegion upright = motionFrame("walk", h.rollFacing, 2);
         if (r == null || upright == null) {
-            TextureRegion fallback = art.world(h.rollFacing == Facing.UP ? "hero_up"
-                    : h.rollFacing == Facing.DOWN ? "hero_down" : "hero_side");
+            int row = HeroMotion.row(h.rollFacing);
+            TextureRegion fallback = art.world(row == 1 ? "hero_up" : row == 0 ? "hero_down" : "hero_side");
             float w = art.width(fallback) * S * HERO_SCALE, height = art.height(fallback) * S * HERO_SCALE;
-            boolean left = h.rollFacing == Facing.LEFT;
+            boolean left = h.rollFacing.leftward();
             batch.setColor(Color.WHITE);
             actorInk.draw(batch, fallback, h.x + (left ? w/2 : -w/2), h.y - 2, left ? -w : w,
                     height * (1 - .23f * MathUtils.sin(p * MathUtils.PI)));
@@ -1783,7 +1782,7 @@ public class WorldRenderer implements Disposable {
         }
         float weight = HeroMotion.rollWeight(p);
         float w = HeroMotion.WIDTH, height = HeroMotion.HEIGHT;
-        boolean flip = h.rollFacing == Facing.LEFT;
+        boolean flip = h.rollFacing.leftward();
         float x = h.x + (flip ? w / 2 : -w / 2), signedW = flip ? -w : w;
         float y = h.y - HeroMotion.FOOT_OFFSET;
         batch.setColor(Color.WHITE);
@@ -1797,7 +1796,7 @@ public class WorldRenderer implements Disposable {
         if (w == null) return;
         TextureRegion r = art.worldSword(w.defId, w.awakened);
         float aim = MathUtils.atan2(h.aimY, h.aimX) * MathUtils.radDeg;
-        float rest = h.facing == Facing.LEFT ? 125 : h.facing == Facing.RIGHT ? 55 : h.facing == Facing.UP ? 100 : 75;
+        float rest = HeroMotion.restAngle(h.facing);
         rest += MathUtils.sin(time * 2.5f) * 3f;
         float angle = rest;
         float scale = 1f;
@@ -1813,7 +1812,7 @@ public class WorldRenderer implements Disposable {
             angle = HeroMotion.swordAngle(rest, aim, p, 1);
             scale = 1 + .3f * MathUtils.sin(p * MathUtils.PI);
         }
-        float hx = h.x + (h.facing == Facing.LEFT ? -8 : 8) * HERO_SCALE;
+        float hx = h.x + (h.facing.leftward() ? -8 : 8) * HERO_SCALE;
         float hy = h.y + 16 * HERO_SCALE + heroBob(h);
         float grip = 6 * HERO_SCALE;
         batch.setColor(1f, 1f, 1f, alpha);
