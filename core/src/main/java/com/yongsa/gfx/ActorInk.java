@@ -35,20 +35,24 @@ public final class ActorInk implements Disposable {
             uniform vec4 u_secondUV;
             uniform vec2 u_firstInset;
             uniform vec2 u_secondInset;
+            uniform vec4 u_firstPlacement;
+            uniform vec4 u_secondPlacement;
             uniform vec2 u_step;
             uniform float u_weight;
             vec4 pose(vec2 p) {
                 // Clamp to this cell, never the neighbouring frame of an animation atlas.
                 // Sample even outside the cell: a per-fragment early return makes implicit
                 // mip derivatives undefined at the quad edge on desktop GPUs.
-                float inside = step(0.0,p.x)*step(p.x,1.0)*step(0.0,p.y)*step(p.y,1.0);
-                vec2 aUV = clamp(p, u_firstInset, 1.0-u_firstInset);
+                vec2 ap = (p-u_firstPlacement.xy)/u_firstPlacement.zw;
+                float inside = step(0.0,ap.x)*step(ap.x,1.0)*step(0.0,ap.y)*step(ap.y,1.0);
+                vec2 aUV = clamp(ap, u_firstInset, 1.0-u_firstInset);
                 vec4 a = texture2D(u_texture, u_firstUV.xy + aUV*u_firstUV.zw);
                 a.a *= inside;
                 if (u_weight <= 0.0) return a;
-                vec2 bUV = clamp(p, u_secondInset, 1.0-u_secondInset);
+                vec2 bp = (p-u_secondPlacement.xy)/u_secondPlacement.zw;
+                vec2 bUV = clamp(bp, u_secondInset, 1.0-u_secondInset);
                 vec4 b = texture2D(u_other, u_secondUV.xy + bUV*u_secondUV.zw);
-                b.a *= inside;
+                b.a *= step(0.0,bp.x)*step(bp.x,1.0)*step(0.0,bp.y)*step(bp.y,1.0);
                 float alpha = mix(a.a, b.a, u_weight);
                 return vec4(mix(a.rgb*a.a, b.rgb*b.a, u_weight)/max(alpha, .00001), alpha);
             }
@@ -95,12 +99,19 @@ public final class ActorInk implements Disposable {
         shader.setUniformf("u_secondUV",b.getU(),b.getV(),b.getU2()-b.getU(),b.getV2()-b.getV());
         shader.setUniformf("u_firstInset",.5f/a.getRegionWidth(),.5f/a.getRegionHeight());
         shader.setUniformf("u_secondInset",.5f/b.getRegionWidth(),.5f/b.getRegionHeight());
+        placement("u_firstPlacement", a);
+        placement("u_secondPlacement", b);
         float du=(a.getU2()-a.getU())*dx, dv=(a.getV2()-a.getV())*dy;
         // Padding exposes the outer edge without enlarging the actual sprite.
         batch.draw(a.getTexture(),x-Math.signum(width)*EDGE,y-Math.signum(height)*EDGE,
                 width+Math.signum(width)*2*EDGE,height+Math.signum(height)*2*EDGE,
                 a.getU()-du,a.getV2()+dv,a.getU2()+du,a.getV()-dv);
         batch.setShader(previous);
+    }
+
+    private void placement(String uniform, TextureRegion region) {
+        if (region instanceof HeroPose p) shader.setUniformf(uniform,p.left,p.top,p.width,p.height);
+        else shader.setUniformf(uniform,0,0,1,1);
     }
 
     @Override public void dispose() { shader.dispose(); }

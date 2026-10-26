@@ -1,0 +1,900 @@
+{
+  "version": 1,
+  "notes": "Original PNG bytes; source rect/foot are top-left pixel coordinates. Display box 64x72, ground at center x32/y68. Rows south,north,east,southeast,northeast. Idle is frame2. Left directions mirror at render time.",
+  "sources": {
+    "walk": {
+      "path": "sprites/hero-motion/harmony/walk.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "0e2c4fed3fee2824d476e2cda1c46c5a0b75e609e795bd24860740a0816af8f3"
+    },
+    "roll": {
+      "path": "sprites/hero-motion/harmony/roll.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "01707cf98cd0dd86b89fd10e311f4dc4783cf1c63e717bf1fe566fd8e1d374de"
+    },
+    "walk-diag": {
+      "path": "sprites/hero-motion/harmony/walk-diag.png",
+      "width": 2048,
+      "height": 768,
+      "sha256": "be399accd25c773eafebf59137896ff80fd4621572310da3d3b9ceee71bf05ba"
+    },
+    "roll-diag": {
+      "path": "sprites/hero-motion/harmony/roll-diag.png",
+      "width": 2048,
+      "height": 768,
+      "sha256": "64f0ba6321599585230f4a6d7161812c1ceec41f3ae5f6bb96b15b8e00eb1783"
+    },
+    "stride": {
+      "path": "sprites/hero-motion/harmony/stride.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "92a084eb3020966852b0a6823d537caa38bccab0faf3d113486161f85a5c30b9"
+    }
+  },
+  "walk": [
+    [
+      {
+        "source": "walk",
+        "rect": [
+          153,
+          45,
+          128,
+          271
+        ],
+        "foot": [
+          217.5,
+          313
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "walk",
+        "rect": [
+          407,
+          38,
+          128,
+          271
+        ],
+        "foot": [
+          470.0,
+          306
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "walk",
+        "rect": [
+          651,
+          37,
+          123,
+          268
+        ],
+        "foot": [
+          712.5,
+          302
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "stride",
+        "rect": [
+          227,
+          27,
+          218,
+          465
+        ],
+        "foot": [
+          336.5,
+          489
+        ],
+        "pixelsPerWorld": 7.913793103448276
+      },
+      {
+        "source": "walk",
+        "rect": [
+          651,
+          37,
+          123,
+          268
+        ],
+        "foot": [
+          712.5,
+          302
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "walk",
+        "rect": [
+          1389,
+          40,
+          130,
+          277
+        ],
+        "foot": [
+          1454.5,
+          314
+        ],
+        "pixelsPerWorld": 4.557471
+      }
+    ],
+    [
+      {
+        "source": "walk",
+        "rect": [
+          149,
+          334,
+          135,
+          276
+        ],
+        "foot": [
+          218.0,
+          607
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "walk",
+        "rect": [
+          401,
+          332,
+          137,
+          282
+        ],
+        "foot": [
+          472.0,
+          611
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "walk",
+        "rect": [
+          649,
+          333,
+          125,
+          273
+        ],
+        "foot": [
+          711.5,
+          603
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "stride",
+        "rect": [
+          678,
+          27,
+          229,
+          465
+        ],
+        "foot": [
+          796.0,
+          489
+        ],
+        "pixelsPerWorld": 7.913793103448276
+      },
+      {
+        "source": "walk",
+        "rect": [
+          649,
+          333,
+          125,
+          273
+        ],
+        "foot": [
+          711.5,
+          603
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "walk",
+        "rect": [
+          1382,
+          332,
+          135,
+          275
+        ],
+        "foot": [
+          1451.5,
+          604
+        ],
+        "pixelsPerWorld": 4.557471
+      }
+    ],
+    [
+      {
+        "source": "walk",
+        "rect": [
+          130,
+          624,
+          164,
+          269
+        ],
+        "foot": [
+          200.5,
+          890
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "walk",
+        "rect": [
+          375,
+          624,
+          167,
+          263
+        ],
+        "foot": [
+          442.5,
+          884
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "walk",
+        "rect": [
+          660,
+          625,
+          104,
+          270
+        ],
+        "foot": [
+          701.0,
+          892
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "stride",
+        "rect": [
+          1121,
+          38,
+          354,
+          437
+        ],
+        "foot": [
+          1248.0,
+          472
+        ],
+        "pixelsPerWorld": 7.913793103448276
+      },
+      {
+        "source": "walk",
+        "rect": [
+          660,
+          625,
+          104,
+          270
+        ],
+        "foot": [
+          701.0,
+          892
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "stride",
+        "rect": [
+          1158,
+          519,
+          259,
+          462
+        ],
+        "foot": [
+          1266.5,
+          978
+        ],
+        "pixelsPerWorld": 7.913793103448276
+      }
+    ],
+    [
+      {
+        "source": "walk-diag",
+        "rect": [
+          48,
+          24,
+          247,
+          358
+        ],
+        "foot": [
+          183.0,
+          379
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "walk-diag",
+        "rect": [
+          364,
+          41,
+          258,
+          330
+        ],
+        "foot": [
+          514.5,
+          368
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "walk-diag",
+        "rect": [
+          718,
+          24,
+          219,
+          351
+        ],
+        "foot": [
+          820.5,
+          372
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "stride",
+        "rect": [
+          161,
+          520,
+          289,
+          461
+        ],
+        "foot": [
+          323.5,
+          978
+        ],
+        "pixelsPerWorld": 7.913793103448276
+      },
+      {
+        "source": "walk-diag",
+        "rect": [
+          718,
+          24,
+          219,
+          351
+        ],
+        "foot": [
+          820.5,
+          372
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "walk-diag",
+        "rect": [
+          1751,
+          24,
+          250,
+          358
+        ],
+        "foot": [
+          1883.0,
+          379
+        ],
+        "pixelsPerWorld": 5.896552
+      }
+    ],
+    [
+      {
+        "source": "walk-diag",
+        "rect": [
+          47,
+          385,
+          248,
+          354
+        ],
+        "foot": [
+          163.0,
+          736
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "walk-diag",
+        "rect": [
+          359,
+          388,
+          257,
+          350
+        ],
+        "foot": [
+          476.0,
+          735
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "walk-diag",
+        "rect": [
+          726,
+          384,
+          230,
+          345
+        ],
+        "foot": [
+          829.5,
+          726
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "stride",
+        "rect": [
+          642,
+          519,
+          283,
+          466
+        ],
+        "foot": [
+          791.0,
+          982
+        ],
+        "pixelsPerWorld": 7.913793103448276
+      },
+      {
+        "source": "walk-diag",
+        "rect": [
+          726,
+          384,
+          230,
+          345
+        ],
+        "foot": [
+          829.5,
+          726
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "walk-diag",
+        "rect": [
+          1750,
+          384,
+          250,
+          363
+        ],
+        "foot": [
+          1860.5,
+          744
+        ],
+        "pixelsPerWorld": 5.896552
+      }
+    ]
+  ],
+  "roll": [
+    [
+      {
+        "source": "roll",
+        "rect": [
+          71,
+          86,
+          160,
+          252
+        ],
+        "foot": [
+          151.0,
+          335
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          328,
+          153,
+          183,
+          178
+        ],
+        "foot": [
+          419.5,
+          328
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          590,
+          161,
+          203,
+          170
+        ],
+        "foot": [
+          691.5,
+          328
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          874,
+          120,
+          209,
+          211
+        ],
+        "foot": [
+          978.5,
+          328
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          1147,
+          147,
+          215,
+          189
+        ],
+        "foot": [
+          1254.5,
+          333
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          1450,
+          62,
+          171,
+          284
+        ],
+        "foot": [
+          1535.5,
+          345
+        ],
+        "pixelsPerWorld": 4.557471
+      }
+    ],
+    [
+      {
+        "source": "roll",
+        "rect": [
+          54,
+          361,
+          176,
+          273
+        ],
+        "foot": [
+          142.0,
+          631
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          339,
+          422,
+          183,
+          208
+        ],
+        "foot": [
+          430.5,
+          627
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          593,
+          432,
+          211,
+          178
+        ],
+        "foot": [
+          698.5,
+          607
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          872,
+          401,
+          209,
+          218
+        ],
+        "foot": [
+          976.5,
+          616
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          1153,
+          421,
+          213,
+          204
+        ],
+        "foot": [
+          1259.5,
+          622
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          1441,
+          348,
+          171,
+          287
+        ],
+        "foot": [
+          1526.5,
+          632
+        ],
+        "pixelsPerWorld": 4.557471
+      }
+    ],
+    [
+      {
+        "source": "roll",
+        "rect": [
+          40,
+          655,
+          192,
+          248
+        ],
+        "foot": [
+          136.0,
+          900
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          319,
+          705,
+          207,
+          194
+        ],
+        "foot": [
+          422.5,
+          896
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          590,
+          696,
+          205,
+          193
+        ],
+        "foot": [
+          692.5,
+          886
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          884,
+          686,
+          193,
+          203
+        ],
+        "foot": [
+          980.5,
+          886
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          1156,
+          686,
+          211,
+          211
+        ],
+        "foot": [
+          1261.5,
+          894
+        ],
+        "pixelsPerWorld": 4.557471
+      },
+      {
+        "source": "roll",
+        "rect": [
+          1444,
+          640,
+          187,
+          267
+        ],
+        "foot": [
+          1537.5,
+          904
+        ],
+        "pixelsPerWorld": 4.557471
+      }
+    ],
+    [
+      {
+        "source": "roll-diag",
+        "rect": [
+          70,
+          98,
+          251,
+          254
+        ],
+        "foot": [
+          195.5,
+          349
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          405,
+          138,
+          238,
+          219
+        ],
+        "foot": [
+          524.0,
+          354
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          736,
+          81,
+          266,
+          273
+        ],
+        "foot": [
+          869.0,
+          351
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          1053,
+          153,
+          252,
+          199
+        ],
+        "foot": [
+          1179.0,
+          349
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          1388,
+          139,
+          279,
+          225
+        ],
+        "foot": [
+          1527.5,
+          361
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          1759,
+          57,
+          214,
+          309
+        ],
+        "foot": [
+          1866.0,
+          363
+        ],
+        "pixelsPerWorld": 5.896552
+      }
+    ],
+    [
+      {
+        "source": "roll-diag",
+        "rect": [
+          61,
+          456,
+          240,
+          253
+        ],
+        "foot": [
+          181.0,
+          706
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          412,
+          468,
+          229,
+          236
+        ],
+        "foot": [
+          526.5,
+          701
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          712,
+          420,
+          244,
+          274
+        ],
+        "foot": [
+          834.0,
+          691
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          1045,
+          495,
+          267,
+          201
+        ],
+        "foot": [
+          1178.5,
+          693
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          1386,
+          468,
+          284,
+          231
+        ],
+        "foot": [
+          1528.0,
+          696
+        ],
+        "pixelsPerWorld": 5.896552
+      },
+      {
+        "source": "roll-diag",
+        "rect": [
+          1759,
+          387,
+          232,
+          336
+        ],
+        "foot": [
+          1875.0,
+          720
+        ],
+        "pixelsPerWorld": 5.896552
+      }
+    ]
+  ]
+}

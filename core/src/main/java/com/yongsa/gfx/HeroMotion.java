@@ -30,6 +30,11 @@ public final class HeroMotion {
         return Math.floorMod((int) Math.floor(time * 12), 6);
     }
 
+    public static float walkFraction(float time) {
+        float phase = time * 12;
+        return smooth(phase - (float)Math.floor(phase));
+    }
+
     public static int rollFrame(float progress) {
         return Math.min(5, (int) (clamp(progress) * 6));
     }

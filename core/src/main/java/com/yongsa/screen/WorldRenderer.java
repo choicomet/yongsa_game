@@ -284,8 +284,9 @@ public class WorldRenderer implements Disposable {
         this.shapes = shapes;
         this.map = g.map;
         this.T = g.balance.tileSize;
-        heroMotionAvailable = Gdx.files.internal("sprites/hero-motion/walk.png").exists()
-                && Gdx.files.internal("sprites/hero-motion/roll.png").exists();
+        heroMotionAvailable = Gdx.files.internal(com.yongsa.gfx.HeroMotionAtlas.MANIFEST).exists()
+                || (Gdx.files.internal("sprites/hero-motion/walk.png").exists()
+                && Gdx.files.internal("sprites/hero-motion/roll.png").exists());
         this.particles = new Particles(art.white(), art.glow);
         this.theme = new String[map.width * map.height];
         for (Room r : map.rooms) {
@@ -1680,6 +1681,8 @@ public class WorldRenderer implements Disposable {
     }
 
     private TextureRegion motionFrame(String action, Facing facing, int frame) {
+        TextureRegion authored = art.heroMotion(action, facing, frame);
+        if (authored != null) return authored;
         if (!heroMotionAvailable) return null;
         return art.cell("sprites/hero-motion/" + action + ".png", 6, 3, HeroMotion.row(facing) * 6 + frame);
     }
@@ -1716,7 +1719,7 @@ public class WorldRenderer implements Disposable {
         float w = motion ? HeroMotion.WIDTH : art.width(r) * S * HERO_SCALE;
         float hgt = motion ? HeroMotion.HEIGHT : art.height(r) * S * HERO_SCALE;
         float foot = motion ? HeroMotion.FOOT_OFFSET : 2;
-        boolean swordBehind = h.facing == Facing.UP;
+        boolean swordBehind = h.facing.sy > 0;
         if (swordBehind) drawSword(h, alpha);
         if (h.stunT > 0) batch.setColor(0.7f, 0.55f, 0.85f, alpha); // 눈알에 굳음: 잿빛 보라
         else batch.setColor(1f, 1f, 1f, alpha);
@@ -1725,12 +1728,24 @@ public class WorldRenderer implements Disposable {
                 ? 1f - .035f * MathUtils.sin(MathUtils.PI * HeroMotion.clamp(h.swingT / .18f)) : 1f;
         float bob = heroBob(h);
         float dw = w * (2f - squash), dh = hgt * squash;
-        actorInk.draw(batch, r, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
+        TextureRegion next = r;
+        float blend = 0;
+        if (r instanceof com.yongsa.gfx.HeroPose) {
+            TextureRegion walk = motionFrame("walk", h.facing, HeroMotion.walkFrame(h.walkTime));
+            if (walkBlend < .98f) {
+                r = motionFrame("walk", h.facing, 2);
+                next = walk;
+                blend = walkBlend;
+            } else if (h.moving) {
+                next = motionFrame("walk", h.facing, HeroMotion.walkFrame(h.walkTime)+1);
+                blend = HeroMotion.walkFraction(h.walkTime);
+            }
+        }
+        actorInk.draw(batch, r, next, blend, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
         if (h.flash > 0 && !blink) {
             Particles.additive(batch);
             batch.setColor(1f, 0.3f, 0.3f, Math.min(1f, h.flash * 3f) * 0.6f);
-            if (flip) batch.draw(r, h.x + dw / 2f, h.y - foot * squash + bob, -dw, dh);
-            else batch.draw(r, h.x - dw / 2f, h.y - foot * squash + bob, dw, dh);
+            actorInk.draw(batch, r, next, blend, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
             Particles.normal(batch);
         }
         if (!swordBehind) drawSword(h, alpha);
@@ -1967,8 +1982,8 @@ public class WorldRenderer implements Disposable {
         for (Ghost gh : ghosts) {
             float a = 0.12f * (1f - gh.t / 0.2f);
             batch.setColor(0.45f, 0.7f, 1f, a);
-            if (gh.flip) batch.draw(gh.region, gh.x + gh.w / 2f, gh.y - gh.footOffset, -gh.w, gh.h);
-            else batch.draw(gh.region, gh.x - gh.w / 2f, gh.y - gh.footOffset, gh.w, gh.h);
+            actorInk.draw(batch, gh.region, gh.x + (gh.flip ? gh.w/2 : -gh.w/2),
+                    gh.y-gh.footOffset, gh.flip ? -gh.w : gh.w, gh.h);
         }
         Particles.normal(batch);
         batch.setColor(Color.WHITE);

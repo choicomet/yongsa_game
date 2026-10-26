@@ -446,6 +446,19 @@ public class Art implements Disposable {
 
     private final Map<String, Texture> extra = new java.util.HashMap<>();
     private final Map<String, TextureRegion[]> extraFrames = new java.util.HashMap<>();
+    private HeroMotionAtlas heroMotion;
+    private boolean heroMotionChecked;
+
+    /** Optional measured atlas. The legacy property supports same-build visual comparisons. */
+    public TextureRegion heroMotion(String action, com.yongsa.combat.Facing facing, int frame) {
+        if (!heroMotionChecked) {
+            heroMotionChecked = true;
+            FileHandle manifest = Gdx.files.internal(HeroMotionAtlas.MANIFEST);
+            if (!"legacy".equals(System.getProperty("yongsa.heroArt")) && manifest.exists())
+                heroMotion = new HeroMotionAtlas(manifest);
+        }
+        return heroMotion == null ? null : heroMotion.frame(action, facing, frame);
+    }
 
     /**
      * 따로 불러오는 그림 (assets/ 아래 경로, 예: team/sunwoo/chest_left.png). 팀원 버전에서 가져온 그림처럼
@@ -500,6 +513,7 @@ public class Art implements Disposable {
 
     @Override
     public void dispose() {
+        if (heroMotion != null) heroMotion.dispose();
         for (Texture t : extra.values()) if (t != null) t.dispose();
         hd.dispose();
         atlas.dispose();
