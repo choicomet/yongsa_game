@@ -210,6 +210,126 @@ def sword(path):
     return clean_alpha(resize(sq, 32, 32), 60)
 
 
+# ───────────────────────── 칸으로 된 시트 (용사 걷기·구르기, 마을 사람, 상자)
+
+def grid_cells(im, cols, rows):
+    cw, ch = im.width // cols, im.height // rows
+    return [[im.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch)) for c in range(cols)] for r in range(rows)]
+
+
+def fit_frames(cells, scale, bottom_pad=2, min_w=0):
+    """
+    같은 배율로 줄이고, 모든 프레임에 같은 상자를 써서 발 위치가 흔들리지 않게 한다.
+    가로는 칸 가운데를 발로 보고 좌우 대칭, 세로는 가장 아래 픽셀이 발.
+    """
+    cw = cells[0].width
+    top, bottom, half = 10 ** 9, 0, 0
+    for im in cells:
+        bb = im.getbbox()
+        if not bb:
+            continue
+        top, bottom = min(top, bb[1]), max(bottom, bb[3])
+        half = max(half, cw / 2 - bb[0], bb[2] - cw / 2)
+    box = (int(cw / 2 - half), top, int(cw / 2 + half) + 1, bottom)
+    w = max(min_w, round((box[2] - box[0]) * scale))
+    w += w % 2
+    h = round((box[3] - box[1]) * scale) + bottom_pad
+    out = []
+    for im in cells:
+        part = resize(im.crop(box), round((box[2] - box[0]) * scale), round((box[3] - box[1]) * scale))
+        canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        canvas.alpha_composite(part, ((w - part.width) // 2, h - bottom_pad - part.height))
+        out.append(clean_alpha(canvas))
+    return out
+
+
+def body_scale(cell, body_height):
+    bb = cell.getbbox()
+    return body_height / (bb[3] - bb[1])
+
+
+def hero():
+    """main 의 용사 걷기·구르기 (6열 x 3행: 아래·위·옆(오른쪽을 봄))."""
+    walk = grid_cells(load("sprites/hero-motion/walk.png"), 6, 3)
+    roll = grid_cells(load("sprites/hero-motion/roll.png"), 6, 3)
+    k = body_scale(walk[0][0], 34)
+    out = {}
+    for row, name in enumerate(["down", "up", "side"]):
+        # 0번 = 서 있기, 1~6번 = 걷기. 구르기도 같은 상자를 쓰도록 함께 맞춘다
+        frames = fit_frames([walk[row][0]] + walk[row] + roll[row], k)
+        out["hero_" + name] = frames[:7]
+        out["hero_roll_" + name] = frames[7:]
+    return out
+
+
+def flicker(frames_src, factors):
+    """불꽃(밝은 주황·노랑 픽셀)만 밝기를 바꿔 프레임 여러 장을 만든다."""
+    out = []
+    for f in factors:
+        im = frames_src.copy()
+        px = im.load()
+        for y in range(im.height):
+            for x in range(im.width):
+                r, g, b, a = px[x, y]
+                if a and r > 180 and g > 90 and b < 120:
+                    px[x, y] = (min(255, int(r * f)), min(255, int(g * f)), min(255, int(b * f)), a)
+        out.append(im)
+    return out
+
+
+def prop(sheet, region, body_height, canvas):
+    base = single(sheet, region, body_height)
+    out = Image.new("RGBA", canvas, (0, 0, 0, 0))
+    out.alpha_composite(base, ((canvas[0] - base.width) // 2, canvas[1] - base.height))
+    return clean_alpha(out)
+
+
+def strip_cells(path, frames, size):
+    """가로로 이어 붙인 프레임 그림을 프레임마다 size 로 줄인다."""
+    im = load(path)
+    fw = im.width // frames
+    return [clean_alpha(resize(im.crop((i * fw, 0, (i + 1) * fw, im.height)), *size)) for i in range(frames)]
+
+
+# ───────────────────────── 바닥·벽 타일
+
+THEMES = ["camp", "left", "right", "top"]       # main terrain.png 의 CAMP·LEFT·RIGHT·TOP 순서
+THEME_X = [0, 444, 887, 1331]
+
+
+def terrain():
+    """
+    maps/floors_main.png: 테마마다 main 바닥 그림(4x4칸)을 3x3칸(96px)으로 줄여 넣는다 — 용사 키에 견준 돌 크기가 main 과 비슷해진다.
+    게임은 칸 위치(x%3, y%3)로 골라 그림이 이어진다.
+    maps/tiles.png: 같은 자리의 바닥 3변형·벽 윗면·벽 앞면을 main 그림으로 바꾼다 (투기장·마을은 그대로).
+    """
+    t = load("world/terrain.png")
+    F = 96
+    floors = Image.new("RGBA", (F * 4, F), (0, 0, 0, 255))
+    tiles_path = os.path.join(ROOT, "assets", "maps", "tiles.png")
+    tiles = Image.open(tiles_path).convert("RGBA")
+    for i, x0 in enumerate(THEME_X):
+        block = t.crop((x0, 0, x0 + 443, 443)).convert("RGBA")
+        floors.paste(resize(block, F, F), (i * F, 0))
+        top = resize(t.crop((x0 + 1, 446, x0 + 441, 884)).convert("RGBA"), 32, 32)
+        face = resize(t.crop((x0 + 1, 446, x0 + 221, 664)).convert("RGBA"), 32, 32)
+        base = 1 + i * 5   # props.tile_index(theme, 0)
+        for v in range(3):
+            tiles.paste(floors.crop((i * F + v * 32, 0, i * F + v * 32 + 32, 32)), ((base + v) * 32, 0))
+        tiles.paste(top, ((base + 3) * 32, 0))
+        tiles.paste(face, ((base + 4) * 32, 0))
+    floors.save(os.path.join(ROOT, "assets", "maps", "floors_main.png"))
+    tiles.save(tiles_path)
+    print("maps/floors_main.png, maps/tiles.png (camp·left·right·top)")
+
+
+def title():
+    out = os.path.join(ROOT, "assets", "ui")
+    os.makedirs(out, exist_ok=True)
+    load("hd/title.png").convert("RGB").resize((1280, 720), Image.LANCZOS).save(os.path.join(out, "title.jpg"), quality=90)
+    print("ui/title.jpg")
+
+
 def main():
     with open(os.path.join(OUT, "manifest.json"), encoding="utf-8") as f:
         manifest = json.load(f)
@@ -241,9 +361,32 @@ def main():
                          ("weapon_sky", "sword_skyfall"), ("weapon_sky_aw", "sword_skyfall_awakened")]:
         save(mine, [sword("world/" + theirs + ".png")])
 
+    # 용사 (서 있기 1 + 걷기 6, 구르기 6)
+    for name, frames in hero().items():
+        save(name, frames)
+
+    # 캠프 소품·광맥·광물 (main world/props.png)
+    props = load("world/props.png")
+    forge = prop(props, regions["world_forge"], 92, (112, 96))
+    save("forge", flicker(forge, [1.0, 1.15, 0.9]))
+    camp = prop(props, regions["world_campfire"], 40, (48, 42))
+    save("campfire", flicker(camp, [1.0, 1.18, 0.88]))
+    for ore, key in [("blackiron", "BLACKIRON"), ("bloodmoon", "BLOODMOON"), ("sky", "SKY")]:
+        save("vein_" + ore, [prop(props, regions["world_vein_" + key], 30, (32, 32))])
+        save("ore_" + ore, [prop(props, regions["world_gem_" + key], 22, (24, 24))])
+
+    # 마을 사람·보물상자·수정 감옥 (main 의 고친 그림, 프레임 순서는 같다)
+    for k in ["baker", "boy", "child", "elder", "maid", "redhood"]:
+        save("villager_" + k, strip_cells(f"sprites/story/villager_{k}.png", 3, (32, 40)))
+    for side in ["left", "right", "top"]:
+        save("chest_" + side, strip_cells(f"sprites/rewards/chest_{side}.png", 3, (44, 40)))
+    save("crystal_prison", strip_cells("sprites/story/crystal_prison.png", 2, (44, 60)))
+
     with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1, sort_keys=True)
         f.write("\n")
+    terrain()
+    title()
 
 
 if __name__ == "__main__":

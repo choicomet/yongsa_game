@@ -624,7 +624,15 @@ public class WorldRenderer implements Disposable {
             default -> "hero_side";
         };
         boolean flip = h.facing == HeroUnit.Facing.LEFT;
-        TextureRegion f = h.moving && !h.frozen() ? assets.frame(sheet, h.animTime, h.guarding ? 0.2f : 0.12f, 1, 2) : assets.frames(sheet)[0];
+        // 0번은 서 있기, 1번부터 끝까지 걷기 (main 용사 그림은 6장). 구르는 동안은 구르기 그림이 있으면 그것을 쓴다.
+        int walkLast = assets.frames(sheet).length - 1;
+        float stepTime = walkLast > 2 ? 0.09f : 0.12f;
+        TextureRegion f = h.moving && !h.frozen() ? assets.frame(sheet, h.animTime, h.guarding ? stepTime * 1.7f : stepTime, 1, Math.max(1, walkLast)) : assets.frames(sheet)[0];
+        String rollSheet = sheet.replace("hero_", "hero_roll_");
+        if (h.dodging() && assets.has(rollSheet)) {
+            TextureRegion[] r = assets.frames(rollSheet);
+            f = r[Math.min(r.length - 1, (int) (h.dodgeProgress() * r.length))];
+        }
         Color c = tmp.set(Color.WHITE);
         if (h.invincible() && !h.dodging() && !h.dashing() && ((int) (time * 20)) % 2 == 0) c.a = 0.4f;
         if (h.frozen()) c.set(0.6f, 0.85f, 1f, c.a);

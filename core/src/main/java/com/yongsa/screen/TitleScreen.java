@@ -20,15 +20,28 @@ public class TitleScreen extends BaseScreen {
 
     private final KeyNav nav;
     private final Table root = new Table();
+    private com.badlogic.gdx.graphics.Texture background;
 
     public TitleScreen(YongsaGame game) {
         super(game);
         nav = new KeyNav(game.skin);
         root.setFillParent(true);
+        // 배경: main 저장소의 타이틀 그림 (캠프), 글씨가 잘 보이게 어둡게
+        if (Gdx.files.internal("ui/title.jpg").exists()) {
+            background = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("ui/title.jpg"));
+            background.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.Linear, com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
+            Image bg = new Image(background);
+            bg.setFillParent(true);
+            bg.setScaling(com.badlogic.gdx.utils.Scaling.fill);
+            bg.setColor(0.55f, 0.55f, 0.6f, 1f);
+            stage.addActor(bg);
+        }
         stage.addActor(root);
 
         Table art = new Table();
-        art.add(new Image(game.assets.region("hero_down"))).size(96).padRight(10);
+        Image heroArt = new Image(game.assets.region("hero_down"));
+        heroArt.setScaling(com.badlogic.gdx.utils.Scaling.fit);
+        art.add(heroArt).size(96).padRight(10);
         art.add(new Image(game.assets.region("weapon_holy"))).size(80);
         root.add(art).padBottom(8).row();
         root.add(new Label("용사가 다한다", game.skin, "title")).padBottom(6).row();
@@ -48,6 +61,12 @@ public class TitleScreen extends BaseScreen {
         root.getColor().a = 0;
         root.addAction(Actions.fadeIn(0.6f));
         game.sounds.playMusic("bgm_title");
+    }
+
+    @Override
+    public void dispose() {
+        super.dispose();
+        if (background != null) background.dispose();
     }
 
     /** 저장을 읽지 못했을 때 (FR-저장-05). */
