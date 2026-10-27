@@ -771,7 +771,6 @@ public class WorldMap {
             if(door.link.corridor.closed() && (r!=door.room || door.along(x,y)>=0))return false;
             return joint.allowsFoot(x,y,radius);
         }
-        if (r != null && r.allowsFoot(x, y, radius)) return true;
         // The soft edge is a blend of two floors. Do not switch back to an old
         // wall while the new paving is still dominant, or close an existing
         // route early by treating the entire feather strip as opaque artwork.
@@ -779,10 +778,14 @@ public class WorldMap {
         if(r==null || r.type!=RoomType.CAMP)for(int i=paintedJoints.size()-1;i>=0;i--) {
             var edge=paintedJoints.get(i);
             if(edge.alpha(x,y)<.5f)continue;
+            // A dominant repaint can also replace old floor with rock. Falling
+            // through to a room/corridor below would expose an isolated floor island.
+            if(!edge.allowsFoot(x,y,0))return false;
             Door door=jointDoors.get(edge);
             if(!door.link.corridor.closed() && edge.allowsFoot(x,y,radius))return true;
             break; // Respect the uppermost visible painting, not an older floor underneath.
         }
+        if (r != null && r.allowsFoot(x, y, radius)) return true;
         for (Corridor c : corridors) {
             if (x + radius < c.originX || x - radius > c.originX + c.widthPx
                     || y + radius < c.originY || y - radius > c.originY + c.heightPx || c.closed()) continue;

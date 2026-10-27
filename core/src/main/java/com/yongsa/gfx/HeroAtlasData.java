@@ -10,7 +10,12 @@ import java.util.Map;
 public final class HeroAtlasData {
     public record Source(String path, int width, int height, String sha256) {}
     public record Frame(String source, int x, int y, int width, int height,
-                        float footX, float footY, float pixelsPerWorld) {
+                        float footX, float footY, float pixelsPerWorld,
+                        float handX, float handY, boolean handVisible) {
+        public float handOffsetX(boolean mirrored, float squash) {
+            return (mirrored ? -1 : 1) * (handX-footX)/pixelsPerWorld * (2-squash);
+        }
+        public float handOffsetY(float squash) { return (footY-handY)/pixelsPerWorld * squash; }
         /** Placement inside the renderer's common 64x72 quad, in top-left coordinates. */
         public float[] placement() {
             return new float[]{.5f + (x-footX)/pixelsPerWorld/HeroMotion.WIDTH,
@@ -18,8 +23,24 @@ public final class HeroAtlasData {
                     width/pixelsPerWorld/HeroMotion.WIDTH, height/pixelsPerWorld/HeroMotion.HEIGHT};
         }
     }
+    public record Sword(String path, int width, int height, float gripX, float gripY,
+                        float pixelsPerWorld, float angleDegrees) {
+        public float worldWidth() { return width/pixelsPerWorld; }
+        public float worldHeight() { return height/pixelsPerWorld; }
+        public float originX() { return gripX/pixelsPerWorld; }
+        public float originY() { return (height-gripY)/pixelsPerWorld; }
+    }
     public final Map<String, Source> sources = new LinkedHashMap<>();
     public final Map<String, Frame[][]> clips = new LinkedHashMap<>();
+    public final Map<String, Sword> swords = new LinkedHashMap<>();
+
+    public static String swordKey(String defId, boolean awakened) {
+        return switch (defId) {
+            case "holy_sealed" -> "sword_holy";
+            case "holy_awakened" -> "sword_holy_awakened";
+            default -> "sword_" + defId + (awakened ? "_awakened" : "");
+        };
+    }
 
     public static int row(Facing facing) {
         if (facing.diagonal()) return facing.sy < 0 ? 3 : 4;
@@ -44,14 +65,26 @@ public final class HeroAtlasData {
                     JsonValue f = rows.get(r).get(c);
                     int[] rect = f.get("rect").asIntArray();
                     float[] foot = f.get("foot").asFloatArray();
-                    require(rect.length == 4 && foot.length == 2, "Invalid frame coordinates");
+                    float[] hand = f.get("hand").asFloatArray();
+                    require(rect.length == 4 && foot.length == 2 && hand.length == 2, "Invalid frame coordinates");
                     Frame frame = new Frame(f.getString("source"), rect[0], rect[1], rect[2], rect[3],
-                            foot[0], foot[1], f.getFloat("pixelsPerWorld"));
+                            foot[0], foot[1], f.getFloat("pixelsPerWorld"), hand[0], hand[1], f.getBoolean("handVisible"));
                     validate(frame);
                     clip[r][c] = frame;
                 }
             }
             clips.put(action, clip);
+        }
+        for (JsonValue s : root.get("swords")) {
+            float[] grip = s.get("grip").asFloatArray();
+            require(grip.length == 2, "Invalid sword grip");
+            Sword sword = new Sword(s.getString("path"), s.getInt("width"), s.getInt("height"),
+                    grip[0], grip[1], s.getFloat("pixelsPerWorld"), s.getFloat("angleDegrees"));
+            require(sword.width > 0 && sword.height > 0 && Float.isFinite(sword.pixelsPerWorld)
+                    && sword.pixelsPerWorld > 0 && Float.isFinite(sword.angleDegrees), "Invalid sword scale");
+            require(sword.gripX >= 0 && sword.gripX < sword.width && sword.gripY >= 0 && sword.gripY < sword.height,
+                    "Sword grip outside image");
+            swords.put(s.name, sword);
         }
     }
 
@@ -64,6 +97,8 @@ public final class HeroAtlasData {
                 && Float.isFinite(f.footX) && Float.isFinite(f.footY), "Invalid ground anchor or scale");
         require(f.footX >= f.x && f.footX <= f.x+f.width && f.footY >= f.y && f.footY <= f.y+f.height,
                 "Ground anchor outside frame");
+        require(f.handX >= f.x && f.handX < f.x+f.width && f.handY >= f.y && f.handY < f.y+f.height,
+                "Hand anchor outside frame");
         float[] p = f.placement();
         require(p[0] >= 0 && p[1] >= 0 && p[0]+p[2] <= 1 && p[1]+p[3] <= 1,
                 "Pose would be clipped by the hero quad: " + f.source);

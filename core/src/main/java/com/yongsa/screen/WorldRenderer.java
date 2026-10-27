@@ -24,6 +24,8 @@ import com.yongsa.gfx.Art;
 import com.yongsa.gfx.ActorInk;
 import com.yongsa.gfx.Fonts;
 import com.yongsa.gfx.HeroMotion;
+import com.yongsa.gfx.HeroPose;
+import com.yongsa.gfx.HeroSword;
 import com.yongsa.gfx.SpriteBlend;
 import com.yongsa.gfx.Lighting;
 import com.yongsa.gfx.Particles;
@@ -1720,35 +1722,23 @@ public class WorldRenderer implements Disposable {
         float hgt = motion ? HeroMotion.HEIGHT : art.height(r) * S * HERO_SCALE;
         float foot = motion ? HeroMotion.FOOT_OFFSET : 2;
         boolean swordBehind = h.facing.sy > 0;
-        if (swordBehind) drawSword(h, alpha);
-        if (h.stunT > 0) batch.setColor(0.7f, 0.55f, 0.85f, alpha); // 눈알에 굳음: 잿빛 보라
-        else batch.setColor(1f, 1f, 1f, alpha);
         // 휘두를 때 몸을 살짝 찌그러뜨려 힘이 들어간 느낌을 준다
         float squash = h.swingT > 0 && h.swingKind == 0
                 ? 1f - .035f * MathUtils.sin(MathUtils.PI * HeroMotion.clamp(h.swingT / .18f)) : 1f;
         float bob = heroBob(h);
         float dw = w * (2f - squash), dh = hgt * squash;
-        TextureRegion next = r;
-        float blend = 0;
-        if (r instanceof com.yongsa.gfx.HeroPose) {
-            TextureRegion walk = motionFrame("walk", h.facing, HeroMotion.walkFrame(h.walkTime));
-            if (walkBlend < .98f) {
-                r = motionFrame("walk", h.facing, 2);
-                next = walk;
-                blend = walkBlend;
-            } else if (h.moving) {
-                next = motionFrame("walk", h.facing, HeroMotion.walkFrame(h.walkTime)+1);
-                blend = HeroMotion.walkFraction(h.walkTime);
-            }
-        }
-        actorInk.draw(batch, r, next, blend, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
+        if (swordBehind) drawSword(h, alpha, r, squash, bob);
+        if (h.stunT > 0) batch.setColor(0.7f, 0.55f, 0.85f, alpha); // 눈알에 굳음: 잿빛 보라
+        else batch.setColor(1f, 1f, 1f, alpha);
+        // One discrete walk/idle pose: the sword uses this exact pose's hand anchor.
+        actorInk.draw(batch, r, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
         if (h.flash > 0 && !blink) {
             Particles.additive(batch);
             batch.setColor(1f, 0.3f, 0.3f, Math.min(1f, h.flash * 3f) * 0.6f);
-            actorInk.draw(batch, r, next, blend, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
+            actorInk.draw(batch, r, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
             Particles.normal(batch);
         }
-        if (!swordBehind) drawSword(h, alpha);
+        if (!swordBehind) drawSword(h, alpha, r, squash, bob);
         batch.setColor(Color.WHITE);
     }
 
@@ -1802,16 +1792,17 @@ public class WorldRenderer implements Disposable {
         float y = h.y - HeroMotion.FOOT_OFFSET;
         batch.setColor(Color.WHITE);
         actorInk.draw(batch, upright, r, weight, x, y, signedW, height);
-        if (weight < 1) drawSword(h, 1 - weight);
+        // Hands are tucked/occluded during a roll; don't attach a sword to the walking pose.
         batch.setColor(Color.WHITE);
     }
 
-    private void drawSword(HeroActor h, float alpha) {
+    private void drawSword(HeroActor h, float alpha, TextureRegion pose, float squash, float bob) {
         Weapon w = g.state.equipped();
         if (w == null) return;
-        TextureRegion r = art.worldSword(w.defId, w.awakened);
+        HeroSword sword = pose instanceof HeroPose ? art.heroSword(w.defId, w.awakened) : null;
+        TextureRegion r = sword != null ? sword : art.worldSword(w.defId, w.awakened);
         float aim = MathUtils.atan2(h.aimY, h.aimX) * MathUtils.radDeg;
-        float rest = HeroMotion.restAngle(h.facing);
+        float rest = sword != null ? HeroMotion.attachedSwordAngle(h.facing) : HeroMotion.restAngle(h.facing);
         rest += MathUtils.sin(time * 2.5f) * 3f;
         float angle = rest;
         float scale = 1f;
@@ -1827,10 +1818,20 @@ public class WorldRenderer implements Disposable {
             angle = HeroMotion.swordAngle(rest, aim, p, 1);
             scale = 1 + .3f * MathUtils.sin(p * MathUtils.PI);
         }
-        float hx = h.x + (h.facing.leftward() ? -8 : 8) * HERO_SCALE;
-        float hy = h.y + 16 * HERO_SCALE + heroBob(h);
-        float grip = 6 * HERO_SCALE;
         batch.setColor(1f, 1f, 1f, alpha);
+        if (sword != null && pose instanceof HeroPose heroPose) {
+            var frame = heroPose.frame;
+            if (!frame.handVisible()) return;
+            var data = sword.data;
+            float hx = h.x + frame.handOffsetX(h.facing.leftward(), squash);
+            float hy = h.y + frame.handOffsetY(squash) + bob;
+            batch.draw(sword, hx-data.originX(), hy-data.originY(), data.originX(), data.originY(),
+                    data.worldWidth(), data.worldHeight(), scale, scale, angle-data.angleDegrees());
+            return; // The painted sealed holy sword already includes its two bindings.
+        }
+        float hx = h.x + (h.facing.leftward() ? -8 : 8) * HERO_SCALE;
+        float hy = h.y + 16 * HERO_SCALE + bob;
+        float grip = 6 * HERO_SCALE;
         // 그림 속 칼날은 45도로 누워 있으므로 그만큼 빼고 돌린다. 손잡이(왼쪽 아래)를 회전 중심으로.
         batch.draw(r, hx - grip, hy - grip, grip, grip, 32 * HERO_SCALE, 32 * HERO_SCALE, scale, scale, angle - 45);
         if ("holy_sealed".equals(w.defId) && !art.hasHd("sword_holy") && h.swingT <= 0) {

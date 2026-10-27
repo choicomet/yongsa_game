@@ -30,6 +30,18 @@ public final class HeroMotion {
         return Math.floorMod((int) Math.floor(time * 12), 6);
     }
 
+    /** Measured right fists: keep the resting blade outside the face, mirrored with the pose. */
+    public static float attachedSwordAngle(Facing facing) {
+        return switch (facing) {
+            case DOWN, DOWN_RIGHT -> 110;
+            case DOWN_LEFT, UP -> 70;
+            case UP_RIGHT -> 65;
+            case UP_LEFT -> 115;
+            case RIGHT -> 55;
+            case LEFT -> 125;
+        };
+    }
+
     public static float walkFraction(float time) {
         float phase = time * 12;
         return smooth(phase - (float)Math.floor(phase));

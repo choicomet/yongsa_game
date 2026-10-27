@@ -86,8 +86,9 @@ class HeroMotionTest {
     }
 
     @Test void attackMiningAndSkillRecoverWithoutSnappingToTheHeldSwordAngle() {
-        for (int kind = 0; kind < 3; kind++) for (float aim : new float[]{-180, -90, 0, 90, 180}) {
-            float rest = 75;
+        for (Facing facing : Facing.values()) for (int kind = 0; kind < 3; kind++)
+            for (float aim : new float[]{-180, -90, 0, 90, 180}) {
+            float rest = HeroMotion.attachedSwordAngle(facing);
             assertEquals(rest, normalize(HeroMotion.swordAngle(rest, aim, 0, kind)), .001f);
             assertEquals(rest, normalize(HeroMotion.swordAngle(rest, aim, 1, kind)), .001f);
             for (float seam : new float[]{.18f, .65f}) {

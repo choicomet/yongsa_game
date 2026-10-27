@@ -413,19 +413,11 @@ public class Art implements Disposable {
 
     /** 무기 그림. 성검은 봉인 여부, 다른 검은 각성 여부에 따라 다르다. */
     public TextureRegion sword(String defId, boolean awakened) {
-        return get(swordKey(defId, awakened));
+        return get(HeroAtlasData.swordKey(defId, awakened));
     }
 
     public TextureRegion worldSword(String defId, boolean awakened) {
-        return world(swordKey(defId, awakened));
-    }
-
-    private String swordKey(String defId, boolean awakened) {
-        switch (defId) {
-            case "holy_sealed": return "sword_holy";
-            case "holy_awakened": return "sword_holy_awakened";
-            default: return "sword_" + defId + (awakened ? "_awakened" : "");
-        }
+        return world(HeroAtlasData.swordKey(defId, awakened));
     }
 
     /** 이 바닥 칸에 얹을 장식 (없으면 null). 칸 위치로 정해져서 매번 같은 자리에 나온다. */
@@ -451,13 +443,22 @@ public class Art implements Disposable {
 
     /** Optional measured atlas. The legacy property supports same-build visual comparisons. */
     public TextureRegion heroMotion(String action, com.yongsa.combat.Facing facing, int frame) {
+        loadHeroMotion();
+        return heroMotion == null ? null : heroMotion.frame(action, facing, frame);
+    }
+
+    public HeroSword heroSword(String defId, boolean awakened) {
+        loadHeroMotion();
+        return heroMotion == null ? null : heroMotion.sword(HeroAtlasData.swordKey(defId, awakened));
+    }
+
+    private void loadHeroMotion() {
         if (!heroMotionChecked) {
             heroMotionChecked = true;
             FileHandle manifest = Gdx.files.internal(HeroMotionAtlas.MANIFEST);
             if (!"legacy".equals(System.getProperty("yongsa.heroArt")) && manifest.exists())
                 heroMotion = new HeroMotionAtlas(manifest);
         }
-        return heroMotion == null ? null : heroMotion.frame(action, facing, frame);
     }
 
     /**

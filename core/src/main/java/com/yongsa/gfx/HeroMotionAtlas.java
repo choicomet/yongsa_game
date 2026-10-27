@@ -13,6 +13,7 @@ public final class HeroMotionAtlas implements Disposable {
     public static final String MANIFEST = "data/hero-motion.json";
     private final Map<String, Texture> textures = new HashMap<>();
     private final Map<String, HeroPose[][]> clips = new HashMap<>();
+    private final Map<String, HeroSword> swords = new HashMap<>();
 
     public HeroMotionAtlas(FileHandle manifest) {
         HeroAtlasData data = new HeroAtlasData(manifest.readString("UTF-8"));
@@ -33,8 +34,19 @@ public final class HeroMotionAtlas implements Disposable {
                 }
                 clips.put(entry.getKey(), frames);
             }
+            for (var entry : data.swords.entrySet()) {
+                var sword = entry.getValue();
+                Texture texture = new Texture(Gdx.files.internal(sword.path()), true);
+                textures.put(entry.getKey(), texture);
+                if (texture.getWidth()!=sword.width() || texture.getHeight()!=sword.height())
+                    throw new IllegalArgumentException("Sword source dimensions changed: " + sword.path());
+                texture.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+                swords.put(entry.getKey(), new HeroSword(texture, sword));
+            }
         } catch (RuntimeException e) { dispose(); throw e; }
     }
+
+    public HeroSword sword(String key) { return swords.get(key); }
 
     public HeroPose frame(String action, Facing facing, int frame) {
         HeroPose[][] clip = clips.get(action);

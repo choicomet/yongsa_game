@@ -155,7 +155,7 @@
         ],
         "pixelsPerWorld": 5.379310344827586,
         "hand": [
-          659.0,
+          657.6,
           193.3
         ],
         "handVisible": true,
@@ -1407,6 +1407,6 @@
     "hand": "centre of anatomical right glove; leftward directions mirror the complete pose and attachment",
     "grip": "centre of wrapped handle where fist closes, not the pommel",
     "rollPolicy": "hide sword while tucked; handVisible is false when the hand is occluded",
-    "runtimeStatus": "C1-C4 renderer changes remain Claude work per GPT_HERO_SWORD_WALK.md"
+    "runtimeStatus": "WorldRenderer uses measured hands and sword grips, discrete walk poses, and softer hero ink. Sword stays hidden throughout rolls."
   }
 }
