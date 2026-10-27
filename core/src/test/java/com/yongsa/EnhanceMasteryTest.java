@@ -102,8 +102,8 @@ class EnhanceMasteryTest {
 
     @Test
     void everyOutcomeExceptKeepGivesMasteryEvenAtPlusZero() {
-        assertEquals(20, es.masteryExp(Outcome.SUCCESS, 0), "0강 성공도 숙련도가 쌓인다");
-        assertEquals(30, es.masteryExp(Outcome.GREAT, 0));
+        assertEquals(15, es.masteryExp(Outcome.SUCCESS, 0), "0강 성공도 숙련도가 쌓인다 (20 × 0.75)");
+        assertEquals(23, es.masteryExp(Outcome.GREAT, 0), "30 × 0.75 반올림");
         assertEquals(0, es.masteryExp(Outcome.KEEP, 0));
         assertEquals(45, es.masteryExp(Outcome.DOWN, 4), "하락 30 × 1.5");
         assertEquals(120, es.masteryExp(Outcome.DESTROY, 8), "파괴 60 × 2");
@@ -111,8 +111,11 @@ class EnhanceMasteryTest {
 
         GameState s = withSword(0);
         es.enhance(s, s.equipped(), fixed(0.0)); // 성공
-        assertEquals(1, s.masteryLevel, "20 경험치로 Lv1 (필요 12)");
-        assertEquals(8, s.masteryExp);
+        assertEquals(0, s.masteryLevel, "15 경험치로는 아직 Lv0 (필요 20)");
+        assertEquals(15, s.masteryExp);
+        es.enhance(s, s.equipped(), fixed(0.0)); // +1 → +2 성공
+        assertEquals(1, s.masteryLevel, "두 번 성공하면 Lv1");
+        assertEquals(10, s.masteryExp);
     }
 
     @Test
@@ -124,18 +127,18 @@ class EnhanceMasteryTest {
     }
 
     @Test
-    void requirementGrowsEveryLevelAndTotalsAboutTwentyFourHundred() {
+    void requirementGrowsEveryLevelAndTotalsAboutTwentySixHundred() {
         int prev = 0;
         for (int l = 0; l < es.masteryMaxLevel(); l++) {
             int need = es.masteryNeed(l);
             assertTrue(need > prev, "Lv" + l + " 필요 경험치가 점점 는다");
             prev = need;
         }
-        assertEquals(12, es.masteryNeed(0));
-        assertEquals(98, es.masteryNeed(9));
-        assertEquals(288, es.masteryNeed(19));
+        assertEquals(20, es.masteryNeed(0));
+        assertEquals(106, es.masteryNeed(9));
+        assertEquals(296, es.masteryNeed(19));
         assertEquals(0, es.masteryNeed(20));
-        assertEquals(2430, es.masteryTotalTo(20));
+        assertEquals(2590, es.masteryTotalTo(20));
     }
 
     @Test
