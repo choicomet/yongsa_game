@@ -315,6 +315,30 @@ class BossPatternTest {
         assertEquals(boss.def.summonCount, skeletons);
     }
 
+    /** 2026-10-27 버그: 스킬(검기)로 마왕 1페이즈를 마무리하면 ConcurrentModificationException 으로 게임이 꺼졌다. */
+    @Test
+    void finishingPhaseOneWithASkillShotDoesNotCrash() {
+        GameState s = NewGame.create(b);
+        GameSession g = demonFight(s);
+        Monster m = g.activeBoss();
+        s.hp = 999;
+        m.hp = 1;
+        m.enter(Monster.State.RECOVER, 5f);
+        for (int i = 0; i < 3; i++) { // 검기 여러 개가 동시에 날아가는 중
+            com.yongsa.combat.HeroShot h = new com.yongsa.combat.HeroShot();
+            h.kind = "beam";
+            h.x = m.x;
+            h.y = m.centerY();
+            h.radius = 40;
+            h.life = 1f;
+            h.multiplier = 1f;
+            g.shots.add(h);
+        }
+        assertDoesNotThrow(() -> run(g, idle, 0.5f));
+        assertTrue(m.phase2, "스킬로 마무리해도 2페이즈로 넘어간다");
+        assertTrue(g.shots.isEmpty(), "변신하면 날아가던 검기는 사라진다");
+    }
+
     private GameSession demonFight(GameState s) {
         s.equippedUid = s.newWeapon("holy_awakened").uid;
         for (String id : new String[]{"LEFT", "RIGHT", "TOP"}) s.bossesDefeated.add(id);
