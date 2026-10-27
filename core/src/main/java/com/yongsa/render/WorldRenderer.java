@@ -355,7 +355,7 @@ public class WorldRenderer implements Disposable {
         for (Monster m : s.activeMonsters()) {
             if (!m.alive()) continue;
             float eyeY, eyeDx, size;
-            if ("boss_right".equals(m.sprite())) { eyeY = 89; eyeDx = 6; size = 22; }
+            if ("boss_right".equals(m.sprite())) { eyeY = 78; eyeDx = 3; size = 18; } // 혈월의 기사 투구 눈 (tools/team_art.py 그림)
             else if ("mob_minilich".equals(m.sprite())) { eyeY = 41; eyeDx = 3; size = 12; }
             else continue;
             float y = m.footY() - 3 + eyeY;

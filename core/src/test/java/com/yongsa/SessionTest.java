@@ -446,7 +446,7 @@ class SessionTest {
         s.craft(s.balance.weapon("blackiron"));
         assertEquals("흑철검 장착하기 (I 가방)", s.goal().text());
         s.equip(s.inventory.weapons().get(1));
-        assertTrue(s.goal().text().contains("좀비킹"));
+        assertTrue(s.goal().text().contains("골렘"));
         assertFalse(s.routeToGoal().isEmpty());
         assertEquals("L5", s.routeToGoal().get(s.routeToGoal().size() - 1));
     }

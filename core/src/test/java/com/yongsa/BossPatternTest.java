@@ -68,7 +68,7 @@ class BossPatternTest {
         step(s, new Controls(), 2);
         assertEquals("left", s.lockedDungeon());
         assertFalse(gate(s, "left").open());
-        assertTrue(s.goal().text().contains("좀비킹") || s.goal().text().contains("흑철석"));
+        assertTrue(s.goal().text().contains("골렘") || s.goal().text().contains("흑철석"));
         Boss b = enterBoss(s, "L5");
         step(s, new Controls(), 40);
         b.damage(999999, 0, 0, 0);
