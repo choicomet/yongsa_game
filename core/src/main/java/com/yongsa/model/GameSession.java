@@ -1786,11 +1786,13 @@ public class GameSession {
         m.shield = m.shieldMax = 0;
         m.rushLeft = 0;
         m.enter(Monster.State.PHASE_SHIFT, mc.phaseShiftSeconds);
-        hazards.clear();
+        // 스킬·탄환·장판 목록을 도는 중에 불릴 수 있다 (스킬로 1페이즈를 마무리할 때).
+        // 목록을 바로 비우면 ConcurrentModificationException 으로 게임이 꺼지므로, 끝남 표시만 하고 각 update 끝의 removeIf 가 치운다.
+        for (Hazard h : hazards) h.dead = true;
         blindT = 0;
         hero.stunT = 0;
-        projectiles.clear();
-        shots.clear();
+        for (Projectile p : projectiles) p.dead = true;
+        for (HeroShot h : shots) h.dead = true;
         speech(m, "이번 용사는 강하군. 나도 본격적으로 해주마!");
         GameEvent e = new GameEvent(GameEvent.Type.BOSS_PHASE2);
         e.text = m.def.name;
