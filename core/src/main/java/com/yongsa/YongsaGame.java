@@ -70,6 +70,7 @@ public class YongsaGame extends Game {
     }
 
     public void saveSettings() {
+        settings.storeKeys();
         saves.saveSettings(settings);
         applySettings();
     }

@@ -114,6 +114,7 @@ public class GameSession {
 
         map.updateGates(state);
         absorb.migrateImprints(state);
+        enhance.clampMastery(state); // 숙련도가 없던 예전 저장은 0에서 시작한다
         if (state.mapVersion != WorldMap.VERSION) {
             // 방 배치가 바뀐 예전 저장: 광맥 자리와 이어하기 위치는 새 맵에 맞지 않는다
             for (RoomRecord rec : state.rooms.values()) rec.veins = null;
@@ -361,8 +362,10 @@ public class GameSession {
 
     private float skillMsgCd;
 
-    /** 스킬 칸 키 이름 (화면 안내용). */
-    public static final String[] SKILL_KEYS = {"L", "U", "I", "O"};
+    /** 스킬 칸 키 이름 (화면 안내용). 사용자가 조작 키를 바꾸면 화면이 다시 알려 준다. */
+    public final String[] skillKeys = {"L", "U", "I", "O"};
+    /** 상호작용 키 이름 (안내 문구 "E  대장간" 의 앞부분). */
+    public String interactKey = "E";
 
     /**
      * 스킬 칸 하나를 쓴다. 칸은 검 스킬이 열린 차례대로 채워진다 (+10 강화·각성 또는 흡수).
@@ -452,7 +455,7 @@ public class GameSession {
         if (!rules.noteOpenedSkills(state)) return;
         for (int i = before; i < state.skillOrder.size(); i++) {
             Balance.SkillDef sk = balance.weapon(state.skillOrder.get(i)).skill;
-            events.add(GameEvent.toast("새 스킬 「" + sk.name + "」 열림: " + SKILL_KEYS[i] + " 키"));
+            events.add(GameEvent.toast("새 스킬 「" + sk.name + "」 열림: " + skillKeys[i] + " 키"));
         }
         events.add(GameEvent.sound("awaken"));
     }
@@ -1996,7 +1999,7 @@ public class GameSession {
             }
             if (near != null) {
                 targetVillager = near;
-                prompt = villagersFree() ? "E  " + near.name + "와(과) 이야기하기" : "E  " + near.name + " 살펴보기";
+                prompt = villagersFree() ? interactKey + "  " + near.name + "와(과) 이야기하기" : interactKey + "  " + near.name + " 살펴보기";
                 promptX = villagerX(near);
                 promptY = villagerY(near) + 2.2f * T;
                 return;
@@ -2006,7 +2009,7 @@ public class GameSession {
             float d = (float) Math.hypot(chestX(heroRoom) - hero.x, chestY(heroRoom) - hero.y);
             if (d < 1.3f * T) {
                 targetChest = true;
-                prompt = "E  보물상자 열기";
+                prompt = interactKey + "  보물상자 열기";
                 promptX = chestX(heroRoom);
                 promptY = chestY(heroRoom) + 1.6f * T;
                 return;
@@ -2016,7 +2019,7 @@ public class GameSession {
             float d = (float) Math.hypot(portalX(heroRoom) - hero.x, portalY(heroRoom) - hero.y);
             if (d < 1.1f * T) {
                 targetPortal = true;
-                prompt = "E  캠프로 귀환";
+                prompt = interactKey + "  캠프로 귀환";
                 promptX = portalX(heroRoom);
                 promptY = portalY(heroRoom) + 1.6f * T;
                 return;
@@ -2033,15 +2036,15 @@ public class GameSession {
         }
         if (targetProp != null) {
             switch (targetProp.kind) {
-                case FORGE: prompt = "E  대장간"; break;
-                case BED: prompt = "E  침대 (회복·저장)"; break;
+                case FORGE: prompt = interactKey + "  대장간"; break;
+                case BED: prompt = interactKey + "  침대 (회복·저장)"; break;
                 case SEAL:
-                    if (absorb.canUnseal(state)) prompt = "E  성검의 봉인 풀기";
-                    else if (state.unsealed && !state.finalBossDefeated) prompt = "E  심연으로 내려가기 (마왕)";
-                    else if (state.unsealed) prompt = "E  심연 (마왕 다시 보기는 개발 메뉴)";
+                    if (absorb.canUnseal(state)) prompt = interactKey + "  성검의 봉인 풀기";
+                    else if (state.unsealed && !state.finalBossDefeated) prompt = interactKey + "  심연으로 내려가기 (마왕)";
+                    else if (state.unsealed) prompt = interactKey + "  심연 (마왕 다시 보기는 개발 메뉴)";
                     else prompt = "봉인된 문양 · 세 보스의 힘이 필요하다";
                     break;
-                default: prompt = "E  모닥불"; break;
+                default: prompt = interactKey + "  모닥불"; break;
             }
             promptX = targetProp.centerX(T);
             promptY = targetProp.y(T) + targetProp.height(T) + 18;
@@ -2059,7 +2062,7 @@ public class GameSession {
                 }
             }
             if (targetVein != null) {
-                prompt = "E  채굴 (" + targetVein.hitsLeft + "번 남음)";
+                prompt = interactKey + "  채굴 (" + targetVein.hitsLeft + "번 남음)";
                 promptX = center(targetVein.tileX);
                 promptY = (targetVein.tileY + 1) * T + 14;
                 return;

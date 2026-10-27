@@ -56,7 +56,7 @@ public final class ForgeMotion {
             return beat < 0.16f ? 0 : beat < 0.7f ? 1 : beat < 0.88f ? 2 : 3;
         }
         if (outcome == null) return 0;
-        if (outcome == Outcome.SUCCESS) return 4;
+        if (outcome == Outcome.SUCCESS || outcome == Outcome.GREAT) return 4;
         if (outcome == Outcome.DESTROY && phase == Phase.RESULT && progress() < 0.25f) return 3;
         return 5;
     }

@@ -62,13 +62,43 @@
 
   "enhance": {
     "maxLevel": 10,
-    "successBasePercent": 95,
-    "successStepPercent": 7,
-    "bands": [
-      { "fromLevel": 0, "toLevel": 2, "cost": 1, "destroyShare": 0,  "downShare": 0,  "keepShare": 100 },
-      { "fromLevel": 3, "toLevel": 5, "cost": 2, "destroyShare": 0,  "downShare": 0,  "keepShare": 100 },
-      { "fromLevel": 6, "toLevel": 9, "cost": 3, "destroyShare": 15, "downShare": 0,  "keepShare": 85 }
+    "_odds": "2026-10-27 김선우 결정: 단계마다 성공(+1)·대성공(+2)·유지·하락(-1)·파괴 확률(%)을 직접 적는다. 합은 100. 대성공은 모든 단계 3%, +9 에서는 +1 만 오른다.",
+    "odds": [
+      { "level": 0, "success": 92, "great": 3, "keep": 5,    "down": 0,    "destroy": 0 },
+      { "level": 1, "success": 85, "great": 3, "keep": 12,   "down": 0,    "destroy": 0 },
+      { "level": 2, "success": 78, "great": 3, "keep": 19,   "down": 0,    "destroy": 0 },
+      { "level": 3, "success": 71, "great": 3, "keep": 13,   "down": 13,   "destroy": 0 },
+      { "level": 4, "success": 64, "great": 3, "keep": 16.5, "down": 16.5, "destroy": 0 },
+      { "level": 5, "success": 57, "great": 3, "keep": 20,   "down": 20,   "destroy": 0 },
+      { "level": 6, "success": 50, "great": 3, "keep": 19,   "down": 21,   "destroy": 7 },
+      { "level": 7, "success": 43, "great": 3, "keep": 22,   "down": 24,   "destroy": 8 },
+      { "level": 8, "success": 36, "great": 3, "keep": 24,   "down": 28,   "destroy": 9 },
+      { "level": 9, "success": 29, "great": 3, "keep": 27,   "down": 31,   "destroy": 10 }
     ],
+    "bands": [
+      { "fromLevel": 0, "toLevel": 2, "cost": 1, "expMultiplier": 1.0 },
+      { "fromLevel": 3, "toLevel": 5, "cost": 2, "expMultiplier": 1.5 },
+      { "fromLevel": 6, "toLevel": 9, "cost": 3, "expMultiplier": 2.0 }
+    ],
+    "_mastery": "강화 숙련도 (모든 검이 함께 쓴다). 하락 확률 × (1 - Lv/downZeroLevel), 파괴 확률 × (1 - Lv/destroyZeroLevel), 줄어든 만큼은 유지로. 성공 확률은 그대로. 레벨업 필요 경험치 = needBase + needLinear×Lv + needSquare×Lv² (반올림).",
+    "mastery": {
+      "maxLevel": 20,
+      "downZeroLevel": 17,
+      "destroyZeroLevel": 15,
+      "greatBonus": [
+        { "level": 18, "percent": 1 },
+        { "level": 19, "percent": 2 },
+        { "level": 20, "percent": 3 }
+      ],
+      "expSuccess": 20,
+      "expGreat": 30,
+      "expKeep": 0,
+      "expDown": 30,
+      "expDestroy": 60,
+      "needBase": 12,
+      "needLinear": 5,
+      "needSquare": 0.5
+    },
     "destroyRefundRatio": 0.5,
     "dismantleRefund": 3,
     "hammerSeconds": 0.6,

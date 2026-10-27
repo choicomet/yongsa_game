@@ -28,18 +28,20 @@ class EnhanceServiceTest {
 
     @Test
     void oddsMatchSpecTable() {
+        // 2026-10-27 김선우 결정: 성공·대성공(3%)·유지·하락·파괴. 숙련도 0 기준
         Odds o = es.odds(6);
-        assertEquals(53, o.success, 1e-9);
-        // 2026-10-14 팀 결정: 하락 없음 (실패는 유지·파괴만)
-        assertEquals(39.95, o.keep, 1e-9);
-        assertEquals(0, o.down, 1e-9);
-        assertEquals(7.05, o.destroy, 1e-9);
+        assertEquals(50, o.success, 1e-9);
+        assertEquals(3, o.great, 1e-9);
+        assertEquals(19, o.keep, 1e-9);
+        assertEquals(21, o.down, 1e-9);
+        assertEquals(7, o.destroy, 1e-9);
         Odds o3 = es.odds(3);
-        assertEquals(74, o3.success, 1e-9);
-        assertEquals(26, o3.keep, 1e-9);
-        assertEquals(0, o3.down, 1e-9);
+        assertEquals(71, o3.success, 1e-9);
+        assertEquals(13, o3.down, 1e-9);
         assertEquals(0, o3.destroy, 1e-9);
         assertEquals(5, es.odds(0).keep, 1e-9);
+        for (int lv = 0; lv < 10; lv++) assertEquals(3, es.odds(lv).great, 1e-9, "대성공은 모든 단계 3%");
+        for (int lv = 0; lv < 3; lv++) assertEquals(0, es.odds(lv).down, 1e-9, "하락은 +3부터");
     }
 
     @Test
