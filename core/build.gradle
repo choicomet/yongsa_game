@@ -1,15 +1,24 @@
+// core: 게임 규칙(model, world, combat, save)과 화면(ui, screen). 실행 방식과 무관한 코드
+apply plugin: 'java-library'
+
 dependencies {
     api "com.badlogicgames.gdx:gdx:$gdxVersion"
     api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
-    api "com.google.code.gson:gson:$gsonVersion"
+    implementation "com.google.code.gson:gson:$gsonVersion"
 
     testImplementation platform("org.junit:junit-bom:$junitVersion")
-    testImplementation "org.junit.jupiter:junit-jupiter"
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-test {
+// 테스트에서 assets/data/balance.json 을 읽을 수 있게 작업 폴더를 프로젝트 루트로 둔다
+tasks.named('test') {
     useJUnitPlatform()
-    // 테스트도 assets 폴더의 balance.json, world.tmx를 읽는다
-    workingDir = rootProject.file('assets')
+    workingDir = rootProject.projectDir
+    // Tests load these files directly; map-only edits must invalidate the test cache.
+    inputs.files(fileTree(rootProject.file('assets/data')) { include '**/*.json' })
+    testLogging {
+        events 'failed'
+        exceptionFormat 'full'
+    }
 }

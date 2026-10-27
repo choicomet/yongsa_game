@@ -1,117 +1,87 @@
 package com.yongsa.screen;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputAdapter;
-import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.yongsa.YongsaGame;
+import com.yongsa.model.GameState;
+import com.yongsa.model.NewGame;
+import com.yongsa.save.SaveManager;
 import com.yongsa.ui.ConfirmDialog;
-import com.yongsa.ui.KeyNav;
+import com.yongsa.ui.ControlsWindow;
+import com.yongsa.ui.MessageWindow;
+import com.yongsa.ui.Modal;
 import com.yongsa.ui.SettingsWindow;
+import com.yongsa.ui.Ui;
 
-/** 타이틀 (UI-01): 이어하기, 새 게임, 설정, 조작 키, 종료. 키보드로도 고른다. */
-public class TitleScreen extends BaseScreen {
-
-    private final KeyNav nav;
-    private final Table root = new Table();
-    private com.badlogic.gdx.graphics.Texture background;
+/** 타이틀 (UI-01): 이어하기, 새 게임, 설정, 조작 키, 종료. */
+public class TitleScreen extends MenuScreen {
 
     public TitleScreen(YongsaGame game) {
         super(game);
-        nav = new KeyNav(game.skin);
-        root.setFillParent(true);
-        // 배경: main 저장소의 타이틀 그림 (캠프), 글씨가 잘 보이게 어둡게
-        if (Gdx.files.internal("ui/title.jpg").exists()) {
-            background = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("ui/title.jpg"));
-            background.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.Linear, com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
-            Image bg = new Image(background);
-            bg.setFillParent(true);
-            bg.setScaling(com.badlogic.gdx.utils.Scaling.fill);
-            bg.setColor(0.55f, 0.55f, 0.6f, 1f);
-            stage.addActor(bg);
+        open(new TitleMenu());
+    }
+
+    private class TitleMenu extends Modal {
+        TitleMenu() {
+            super(game.skin);
         }
-        stage.addActor(root);
 
-        Table art = new Table();
-        Image heroArt = new Image(game.assets.region("hero_down"));
-        heroArt.setScaling(com.badlogic.gdx.utils.Scaling.fit);
-        art.add(heroArt).size(96).padRight(10);
-        art.add(new Image(game.assets.region("weapon_holy"))).size(80);
-        root.add(art).padBottom(8).row();
-        root.add(new Label("용사가 다한다", game.skin, "title")).padBottom(6).row();
-        root.add(new Label("캐고, 벼리고, 싸우는 것까지 전부 혼자서", game.skin, "dim")).padBottom(44).row();
+        @Override
+        protected void onCancel() {
+            // 타이틀에서 Esc 는 아무것도 하지 않는다
+        }
 
-        TextButton cont = button("이어하기", game::continueGame);
-        cont.setDisabled(!game.saves.hasSave());
-        root.defaults().width(300).height(56).padBottom(10);
-        root.add(cont).row();
-        root.add(button("새 게임", this::newGame)).row();
-        root.add(button("설정", () -> windows.open(new SettingsWindow(game.skin, game.settings, game.sounds::applyVolume)))).row();
-        root.add(button("조작 키", () -> windows.open(new com.yongsa.ui.ControlsWindow(game.skin, game.settings, null)))).row();
-        root.add(button("종료", () -> Gdx.app.exit())).row();
-        root.add(new Label("방향키 + Enter 또는 마우스", game.skin, "small")).padTop(8);
-        nav.focusFirstEnabled();
-
-        root.getColor().a = 0;
-        root.addAction(Actions.fadeIn(0.6f));
-        game.sounds.playMusic("bgm_title");
+        @Override
+        public void build() {
+            Table col = new Table();
+            col.defaults().left();
+            col.add(label("THE HERO DOES IT ALL", "small", Ui.GOLD)).padBottom(18).row();
+            col.add(label("용사가 다한다", "title", Ui.TEXT)).padBottom(18).row();
+            col.add(label("검을 벼리고, 던전을 넘어, 봉인을 깨워라.", "small", Ui.DIM)).padBottom(38).row();
+            boolean hasSave = game.saves.hasSave();
+            TextButton cont = nav.add("이어하기", TitleScreen.this::continueGame);
+            cont.setDisabled(!hasSave);
+            col.add(cont).width(310).height(52).padBottom(8).row();
+            col.add(nav.add("새 게임", TitleScreen.this::newGame)).width(310).height(52).padBottom(8).row();
+            col.add(nav.add("설정", () -> modals.push(new SettingsWindow(game)))).width(310).height(46).padBottom(8).row();
+            col.add(nav.add("조작 키", () -> modals.push(new ControlsWindow(game, null)))).width(310).height(46).padBottom(8).row();
+            col.add(nav.add("종료", () -> Gdx.app.exit())).width(310).height(46).row();
+            col.add(label("방향키로 이동  ·  Enter 선택", "small", Ui.DIM)).padTop(24).row();
+            add(col).expand().left().padLeft(80).padBottom(12);
+            nav.setFocusIndex(hasSave ? 0 : 1);
+        }
     }
 
-    @Override
-    public void dispose() {
-        super.dispose();
-        if (background != null) background.dispose();
-    }
-
-    /** 저장을 읽지 못했을 때 (FR-저장-05). */
-    public void showBrokenSave() {
-        windows.open(new ConfirmDialog(game.skin, "알림", "저장을 읽지 못했습니다.\n새 게임을 시작할까요?", "새 게임", false,
-                game::startNewGame, "취소", () -> { }));
+    private void continueGame() {
+        SaveManager.LoadResult r = game.saves.load();
+        if (r.state == null) {
+            modals.push(new MessageWindow(game.skin, "저장을 읽지 못했습니다", Ui.RED, new ConfirmDialog.Line[]{
+                    new ConfirmDialog.Line("저장 파일이 깨졌습니다. 새 게임을 시작해 주세요.", null)}, "확인"));
+            return;
+        }
+        start(r.state, false);
     }
 
     private void newGame() {
-        if (!game.saves.hasSave()) {
-            game.startNewGame();
-            return;
+        if (game.saves.hasSave()) {
+            modals.push(new ConfirmDialog(game.skin, "새 게임", new ConfirmDialog.Line[]{
+                    new ConfirmDialog.Line("저장된 게임이 있습니다.", null),
+                    new ConfirmDialog.Line("새 게임을 시작하면 지금 저장은 지워집니다.", Ui.RED)},
+                    "새로 시작", true, () -> start(NewGame.create(game.balance), true)));
+        } else {
+            start(NewGame.create(game.balance), true);
         }
-        // 저장이 있는데 새 게임 → 확인창 (FR-저장-04)
-        windows.open(new ConfirmDialog(game.skin, "새 게임", "저장된 게임이 있다. 지우고 새로 시작할까?", "새로 시작", true,
-                game::startNewGame, "취소", () -> { }));
     }
 
-    private TextButton button(String text, Runnable action) {
-        TextButton b = new TextButton(text, game.skin);
-        b.setProgrammaticChangeEvents(false);
-        b.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                game.sounds.play("ui_click");
-                action.run();
-            }
-        });
-        return nav.add(b);
-    }
-
-    @Override
-    public void render(float delta) {
-        nav.update(root);
-        super.render(delta);
-    }
-
-    @Override
-    public void show() {
-        Gdx.input.setInputProcessor(new InputMultiplexer(new InputAdapter() {
-            @Override
-            public boolean keyDown(int keycode) {
-                if (windows.any()) return windows.keyDown(keycode);
-                return nav.keyDown(keycode);
-            }
-        }, stage));
+    private void start(GameState s, boolean intro) {
+        if (intro) {
+            game.save(s);
+            // 이야기 그림 3장 → 소개 글 → 게임
+            game.setScreen(new StoryScreen(game, game.story.opening, () -> game.setScreen(new IntroScreen(game, s))));
+        } else {
+            game.setScreen(new GameScreen(game, s));
+        }
+        dispose();
     }
 }

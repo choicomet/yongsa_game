@@ -1,0 +1,32 @@
+[
+  {
+    "file": "assets/sprites/gate_RIGHT.png",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-b2011274-9f7e-40dd-a5b7-fdbe556f430a.png",
+    "size": [
+      1774,
+      887
+    ],
+    "mode": "RGBA",
+    "alphaRange": [
+      0,
+      255
+    ],
+    "sha256": "4dd085b5ed5ba081eb21d7a43585ae785d42061e0c4fbc212ecfe47c68e7f1b7",
+    "originalBytes": true
+  },
+  {
+    "file": "assets/sprites/gate_RIGHT_side.png",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-bf4cacca-b1aa-44a9-9141-b2defb6a1349.png",
+    "size": [
+      793,
+      1983
+    ],
+    "mode": "RGBA",
+    "alphaRange": [
+      0,
+      255
+    ],
+    "sha256": "54fdacf66fa47097bb4af2326cd532e58750350faa210c7e8698d532d9c7fa54",
+    "originalBytes": true
+  }
+]

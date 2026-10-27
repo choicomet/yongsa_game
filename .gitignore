@@ -1,8 +1,11 @@
 .gradle/
 build/
 */build/
+out/
 .idea/
 *.iml
-out/
+.vscode/
 bin/
-local.properties
+saves/
+*.class
+__pycache__/

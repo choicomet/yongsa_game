@@ -1,26 +1,62 @@
 package com.yongsa.screen;
 
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.Align;
 import com.yongsa.YongsaGame;
+import com.yongsa.model.GameState;
+import com.yongsa.ui.Modal;
+import com.yongsa.ui.Ui;
 
-/** 시작 이야기 (UI-02, FR-공통-01): 그림 3장 + 게임 소개. 아무 키나 다음, Esc 건너뛰기. */
-public final class IntroScreen {
-
-    public static final StoryScreen.Page[] PAGES = {
-            new StoryScreen.Page("intro1.jpg",
-                    "평화롭던 마을, 광장의 오래된 우물에서 어느 날 해골의 왕이 솟아올랐다.\n스스로를 마왕이라 부르는 자였다."),
-            new StoryScreen.Page("intro2.jpg",
-                    "마왕은 마을 사람들을 보랏빛 수정 속에 가두고 그 생명을 빨아들이기 시작했다."),
-            new StoryScreen.Page("intro3.jpg",
-                    "남은 것은 가보로 물려받은 봉인된 검을 지닌 용사 하나.\n용사는 우물 아래, 마왕의 던전으로 내려갔다."),
-            new StoryScreen.Page(null,
-                    "대장장이도, 광부도, 함께 싸울 동료도 없다. 그래서 용사가 다 한다.\n"
-                            + "세 던전의 주인을 쓰러뜨려 힘을 모으면 봉인된 검은 성검으로 깨어나리라."),
+/** 시작 소개 (UI-02): 이야기 그림(StoryScreen) 다음에 나오는 설정 글 3장, 건너뛸 수 있다 (FR-공통-01). */
+public class IntroScreen extends MenuScreen {
+    private static final String[] PAGES = {
+            "우물 아래 던전 한가운데, 버려진 캠프에 용사가 홀로 남았다.\n동료도, 상인도, 대장장이도 없다.\n무기를 만드는 일까지 용사가 다 해야 한다.",
+            "용사에게는 쓰러뜨린 상대의 힘을 흡수하는 힘이 있다.\n그리고 집안 대대로 내려온 가보, 봉인된 성검이 있다.\n지금은 무딘 쇠붙이와 다를 바 없다.",
+            "왼쪽 갱도, 오른쪽 성채, 위쪽 탑.\n세 보스의 힘을 흡수해 봉인을 풀 만큼 강해지면,\n캠프 바닥 문양 아래 심연에서\n깨어난 성검으로 마왕을 쓰러뜨릴 수 있다.",
     };
+    private final GameState state;
+    private int page;
 
-    private IntroScreen() {
+    public IntroScreen(YongsaGame game, GameState state) {
+        super(game);
+        this.state = state;
+        open(new Page());
     }
 
-    public static StoryScreen create(YongsaGame game) {
-        return new StoryScreen(game, PAGES, "bgm_title", () -> game.startGame(game.createSession()));
+    private class Page extends Modal {
+        Page() {
+            super(game.skin);
+        }
+
+        @Override
+        public void build() {
+            Table p = panel();
+            Label text = label(PAGES[page], "large", Ui.TEXT);
+            text.setAlignment(Align.center);
+            text.setWrap(true);
+            p.add(text).width(760).height(200).row();
+            p.add(label((page + 1) + " / " + PAGES.length, "small", Ui.DIM)).padBottom(10).row();
+            Table b = new Table();
+            b.add(nav.add(page == PAGES.length - 1 ? "시작하기" : "다음", this::next)).width(220).height(52).padRight(14);
+            b.add(nav.add("건너뛰기 (Esc)", this::skip)).width(220).height(52);
+            p.add(b);
+        }
+
+        private void next() {
+            page++;
+            if (page >= PAGES.length) skip();
+            else rebuild();
+        }
+
+        private void skip() {
+            game.setScreen(new GameScreen(game, state));
+            IntroScreen.this.dispose();
+        }
+
+        @Override
+        protected void onCancel() {
+            skip();
+        }
     }
 }

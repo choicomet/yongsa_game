@@ -1,0 +1,26 @@
+{
+  "simulationFps": 60,
+  "captureFps": 30,
+  "size": [
+    640,
+    360
+  ],
+  "counts": {
+    "before": 588,
+    "after": 588
+  },
+  "sequences": [
+    "walk-down",
+    "walk-up",
+    "walk-right",
+    "walk-left",
+    "roll-down",
+    "roll-up",
+    "roll-right",
+    "roll-left",
+    "attack",
+    "skill",
+    "mining",
+    "cheer-baker"
+  ]
+}

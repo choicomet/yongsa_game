@@ -1,75 +1,59 @@
 package com.yongsa.ui;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.utils.Align;
 
-/**
- * 확인창. 기본 선택은 "취소"이고 Esc도 취소다 (FR-대장간-11).
- * 내용 칸에 추가 정보(확률 막대 등)를 넣을 수 있다.
- */
-public class ConfirmDialog extends GameWindow {
+/** 확인창. 기본 선택은 “취소”이고 Esc 도 취소다 (UI-05). */
+public class ConfirmDialog extends Modal {
+    public static class Line {
+        final String text;
+        final Color color;
 
-    private final Runnable onCancel;
-    public final Table extra = new Table();
-
-    public ConfirmDialog(Skin skin, String title, String message, String okText, boolean danger,
-                         Runnable onOk, String cancelText, Runnable onCancel) {
-        super(title, skin);
-        this.onCancel = onCancel;
-        Label msg = new Label(message, skin);
-        msg.setWrap(true);
-        msg.setAlignment(Align.center);
-        add(msg).width(560).padBottom(12).row();
-        add(extra).padBottom(16).row();
-        Table row = new Table();
-        TextButton ok = button(okText, danger ? "danger" : "default", () -> {
-            close();
-            onOk.run();
-        });
-        TextButton cancel = null;
-        if (cancelText != null) {
-            cancel = button(cancelText, () -> {
-                close();
-                onCancel.run();
-            });
+        public Line(String text, Color color) {
+            this.text = text;
+            this.color = color;
         }
-        row.add(ok).width(220).height(52);
-        if (cancel != null) row.add(cancel).width(220).height(52).padLeft(14);
-        add(row);
-        if (cancel != null) nav.focus(cancel);
-        else nav.focus(ok);
-        pack();
     }
 
-    /** 버튼 위에 체크박스 한 줄을 넣는다 (키보드로도 고를 수 있다). */
-    public CheckToggle check(String text) {
-        CheckToggle c = new CheckToggle(text, skin);
-        c.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
-                click.run();
-            }
-        });
-        extra.add(c).width(460).height(40).padTop(12).row();
-        nav.add(c);
-        pack();
-        return c;
+    private final String title;
+    private final Line[] lines;
+    private final String confirmText;
+    private final boolean danger;
+    private final Runnable onConfirm;
+
+    public ConfirmDialog(Skin skin, String title, Line[] lines, String confirmText, boolean danger, Runnable onConfirm) {
+        super(skin);
+        this.title = title;
+        this.lines = lines;
+        this.confirmText = confirmText;
+        this.danger = danger;
+        this.onConfirm = onConfirm;
+    }
+
+    public static ConfirmDialog simple(Skin skin, String title, String message, String confirmText, Runnable onConfirm) {
+        return new ConfirmDialog(skin, title, new Line[]{new Line(message, null)}, confirmText, false, onConfirm);
     }
 
     @Override
-    public void refresh() {
-        pack();
-    }
-
-    /** 취소가 없는 창(사망 안내 등)은 Esc로 닫히지 않는다. */
-    @Override
-    public boolean onEscape() {
-        if (onCancel == null) return false;
-        close();
-        onCancel.run();
-        return true;
+    public void build() {
+        Table p = panel();
+        p.add(label(title, "large", danger ? Ui.RED : Ui.GOLD)).padBottom(14).row();
+        for (Line l : lines) {
+            Label lab = label(l.text, "default", l.color);
+            lab.setWrap(true);
+            lab.setAlignment(Align.center);
+            p.add(lab).width(560).padBottom(6).row();
+        }
+        Table buttons = new Table();
+        buttons.add(nav.add("취소", this::close)).width(180).height(52).padRight(16);
+        buttons.add(nav.add(confirmText, () -> {
+            close();
+            onConfirm.run();
+        }, danger)).width(220).height(52);
+        p.add(buttons).padTop(16);
+        nav.setFocusIndex(0);
     }
 }

@@ -1,0 +1,178 @@
+[
+  {
+    "file": "assets/scenes/passages/camp-bend.png",
+    "width": 1024,
+    "height": 1536,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "490c7205a7fcc1c465046d1c7357ce5508902fab8354d942ff5b4976dfc1cba0"
+  },
+  {
+    "file": "assets/scenes/passages/camp-ground.png",
+    "width": 1254,
+    "height": 1254,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "c5361d3d2f49de334420e64bc465d97c02e785bf2bddda666c77c2dde512fc76",
+    "seamMeanAbsoluteRGB": {
+      "horizontal": 18.11,
+      "vertical": 19.01
+    }
+  },
+  {
+    "file": "assets/scenes/passages/camp-h.png",
+    "width": 2172,
+    "height": 724,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "bab93094e28baddcdfc5dc3530acb43e796c1e26b51f26302959b3778101e737"
+  },
+  {
+    "file": "assets/scenes/passages/camp-v.png",
+    "width": 793,
+    "height": 1983,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "2529efba5b41f948ebba86cb3829f43b05b7955c4818f887871aae785d8f095d"
+  },
+  {
+    "file": "assets/scenes/passages/citadel-bend.png",
+    "width": 1024,
+    "height": 1536,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "b4087ca48be7c15a7e0b13c63e7e66cb9c9e92cd5d2eacb4f1b66543830e30e0"
+  },
+  {
+    "file": "assets/scenes/passages/citadel-ground.png",
+    "width": 1254,
+    "height": 1254,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "a67fadcf59e3789c366189f069b0158ccde32d3683848cda36b97d68070fd109",
+    "seamMeanAbsoluteRGB": {
+      "horizontal": 18.0,
+      "vertical": 19.75
+    }
+  },
+  {
+    "file": "assets/scenes/passages/citadel-h.png",
+    "width": 2146,
+    "height": 733,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "667605ec1d6350b9e2d08799be7a33e0f30759efb74881c396ce090daf354fb1"
+  },
+  {
+    "file": "assets/scenes/passages/citadel-v.png",
+    "width": 793,
+    "height": 1983,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "23e61a4e1ae75f37b91d7f191bcd6c6935fef26eaaab5d2d7e02ececbc95e17e"
+  },
+  {
+    "file": "assets/scenes/passages/mine-bend.png",
+    "width": 1024,
+    "height": 1536,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "0a32cbf556c6a5663ad7c2dd9ffdadc5c8e825607cc09e437a6a30d315b06789"
+  },
+  {
+    "file": "assets/scenes/passages/mine-ground.png",
+    "width": 1254,
+    "height": 1254,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "282f56db4fd87c4aabca4d310af49fe8e371bd17013b88bb748a789dbe372e80",
+    "seamMeanAbsoluteRGB": {
+      "horizontal": 13.33,
+      "vertical": 18.05
+    }
+  },
+  {
+    "file": "assets/scenes/passages/mine-h.png",
+    "width": 2146,
+    "height": 733,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "c34692cf61afdc616192db187805f1f0eb2debe3c475077b55f763e7ffee1d28"
+  },
+  {
+    "file": "assets/scenes/passages/mine-v.png",
+    "width": 793,
+    "height": 1983,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "660a1813de6dacad81e721f35166baee15ac4cfd7e7215bc99901b59d0ecf9c8"
+  },
+  {
+    "file": "assets/scenes/passages/tower-bend.png",
+    "width": 1024,
+    "height": 1536,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "403ce78e26998885c85a5e471938a2832a3218100a14a57b31a0f73a040e3177"
+  },
+  {
+    "file": "assets/scenes/passages/tower-ground.png",
+    "width": 1254,
+    "height": 1254,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "86eb6f283d073d8654e91db96f51d8d3edc008c0521c66c78762a765cc3ccdd2",
+    "seamMeanAbsoluteRGB": {
+      "horizontal": 16.35,
+      "vertical": 17.62
+    }
+  },
+  {
+    "file": "assets/scenes/passages/tower-h.png",
+    "width": 2172,
+    "height": 724,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "255cfa8da9d6fa2d3d4eafd606b30c282ddc4a64a1ea3ea3e8047089842a6526"
+  },
+  {
+    "file": "assets/scenes/passages/tower-v.png",
+    "width": 793,
+    "height": 1983,
+    "alphaRange": [
+      255,
+      255
+    ],
+    "sha256": "05765b83ac40a60f49d144b2e47e5b4592b77b36c69083c290fba7ce78e3f1d9"
+  }
+]
