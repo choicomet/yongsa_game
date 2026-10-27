@@ -1,415 +1,601 @@
 package com.yongsa.ui;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.yongsa.config.Balance;
-import com.yongsa.config.Balance.WeaponDef;
-import com.yongsa.gfx.Art;
-import com.yongsa.model.EnhanceService;
-import com.yongsa.model.EnhanceService.Odds;
+import com.yongsa.config.WeaponDef;
+import com.yongsa.model.AwakenAbility;
+import com.yongsa.model.EnhanceOdds;
+import com.yongsa.model.EnhancePreview;
+import com.yongsa.model.EnhanceResult;
 import com.yongsa.model.GameSession;
-import com.yongsa.model.GameState;
-import com.yongsa.model.OreType;
 import com.yongsa.model.Weapon;
-import com.yongsa.screen.GameScreen;
+import com.yongsa.render.Assets;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Locale;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
- * 대장간 창 (UI-04). 탭 3개: 제작, 강화, 분해.
- * 강화 탭은 용사의 작업 장면을 크게, 확률·비용을 작은 정보 카드로 보여준다.
- * 파괴 확인과 실제 판정/저장 규칙은 그대로 유지한다.
+ * 대장간 창 (UI-04): 탭 3개 (제작, 강화, 분해).
+ * 강화 탭: 검 그림, 비용과 보유량, 네 결과 확률 막대(한 번 시도 기준), 강화 후 공격력, 강화 버튼,
+ * 각성까지 남은 단계, 최근 기록. 파괴 위험이 있으면 빨간 버튼 + 확인창 (FR-대장간-10~13, 16~20).
  */
-public class ForgeWindow extends Modal {
+public class ForgeWindow extends GameWindow {
+
     private enum Tab { CRAFT, ENHANCE, DISMANTLE }
 
-    private final GameScreen screen;
-    private final GameSession g;
-    private final Art art;
+    private final GameSession s;
+    private final Assets assets;
+    private final Consumer<GameWindow> openDialog;
+    private final Supplier<Float> effectSpeed;
+    private final Consumer<String> sound;
+
     private Tab tab = Tab.ENHANCE;
+    private final Table tabs = new Table();
+    private final Table content = new Table();
+    private final Label result;
+    private final Deque<String[]> log = new ArrayDeque<>();
+    /** 망치질·각성 연출 중에는 입력을 무시한다. */
+    private float busy;
+    private final Image flash;
+    private final TextButton closeBtn;
+    /** 직접 강화하는 용사 (망치질·결과 자세). 탭을 다시 그려도 같은 것을 쓴다. */
+    private final ForgeHero forgeHero;
 
-    private final ForgeMotion motion = new ForgeMotion();
-    private Runnable afterHammer;
-    private int playedStrikes;
-    private String workingDef;
-    private boolean workingAwakened;
-    private String resultText;
-    private Color resultColor = Ui.TEXT;
+    public ForgeWindow(Skin skin, GameSession s, Assets assets, Consumer<GameWindow> openDialog,
+                       Supplier<Float> effectSpeed, Consumer<String> sound) {
+        super("대장간", skin);
+        this.s = s;
+        this.assets = assets;
+        this.openDialog = openDialog;
+        this.effectSpeed = effectSpeed;
+        this.sound = sound;
+        result = new Label("", skin, "large");
+        result.setAlignment(Align.center);
+        result.setWrap(true);
+        flash = new Image(skin.newDrawable("white", new Color(1f, 0.95f, 0.75f, 1f)));
+        flash.setTouchable(com.badlogic.gdx.scenes.scene2d.Touchable.disabled);
+        forgeHero = new ForgeHero(assets, skin.getRegion("white"));
 
-    public ForgeWindow(GameScreen screen) {
-        super(screen.game.skin);
-        this.screen = screen;
-        this.g = screen.session;
-        this.art = screen.game.art;
-        addCaptureListener(event -> {
-            if (motion.busy() && event instanceof InputEvent) { event.cancel(); return true; }
-            return false;
-        });
-        if (g.state.equipped() == null || !g.balance.weapon(g.state.equipped().defId).enhanceable) {
-            boolean anyCraftable = false;
-            for (WeaponDef d : g.balance.weapons) if (d.enhanceable && g.forge.craftBlockReason(g.state, d) == null) anyCraftable = true;
-            if (anyCraftable || g.state.weapons.size() == 1) tab = Tab.CRAFT;
-        }
+        add(tabs).left().padBottom(10).row();
+        add(content).width(1000).height(440).row();
+        add(result).width(1000).height(44).padTop(2).row();
+        closeBtn = button("닫기 (Esc)", this::close);
+        add(closeBtn).right().width(170).height(46);
     }
-
-    private float speed() {
-        return screen.game.settings.effectSpeed;
-    }
-
-    public boolean isWorking() { return motion.busy(); }
 
     @Override
-    public boolean keyDown(int keycode) {
-        if (motion.busy()) return true;
-        return super.keyDown(keycode);
-    }
-
-    @Override public void close() {
-        if (!motion.busy()) super.close();
+    public void refresh() {
+        nav.clear();
+        tabs.clear();
+        for (Tab t : Tab.values()) {
+            String name = switch (t) {
+                case CRAFT -> "제작";
+                case ENHANCE -> "강화";
+                case DISMANTLE -> "분해";
+            };
+            TextButton b = button(name, "tab", () -> {
+                if (busy > 0) return;
+                tab = t;
+                forgeHero.idle();
+                result.setText("");
+                refresh();
+            });
+            b.setChecked(t == tab);
+            tabs.add(b).width(150).height(48).padRight(8);
+        }
+        // 강화 숙련도: 모든 검이 함께 쓰는 값이라 어느 탭에서나 보인다
+        tabs.add(new MasteryBar(s.mastery, skin)).width(330).height(44).padLeft(40);
+        content.clear();
+        content.top();
+        switch (tab) {
+            case CRAFT -> buildCraft();
+            case ENHANCE -> buildEnhance();
+            case DISMANTLE -> buildDismantle();
+        }
+        nav.add(closeBtn);
+        pack();
+        centerOnStage();
     }
 
     @Override
     public void act(float delta) {
         super.act(delta);
-        boolean wasBusy = motion.busy();
-        boolean completed = motion.advance(delta);
-        int strikes = motion.strikes();
-        if (wasBusy && (motion.phase() == ForgeMotion.Phase.HAMMER || completed)) {
-            if (strikes > playedStrikes) screen.game.sfx.play("mine");
-            playedStrikes = strikes;
-        }
-        if (completed && afterHammer != null) {
-            Runnable action = afterHammer;
-            afterHammer = null;
-            action.run();
-        } else if (wasBusy && !motion.busy()) rebuild();
+        if (busy > 0) busy -= delta;
     }
 
     @Override
-    public void build() {
-        Table p = panel();
-        Table head = new Table();
-        head.add(label("대장간", "large", Ui.GOLD)).padRight(40);
-        tabButton(head, "제작", Tab.CRAFT);
-        tabButton(head, "강화", Tab.ENHANCE);
-        tabButton(head, "분해", Tab.DISMANTLE);
-        head.add(label("불꽃에서 깨어나는 힘", "small", Ui.DIM)).padLeft(24);
-        p.add(head).left().padBottom(24).row();
-
-        Table body = new Table();
-        switch (tab) {
-            case CRAFT: buildCraft(body); break;
-            case ENHANCE: buildEnhance(body); break;
-            default: buildDismantle(body);
-        }
-        p.add(body).width(900).height(470).top().row();
-        Table foot = new Table();
-        TextButton close = nav.add("닫기", this::close);
-        close.setDisabled(motion.busy());
-        foot.add(close).width(180).height(46);
-        foot.add(label("   Esc 닫기 · 방향키/Tab 이동 · Enter 선택", "small", Ui.DIM));
-        p.add(foot).padTop(8);
-        // 처음 열 때는 탭이 아니라 지금 탭의 첫 번째 할 일 버튼에 초점을 둔다
-        if (!opened) {
-            opened = true;
-            nav.setFocusIndex(nav.firstEnabledFrom(3));
-        }
+    public boolean keyDown(int key) {
+        if (busy > 0) return true; // 연출 중 입력 무시 (FR-대장간-13)
+        return super.keyDown(key);
     }
 
-    private boolean opened;
+    // ================================================================== 제작
 
-    private void tabButton(Table head, String text, Tab t) {
-        TextButton b = nav.add(text, () -> {
-            if (motion.busy()) return;
-            tab = t;
-            workingDef = null;
-            motion.clearResult();
-            resultText = null;
-            clearChildren();
-            nav.clear();
-            build();
-            nav.setFocusIndex(t.ordinal());
-        });
-        b.setDisabled(motion.busy());
-        if (tab == t) b.getLabel().setColor(Ui.GOLD);
-        head.add(b).width(120).height(46).padRight(8);
-    }
-
-    // ───────────────────────── 제작
-
-    private void buildCraft(Table body) {
-        if (workingDef != null && motion.busy()) {
-            boolean hammering = motion.phase() == ForgeMotion.Phase.HAMMER;
-            buildStage(body, hammering ? "검을 벼리는 중" : "제작 완료");
+    private void buildCraft() {
+        Table list = new Table();
+        list.top().left();
+        list.add(new Label("던전 광물로 그 던전의 무기를 만든다. 다음 던전의 무기는 +0으로도 앞 무기 +10보다 조금 세다.", skin, "small"))
+                .left().colspan(5).padBottom(12).row();
+        for (WeaponDef d : s.balance.weapons) {
+            if (!d.isSword()) continue;
+            String ore = s.balance.ore(d.ore).name;
+            int have = s.inventory.ore(d.ore);
+            boolean open = s.progress.isOpen(s.balance.dungeon(s.balance.ore(d.ore).dungeon));
+            long owned = s.inventory.weapons().stream().filter(w -> w.def() == d).count();
+            Table row = new Table(skin);
+            row.setBackground(skin.getDrawable("panel-light"));
+            row.add(new Image(assets.region(d.icon))).size(56).padRight(14);
             Table info = new Table();
-            info.add(wrapped(g.balance.weapon(workingDef).name, "large", Ui.TEXT)).width(280).row();
-            info.add(Ui.artImage(art.sword(workingDef, false))).size(150).pad(20).row();
-            info.add(wrapped(hammering ? "용사가 직접 무기를 만들고 있습니다." : "새 무기를 완성했습니다.",
-                    "small", Ui.DIM)).width(280).row();
-            body.add(info).width(304).top();
-            return;
+            info.add(new Label(d.name + (owned > 0 ? "   (가진 것 " + owned + "자루)" : ""), skin, "large")).left().row();
+            info.add(new Label("공격력 " + d.attack + "  (강화 1단계당 +" + d.attackPerLevel + ")", skin, "small")).left();
+            row.add(info).width(420).left();
+            Label cost = new Label(ore + " " + d.craftCost + "개   (보유 " + s.inventory.oreText(d.ore) + ")", skin);
+            if (have < d.craftCost) cost.setColor(UiSkin.SHORT);
+            row.add(cost).width(250).left();
+            TextButton make = button(open ? "만들기" : "던전 봉인됨", () -> craft(d));
+            make.setDisabled(!s.craftService.canCraft(d, s.inventory));
+            row.add(make).width(150).height(48);
+            list.add(row).width(960).padBottom(10).row();
         }
-        GameState s = g.state;
-        body.top().left();
-        body.add(label("광물에 깃든 힘을 검으로 벼리세요.", "default", Ui.TEXT)).colspan(3).left().padBottom(8).row();
-        body.add(label("더 강한 무기는 제작 즉시 장착됩니다.  +10에 도달하면 각성합니다.", "small", Ui.DIM))
-                .colspan(3).left().padBottom(22).row();
-        for (WeaponDef d : g.balance.weapons) {
-            if (!d.enhanceable) continue;
-            OreType ore = OreType.valueOf(d.ore);
-            Table card = new Table(skin);
-            card.setBackground(skin.getDrawable("panelDark"));
-            card.pad(18);
-            card.add(label(dungeonOf(d.ore), "small", Ui.GOLD)).left().row();
-            card.add(Ui.artImage(art.sword(d.id, false))).size(160).pad(8).row();
-            card.add(label(d.name, "large", Ui.TEXT)).left().padBottom(8).row();
-            card.add(label("공격력 " + d.baseAttack + "  ·  강화마다 +" + d.perLevel, "small", Ui.DIM)).left().padBottom(16).row();
-            boolean enough = s.ore(ore) >= d.craftCost;
-            card.add(label(ore.displayName + "  " + s.ore(ore) + " / " + d.craftCost,
-                    "default", enough ? Ui.TEXT : Ui.ORANGE)).left().padBottom(14).row();
-            TextButton button = nav.add("제작하기", () -> craft(d));
-            button.setDisabled(g.forge.craftBlockReason(s, d) != null);
-            card.add(button).growX().height(46);
-            body.add(card).width(288).height(380).padRight(12).top();
-        }
-        body.row();
-        if (resultText != null) body.add(label(resultText, "default", resultColor)).colspan(3).left().padTop(14);
-    }
-
-    private String dungeonOf(String ore) {
-        for (Balance.DungeonDef d : g.balance.dungeons) {
-            if (d.ore.equals(ore)) return com.yongsa.model.NextTask.dungeonWord(d.id) + " 던전";
-        }
-        return "";
+        content.add(list).grow().top();
     }
 
     private void craft(WeaponDef d) {
-        if (g.forge.craftBlockReason(g.state, d) != null) return;
-        startHammer(d.id, false, () -> {
-            Weapon w = g.forge.craft(g.state, d);
-            screen.game.sfx.play("craft");
-            resultText = d.name + "을 만들었다!" + (w.uid == g.state.equippedUid ? " 바로 장착했다." : "");
-            resultColor = Ui.BLUE;
-            motion.result(EnhanceService.Outcome.SUCCESS, false, 0.9f / speed());
-            screen.save(false);
-            rebuild();
-        });
+        Weapon w = s.craft(d);
+        if (w == null) return;
+        sound.accept("craft");
+        String msg = com.yongsa.model.Josa.eul(d.name) + " 만들었다!";
+        if (s.inventory.equipped() != w) {
+            ConfirmDialog ask = new ConfirmDialog(skin, "제작 완료", msg + "\n바로 장착할까?", "장착", false,
+                    () -> { s.equip(w); refresh(); }, "나중에", this::refresh);
+            ask.setClickSound(click);
+            openDialog.accept(ask);
+        }
+        showResult(msg, UiSkin.GOOD);
+        refresh();
     }
 
-    // ───────────────────────── 강화
+    // ================================================================== 강화
 
-    private void buildStage(Table body, String heading) {
-        Table scene = new Table(skin);
-        scene.setBackground(skin.getDrawable("panelDark"));
-        scene.add(label(heading, "small", Ui.GOLD)).left().pad(12, 18, 0, 18).row();
-        Weapon equipped = g.state.equipped();
-        String id = workingDef != null ? workingDef : equipped.defId;
-        boolean awakened = workingDef != null ? workingAwakened : equipped.awakened;
-        scene.add(new ForgeScene(art, motion, id, awakened)).width(576).height(380).row();
-        String caption = resultText != null ? resultText
-                : motion.busy() ? "불꽃을 다듬고, 한 번 더." : "검을 올려두었습니다. 준비되면 시작하세요.";
-        Label result = wrapped(caption, resultText != null ? "default" : "small",
-                resultText != null ? resultColor : Ui.DIM);
-        result.setAlignment(Align.center);
-        scene.add(result).width(540).height(54).pad(0, 18, 6, 18);
-        body.add(scene).width(576).height(470).top().padRight(20);
-    }
-
-    private void buildEnhance(Table body) {
-        GameState s = g.state;
-        Weapon w = s.equipped();
-        WeaponDef d = g.balance.weapon(w.defId);
-        EnhanceService es = g.enhance;
-        buildStage(body, motion.phase() == ForgeMotion.Phase.HAMMER ? "용사의 작업대 · 망치질 중"
-                : motion.outcome() != null ? "용사의 작업대 · 작업 결과" : "용사의 작업대");
+    private void buildEnhance() {
+        // 왼쪽: 장착할 무기 고르기 (장착한 무기만 강화한다, FR-대장간-04)
+        Table left = new Table(skin);
+        left.setBackground(skin.getDrawable("panel-light"));
+        left.top().pad(8);
+        left.add(new Label("장착 무기 (강화 대상)", skin, "gold")).left().padBottom(8).row();
+        for (Weapon w : s.inventory.weapons()) {
+            TextButton b = button(w.displayName(), () -> {
+                if (busy > 0) return;
+                s.equip(w);
+                forgeHero.idle();
+                result.setText("");
+                refresh();
+            });
+            b.setChecked(w == s.inventory.equipped());
+            b.getLabel().setAlignment(Align.left);
+            left.add(b).width(270).height(46).padBottom(6).row();
+        }
+        left.add(new Label("최근 기록", skin, "gold")).left().padTop(14).row();
+        if (log.isEmpty()) left.add(new Label("아직 없음", skin, "small")).left().row();
+        for (String[] l : log) {
+            Label line = new Label(l[0], skin, "small-white");
+            line.setColor(color(l[1]));
+            line.setWrap(true);
+            left.add(line).width(270).left().padBottom(2).row();
+        }
+        ScrollPane scroll = new ScrollPane(left, skin);
+        scroll.setFadeScrollBars(false);
+        scroll.setScrollingDisabled(true, false);
 
         Table right = new Table(skin);
-        right.setBackground(skin.getDrawable("panelDark"));
-        right.pad(14).top().left();
-        Table weapon = new Table();
-        weapon.add(Ui.artImage(art.sword(w.defId, w.awakened))).size(84).padRight(8);
-        Table description = new Table();
-        description.add(wrapped(g.rules.weaponName(w), "default", w.awakened ? Ui.GOLD : Ui.TEXT)).width(172).left().row();
-        description.add(label("공격력 " + g.rules.attack(s, w), "small", Ui.DIM)).left().padTop(4);
-        weapon.add(description).left();
-        right.add(weapon).width(276).left().padBottom(8).row();
+        right.setBackground(skin.getDrawable("panel-light"));
+        right.top().pad(14);
+        Table main = new Table(skin);
+        main.top().left();
+        Weapon w = s.inventory.equipped();
+        EnhancePreview p = s.previewEnhance();
 
-        if (!d.enhanceable) {
-            right.add(wrapped(d.holy ? "성검은 강화할 수 없습니다. 광물로 검을 제작한 뒤 장착해 주세요."
-                    : "강화할 수 없는 무기입니다.", "small", Ui.DIM)).width(276).left().padBottom(12).row();
-        } else if (es.isMax(w)) {
-            right.add(wrapped("각성 완료 · " + d.abilityName, "default", Ui.GOLD)).width(276).left().padBottom(8).row();
-            right.add(wrapped(d.abilityDesc, "small", Ui.DIM)).width(276).left().padBottom(12).row();
+        Table head = new Table();
+        head.add(new Image(assets.region(w.icon()))).size(96).padRight(16);
+        Table names = new Table();
+        names.add(new Label(w.displayName(), skin, "heading")).left().row();
+        if (p.enhanceable() && !p.maxed()) {
+            names.add(new Label("+" + w.level() + "  →  +" + (w.level() + 1) + "      공격력 " + p.attackNow() + "  →  " + p.attackAfter(),
+                    skin, "large")).left().row();
+            String awaken = w.def().awakenedName != null ? "???" : "";
+            names.add(new Label("각성까지 " + p.levelsToAwaken() + "단계  ·  각성하면: " + awaken, skin, "small")).left().row();
         } else {
-            OreType ore = es.oreOf(w);
-            int cost = es.cost(w.level);
-            boolean enough = s.ore(ore) >= cost;
-            right.add(label(ore.displayName + " " + cost + "개 · 보유 " + s.ore(ore), "small",
-                    enough ? Ui.TEXT : Ui.ORANGE)).left().padBottom(8).row();
-            right.add(label("한 번의 확률  +" + w.level + " → +" + (w.level + 1), "small", Ui.DIM))
-                    .left().padBottom(6).row();
-            Odds o = es.odds(w.level);
-            Table odds = new Table();
-            odds.add(label("성공 " + ProbBar.format(o.success) + "%", "small", Ui.BLUE)).width(138).left();
-            odds.add(label("유지 " + ProbBar.format(o.keep) + "%", "small", Ui.GREY)).width(138).left().row();
-            // 2026-10-14 팀 결정: 실패는 유지·파괴만 (하락은 비중 0, 남아 있으면만 보인다)
-            if (o.down > 0) odds.add(label("하락 " + ProbBar.format(o.down) + "%", "small", Ui.ORANGE)).left().padTop(5);
-            odds.add(label("파괴 " + ProbBar.format(o.destroy) + "%", "small", Ui.RED)).left().padTop(5);
-            right.add(odds).width(276).left().padBottom(10).row();
-            int after = g.rules.attack(s, w) + d.perLevel;
-            right.add(label("성공 시 공격력 " + g.rules.attack(s, w) + " → " + after, "small", Ui.TEXT))
-                    .left().padBottom(5).row();
-            right.add(label("각성까지 " + (g.balance.enhance.maxLevel - w.level) + "단계", "small", Ui.PURPLE))
-                    .left().padBottom(4).row();
-            com.yongsa.config.Balance.SkillDef sk = d.skill;
-            if (sk != null) {
-                int lv = g.balance.enhance.skillUnlockLevel;
-                right.add(label(w.level >= lv ? "Q 스킬 「" + sk.name + "」 사용 가능" : "+" + lv + " 에 Q 스킬 「" + sk.name + "」 열림",
-                        "small", w.level >= lv ? Ui.GOLD : Ui.DIM)).left().padBottom(8).row();
-            }
-            boolean risk = es.canDestroy(w);
-            right.add(wrapped(risk ? "파괴 시 검 소멸 · " + ore.displayName + " " + es.destroyRefund(w) + "개 반환"
-                    : "+6부터 파괴될 수 있습니다.", "small", risk ? Ui.RED : Ui.DIM))
-                    .width(276).left().padBottom(10).row();
-            TextButton enhance = nav.add(risk ? "강화하기 · 파괴 위험" : "강화하기", () -> {
-                if (es.canDestroy(w)) confirmRisk(w); else doEnhance(w);
-            }, risk);
-            enhance.setDisabled(motion.busy() || !enough);
-            right.add(enhance).width(276).height(48).padBottom(10).row();
+            names.add(new Label("공격력 " + p.attackNow(), skin, "large")).left().row();
+        }
+        names.add(new Label(lifestealText(p.lifestealNow(), p.lifestealAfter(), p.enhanceable() && !p.maxed()), skin, "small")).left();
+        head.add(names).left();
+        main.add(head).left().colspan(2).padBottom(14).row();
+
+        if (!w.def().enhanceable) {
+            String why = w.def().starter ? "봉인 때문에 힘이 약하다. 강화·분해할 수 없다.\n세 보스의 힘을 흡수하면 봉인이 풀린다."
+                    : "성검은 강화하지 않는다. 용사가 만든 검들의 힘을 나눠 받아 강해진다.";
+            main.add(new Label(why, skin, "dim")).left().colspan(2).row();
+            if (w.def().holy) buildHolyBreakdown(main);
+            main.add(new Label("왼쪽에서 다른 무기를 골라 장착하면 그 무기를 강화한다.", skin, "small")).left().colspan(2).padTop(12).row();
+        } else if (p.maxed()) {
+            buildAwakened(main, w);
+        } else {
+            EnhanceOdds o = p.odds();
+            // 2026-10-27: 대성공 추가. 숙련도로 줄어든 하락·파괴는 원래 값을 괄호로 함께
+            EnhanceOdds base = s.enhanceService.table().odds(w.level());
+            boolean sure = o.success() >= 100;
+            main.add(oddsBar("성공", o.success(), -1, UiSkin.SUCCESS)).left().colspan(2).row();
+            main.add(oddsBar("대성공", o.great(), sure ? -1 : base.great(), UiSkin.GOLD)).left().colspan(2).row();
+            main.add(oddsBar("유지", o.keep(), -1, UiSkin.KEEP)).left().colspan(2).row();
+            main.add(oddsBar("하락", o.down(), sure ? -1 : base.down(), UiSkin.DOWN)).left().colspan(2).row();
+            main.add(oddsBar("파괴", o.destroy(), sure ? -1 : base.destroy(), UiSkin.DESTROY)).left().colspan(2).padBottom(4).row();
+            main.add(new Label(w.level() == table().maxLevel() - 1 ? "대성공이어도 이번에는 +1 (+10 까지)" : "대성공이면 +2", skin, "small"))
+                    .left().colspan(2).padBottom(8).row();
+            String oreName = s.balance.ore(w.ore()).name;
+            Label cost = new Label("비용: " + oreName + " " + p.cost() + "개   (보유 " + s.inventory.oreText(w.ore()) + ")", skin, "large");
+            if (!p.enoughOre()) cost.setColor(UiSkin.SHORT);
+            main.add(cost).left().colspan(2).row();
+            Label refund = new Label(o.risky() ? "파괴되면 " + oreName + " " + p.refundIfDestroyed() + "개를 돌려받고 " + s.inventory.sword().def().name + "을 든다."
+                    : "이 단계에서는 파괴되지 않는다.", skin, "small");
+            main.add(refund).left().colspan(2).padTop(4).row();
+            TextButton go = button(o.risky() ? "강화하기 (파괴 위험)" : "강화하기", o.risky() ? "danger" : "default", this::askEnhance);
+            go.setDisabled(!p.canEnhance());
+            main.add(go).width(300).height(56).left().padTop(14).colspan(2).row();
+            nav.focus(go);
         }
 
-        if (s.weapons.size() > 1) {
-            right.add(label("다른 무기 장착", "small", Ui.DIM)).left().padBottom(4).row();
-            Table swap = new Table();
-            for (Weapon other : s.weapons) {
-                if (other.uid == s.equippedUid) continue;
-                TextButton change = nav.add(g.rules.weaponName(other), () -> {
-                    if (motion.busy()) return;
-                    g.forge.equip(s, other);
-                    resultText = null;
-                    workingDef = null;
-                    motion.clearResult();
-                    rebuild();
-                });
-                change.setDisabled(motion.busy());
-                swap.add(change).height(38).padRight(6);
+        forgeHero.setSword(assets.region(w.icon()));
+        // 글이 길어도 네모 칸(오른쪽 판) 밖으로 나가지 않게: 폭을 고정하고 긴 줄은 접고, 넘치는 그림은 잘라 낸다
+        fitInside(main, MAIN_W);
+        right.add(main).top().left().width(MAIN_W);
+        right.add(forgeHero).size(230, 230).top().right();
+        right.setClip(true);
+        content.add(scroll).width(300).growY().padRight(12);
+        content.add(right).width(688).growY();
+    }
+
+    /** 강화 탭 오른쪽 판에서 글·그림이 쓸 수 있는 폭 (판 688 - 안쪽 여백 28 - 대장간 용사 230). */
+    private static final float MAIN_W = 688 - 28 - 230;
+
+    /**
+     * 표 안의 글이 maxW보다 넓으면 줄을 바꾸게 한다 (안쪽 표까지 모두). 무기 그림·이름 줄처럼
+     * 옆에 다른 칸이 있는 표는 그 칸만큼 뺀 폭으로 접는다.
+     */
+    private static void fitInside(Table t, float maxW) {
+        t.layout();
+        var cells = t.getCells();
+        for (int i = 0; i < cells.size; i++) {
+            com.badlogic.gdx.scenes.scene2d.ui.Cell<?> c = cells.get(i);
+            com.badlogic.gdx.scenes.scene2d.Actor a = c.getActor();
+            float avail = maxW;
+            if (c.getColspan() == 1 && t.getColumns() > 1) {
+                // 같은 줄 다른 칸(그림 등)의 폭만큼 줄인다
+                for (int j = 0; j < cells.size; j++) {
+                    com.badlogic.gdx.scenes.scene2d.ui.Cell<?> o = cells.get(j);
+                    if (o != c && o.getRow() == c.getRow() && o.getActor() != null) {
+                        avail -= o.getPrefWidth() + o.getPadLeft() + o.getPadRight();
+                    }
+                }
+                avail -= c.getPadLeft() + c.getPadRight();
             }
-            com.badlogic.gdx.scenes.scene2d.ui.ScrollPane scroll = new com.badlogic.gdx.scenes.scene2d.ui.ScrollPane(swap);
-            scroll.setScrollingDisabled(false, true);
-            right.add(scroll).width(276).height(42).left().padBottom(6).row();
+            if (a instanceof Label l && l.getPrefWidth() > avail) {
+                l.setWrap(true);
+                c.width(avail);
+            } else if (a instanceof Table inner) {
+                fitInside(inner, avail);
+                if (inner.getPrefWidth() > avail) c.width(avail);
+            } else if (a != null && c.getPrefWidth() > avail && !(a instanceof com.badlogic.gdx.scenes.scene2d.ui.Image)) {
+                c.width(avail);
+            }
         }
-        if (!s.enhanceLog.isEmpty())
-            right.add(wrapped("최근 · " + s.enhanceLog.get(0), "small", Ui.DIM)).width(276).left().row();
-        body.add(right).width(304).height(470).top();
+        t.invalidateHierarchy();
     }
 
-    private void confirmRisk(Weapon w) {
-        EnhanceService es = g.enhance;
-        Odds o = es.odds(w.level);
-        OreType ore = es.oreOf(w);
-        ConfirmDialog.Line[] lines = {
-                new ConfirmDialog.Line(g.rules.weaponName(w) + "을 강화합니다.", null),
-                new ConfirmDialog.Line("성공 " + ProbBar.format(o.success) + "%  ·  유지 " + ProbBar.format(o.keep)
-                        + (o.down > 0 ? "%  ·  하락 " + ProbBar.format(o.down) : "") + "%", Ui.TEXT),
-                new ConfirmDialog.Line("파괴 " + ProbBar.format(o.destroy) + "%", Ui.RED),
-                new ConfirmDialog.Line("파괴되면 무기가 사라지고 " + ore.displayName + " " + es.destroyRefund(w) + "개만 돌려받습니다.", Ui.DIM),
-        };
-        screen.modals.push(new ConfirmDialog(skin, "파괴될 수 있습니다", lines, "그래도 강화", true, () -> doEnhance(w)));
+    private static String pct(float v) {
+        return fmt(v) + "%";
     }
 
-    private Label wrapped(String text, String style, Color color) {
-        Label value = label(text, style, color);
-        value.setWrap(true);
-        return value;
+    private String lifestealText(float now, float after, boolean preview) {
+        if (now <= 0 && (!preview || after <= 0)) return "흡혈 없음 (+6강부터 생긴다)";
+        String t = "흡혈: 한 번 벨 때마다 용사 최대 체력의 " + pct(now);
+        if (preview && after != now) t += "  →  " + pct(after);
+        return t;
     }
 
-    private void doEnhance(Weapon w) {
-        if (motion.busy()) return;
-        if (g.enhance.blockReason(g.state, w) != null) return;
-        resultText = null;
-        startHammer(w.defId, w.awakened, () -> {
-            EnhanceService.Result r = g.enhance.enhance(g.state, w, g.random);
-            motion.result(r.outcome, r.awakened, (r.awakened ? g.balance.enhance.awakenSeconds : 1.05f) / speed());
-            screen.save(false); // 강화 직후 자동 저장: 꺼도 결과를 되돌릴 수 없다 (FR-대장간-15)
-            switch (r.outcome) {
-                case SUCCESS:
-                    resultText = "성공! +" + r.levelBefore + " → +" + r.levelAfter;
-                    resultColor = Ui.BLUE;
-                    screen.game.sfx.play(r.awakened ? "awaken" : "success");
-                    if (r.awakened) resultText += " · " + g.balance.weapon(w.defId).awakenedName + " 각성!";
-                    break;
-                case KEEP:
-                    resultText = "유지. 단계가 그대로다";
-                    resultColor = Ui.GREY;
-                    screen.game.sfx.play("keep");
-                    break;
-                case DOWN:
-                    resultText = "하락… +" + r.levelBefore + " → +" + r.levelAfter;
-                    resultColor = Ui.ORANGE;
-                    screen.game.sfx.play("down");
-                    break;
-                default:
-                    resultText = "용사가 실수했다! 무기가 파괴되었다";
-                    resultColor = Ui.RED;
-                    screen.game.sfx.play("destroy");
-                    screen.hud.toast(r.refundOre.displayName + " " + r.refund + "개를 돌려받았다. 봉인된 성검을 들었다");
+    /** 성검: 만든 검들에게서 나눠 받는 힘. */
+    private void buildHolyBreakdown(Table right) {
+        var shares = s.power.shares(s.inventory, s.hero);
+        right.add(new Label("성검이 나눠 받는 힘 (종류마다 가장 센 검)", skin, "gold")).left().colspan(2).padTop(12).row();
+        if (shares.isEmpty()) right.add(new Label("아직 만든 검이 없다. 검을 만들고 강화할수록 성검이 강해진다.", skin, "small")).left().colspan(2).row();
+        for (var sh : shares.values()) {
+            String line = sh.def().name + " +" + sh.level() + (sh.absorbed() ? " (흡수)" : "") + "  ·  공격력 " + sh.attack()
+                    + " × " + fmt(s.balance.holy.shareRatio) + "  ·  흡혈 " + pct(sh.lifesteal());
+            right.add(new Label(line, skin, "small-white")).left().colspan(2).row();
+        }
+        right.add(new Label("기본 " + s.balance.holySword().attack + " + 나눠 받은 공격력 = " + s.power.holyBase(s.inventory, s.hero)
+                + "   (흡수한 힘 보너스 전)", skin, "small")).left().colspan(2).padTop(4).row();
+    }
+
+    private void buildAwakened(Table right, Weapon w) {
+        AwakenAbility a = w.ability();
+        right.add(new Label("각성한 무기다! 더 강화하지 않으므로 하락·파괴되지 않는다.", skin, "gold")).left().colspan(2).row();
+        if (a != null) {
+            right.add(new Label("능력: " + a.title + " — " + a.description, skin)).left().colspan(2).padTop(8).row();
+            boolean already = s.hero.absorbed().contains(a);
+            right.add(new Label(already ? "이 능력은 이미 용사에게 흡수되어 있다."
+                    : "힘을 흡수하면 무기는 사라지고, 능력과 모든 무기 공격력 +10%가 용사에게 남는다.", skin, "small"))
+                    .left().colspan(2).padTop(8).row();
+            TextButton absorb = button("힘 흡수", () -> {
+                ConfirmDialog d = new ConfirmDialog(skin, "힘 흡수", com.yongsa.model.Josa.eun(w.name()) + " 사라지고 그 힘이 용사에게 남습니다.",
+                        "흡수한다", false, () -> {
+                            if (s.absorbWeapon(w)) {
+                                sound.accept("absorb");
+                                showResult(a.title + "의 힘이 용사에게 스며들었다! 이제 어떤 무기를 들어도 쓴다.", UiSkin.GOLD);
+                            }
+                            refresh();
+                        }, "취소", () -> { });
+                d.setClickSound(click);
+                openDialog.accept(d);
+            });
+            absorb.setDisabled(already);
+            right.add(absorb).width(240).height(52).left().padTop(14).colspan(2).row();
+        }
+    }
+
+    /** 확률 막대 한 줄. 0%도 회색으로 남긴다 (FR-대장간-10). */
+    private Table oddsBar(String name, double pct, Color color) {
+        return oddsBar(name, pct, -1, color);
+    }
+
+    /** base >= 0 이고 pct 와 다르면 숙련도로 바뀐 것: 원래 값을 괄호로 함께 보여 준다. */
+    private Table oddsBar(String name, double pct, double base, Color color) {
+        Table t = new Table();
+        Label n = new Label(name, skin);
+        t.add(n).width(66).left();
+        Bar bar = new Bar(skin.getRegion("white"), pct > 0 ? color : UiSkin.KEEP, (float) pct / 100f);
+        t.add(bar).width(200).height(18).padRight(10);
+        boolean changed = base >= 0 && Math.abs(base - pct) > 1e-6;
+        Label v = new Label(fmt(pct) + "%" + (changed ? "  (" + fmt(base) + ")" : ""), skin);
+        if (pct <= 0) {
+            n.setColor(0.45f, 0.45f, 0.5f, 1f);
+            v.setColor(0.45f, 0.45f, 0.5f, 1f);
+        } else v.setColor(color);
+        t.add(v).width(130).left();
+        return t;
+    }
+
+    private static String fmt(double v) {
+        if (Math.abs(v - Math.round(v)) < 1e-6) return String.valueOf(Math.round(v));
+        return String.format(Locale.ROOT, "%.2f", v).replaceAll("0$", "");
+    }
+
+    /**
+     * 파괴 위험 확인창에서 "다시 묻지 않기"를 체크하고 강화했으면, 게임을 다시 켤 때까지 확인창을 건너뛴다.
+     * 일부러 저장하지 않는다 (재접속하면 다시 묻는다).
+     */
+    private static boolean skipDestroyConfirm;
+
+    private void askEnhance() {
+        if (busy > 0) return;
+        EnhancePreview p = s.previewEnhance();
+        if (!p.canEnhance()) return;
+        if (!p.odds().risky() || skipDestroyConfirm) {
+            doEnhance();
+            return;
+        }
+        // 파괴 위험: 누를 때마다 확인창 (기본 선택 "취소", FR-대장간-11, UI-05)
+        EnhanceOdds o = p.odds();
+        Weapon w = s.inventory.equipped();
+        CheckToggle[] dontAsk = new CheckToggle[1];
+        ConfirmDialog d = new ConfirmDialog(skin, "파괴 위험",
+                com.yongsa.model.Josa.eul(w.displayName()) + " 강화할까?\n실패하면 무기가 부서질 수 있다.", "강화한다", true,
+                () -> {
+                    if (dontAsk[0] != null && dontAsk[0].isChecked()) skipDestroyConfirm = true;
+                    doEnhance();
+                }, "취소", () -> { });
+        d.extra.add(oddsBar("성공", o.success(), UiSkin.SUCCESS)).row();
+        d.extra.add(oddsBar("대성공", o.great(), UiSkin.GOLD)).row();
+        d.extra.add(oddsBar("유지", o.keep(), UiSkin.KEEP)).row();
+        d.extra.add(oddsBar("하락", o.down(), UiSkin.DOWN)).row();
+        d.extra.add(oddsBar("파괴", o.destroy(), UiSkin.DESTROY)).row();
+        d.extra.add(new Label("파괴되면 " + s.balance.ore(w.ore()).name + " " + p.refundIfDestroyed() + "개를 돌려받는다.", skin, "small")).padTop(6).row();
+        dontAsk[0] = d.check("게임을 다시 켤 때까지 이 확인창 띄우지 않기");
+        d.pack();
+        d.setClickSound(click);
+        openDialog.accept(d);
+    }
+
+    private void doEnhance() {
+        com.badlogic.gdx.graphics.g2d.TextureRegion icon = assets.region(s.inventory.equipped().icon());
+        EnhanceResult r = s.enhanceEquipped();
+        if (!r.attempted()) return;
+        forgeHero.hammer(icon);
+        float hammer = 0.6f / effectSpeed.get();
+        busy = hammer;
+        sound.accept("hammer");
+        result.clearActions();
+        result.setColor(Color.WHITE);
+        result.setText("깡!  깡!  깡!");
+        result.addAction(Actions.sequence(Actions.delay(hammer), Actions.run(() -> reveal(r))));
+    }
+
+    private void reveal(EnhanceResult r) {
+        String text;
+        String kind;
+        switch (r.outcome()) {
+            case SUCCESS -> {
+                text = "강화 성공!  +" + r.levelBefore() + " → +" + r.levelAfter();
+                kind = "success";
+                sound.accept("enhance_success");
             }
-            g.onWeaponsChanged();
-            rebuild();
-        });
+            case GREAT -> {
+                text = "대성공!!  +" + r.levelBefore() + " → +" + r.levelAfter();
+                kind = "great";
+                sound.accept("enhance_success");
+                greatFlash();
+            }
+            case KEEP -> {
+                text = "강화 실패 — 단계 유지 (+" + r.levelAfter() + ")";
+                kind = "keep";
+                sound.accept("enhance_fail");
+            }
+            case DOWN -> {
+                text = "강화 실패 — 단계 하락  +" + r.levelBefore() + " → +" + r.levelAfter();
+                kind = "down";
+                sound.accept("enhance_fail");
+            }
+            default -> {
+                text = "용사가 실수했다!  " + com.yongsa.model.Josa.i(r.weaponName()) + " 부서졌다… (광물 " + r.refund() + "개 돌려받음)";
+                kind = "destroy";
+                sound.accept("destroy");
+            }
+        }
+        forgeHero.result(kind);
+        if (r.masteryGained() > 0) text += "   · 숙련 +" + r.masteryGained();
+        if (r.masteryLeveledUp()) {
+            text += "   · 강화 숙련도 Lv " + r.masteryAfter() + "!" + masteryNote(r.masteryAfter());
+            sound.accept("level_up");
+        }
+        log.addFirst(new String[]{r.weaponName() + ": " + text, kind});
+        while (log.size() > 5) log.removeLast();
+        showResult(text, color(kind));
+        if (r.awakened()) awaken();
+        refresh();
     }
 
-    // ───────────────────────── 분해
+    /** 대성공: 금빛 번쩍임 (각성보다 짧게). */
+    private void greatFlash() {
+        float t = 0.6f / effectSpeed.get();
+        Image f = new Image(skin.newDrawable("white", new Color(1f, 0.85f, 0.35f, 1f)));
+        f.setTouchable(com.badlogic.gdx.scenes.scene2d.Touchable.disabled);
+        f.setBounds(0, 0, getWidth(), getHeight());
+        f.getColor().a = 0.55f;
+        addActor(f);
+        f.addAction(Actions.sequence(Actions.fadeOut(t), Actions.removeActor()));
+    }
 
-    private void buildDismantle(Table body) {
-        GameState s = g.state;
-        body.top();
-        body.add(label("안 쓰는 무기를 분해하면 광물 " + g.balance.enhance.dismantleRefund
-                + "개를 돌려받는다. 장착한 무기와 성검은 분해할 수 없다.", "small", Ui.DIM)).colspan(3).left().padBottom(14).row();
+    /** 숙련도 레벨이 오를 때 눈에 띄는 변화 한마디. */
+    private String masteryNote(int lv) {
+        com.yongsa.config.MasteryDef m = s.mastery.def();
+        if (lv == m.destroyZeroLevel) return " 이제 무기가 파괴되지 않는다!";
+        if (lv == m.downZeroLevel) return " 이제 단계가 떨어지지 않는다!";
+        if (lv >= m.maxLevel) return " 마스터!";
+        if (lv >= m.greatBonusFromLevel) return " 대성공이 늘었다!";
+        return " 하락·파괴가 줄었다.";
+    }
+
+    private com.yongsa.model.EnhanceTable table() {
+        return s.enhanceService.table();
+    }
+
+    /** 각성 연출 1.5초: 빛 + "○○이 각성했다!" + 새 능력 설명 (FR-대장간-17). */
+    private void awaken() {
+        Weapon w = s.inventory.equipped();
+        float t = 1.5f / effectSpeed.get();
+        busy = t;
+        sound.accept("awaken");
+        flash.setBounds(0, 0, getWidth(), getHeight());
+        flash.getColor().a = 0.9f;
+        addActor(flash);
+        flash.clearActions();
+        flash.addAction(Actions.sequence(Actions.fadeOut(t), Actions.removeActor()));
+        AwakenAbility a = w.ability();
+        showResult(com.yongsa.model.Josa.i(w.name()) + " 각성했다!" + (a != null ? "  새 능력: " + a.title + " — " + a.description : ""), UiSkin.GOLD);
+    }
+
+    // ================================================================== 분해
+
+    private void buildDismantle() {
+        Table list = new Table();
+        list.top().left();
+        list.add(new Label("안 쓰는 무기를 분해하면 광물 4개 + 강화에 쓴 광물의 절반을 돌려받는다. 장착한 무기와 성검은 분해할 수 없다.",
+                skin, "small")).left().padBottom(12).row();
         boolean any = false;
-        for (Weapon w : s.weapons) {
-            if (g.forge.dismantleBlockReason(s, w) != null) continue;
+        for (Weapon w : s.inventory.weapons()) {
+            if (!w.def().isSword()) continue;
             any = true;
-            OreType ore = OreType.valueOf(g.balance.weapon(w.defId).ore);
-            body.add(new Image(art.sword(w.defId, w.awakened))).size(48).padRight(12);
-            body.add(label(g.rules.weaponName(w) + "  →  " + ore.displayName + " " + g.balance.enhance.dismantleRefund + "개"))
-                    .width(520).left();
-            body.add(nav.add("분해", () -> screen.modals.push(ConfirmDialog.simple(skin, "분해",
-                    g.rules.weaponName(w) + "을 분해합니다. 되돌릴 수 없습니다.", "분해하기", () -> {
-                        int n = g.forge.dismantle(s, w);
-                        resultText = ore.displayName + " " + n + "개를 돌려받았다";
-                        resultColor = Ui.BLUE;
-                        screen.game.sfx.play("down");
-                        screen.save(false);
-                        rebuild();
-                    })))).width(120).height(46).padBottom(10).row();
+            Table row = new Table(skin);
+            row.setBackground(skin.getDrawable("panel-light"));
+            row.add(new Image(assets.region(w.icon()))).size(48).padRight(12);
+            row.add(new Label(w.displayName(), skin, "large")).width(360).left();
+            int refund = s.dismantleService.refund(w);
+            row.add(new Label("돌려받음: " + s.balance.ore(w.ore()).name + " " + refund + "개", skin)).width(300).left();
+            TextButton b = button(w == s.inventory.equipped() ? "장착 중" : "분해", () -> {
+                ConfirmDialog d = new ConfirmDialog(skin, "분해", com.yongsa.model.Josa.eul(w.displayName()) + " 분해할까?\n"
+                        + s.balance.ore(w.ore()).name + " " + refund + "개를 돌려받는다.", "분해한다", false, () -> {
+                            int got = s.dismantle(w);
+                            if (got >= 0) {
+                                sound.accept("dismantle");
+                                showResult(com.yongsa.model.Josa.eul(w.displayName()) + " 분해했다. 광물 " + got + "개를 돌려받았다.", Color.WHITE);
+                            }
+                            refresh();
+                        }, "취소", () -> { });
+                d.setClickSound(click);
+                openDialog.accept(d);
+            });
+            b.setDisabled(!s.dismantleService.canDismantle(w, s.inventory));
+            row.add(b).width(150).height(46);
+            list.add(row).width(960).padBottom(8).row();
         }
-        if (!any) body.add(label("분해할 수 있는 무기가 없다", "default", Ui.DIM)).colspan(3).padTop(30).row();
-        if (resultText != null) body.add(label(resultText, "default", resultColor)).colspan(3).padTop(14).row();
+        if (!any) list.add(new Label("분해할 무기가 없다.", skin, "dim")).left().row();
+        ScrollPane sp = new ScrollPane(list, skin);
+        sp.setFadeScrollBars(false);
+        content.add(sp).grow().top();
     }
 
-    // ───────────────────────── 연출
+    // ================================================================== 공통
 
-    private void startHammer(String weaponId, boolean awakened, Runnable then) {
-        if (motion.busy()) return;
-        workingDef = weaponId;
-        workingAwakened = awakened;
-        resultText = null;
-        playedStrikes = 0;
-        motion.start(Math.max(1.35f, g.balance.enhance.hammerSeconds) / speed());
-        afterHammer = then;
-        rebuild();
+    private void showResult(String text, Color c) {
+        result.clearActions();
+        result.setText(text);
+        result.setColor(c);
+        result.getColor().a = 0;
+        result.addAction(Actions.fadeIn(0.15f));
     }
 
-    @Override
-    public void rebuild() {
-        int f = nav.focusIndex();
-        clearChildren();
-        nav.clear();
-        build();
-        nav.setFocusIndex(f);
+    private static Color color(String kind) {
+        return switch (kind) {
+            case "success" -> UiSkin.SUCCESS;
+            case "great" -> UiSkin.GOLD;
+            case "keep" -> UiSkin.KEEP;
+            case "down" -> UiSkin.DOWN;
+            case "destroy" -> UiSkin.DESTROY;
+            default -> Color.WHITE;
+        };
+    }
+
+    /** 확률 막대. */
+    private static class Bar extends Actor {
+        private final TextureRegion white;
+        private final Color color;
+        private final float ratio;
+
+        Bar(TextureRegion white, Color color, float ratio) {
+            this.white = white;
+            this.color = new Color(color);
+            this.ratio = ratio;
+        }
+
+        @Override
+        public void draw(Batch b, float a) {
+            b.setColor(0.08f, 0.07f, 0.1f, a);
+            b.draw(white, getX(), getY(), getWidth(), getHeight());
+            b.setColor(color.r, color.g, color.b, a);
+            b.draw(white, getX(), getY(), getWidth() * ratio, getHeight());
+            b.setColor(Color.WHITE);
+        }
     }
 }

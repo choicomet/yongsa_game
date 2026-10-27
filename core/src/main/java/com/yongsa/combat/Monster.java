@@ -1,127 +1,111 @@
 package com.yongsa.combat;
 
-import com.yongsa.config.Balance.MonsterDef;
+import com.yongsa.config.MonsterDef;
+import com.yongsa.world.Room;
 
-/** 잡몹과 보스 (FR-전투-06, 10). */
-public class Monster extends Actor {
-    public enum State {
-        /** 방에 막 나타남. 마법진만 보이고 움직이지 않는다. */
-        SPAWN,
-        CHASE,
-        /** 근접 공격 예고 (잡몹 공통, 보스 근접). */
-        TELEGRAPH,
-        RECOVER,
-        /** 박쥐: 방향을 정하고 움츠림 → 일직선으로 덮침. */
-        SWOOP_TELEGRAPH, SWOOPING,
-        /** 마족병·보스: 투사체를 쏘기 전 모으기. */
-        CAST_TELEGRAPH,
-        /** 보스 패턴. */
-        SLAM_TELEGRAPH, CHARGE_TELEGRAPH, CHARGING, STUNNED, COMBO_TELEGRAPH,
-        /** 보스: 제자리에서 낙석·낙뢰·회전 화염·피웅덩이 같은 긴 패턴을 이어 간다. */
-        CHANNEL,
-        /** 마왕: 1페이즈에서 쓰러져 2페이즈로 변하는 중. 무적. */
-        PHASE_SHIFT
-    }
+/**
+ * 몬스터 하나의 상태. 움직임 판단은 MonsterAI가 한다.
+ * 보스를 처음 잡은 던전은 흡수하지 못한 힘 때문에 체력·공격력에 배율이 붙는다.
+ */
+public class Monster extends Body {
+
+    public enum State { SPAWNING, IDLE, CHASE, WINDUP, ATTACK, RECOVER, DYING }
+
+    public static final float SPAWN_TIME = 0.6f, ATTACK_TIME = 0.22f, DYING_TIME = 0.45f;
 
     public final MonsterDef def;
-    public final boolean boss, finalBoss;
-    public final float speed;
-    public State state = State.CHASE;
-    /** 지금 상태가 끝날 때까지 남은 시간, 그 상태의 전체 시간. */
-    public float stateT, stateTotal;
-    public float attackCd;
-    public float dirX = 0, dirY = -1;
-    public float slamX, slamY, slamRadius;
-    public float walkTime;
-    public float immuneMsgCd;
+    public final Room room;
+    protected int hp;
+    protected int maxHp;
+    public int attack;
+    public final boolean buffed;
 
-    /** 보스: 다음 고유 패턴까지 남은 시간, 마지막에 쓴 패턴. */
-    public float patternCd;
-    public String lastPattern;
-    /** 체력이 절반 아래로 내려가 2페이즈가 됐다. */
-    public boolean enraged;
-    /** 돌진·덮치기 방향과 남은 거리, 이번 돌진으로 이미 때렸는지. */
-    public float lockX, lockY, dashLeft;
-    public boolean dashHit;
-    /** 연속 베기 남은 횟수. */
-    public int comboLeft;
-    /** 지금 준비 중인 투사체 패턴 (cast, volley, ring). */
-    public String castKind;
-    /** 박쥐가 도는 방향, 마족병 순간이동 쿨타임. */
-    public float orbitSign = 1;
-    public float blinkCd;
-    /** 연속 돌진 남은 횟수. */
-    public int rushLeft;
-    /** 긴 패턴(CHANNEL) 종류, 남은 횟수, 다음 단계까지 시간, 회전 화염 각도. */
-    public String channelKind;
-    public int channelLeft;
-    public float channelT, spinAngle;
-    /** 방패: 남아 있으면 체력 대신 방패가 닳는다. */
-    public int shield, shieldMax;
-    /** 마왕 2페이즈. */
-    public boolean phase2;
-    /** 구석에 몰려 용사가 붙어 있던 시간. */
-    public float cornerT;
-    /** 공격력 배율 (보스를 잡은 던전의 잡몹, 마왕 2페이즈). */
-    public float attackMul = 1f;
+    protected State state = State.SPAWNING;
+    protected float stateTime;
+    float lungeX, lungeY;
+    boolean hitThisAttack;
+    /** 막기 자세 남은 시간 (해골 기사, 그림용). */
+    public float blockTime;
+    /** 공격 방향 (그림용: 베기·찌르기 궤적). */
+    public float attackDirX() { return lungeX; }
+    public float attackDirY() { return lungeY; }
 
-    public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
+    /** 용사의 공격을 막는다 (해골 기사): 막기 자세 → 곧바로 반격 예고. */
+    public void parry(float fromX) {
+        blockTime = 0.35f;
+        faceLeft = fromX < centerX();
+        setState(State.WINDUP);
+        stateTime = def.windup * 0.4f;   // 반격은 평소보다 빨리
+    }
+
+    /** 공격자가 앞(바라보는 쪽)에 있는지. */
+    public boolean facesTowards(float x) {
+        float dx = x - centerX();
+        return Math.abs(dx) < 8 || (dx < 0) == faceLeft;
+    }
+
+    public Monster(MonsterDef def, Room room, float x, float y, float hpMul, float atkMul) {
+        super(x, y, def.width, def.height);
         this.def = def;
-        this.boss = boss;
-        this.finalBoss = finalBoss;
-        this.speed = def.speedTiles * tileSize;
-        this.hp = this.maxHp = def.hp;
-        float scale = finalBoss ? 2.4f : boss ? 2.0f : 1f;
-        hw = 9 * scale;
-        hh = 6 * scale;
-        hurtRadius = 12 * scale;
+        this.room = room;
+        this.maxHp = Math.round(def.hp * hpMul);
+        this.hp = maxHp;
+        this.attack = Math.round(def.attack * atkMul);
+        this.buffed = hpMul > 1f || atkMul > 1f;
     }
 
-    /** 실제 공격력. */
-    public int attack() {
-        return Math.round(def.attack * attackMul);
-    }
+    public State state() { return state; }
+    public float stateTime() { return stateTime; }
+    public int hp() { return hp; }
+    public int maxHp() { return maxHp; }
+    public boolean alive() { return hp > 0; }
+    public boolean gone() { return state == State.DYING && stateTime >= dyingTime(); }
+    protected float dyingTime() { return DYING_TIME; }
+    /** 그릴 그림 이름. */
+    public String sprite() { return def.sprite; }
+    /** 리치가 불러낸 잡몹 (보스가 쓰러지면 같이 무너진다). */
+    public boolean summoned;
+    public boolean canBeHit() { return alive() && state != State.SPAWNING; }
+    public boolean isBoss() { return false; }
 
-    /** 이 잡몹의 공격 예고 시간, 공격 뒤 쉬는 시간 (따로 정하지 않았으면 공통 값). */
-    public float telegraph(float common) {
-        return def.telegraph > 0 ? def.telegraph : common;
-    }
-
-    public float cooldown(float common) {
-        return def.cooldown > 0 ? def.cooldown : common;
-    }
-
-    public String ai() {
-        return def.ai == null ? "melee" : def.ai;
-    }
-
-    public Facing facing() {
-        return Facing.of(dirX, dirY);
-    }
-
-    public void enter(State s, float seconds) {
+    void setState(State s) {
         state = s;
-        stateT = stateTotal = seconds;
+        stateTime = 0;
     }
 
-    /** 0 → 1 로 차오르는 지금 상태의 진행도. */
-    public float progress() {
-        return stateTotal <= 0 ? 1f : 1f - Math.max(0f, stateT) / stateTotal;
+    public void update(float delta, CombatContext ctx) {
+        animTime += delta;
+        stateTime += delta;
+        flash = Math.max(0, flash - delta);
+        blockTime = Math.max(0, blockTime - delta);
+        moving = false;
+        MonsterAI.update(this, delta, ctx);
+        if (state != State.DYING) updateKnockback(delta, ctx.collision());
     }
 
-    /** 공격을 준비하거나 돌진하는 중: 이때는 맞아도 밀려나지 않는다. */
-    public boolean committed() {
-        return state != State.CHASE && state != State.RECOVER && state != State.SPAWN && state != State.STUNNED;
+    /** 맞는다. 이번에 죽었으면 true. */
+    public boolean damage(int amount, float fromX, float fromY, float knock) {
+        if (!canBeHit()) return false;
+        hp = Math.max(0, hp - amount);
+        flash = 0.12f;
+        knockback(fromX, fromY, knock);
+        if (state == State.IDLE) setState(State.CHASE);
+        if (hp == 0) {
+            setState(State.DYING);
+            return true;
+        }
+        return false;
     }
 
-    /** 변신 중이라 맞지 않는다. */
-    public boolean invulnerable() {
-        return state == State.PHASE_SHIFT || state == State.SPAWN;
+    /** 바로 쓰러뜨린다 (주인 보스가 죽었을 때 소환수). */
+    public void kill() {
+        if (!alive()) return;
+        hp = 0;
+        setState(State.DYING);
     }
 
-    /** 머리 위에 ‘!’ 를 띄울 상태. */
-    public boolean warning() {
-        return state == State.TELEGRAPH || state == State.SWOOP_TELEGRAPH || state == State.CAST_TELEGRAPH
-                || state == State.SLAM_TELEGRAPH || state == State.CHARGE_TELEGRAPH || state == State.COMBO_TELEGRAPH;
+    /** 체력 가득으로 되돌린다 (사망 후 보스방 초기화 등). */
+    public void resetHp() {
+        hp = maxHp;
     }
 }

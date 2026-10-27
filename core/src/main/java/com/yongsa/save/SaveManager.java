@@ -1,104 +1,45 @@
 package com.yongsa.save;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
-import com.yongsa.model.GameState;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 
 /**
- * 저장 칸 하나 (FR-저장-01). 사용자 폴더의 JSON 파일에 쓴다.
- * 임시 파일에 먼저 쓰고 바꿔치기해서, 쓰는 도중 꺼져도 이전 저장이 남는다 (NFR-11).
+ * 저장 칸 1개 (FR-저장-01). 위치: 사용자 폴더/.yongsa/save.json
+ * 임시 파일에 먼저 쓰고 바꿔치기해서 쓰는 도중 꺼져도 이전 저장이 남는다 (NFR-11).
  */
 public class SaveManager {
-    public static class LoadResult {
-        public final GameState state;
-        public final boolean corrupt;
 
-        LoadResult(GameState state, boolean corrupt) {
-            this.state = state;
-            this.corrupt = corrupt;
-        }
-    }
+    private static final String FILE = ".yongsa/save.json";
+    private static final String TEMP = ".yongsa/save.json.tmp";
 
-    private final Path dir;
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
-    public SaveManager(Path dir) {
-        this.dir = dir;
-    }
-
-    public static SaveManager inUserHome() {
-        String isolated = System.getProperty("yongsa.saveDir");
-        if (isolated != null && !isolated.isBlank()) return new SaveManager(Paths.get(isolated));
-        return new SaveManager(Paths.get(System.getProperty("user.home"), ".yongsa_game"));
-    }
-
-    public Path savePath() {
-        return dir.resolve("save.json");
+    /** 불러오기 결과: 저장 없음 / 정상 / 깨짐. */
+    public record Loaded(SaveData data, boolean broken) {
     }
 
     public boolean hasSave() {
-        return Files.exists(savePath());
+        return Gdx.files.external(FILE).exists();
     }
 
-    public void save(GameState s) throws IOException {
-        writeAtomic(savePath(), gson.toJson(s));
+    public void save(SaveData data) {
+        FileHandle temp = Gdx.files.external(TEMP);
+        temp.writeString(SaveMapper.toJson(data), false, "UTF-8");
+        FileHandle target = Gdx.files.external(FILE);
+        if (target.exists()) target.delete();
+        temp.moveTo(target);
     }
 
-    /** 저장이 없으면 state 가 null, 깨졌으면 corrupt 가 true (FR-저장-05). */
-    public LoadResult load() {
-        if (!hasSave()) return new LoadResult(null, false);
+    public Loaded load() {
+        FileHandle f = Gdx.files.external(FILE);
+        if (!f.exists()) return new Loaded(null, false);
         try {
-            String json = new String(Files.readAllBytes(savePath()), StandardCharsets.UTF_8);
-            GameState s = gson.fromJson(json, GameState.class);
-            if (s == null || s.weapons == null || s.weapons.isEmpty()) return new LoadResult(null, true);
-            return new LoadResult(s, false);
-        } catch (IOException | JsonParseException | IllegalStateException e) {
-            return new LoadResult(null, true);
+            return new Loaded(SaveMapper.fromJson(f.readString("UTF-8")), false);
+        } catch (RuntimeException e) {
+            Gdx.app.error("SaveManager", "저장을 읽지 못함", e);
+            return new Loaded(null, true);
         }
     }
 
-    public void delete() throws IOException {
-        Files.deleteIfExists(savePath());
-    }
-
-    public Settings loadSettings() {
-        Path p = dir.resolve("settings.json");
-        try {
-            if (Files.exists(p)) {
-                Settings s = gson.fromJson(new String(Files.readAllBytes(p), StandardCharsets.UTF_8), Settings.class);
-                if (s != null) return s;
-            }
-        } catch (IOException | JsonParseException e) {
-            // 설정이 깨졌으면 기본값으로
-        }
-        return new Settings();
-    }
-
-    public void saveSettings(Settings s) {
-        try {
-            writeAtomic(dir.resolve("settings.json"), gson.toJson(s));
-        } catch (IOException e) {
-            // 설정 저장 실패는 게임을 멈출 일이 아니다
-        }
-    }
-
-    private void writeAtomic(Path target, String json) throws IOException {
-        Files.createDirectories(dir);
-        Path tmp = target.resolveSibling(target.getFileName() + ".tmp");
-        Files.write(tmp, json.getBytes(StandardCharsets.UTF_8));
-        try {
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException e) {
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
-        }
+    public void delete() {
+        Gdx.files.external(FILE).delete();
     }
 }

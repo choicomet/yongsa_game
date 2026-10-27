@@ -1,34 +1,58 @@
 package com.yongsa.world;
 
+import com.badlogic.gdx.graphics.OrthographicCamera;
+
 /**
- * 카메라는 방 단위로 넘어가지 않고 용사를 부드럽게 따라간다 (FR-맵-07).
- * 따라가는 비율은 1 − e^(−k·delta) 라서 프레임 수와 상관없이 같은 느낌이다. 맵 밖은 보이지 않게 막는다.
+ * 카메라가 용사를 부드럽게 따라간다 (FR-맵-07). 1 - e^(-k·delta)로 보간해 프레임 속도와 상관없이 같다 (NFR-04).
+ * 맵 밖은 보이지 않게 막고, 픽셀이 떨리지 않게 정수 위치로 맞춘다. 흔들림(보스 공격·땅 갈라짐)도 여기서.
  */
 public class CameraFollow {
-    public float x, y;
-    public float stiffness = 7f;
-    private boolean snapped;
 
-    public void update(float targetX, float targetY, float dt, float viewW, float viewH, float worldW, float worldH) {
-        if (!snapped) {
-            x = targetX;
-            y = targetY;
-            snapped = true;
-        } else {
-            float a = 1f - (float) Math.exp(-stiffness * dt);
-            x += (targetX - x) * a;
-            y += (targetY - y) * a;
+    private final float sharpness;
+    private float x, y, shake, shakeTime;
+    private boolean initialized;
+
+    public CameraFollow(float sharpness) {
+        this.sharpness = sharpness;
+    }
+
+    public void snapTo(float tx, float ty) {
+        x = tx;
+        y = ty;
+        initialized = true;
+    }
+
+    public void shake(float strength, float time) {
+        shake = Math.max(shake, strength);
+        shakeTime = Math.max(shakeTime, time);
+    }
+
+    public void update(OrthographicCamera cam, float tx, float ty, float delta, float mapW, float mapH) {
+        update(cam, tx, ty, delta, mapW, mapH, 1f);
+    }
+
+    /** speedUp: 따라가는 빠르기 배율 (용사가 날아갈 때처럼 빠르게 움직일 때 놓치지 않게). */
+    public void update(OrthographicCamera cam, float tx, float ty, float delta, float mapW, float mapH, float speedUp) {
+        if (!initialized) snapTo(tx, ty);
+        float a = 1f - (float) Math.exp(-sharpness * speedUp * delta);
+        x += (tx - x) * a;
+        y += (ty - y) * a;
+        float hw = cam.viewportWidth * cam.zoom / 2f, hh = cam.viewportHeight * cam.zoom / 2f;
+        x = clamp(x, hw, mapW - hw);
+        y = clamp(y, hh, mapH - hh);
+        float ox = 0, oy = 0;
+        if (shakeTime > 0) {
+            shakeTime -= delta;
+            ox = (float) (Math.random() * 2 - 1) * shake;
+            oy = (float) (Math.random() * 2 - 1) * shake;
+            if (shakeTime <= 0) shake = 0;
         }
-        x = clamp(x, viewW / 2f, worldW - viewW / 2f);
-        y = clamp(y, viewH / 2f, worldH - viewH / 2f);
+        cam.position.set(Math.round(x + ox), Math.round(y + oy), 0);
+        cam.update();
     }
 
-    public void snap() {
-        snapped = false;
-    }
-
-    private static float clamp(float v, float lo, float hi) {
-        if (lo > hi) return (lo + hi) / 2f;
-        return Math.max(lo, Math.min(hi, v));
+    private static float clamp(float v, float min, float max) {
+        if (min > max) return (min + max) / 2f;
+        return Math.max(min, Math.min(max, v));
     }
 }
