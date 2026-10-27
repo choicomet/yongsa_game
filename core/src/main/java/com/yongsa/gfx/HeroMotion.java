@@ -26,19 +26,32 @@ public final class HeroMotion {
         }
     }
 
+    /** Two strides (one walk cycle) per unit of walk time. */
+    public static final float WALK_CYCLES = 2;
+    public static final int[] DEFAULT_WALK_CYCLE = {0, 1, 2, 3, 4, 5};
+
     public static int walkFrame(float time) {
-        return Math.floorMod((int) Math.floor(time * 12), 6);
+        return walkFrame(time, DEFAULT_WALK_CYCLE);
     }
 
-    /** Measured right fists: keep the resting blade outside the face, mirrored with the pose. */
+    /** One pose of the cycle; a shorter cycle plays slower so the step length stays the same. */
+    public static int walkFrame(float time, int[] cycle) {
+        return cycle[Math.floorMod((int) Math.floor(time * WALK_CYCLES * cycle.length), cycle.length)];
+    }
+
+    /**
+     * Lowered guard: the blade hangs down and outward from the measured right fist, tip near the
+     * ground, so it never rises past the hand or head. Leftward facings mirror (180 - angle).
+     */
     public static float attachedSwordAngle(Facing facing) {
         return switch (facing) {
-            case DOWN, DOWN_RIGHT -> 110;
-            case DOWN_LEFT, UP -> 70;
-            case UP_RIGHT -> 65;
-            case UP_LEFT -> 115;
-            case RIGHT -> 55;
-            case LEFT -> 125;
+            case DOWN -> 220;
+            case DOWN_RIGHT -> 215;
+            case DOWN_LEFT -> 325;
+            case RIGHT -> 225;
+            case LEFT -> 315;
+            case UP, UP_RIGHT -> 320;
+            case UP_LEFT -> 220;
         };
     }
 

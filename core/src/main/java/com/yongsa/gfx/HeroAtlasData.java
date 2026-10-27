@@ -33,6 +33,8 @@ public final class HeroAtlasData {
     public final Map<String, Source> sources = new LinkedHashMap<>();
     public final Map<String, Frame[][]> clips = new LinkedHashMap<>();
     public final Map<String, Sword> swords = new LinkedHashMap<>();
+    /** Per-row walk order (indices into the six poses). Without "walkCycle" all six play in order. */
+    public final int[][] walkCycle = new int[5][];
 
     public static String swordKey(String defId, boolean awakened) {
         return switch (defId) {
@@ -74,6 +76,14 @@ public final class HeroAtlasData {
                 }
             }
             clips.put(action, clip);
+        }
+        JsonValue cycles = root.get("walkCycle");
+        require(cycles == null || cycles.size == 5, "walkCycle needs five rows");
+        for (int r=0; r<5; r++) {
+            int[] cycle = cycles == null ? HeroMotion.DEFAULT_WALK_CYCLE.clone() : cycles.get(r).asIntArray();
+            require(cycle.length >= 2 && cycle.length <= 12, "walkCycle row " + r + " needs 2-12 poses");
+            for (int c : cycle) require(c >= 0 && c < 6, "walkCycle pose out of range in row " + r);
+            walkCycle[r] = cycle;
         }
         for (JsonValue s : root.get("swords")) {
             float[] grip = s.get("grip").asFloatArray();

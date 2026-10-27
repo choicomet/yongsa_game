@@ -1690,7 +1690,8 @@ public class WorldRenderer implements Disposable {
     }
 
     private TextureRegion heroRegion(HeroActor h) {
-        TextureRegion animated = motionFrame("walk", h.facing, h.moving ? HeroMotion.walkFrame(h.walkTime) : 2);
+        TextureRegion animated = motionFrame("walk", h.facing,
+                h.moving ? HeroMotion.walkFrame(h.walkTime, art.heroWalkCycle(h.facing)) : 2);
         if (animated != null) return animated;
         boolean walk = h.moving && ((int) (h.walkTime * 8)) % 2 == 1;
         String name;

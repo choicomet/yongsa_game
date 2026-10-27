@@ -447,6 +447,12 @@ public class Art implements Disposable {
         return heroMotion == null ? null : heroMotion.frame(action, facing, frame);
     }
 
+    /** Walk pose order for this facing; the legacy sheets play all six poses. */
+    public int[] heroWalkCycle(com.yongsa.combat.Facing facing) {
+        loadHeroMotion();
+        return heroMotion == null ? HeroMotion.DEFAULT_WALK_CYCLE : heroMotion.walkCycle(facing);
+    }
+
     public HeroSword heroSword(String defId, boolean awakened) {
         loadHeroMotion();
         return heroMotion == null ? null : heroMotion.sword(HeroAtlasData.swordKey(defId, awakened));

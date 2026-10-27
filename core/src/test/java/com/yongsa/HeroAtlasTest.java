@@ -81,4 +81,15 @@ class HeroAtlasTest {
         }
         assertEquals(0,HeroMotion.walkFrame(.5f));
     }
+
+    @Test void walkCycleSkipsTheIdlePoseAndKeepsTwoCyclesPerWalkTime() throws Exception {
+        HeroAtlasData data = new HeroAtlasData(manifest());
+        for (int[] cycle : data.walkCycle) {
+            for (int pose : cycle) assertNotEquals(2, pose, "Idle pose inside the walk makes the feet snap together");
+            for (int i=0; i<cycle.length; i++)
+                assertEquals(cycle[i], HeroMotion.walkFrame(i/(HeroMotion.WALK_CYCLES*cycle.length) + .001f, cycle));
+            assertEquals(cycle[0], HeroMotion.walkFrame(1/HeroMotion.WALK_CYCLES + .001f, cycle));
+        }
+        assertThrows(IllegalArgumentException.class,()->new HeroAtlasData(manifest().replaceFirst("\\[0, 1, 4, 3\\]","[0, 6, 4, 3]")));
+    }
 }

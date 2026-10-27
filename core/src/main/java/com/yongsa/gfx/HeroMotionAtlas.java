@@ -14,9 +14,11 @@ public final class HeroMotionAtlas implements Disposable {
     private final Map<String, Texture> textures = new HashMap<>();
     private final Map<String, HeroPose[][]> clips = new HashMap<>();
     private final Map<String, HeroSword> swords = new HashMap<>();
+    private final int[][] walkCycle;
 
     public HeroMotionAtlas(FileHandle manifest) {
         HeroAtlasData data = new HeroAtlasData(manifest.readString("UTF-8"));
+        walkCycle = data.walkCycle;
         try {
             for (var entry : data.sources.entrySet()) {
                 var source = entry.getValue();
@@ -47,6 +49,8 @@ public final class HeroMotionAtlas implements Disposable {
     }
 
     public HeroSword sword(String key) { return swords.get(key); }
+
+    public int[] walkCycle(Facing facing) { return walkCycle[HeroAtlasData.row(facing)]; }
 
     public HeroPose frame(String action, Facing facing, int frame) {
         HeroPose[][] clip = clips.get(action);
