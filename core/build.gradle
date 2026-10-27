@@ -17,7 +17,7 @@ tasks.named('test') {
     workingDir = rootProject.projectDir
     // Tests load these files directly; map-only edits must invalidate the test cache.
     inputs.files(fileTree(rootProject.file('assets/data')) { include '**/*.json' })
-    inputs.files(fileTree(rootProject.file('assets/sprites/hero-motion/harmony')) { include '*.png' })
+    inputs.files(fileTree(rootProject.file('assets/sprites/hero-motion/harmony')) { include '**/*.png' })
     testLogging {
         events 'failed'
         exceptionFormat 'full'
