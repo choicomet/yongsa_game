@@ -1409,11 +1409,11 @@ public final class GameSession implements CombatContext {
         if (b != null) {
             if (b.consumeCocoonStart()) {
                 emit(GameEvent.speech(b.def.name, "크아아아아—!", 2.5f));
-                toast("마룡이 광폭화했다! 바람의 고치에 싸여 하늘로 — " + Math.round(b.def.cocoonTime) + "초 동안 메테오를 버텨라. (회피 쿨타임 없음)");
+                toast(Josa.i(b.def.name) + " 광폭화했다! 바람의 고치에 싸여 하늘로 — " + Math.round(b.def.cocoonTime) + "초 동안 메테오를 버텨라. (회피 쿨타임 없음)");
                 shake(8, 1f);
                 sound("cocoon");
             }
-            if (b.consumeCocoonEnd()) toast("마룡이 내려왔다! 광폭화: 공격력이 1.5배가 되었다.");
+            if (b.consumeCocoonEnd()) toast(Josa.i(b.def.name) + " 내려왔다! 광폭화: 공격력이 1.5배가 되었다.");
         }
     }
 

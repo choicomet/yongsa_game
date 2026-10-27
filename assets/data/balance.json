@@ -231,7 +231,7 @@
   "monsters": [
     {
       "id": "ghoul",
-      "name": "갱도 구울",
+      "name": "갱도 박쥐",
       "sprite": "mob_left",
       "kind": "MELEE",
       "hp": 45,
@@ -247,7 +247,7 @@
     },
     {
       "id": "skeleton",
-      "name": "해골 병사",
+      "name": "저주받은 해골병",
       "sprite": "mob_right",
       "kind": "MELEE",
       "attackStyle": "THRUST",
@@ -264,7 +264,7 @@
     },
     {
       "id": "drakeling",
-      "name": "탑의 비룡",
+      "name": "탑의 마족병",
       "sprite": "mob_top",
       "kind": "RANGED",
       "hp": 300,
@@ -320,7 +320,7 @@
   "bosses": [
     {
       "id": "zombieking",
-      "name": "좀비킹",
+      "name": "갱도를 삼킨 골렘",
       "sprite": "boss_left",
       "kind": "MELEE",
       "hp": 2200,
@@ -346,7 +346,7 @@
     },
     {
       "id": "lich",
-      "name": "리치",
+      "name": "혈월의 기사",
       "sprite": "boss_right",
       "kind": "RANGED",
       "hp": 5200,
@@ -407,7 +407,7 @@
     },
     {
       "id": "dragon",
-      "name": "마룡",
+      "name": "탑의 수문장",
       "sprite": "boss_top",
       "kind": "MELEE",
       "hp": 12000,
@@ -504,10 +504,10 @@
     "headLaserWidth": 22,
     "headLaserMultiplier": 1.2,
     "headlessSpeedMultiplier": 1.7,
-    "headSrcX": 46,
-    "headSrcY": 0,
-    "headSrcW": 36,
-    "headSrcH": 46,
+    "headSrcX": 48,
+    "headSrcY": 22,
+    "headSrcW": 44,
+    "headSrcH": 44,
     "stormTime": 6.0,
     "stormWarning": 1.4,
     "stormDamageRatio": 0.05,
