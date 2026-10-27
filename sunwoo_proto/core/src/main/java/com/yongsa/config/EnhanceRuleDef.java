@@ -1,13 +1,14 @@
 package com.yongsa.config;
 
 /**
- * 강화 표 한 줄. success는 성공 확률(%), keep/down/destroy는 "실패했을 때" 나뉘는 비중.
- * 예: +6은 성공 53%, 실패 47%를 유지 40 : 하락 45 : 파괴 15로 나눈다 → 18.8 / 21.15 / 7.05%.
+ * 강화 표 한 줄: 한 번 시도 기준 확률(%). 다섯 값의 합은 100 (2026-10-27 김선우 결정).
+ * 성공 +1 · 대성공 +2 (마지막 단계에서는 +1) · 유지 · 하락 -1 · 파괴. 강화 숙련도 0 기준이다.
  */
 public class EnhanceRuleDef {
-    public int success;
-    public int keep;
-    public int down;
-    public int destroy;
+    public double success;
+    public double great;
+    public double keep;
+    public double down;
+    public double destroy;
     public int cost;
 }

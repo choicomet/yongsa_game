@@ -96,6 +96,8 @@ public class ForgeWindow extends GameWindow {
             b.setChecked(t == tab);
             tabs.add(b).width(150).height(48).padRight(8);
         }
+        // 강화 숙련도: 모든 검이 함께 쓰는 값이라 어느 탭에서나 보인다
+        tabs.add(new MasteryBar(s.mastery, skin)).width(330).height(44).padLeft(40);
         content.clear();
         content.top();
         switch (tab) {
@@ -232,10 +234,16 @@ public class ForgeWindow extends GameWindow {
             buildAwakened(main, w);
         } else {
             EnhanceOdds o = p.odds();
-            main.add(oddsBar("성공", o.success(), UiSkin.SUCCESS)).left().colspan(2).row();
-            main.add(oddsBar("유지", o.keep(), UiSkin.KEEP)).left().colspan(2).row();
-            main.add(oddsBar("하락", o.down(), UiSkin.DOWN)).left().colspan(2).row();
-            main.add(oddsBar("파괴", o.destroy(), UiSkin.DESTROY)).left().colspan(2).padBottom(10).row();
+            // 2026-10-27: 대성공 추가. 숙련도로 줄어든 하락·파괴는 원래 값을 괄호로 함께
+            EnhanceOdds base = s.enhanceService.table().odds(w.level());
+            boolean sure = o.success() >= 100;
+            main.add(oddsBar("성공", o.success(), -1, UiSkin.SUCCESS)).left().colspan(2).row();
+            main.add(oddsBar("대성공", o.great(), sure ? -1 : base.great(), UiSkin.GOLD)).left().colspan(2).row();
+            main.add(oddsBar("유지", o.keep(), -1, UiSkin.KEEP)).left().colspan(2).row();
+            main.add(oddsBar("하락", o.down(), sure ? -1 : base.down(), UiSkin.DOWN)).left().colspan(2).row();
+            main.add(oddsBar("파괴", o.destroy(), sure ? -1 : base.destroy(), UiSkin.DESTROY)).left().colspan(2).padBottom(4).row();
+            main.add(new Label(w.level() == table().maxLevel() - 1 ? "대성공이어도 이번에는 +1 (+10 까지)" : "대성공이면 +2", skin, "small"))
+                    .left().colspan(2).padBottom(8).row();
             String oreName = s.balance.ore(w.ore()).name;
             Label cost = new Label("비용: " + oreName + " " + p.cost() + "개   (보유 " + s.inventory.oreText(w.ore()) + ")", skin, "large");
             if (!p.enoughOre()) cost.setColor(UiSkin.SHORT);
@@ -349,17 +357,23 @@ public class ForgeWindow extends GameWindow {
 
     /** 확률 막대 한 줄. 0%도 회색으로 남긴다 (FR-대장간-10). */
     private Table oddsBar(String name, double pct, Color color) {
+        return oddsBar(name, pct, -1, color);
+    }
+
+    /** base >= 0 이고 pct 와 다르면 숙련도로 바뀐 것: 원래 값을 괄호로 함께 보여 준다. */
+    private Table oddsBar(String name, double pct, double base, Color color) {
         Table t = new Table();
         Label n = new Label(name, skin);
-        t.add(n).width(56).left();
+        t.add(n).width(66).left();
         Bar bar = new Bar(skin.getRegion("white"), pct > 0 ? color : UiSkin.KEEP, (float) pct / 100f);
-        t.add(bar).width(250).height(18).padRight(12);
-        Label v = new Label(fmt(pct) + "%", skin);
+        t.add(bar).width(200).height(18).padRight(10);
+        boolean changed = base >= 0 && Math.abs(base - pct) > 1e-6;
+        Label v = new Label(fmt(pct) + "%" + (changed ? "  (" + fmt(base) + ")" : ""), skin);
         if (pct <= 0) {
             n.setColor(0.45f, 0.45f, 0.5f, 1f);
             v.setColor(0.45f, 0.45f, 0.5f, 1f);
         } else v.setColor(color);
-        t.add(v).width(90).left();
+        t.add(v).width(130).left();
         return t;
     }
 
@@ -393,6 +407,7 @@ public class ForgeWindow extends GameWindow {
                     doEnhance();
                 }, "취소", () -> { });
         d.extra.add(oddsBar("성공", o.success(), UiSkin.SUCCESS)).row();
+        d.extra.add(oddsBar("대성공", o.great(), UiSkin.GOLD)).row();
         d.extra.add(oddsBar("유지", o.keep(), UiSkin.KEEP)).row();
         d.extra.add(oddsBar("하락", o.down(), UiSkin.DOWN)).row();
         d.extra.add(oddsBar("파괴", o.destroy(), UiSkin.DESTROY)).row();
@@ -426,6 +441,12 @@ public class ForgeWindow extends GameWindow {
                 kind = "success";
                 sound.accept("enhance_success");
             }
+            case GREAT -> {
+                text = "대성공!!  +" + r.levelBefore() + " → +" + r.levelAfter();
+                kind = "great";
+                sound.accept("enhance_success");
+                greatFlash();
+            }
             case KEEP -> {
                 text = "강화 실패 — 단계 유지 (+" + r.levelAfter() + ")";
                 kind = "keep";
@@ -443,11 +464,41 @@ public class ForgeWindow extends GameWindow {
             }
         }
         forgeHero.result(kind);
+        if (r.masteryGained() > 0) text += "   · 숙련 +" + r.masteryGained();
+        if (r.masteryLeveledUp()) {
+            text += "   · 강화 숙련도 Lv " + r.masteryAfter() + "!" + masteryNote(r.masteryAfter());
+            sound.accept("level_up");
+        }
         log.addFirst(new String[]{r.weaponName() + ": " + text, kind});
         while (log.size() > 5) log.removeLast();
         showResult(text, color(kind));
         if (r.awakened()) awaken();
         refresh();
+    }
+
+    /** 대성공: 금빛 번쩍임 (각성보다 짧게). */
+    private void greatFlash() {
+        float t = 0.6f / effectSpeed.get();
+        Image f = new Image(skin.newDrawable("white", new Color(1f, 0.85f, 0.35f, 1f)));
+        f.setTouchable(com.badlogic.gdx.scenes.scene2d.Touchable.disabled);
+        f.setBounds(0, 0, getWidth(), getHeight());
+        f.getColor().a = 0.55f;
+        addActor(f);
+        f.addAction(Actions.sequence(Actions.fadeOut(t), Actions.removeActor()));
+    }
+
+    /** 숙련도 레벨이 오를 때 눈에 띄는 변화 한마디. */
+    private String masteryNote(int lv) {
+        com.yongsa.config.MasteryDef m = s.mastery.def();
+        if (lv == m.destroyZeroLevel) return " 이제 무기가 파괴되지 않는다!";
+        if (lv == m.downZeroLevel) return " 이제 단계가 떨어지지 않는다!";
+        if (lv >= m.maxLevel) return " 마스터!";
+        if (lv >= m.greatBonusFromLevel) return " 대성공이 늘었다!";
+        return " 하락·파괴가 줄었다.";
+    }
+
+    private com.yongsa.model.EnhanceTable table() {
+        return s.enhanceService.table();
     }
 
     /** 각성 연출 1.5초: 빛 + "○○이 각성했다!" + 새 능력 설명 (FR-대장간-17). */
@@ -518,6 +569,7 @@ public class ForgeWindow extends GameWindow {
     private static Color color(String kind) {
         return switch (kind) {
             case "success" -> UiSkin.SUCCESS;
+            case "great" -> UiSkin.GOLD;
             case "keep" -> UiSkin.KEEP;
             case "down" -> UiSkin.DOWN;
             case "destroy" -> UiSkin.DESTROY;

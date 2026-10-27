@@ -4,6 +4,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.yongsa.config.DungeonDef;
 import com.yongsa.model.GameSession;
@@ -51,7 +52,17 @@ public class DevToolsWindow extends GameWindow {
         add(toggle("무적  (어떤 공격·벌칙에도 피해를 받지 않음)", s.hero.invulnerable, s::toggleGodMode))
                 .width(520).height(42).left().padBottom(4).row();
         add(toggle("강화 성공 100%  (하락·파괴 없이 언제나 성공)", s.enhanceService.alwaysSucceed(), s::toggleSureEnhance))
-                .width(520).height(42).left().padBottom(12).row();
+                .width(520).height(42).left().padBottom(8).row();
+
+        // 강화 숙련도 (모든 검 공유): 한 단계 올리기 / 마스터 / 0
+        Table mastery = new Table();
+        mastery.add(new Label("강화 숙련도  Lv " + s.mastery.level() + (s.mastery.maxed() ? " (마스터)" : ""), skin)).width(220).left();
+        com.badlogic.gdx.scenes.scene2d.ui.TextButton up = button("+1", () -> { s.devSetMastery(s.mastery.level() + 1); refresh(); });
+        up.setDisabled(s.mastery.maxed());
+        mastery.add(up).width(80).height(40).padRight(6);
+        mastery.add(button("마스터", () -> { s.devSetMastery(s.mastery.maxLevel()); refresh(); })).width(110).height(40).padRight(6);
+        mastery.add(button("0", () -> { s.devSetMastery(0); refresh(); })).width(80).height(40);
+        add(mastery).width(520).left().padBottom(12).row();
 
         add(new Label("바로 가기", skin, "large-gold")).left().padBottom(4).row();
         DungeonDef[] ds = s.balance.dungeons;

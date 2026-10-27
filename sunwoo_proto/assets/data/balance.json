@@ -174,78 +174,36 @@
       1.25,
       1.5
     ],
+    "_rules": "2026-10-27 김선우 결정: 단계(+0~+9)마다 한 번 시도 기준 확률(%)을 직접 적는다. 성공 +1 · 대성공 +2 (+9 는 +1) · 유지 · 하락 -1 · 파괴. 합은 100. 강화 숙련도가 오르면 하락·파괴가 줄어 유지로 간다 (mastery).",
     "rules": [
-      {
-        "success": 95,
-        "keep": 100,
-        "down": 0,
-        "destroy": 0,
-        "cost": 1
-      },
-      {
-        "success": 88,
-        "keep": 100,
-        "down": 0,
-        "destroy": 0,
-        "cost": 1
-      },
-      {
-        "success": 81,
-        "keep": 100,
-        "down": 0,
-        "destroy": 0,
-        "cost": 1
-      },
-      {
-        "success": 74,
-        "keep": 50,
-        "down": 50,
-        "destroy": 0,
-        "cost": 2
-      },
-      {
-        "success": 67,
-        "keep": 50,
-        "down": 50,
-        "destroy": 0,
-        "cost": 2
-      },
-      {
-        "success": 60,
-        "keep": 50,
-        "down": 50,
-        "destroy": 0,
-        "cost": 2
-      },
-      {
-        "success": 53,
-        "keep": 40,
-        "down": 45,
-        "destroy": 15,
-        "cost": 3
-      },
-      {
-        "success": 46,
-        "keep": 40,
-        "down": 45,
-        "destroy": 15,
-        "cost": 3
-      },
-      {
-        "success": 39,
-        "keep": 40,
-        "down": 45,
-        "destroy": 15,
-        "cost": 3
-      },
-      {
-        "success": 32,
-        "keep": 40,
-        "down": 45,
-        "destroy": 15,
-        "cost": 3
-      }
-    ]
+      { "success": 92, "great": 3, "keep": 5, "down": 0, "destroy": 0, "cost": 1 },
+      { "success": 85, "great": 3, "keep": 12, "down": 0, "destroy": 0, "cost": 1 },
+      { "success": 78, "great": 3, "keep": 19, "down": 0, "destroy": 0, "cost": 1 },
+      { "success": 71, "great": 3, "keep": 13, "down": 13, "destroy": 0, "cost": 2 },
+      { "success": 64, "great": 3, "keep": 16.5, "down": 16.5, "destroy": 0, "cost": 2 },
+      { "success": 57, "great": 3, "keep": 20, "down": 20, "destroy": 0, "cost": 2 },
+      { "success": 50, "great": 3, "keep": 19, "down": 21, "destroy": 7, "cost": 3 },
+      { "success": 43, "great": 3, "keep": 22, "down": 24, "destroy": 8, "cost": 3 },
+      { "success": 36, "great": 3, "keep": 24, "down": 28, "destroy": 9, "cost": 3 },
+      { "success": 29, "great": 3, "keep": 27, "down": 31, "destroy": 10, "cost": 3 }
+    ],
+    "mastery": {
+      "_": "강화 숙련도 (모든 검 공유). 하락 × (1 - Lv/downZeroLevel), 파괴 × (1 - Lv/destroyZeroLevel), 줄어든 만큼 유지로. greatBonus[Lv] %p 는 유지에서 대성공으로. 경험치 = 결과별 값 × expMultiplier[강화 전 단계]. 필요량 = needBase + needLinear×Lv + needSquare×Lv² (반올림).",
+      "maxLevel": 20,
+      "downZeroLevel": 17,
+      "destroyZeroLevel": 15,
+      "greatBonusFromLevel": 18,
+      "greatBonusStep": 1,
+      "expSuccess": 20,
+      "expGreat": 30,
+      "expKeep": 0,
+      "expDown": 30,
+      "expDestroy": 60,
+      "expMultiplier": [1, 1, 1, 1.5, 1.5, 1.5, 2, 2, 2, 2],
+      "needBase": 12,
+      "needLinear": 5,
+      "needSquare": 0.5
+    }
   },
   "mining": {
     "hitsPerVein": 3,

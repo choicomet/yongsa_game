@@ -60,6 +60,8 @@ public final class GameSession implements CombatContext {
     public final CraftService craftService = new CraftService();
     public final DismantleService dismantleService;
     public final AbsorbService absorbService;
+    /** 강화 숙련도 (모든 검이 함께 쓰는 용사의 실력, 저장된다). */
+    public final EnhanceMastery mastery;
     public final SwordPower power;
 
     public final List<Room> rooms = new ArrayList<>();
@@ -167,6 +169,8 @@ public final class GameSession implements CombatContext {
         this.absorbService = new AbsorbService(balance);
         this.power = new SwordPower(balance);
         this.enhanceService.setPower(power);
+        this.mastery = new EnhanceMastery(balance.enhance.mastery);
+        this.enhanceService.setMastery(mastery);
 
         for (WorldMap.RoomDef d : map.rooms) {
             Room r = new Room(d);
@@ -1290,18 +1294,21 @@ public final class GameSession implements CombatContext {
     }
 
     /** E 안내 문구. 할 수 있는 일이 있을 때만 (FR-맵-06). */
+    /** 상호작용 키 이름 (안내 문구 "E  대장간" 의 앞부분). 조작 키를 바꾸면 화면이 다시 알려 준다. */
+    public String interactKey = "E";
+
     public String interactHint() {
         return switch (focus) {
-            case VEIN -> "E  " + balance.ore(focusVein.ore).name + " 캐기 (" + focusVein.hitsLeft() + ")";
-            case BED -> "E  침대에서 쉬기";
-            case FORGE -> "E  대장간";
-            case PORTAL -> "E  포탈 타고 캠프로";
-            case SIGIL_UNSEAL -> "E  성검 해방";
-            case SIGIL_RETURN -> "E  마왕에게 가기";
-            case VILLAGE_RETURN -> "E  던전으로 돌아가기";
-            case CHEST -> "E  보물상자 열기";
-            case TALK -> villagersFree() ? "E  " + Josa.wa(villagerName(focusVillager.kind())) + " 이야기하기"
-                    : "E  " + villagerName(focusVillager.kind()) + " 살펴보기";
+            case VEIN -> interactKey + "  " + balance.ore(focusVein.ore).name + " 캐기 (" + focusVein.hitsLeft() + ")";
+            case BED -> interactKey + "  침대에서 쉬기";
+            case FORGE -> interactKey + "  대장간";
+            case PORTAL -> interactKey + "  포탈 타고 캠프로";
+            case SIGIL_UNSEAL -> interactKey + "  성검 해방";
+            case SIGIL_RETURN -> interactKey + "  마왕에게 가기";
+            case VILLAGE_RETURN -> interactKey + "  던전으로 돌아가기";
+            case CHEST -> interactKey + "  보물상자 열기";
+            case TALK -> villagersFree() ? interactKey + "  " + Josa.wa(villagerName(focusVillager.kind())) + " 이야기하기"
+                    : interactKey + "  " + villagerName(focusVillager.kind()) + " 살펴보기";
             default -> "";
         };
     }
@@ -1848,6 +1855,8 @@ public final class GameSession implements CombatContext {
         if (r.attempted()) {
             progress.enhanceCount++;
             if (r.outcome() == EnhanceOutcome.DESTROY) progress.destroyCount++;
+            if (r.outcome() == EnhanceOutcome.GREAT) progress.greatCount++;
+            if (r.outcome() == EnhanceOutcome.DOWN) progress.downCount++;
             if (r.awakened()) progress.awakenCount++;
             // 강화 직후 자동 저장: 꺼도 파괴를 되돌릴 수 없다 (FR-대장간-15)
             emit(GameEvent.of(GameEvent.Type.SAVE_REQUEST));
@@ -1948,6 +1957,14 @@ public final class GameSession implements CombatContext {
         toast(on ? "[개발자 도구] 강화 성공 100% 켜짐: 강화가 언제나 성공한다." : "[개발자 도구] 강화 성공 100% 꺼짐.");
         sound("ui_click");
         return on;
+    }
+
+    /** 개발자 도구: 강화 숙련도를 바로 정한다 (0 ~ 최대). */
+    public void devSetMastery(int level) {
+        mastery.set(level);
+        toast("[개발자 도구] 강화 숙련도 Lv " + mastery.level() + (mastery.maxed() ? " (마스터)" : ""));
+        sound("ui_click");
+        emit(GameEvent.of(GameEvent.Type.SAVE_REQUEST));
     }
 
     /** 개발자 도구: 광물 무한 모드 켜기/끄기 (테스트·발표용). 켜져 있는지 돌려준다. */

@@ -46,9 +46,12 @@ public class MapWindow extends GameWindow implements Disposable {
         centerOnStage();
     }
 
+    /** 이 키를 누르면 닫는다 (지도 키, 사용자가 바꿀 수 있다). */
+    public java.util.function.IntPredicate closeKey = k -> k == Input.Keys.M;
+
     @Override
     public boolean keyDown(int key) {
-        if (key == Input.Keys.M) {
+        if (closeKey.test(key)) {
             close();
             return true;
         }
