@@ -278,6 +278,12 @@ public class HeroUnit extends Body {
         return dodgeTime > 0;
     }
 
+    /** 구르기 진행 (0 → 1). 구르는 그림을 고를 때 쓴다. */
+    public float dodgeProgress() {
+        float d = skills.dodge.duration;
+        return d <= 0 ? 1f : Math.min(1f, Math.max(0f, 1f - dodgeTime / d));
+    }
+
     public void startSwing(Attack.Kind kind, float duration, float range, float arc) {
         swingKind = kind;
         swingTime = duration;
