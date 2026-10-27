@@ -1,57 +1,50 @@
 package com.yongsa.ui;
 
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.yongsa.YongsaGame;
+import com.yongsa.Settings;
 
-/** 설정 (UI-10): 소리 크기, 창 모드, 연출 속도. 바로 적용되고 저장된다. */
-public class SettingsWindow extends Modal {
-    private final YongsaGame game;
+/** 설정 (UI-10, FR-공통-05): 소리 크기, 창 모드/전체 화면, 연출 속도. 바로 적용·저장된다. */
+public class SettingsWindow extends GameWindow {
 
-    public SettingsWindow(YongsaGame game) {
-        super(game.skin);
-        this.game = game;
+    private final Settings settings;
+    private final Runnable onVolume;
+
+    public SettingsWindow(Skin skin, Settings settings, Runnable onVolume) {
+        super("설정", skin);
+        this.settings = settings;
+        this.onVolume = onVolume;
     }
 
     @Override
-    public void build() {
-        Table p = panel();
-        p.add(label("설정", "large", Ui.GOLD)).colspan(3).padBottom(18).row();
-
-        p.add(label("소리 크기", "default", Ui.DIM)).left().padRight(24);
-        Table vol = new Table();
-        vol.add(nav.add("−", () -> setVolume(game.settings.volume - 0.1f))).width(56).height(46);
-        vol.add(label(Math.round(game.settings.volume * 100) + "%")).width(90).center();
-        vol.add(nav.add("+", () -> setVolume(game.settings.volume + 0.1f))).width(56).height(46);
-        p.add(vol).left().padBottom(10).row();
-
-        p.add(label("화면", "default", Ui.DIM)).left().padRight(24);
-        p.add(nav.add(game.settings.fullscreen ? "전체 화면" : "창 모드", () -> {
-            game.settings.fullscreen = !game.settings.fullscreen;
-            game.saveSettings();
-            rebuild();
-        })).width(220).height(46).left().padBottom(10).row();
-
-        p.add(label("연출 속도", "default", Ui.DIM)).left().padRight(24);
-        p.add(nav.add(game.settings.effectSpeed > 1 ? "빠르게" : "보통", () -> {
-            game.settings.effectSpeed = game.settings.effectSpeed > 1 ? 1f : 2f;
-            game.saveSettings();
-            rebuild();
-        })).width(220).height(46).left().padBottom(10).row();
-
-        p.add(label("화면 흔들림", "default", Ui.DIM)).left().padRight(24);
-        p.add(nav.add(game.settings.screenShake ? "켜기" : "끄기", () -> {
-            game.settings.screenShake = !game.settings.screenShake;
-            game.saveSettings();
-            rebuild();
-        })).width(220).height(46).left().padBottom(10).row();
-
-        p.add(nav.add("닫기", this::close)).colspan(2).width(200).height(50).padTop(14);
+    public void refresh() {
+        clearChildren();
+        nav.clear();
+        add(row("효과음", Math.round(settings.sfx() * 100) + "%",
+                () -> settings.setSfx(settings.sfx() - 0.1f), () -> settings.setSfx(settings.sfx() + 0.1f))).row();
+        add(row("배경음", Math.round(settings.music() * 100) + "%",
+                () -> { settings.setMusic(settings.music() - 0.1f); onVolume.run(); },
+                () -> { settings.setMusic(settings.music() + 0.1f); onVolume.run(); })).row();
+        add(row("화면", settings.fullscreen() ? "전체 화면" : "창 모드",
+                () -> settings.setFullscreen(!settings.fullscreen()), () -> settings.setFullscreen(!settings.fullscreen()))).row();
+        add(row("연출 속도", Settings.EFFECT_SPEED_NAMES[settings.effectSpeedIndex()],
+                () -> settings.setEffectSpeedIndex(settings.effectSpeedIndex() - 1),
+                () -> settings.setEffectSpeedIndex(settings.effectSpeedIndex() + 1))).row();
+        add(new Label("방향키로 고르고 Enter로 바꾼다. 바뀐 설정은 바로 저장된다.", skin, "small")).padTop(10).row();
+        add(button("닫기 (Esc)", this::close)).width(200).height(48).padTop(12);
+        nav.focusFirstEnabled();
+        pack();
+        centerOnStage();
     }
 
-    private void setVolume(float v) {
-        game.settings.volume = Math.max(0, Math.min(1, Math.round(v * 10) / 10f));
-        game.saveSettings();
-        game.sfx.play("select");
-        rebuild();
+    private Table row(String name, String value, Runnable minus, Runnable plus) {
+        Table t = new Table();
+        t.add(new Label(name, skin, "large")).width(150).left();
+        t.add(button("◀", () -> { minus.run(); refresh(); })).size(54, 46);
+        t.add(new Label(value, skin, "large")).width(170).center();
+        t.add(button("▶", () -> { plus.run(); refresh(); })).size(54, 46);
+        t.padBottom(8);
+        return t;
     }
 }

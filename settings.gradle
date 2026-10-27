@@ -1,2 +1,2 @@
-rootProject.name = 'yongsa-game'
+rootProject.name = 'yongsa'
 include 'core', 'lwjgl3'

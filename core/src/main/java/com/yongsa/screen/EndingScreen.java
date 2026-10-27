@@ -1,66 +1,101 @@
 package com.yongsa.screen;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.InputMultiplexer;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
 import com.yongsa.YongsaGame;
-import com.yongsa.model.GameState;
-import com.yongsa.model.Stats;
-import com.yongsa.ui.Modal;
-import com.yongsa.ui.Ui;
+import com.yongsa.model.GameSession;
+import com.yongsa.ui.KeyNav;
 
-/** 엔딩 (UI-11): 마무리 글과 플레이 기록, 계속하기 (FR-던전-10). */
-public class EndingScreen extends MenuScreen {
-    private final GameState state;
+/** 엔딩 (UI-11): 마무리 글, 플레이 기록, 계속하기(FR-던전-10) / 타이틀로. */
+public class EndingScreen extends BaseScreen {
 
-    public EndingScreen(YongsaGame game, GameState state) {
+    /** 엔딩 이야기: 마왕이 쓰러지고, 속박된 사람들이 풀려난다. */
+    public static final StoryScreen.Page[] STORY = {
+            new StoryScreen.Page("ending1.jpg",
+                    "성검이 마왕의 심장 수정을 꿰뚫었다.\n「 이런 풋내기에게 당하다니! 」"),
+            new StoryScreen.Page("ending2.jpg",
+                    "마왕이 무너지자 사람들을 가두던 수정이 산산이 부서졌다.\n속박되어 있던 마을 사람들이 모두 풀려났다."),
+            new StoryScreen.Page("ending3.jpg",
+                    "다시 해가 떴다. 갓 구운 빵 냄새가 광장에 퍼진다.\n이제 용사가 다 하지 않아도 되는 날이 왔다."),
+    };
+
+    private final KeyNav nav;
+    private final Table root = new Table();
+
+    public EndingScreen(YongsaGame game, GameSession s) {
         super(game);
-        this.state = state;
-        open(new End());
+        nav = new KeyNav(game.skin);
+        root.setFillParent(true);
+        stage.addActor(root);
+
+        Label title = new Label("마왕이 쓰러졌다", game.skin, "title");
+        Label body = new Label("마왕에게 속박되었던 마을 사람들이 모두 풀려났다.\n"
+                + "던전은 아직 남아 있다. 계속하기를 고르면 남은 던전을 더 돌아볼 수 있다.", game.skin, "large");
+        body.setAlignment(Align.center);
+        int min = (int) (s.playTime() / 60), sec = (int) (s.playTime() % 60);
+        Table stats = new Table(game.skin);
+        stats.setBackground(game.skin.getDrawable("panel-light"));
+        stat(stats, "플레이 시간", min + "분 " + sec + "초");
+        stat(stats, "강화 횟수", s.progress.enhanceCount + "번");
+        stat(stats, "대성공 / 하락", s.progress.greatCount + "번 / " + s.progress.downCount + "번");
+        stat(stats, "파괴 횟수 (용사의 실수)", s.progress.destroyCount + "번");
+        stat(stats, "강화 숙련도", "Lv " + s.mastery.level() + (s.mastery.maxed() ? " (마스터)" : ""));
+        stat(stats, "각성한 무기", s.progress.awakenCount + "자루");
+        stat(stats, "쓰러뜨린 몬스터", s.progress.kills + "마리");
+        stat(stats, "쓰러진 횟수", s.progress.deaths + "번");
+
+        root.add(title).padBottom(24).row();
+        root.add(body).padBottom(28).row();
+        root.add(stats).padBottom(28).row();
+        Table buttons = new Table();
+        buttons.add(button("계속하기", () -> game.resumeAfterEnding(s))).width(240).height(54).padRight(14);
+        buttons.add(button("타이틀로", game::showTitle)).width(240).height(54);
+        root.add(buttons);
+        nav.focusFirstEnabled();
+        root.getColor().a = 0;
+        root.addAction(Actions.fadeIn(1.5f));
+        game.sounds.playMusic("bgm_ending");
     }
 
-    private class End extends Modal {
-        End() {
-            super(game.skin);
-        }
+    private void stat(Table t, String name, String value) {
+        t.add(new Label(name, game.skin, "dim")).width(300).left();
+        t.add(new Label(value, game.skin, "large")).width(160).right().row();
+    }
 
-        @Override
-        protected void onCancel() {
-        }
+    private TextButton button(String text, Runnable action) {
+        TextButton b = new TextButton(text, game.skin);
+        b.setProgrammaticChangeEvents(false);
+        b.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                game.sounds.play("ui_click");
+                action.run();
+            }
+        });
+        return nav.add(b);
+    }
 
-        @Override
-        public void build() {
-            Table p = panel();
-            p.add(label("용사가 다 했다", "title", Ui.GOLD)).padBottom(14).row();
-            Label story = label("깨어난 성검이 마왕을 꿰뚫었다.\n던전을 뒤덮던 어둠이 걷히고,\n캠프의 모닥불이 처음으로 밝게 타올랐다.", "default", Ui.TEXT);
-            story.setAlignment(Align.center);
-            p.add(story).padBottom(20).row();
-            Stats s = state.stats;
-            Table t = new Table();
-            row(t, "플레이 시간", (int) (s.playSeconds / 60) + "분 " + (int) (s.playSeconds % 60) + "초");
-            row(t, "강화 시도 / 성공", s.enhanceTries + "번 / " + s.enhanceSuccess + "번");
-            row(t, "파괴된 무기", s.destroyed + "자루");
-            row(t, "만든 무기", s.crafted + "자루");
-            row(t, "캔 광물", s.oreMined + "개");
-            row(t, "쓰러뜨린 몬스터", s.monstersKilled + "마리");
-            row(t, "쓰러진 횟수", s.deaths + "번");
-            row(t, "흡수한 각성 무기", state.imprints.size() + "자루");
-            p.add(t).padBottom(20).row();
-            Table b = new Table();
-            b.add(nav.add("계속하기", () -> {
-                game.setScreen(new GameScreen(game, state));
-                EndingScreen.this.dispose();
-            })).width(220).height(52).padRight(14);
-            b.add(nav.add("타이틀로", () -> {
-                game.setScreen(new TitleScreen(game));
-                EndingScreen.this.dispose();
-            })).width(220).height(52);
-            p.add(b);
-        }
+    @Override
+    public void render(float delta) {
+        nav.update(root);
+        super.render(delta);
+    }
 
-        private void row(Table t, String k, String v) {
-            t.add(label(k, "default", Ui.DIM)).left().padRight(40).padBottom(4);
-            t.add(label(v)).right().padBottom(4).row();
-        }
+    @Override
+    public void show() {
+        Gdx.input.setInputProcessor(new InputMultiplexer(new InputAdapter() {
+            @Override
+            public boolean keyDown(int keycode) {
+                return nav.keyDown(keycode);
+            }
+        }, stage));
     }
 }
