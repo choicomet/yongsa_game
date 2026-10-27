@@ -35,19 +35,24 @@ class EnhanceTest {
     }
 
     @Test
-    void 단계마다_네_확률의_합은_100퍼센트() {
+    void 단계마다_다섯_확률의_합은_100퍼센트() {
         for (int lv = 0; lv < table.maxLevel(); lv++) assertEquals(100.0, table.odds(lv).total(), 1e-9, "+" + lv);
     }
 
     @Test
-    void 명세서_표와_같은_확률() {
+    void 확률_표_2026_10_27() {
+        // 성공 / 대성공 3% / 유지 / 하락 / 파괴 (숙련도 0)
         EnhanceOdds o6 = table.odds(6);
-        assertEquals(53, o6.success(), 1e-9);
-        assertEquals(18.8, o6.keep(), 1e-9);
-        assertEquals(21.15, o6.down(), 1e-9);
-        assertEquals(7.05, o6.destroy(), 1e-9);
+        assertEquals(50, o6.success(), 1e-9);
+        assertEquals(3, o6.great(), 1e-9);
+        assertEquals(19, o6.keep(), 1e-9);
+        assertEquals(21, o6.down(), 1e-9);
+        assertEquals(7, o6.destroy(), 1e-9);
         EnhanceOdds o9 = table.odds(9);
-        assertEquals(10.2, o9.destroy(), 1e-9);
+        assertEquals(29, o9.success(), 1e-9);
+        assertEquals(10, o9.destroy(), 1e-9);
+        for (int lv = 0; lv < 10; lv++) assertEquals(3, table.odds(lv).great(), 1e-9);
+        for (int lv = 0; lv < 3; lv++) assertEquals(0, table.odds(lv).down(), 1e-9);
         assertEquals(0, table.odds(5).destroy(), 1e-9);
         assertEquals(5, table.odds(0).keep(), 1e-9);
     }
@@ -137,7 +142,7 @@ class EnhanceTest {
         EnhanceService s = service(2026);
         Inventory inv = inv(100_000_000);
         int n = 100_000;
-        int[] c = new int[4];
+        int[] c = new int[EnhanceOutcome.values().length];
         for (int i = 0; i < n; i++) {
             Weapon w = inv.add(black);
             setLevel(w, 7);
@@ -145,10 +150,11 @@ class EnhanceTest {
             c[s.enhance(w, inv).outcome().ordinal()]++;
         }
         EnhanceOdds o = table.odds(7);
-        assertEquals(o.success(), c[0] * 100.0 / n, 0.5);
-        assertEquals(o.keep(), c[1] * 100.0 / n, 0.5);
-        assertEquals(o.down(), c[2] * 100.0 / n, 0.5);
-        assertEquals(o.destroy(), c[3] * 100.0 / n, 0.5);
+        assertEquals(o.success(), c[EnhanceOutcome.SUCCESS.ordinal()] * 100.0 / n, 0.5);
+        assertEquals(o.great(), c[EnhanceOutcome.GREAT.ordinal()] * 100.0 / n, 0.5);
+        assertEquals(o.keep(), c[EnhanceOutcome.KEEP.ordinal()] * 100.0 / n, 0.5);
+        assertEquals(o.down(), c[EnhanceOutcome.DOWN.ordinal()] * 100.0 / n, 0.5);
+        assertEquals(o.destroy(), c[EnhanceOutcome.DESTROY.ordinal()] * 100.0 / n, 0.5);
     }
 
     private static void setLevel(Weapon w, int lv) {

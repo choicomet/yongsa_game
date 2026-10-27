@@ -45,7 +45,9 @@ public class EndingScreen extends BaseScreen {
         stats.setBackground(game.skin.getDrawable("panel-light"));
         stat(stats, "플레이 시간", min + "분 " + sec + "초");
         stat(stats, "강화 횟수", s.progress.enhanceCount + "번");
+        stat(stats, "대성공 / 하락", s.progress.greatCount + "번 / " + s.progress.downCount + "번");
         stat(stats, "파괴 횟수 (용사의 실수)", s.progress.destroyCount + "번");
+        stat(stats, "강화 숙련도", "Lv " + s.mastery.level() + (s.mastery.maxed() ? " (마스터)" : ""));
         stat(stats, "각성한 무기", s.progress.awakenCount + "자루");
         stat(stats, "쓰러뜨린 몬스터", s.progress.kills + "마리");
         stat(stats, "쓰러진 횟수", s.progress.deaths + "번");

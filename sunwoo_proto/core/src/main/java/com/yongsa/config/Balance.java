@@ -70,7 +70,7 @@ public class Balance {
     }
 
     public EnhanceTable enhanceTable() {
-        if (enhanceTable == null) enhanceTable = new EnhanceTable(enhance.rules);
+        if (enhanceTable == null) enhanceTable = new EnhanceTable(enhance.rules, enhance.mastery);
         return enhanceTable;
     }
 

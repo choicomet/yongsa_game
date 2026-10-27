@@ -86,9 +86,12 @@ public class BagWindow extends GameWindow {
         centerOnStage();
     }
 
+    /** 이 키를 누르면 닫는다 (가방 키, 사용자가 바꿀 수 있다). */
+    public java.util.function.IntPredicate closeKey = k -> k == com.badlogic.gdx.Input.Keys.I;
+
     @Override
     public boolean keyDown(int key) {
-        if (key == com.badlogic.gdx.Input.Keys.I) {
+        if (closeKey.test(key)) {
             close();
             return true;
         }

@@ -15,7 +15,7 @@ import com.yongsa.ui.ConfirmDialog;
 import com.yongsa.ui.KeyNav;
 import com.yongsa.ui.SettingsWindow;
 
-/** 타이틀 (UI-01): 이어하기, 새 게임, 설정, 종료. 키보드로도 고른다. */
+/** 타이틀 (UI-01): 이어하기, 새 게임, 설정, 조작 키, 종료. 키보드로도 고른다. */
 public class TitleScreen extends BaseScreen {
 
     private final KeyNav nav;
@@ -40,6 +40,7 @@ public class TitleScreen extends BaseScreen {
         root.add(cont).row();
         root.add(button("새 게임", this::newGame)).row();
         root.add(button("설정", () -> windows.open(new SettingsWindow(game.skin, game.settings, game.sounds::applyVolume)))).row();
+        root.add(button("조작 키", () -> windows.open(new com.yongsa.ui.ControlsWindow(game.skin, game.settings, null)))).row();
         root.add(button("종료", () -> Gdx.app.exit())).row();
         root.add(new Label("방향키 + Enter 또는 마우스", game.skin, "small")).padTop(8);
         nav.focusFirstEnabled();

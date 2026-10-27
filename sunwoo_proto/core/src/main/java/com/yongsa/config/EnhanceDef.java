@@ -12,4 +12,6 @@ public class EnhanceDef {
     /** 강화 단계별 흡혈: 용사 최대 체력의 %. 길이 maxLevel+1 (0~10강). */
     public float[] lifesteal = new float[0];
     public EnhanceRuleDef[] rules = new EnhanceRuleDef[0];
+    /** 강화 숙련도. */
+    public MasteryDef mastery = new MasteryDef();
 }

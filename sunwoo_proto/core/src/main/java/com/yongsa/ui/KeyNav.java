@@ -43,6 +43,15 @@ public class KeyNav {
         index = buttons.indexOf(b);
     }
 
+    /** 지금 고른 버튼 번호 (창을 다시 만들 때 그대로 두려고). */
+    public int index() {
+        return index;
+    }
+
+    public void focusIndex(int i) {
+        index = buttons.isEmpty() ? -1 : Math.max(-1, Math.min(i, buttons.size() - 1));
+    }
+
     public void focusFirstEnabled() {
         index = -1;
         for (int i = 0; i < buttons.size(); i++) {
@@ -95,6 +104,21 @@ public class KeyNav {
         b.fire(e);
     }
 
+    private Actor shown;
+
+    /** 고른 버튼이 스크롤 목록 안에 있으면 보이게 굴린다 (고른 버튼이 바뀔 때만). */
+    private void keepVisible(Actor b) {
+        if (b == shown) return;
+        shown = b;
+        for (Actor a = b.getParent(); a != null; a = a.getParent()) {
+            if (a instanceof com.badlogic.gdx.scenes.scene2d.ui.ScrollPane sp) {
+                Vector2 p = b.localToAscendantCoordinates(sp.getActor(), new Vector2());
+                sp.scrollTo(p.x, p.y - 10, b.getWidth(), b.getHeight() + 20);
+                return;
+            }
+        }
+    }
+
     /** 매 프레임: 테두리를 고른 버튼 위치로. */
     public void update(Group layer) {
         if (index < 0 || index >= buttons.size() || buttons.get(index).getStage() == null) {
@@ -102,6 +126,7 @@ public class KeyNav {
             return;
         }
         Actor b = buttons.get(index);
+        keepVisible(b);
         Vector2 p = b.localToStageCoordinates(new Vector2(0, 0));
         Vector2 q = layer.stageToLocalCoordinates(p);
         frame.setBounds(q.x - 3, q.y - 3, b.getWidth() + 6, b.getHeight() + 6);

@@ -31,6 +31,30 @@ public class Settings {
         else if (Gdx.graphics.isFullscreen()) Gdx.graphics.setWindowedMode(1280, 720);
     }
 
+    // ---- 조작 키 (2026-10-27): 사용자가 바꾼 키. 없으면 기본 키
+
+    private KeyBindings keys;
+
+    public KeyBindings keys() {
+        if (keys == null) {
+            java.util.Map<String, int[]> saved = null;
+            try {
+                String json = prefs.getString("keyBindings", "");
+                if (!json.isEmpty()) saved = new com.google.gson.Gson().fromJson(json,
+                        new com.google.gson.reflect.TypeToken<java.util.Map<String, int[]>>() { }.getType());
+            } catch (RuntimeException e) {
+                saved = null; // 깨진 값이면 기본 키
+            }
+            keys = KeyBindings.fromSaved(saved);
+        }
+        return keys;
+    }
+
+    /** 바꾼 조작 키를 저장한다. */
+    public void saveKeys() {
+        prefs.putString("keyBindings", new com.google.gson.Gson().toJson(keys().toSaved())).flush();
+    }
+
     private static float clamp(float v) {
         return Math.max(0f, Math.min(1f, Math.round(v * 10f) / 10f));
     }

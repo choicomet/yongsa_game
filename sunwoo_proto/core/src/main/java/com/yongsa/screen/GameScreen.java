@@ -2,6 +2,7 @@ package com.yongsa.screen;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.yongsa.KeyBindings;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
@@ -59,6 +60,9 @@ public class GameScreen extends BaseScreen {
         forge = new ForgeWindow(game.skin, s, game.assets, windows::open, game.settings::effectSpeed, game.sounds::play);
         bag = new BagWindow(game.skin, s, game.assets);
         map = new MapWindow(game.skin, s);
+        bag.closeKey = k -> game.settings.keys().is(KeyBindings.Action.BAG, k);
+        applyKeyNames();
+        map.closeKey = k -> game.settings.keys().is(KeyBindings.Action.MAP, k);
         devTools = new DevToolsWindow(game.skin, s, then -> {
             windows.closeAll();
             then.run();
@@ -75,7 +79,7 @@ public class GameScreen extends BaseScreen {
 
             @Override public void settings() { windows.open(new SettingsWindow(game.skin, game.settings, game.sounds::applyVolume)); }
 
-            @Override public void controls() { windows.open(new ControlsWindow(game.skin)); }
+            @Override public void controls() { windows.open(new ControlsWindow(game.skin, game.settings, GameScreen.this::applyKeyNames)); }
 
             @Override
             public void title() {
@@ -185,15 +189,31 @@ public class GameScreen extends BaseScreen {
             controls.guard = false;
             return;
         }
-        controls.guard = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT)
-                || Gdx.input.isKeyPressed(Input.Keys.K);
+        KeyBindings k = game.settings.keys();
+        controls.guard = held(k, KeyBindings.Action.GUARD);
         float x = 0, y = 0;
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) x -= 1;
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) x += 1;
-        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) y -= 1;
-        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) y += 1;
+        if (held(k, KeyBindings.Action.MOVE_LEFT)) x -= 1;
+        if (held(k, KeyBindings.Action.MOVE_RIGHT)) x += 1;
+        if (held(k, KeyBindings.Action.MOVE_DOWN)) y -= 1;
+        if (held(k, KeyBindings.Action.MOVE_UP)) y += 1;
         controls.moveX = x;
         controls.moveY = y;
+    }
+
+    /** 이 동작의 키 중 하나라도 누르고 있나. */
+    private static boolean held(KeyBindings k, KeyBindings.Action a) {
+        for (int i = 0; i < KeyBindings.SLOTS; i++) {
+            int key = k.key(a, i);
+            if (key != KeyBindings.NONE && Gdx.input.isKeyPressed(key)) return true;
+        }
+        return false;
+    }
+
+    /** 바꾼 조작 키를 화면 안내(스킬 칸, 키 안내, E 안내)에 반영한다. */
+    public void applyKeyNames() {
+        KeyBindings k = game.settings.keys();
+        s.interactKey = k.primaryName(KeyBindings.Action.INTERACT);
+        hud.applyKeys(k);
     }
 
     private void updateMusic() {
@@ -244,17 +264,23 @@ public class GameScreen extends BaseScreen {
                 return true;
             }
             if (s.cutscene() != null) return true;
-            switch (key) {
-                case Input.Keys.ESCAPE -> windows.open(pause);
-                case Input.Keys.M -> windows.open(map);
-                case Input.Keys.I, Input.Keys.TAB -> windows.open(bag);
-                case Input.Keys.J -> controls.attack = true;
-                case Input.Keys.Q -> controls.whirl = true;
-                case Input.Keys.L -> controls.dash = true;
-                case Input.Keys.SPACE -> controls.dodge = true;
-                case Input.Keys.E -> controls.interact = true;
+            if (key == Input.Keys.ESCAPE) {
+                windows.open(pause);
+                return true;
+            }
+            // 조작 키는 사용자가 바꿀 수 있다 (Esc 메뉴 → 조작 키)
+            KeyBindings.Action a = game.settings.keys().owner(key);
+            if (a == null) return false;
+            switch (a) {
+                case MAP -> windows.open(map);
+                case BAG -> windows.open(bag);
+                case ATTACK -> controls.attack = true;
+                case WHIRL -> controls.whirl = true;
+                case DASH -> controls.dash = true;
+                case DODGE -> controls.dodge = true;
+                case INTERACT -> controls.interact = true;
                 default -> {
-                    return false;
+                    return false; // 이동·막기는 누르고 있는지 readMovement 에서 본다
                 }
             }
             return true;

@@ -20,7 +20,7 @@ import com.yongsa.render.Assets;
  */
 public class ForgeHero extends Actor {
 
-    public enum State { IDLE, HAMMER, SUCCESS, KEEP, DOWN, DESTROY }
+    public enum State { IDLE, HAMMER, SUCCESS, GREAT, KEEP, DOWN, DESTROY }
 
     private final Assets assets;
     private final TextureRegion white;
@@ -56,10 +56,11 @@ public class ForgeHero extends Actor {
         time = 0;
     }
 
-    /** 결과: "success" / "keep" / "down" / "destroy". */
+    /** 결과: "success" / "great" / "keep" / "down" / "destroy". */
     public void result(String kind) {
         state = switch (kind) {
             case "success" -> State.SUCCESS;
+            case "great" -> State.GREAT;
             case "keep" -> State.KEEP;
             case "down" -> State.DOWN;
             default -> State.DESTROY;
@@ -94,14 +95,15 @@ public class ForgeHero extends Actor {
         int pose = switch (state) {
             case IDLE -> 0;
             case HAMMER -> ((int) (time / 0.15f)) % 2 == 0 ? 1 : 2;
-            case SUCCESS -> 3;
+            case SUCCESS, GREAT -> 3;
             case DOWN -> 4;
             case DESTROY -> time < 0.35f ? 2 : 5;
             case KEEP -> 6;
         };
         TextureRegion[] f = assets.frames("hero_forge");
         TextureRegion hero = f[Math.min(pose, f.length - 1)];
-        float hop = state == State.SUCCESS ? Math.abs(MathUtils.sin(time * 9)) * 8 * Math.max(0, 1 - time / 1.6f) : 0;
+        float hop = state == State.GREAT ? Math.abs(MathUtils.sin(time * 11)) * 14 * Math.max(0, 1 - time / 2f)
+                : state == State.SUCCESS ? Math.abs(MathUtils.sin(time * 9)) * 8 * Math.max(0, 1 - time / 1.6f) : 0;
         float shake = state == State.DESTROY && time > 0.35f && time < 0.7f ? MathUtils.random(-2f, 2f) : 0;
         batch.setColor(1, 1, 1, parentAlpha);
         batch.draw(hero, x + 4 + shake, y + 18 + hop, hero.getRegionWidth() * SCALE, hero.getRegionHeight() * SCALE);
@@ -112,6 +114,21 @@ public class ForgeHero extends Actor {
                 float d = 8 + MathUtils.random(18f);
                 batch.setColor(1f, 0.8f, 0.35f, parentAlpha);
                 batch.draw(white, ax + 30 + MathUtils.cosDeg(a) * d, ay + 46 + MathUtils.sinDeg(a) * d, 3, 3);
+            }
+        }
+        // 대성공: 금빛 고리가 퍼지고 반짝이가 두 배
+        if (state == State.GREAT) {
+            float r = 20 + time * 120;
+            float a = Math.max(0, 1 - time / 1.2f);
+            batch.setColor(1f, 0.85f, 0.35f, a * parentAlpha);
+            for (int i = 0; i < 28; i++) {
+                float ang = i * 360f / 28;
+                batch.draw(white, ax + 35 + MathUtils.cosDeg(ang) * r, ay + 50 + MathUtils.sinDeg(ang) * r * 0.6f, 4, 4);
+            }
+            for (int i = 0; i < 16; i++) {
+                float ph = (time * 1.2f + i * 0.0625f) % 1f;
+                batch.setColor(1f, 0.85f, 0.3f, (1 - ph) * parentAlpha);
+                batch.draw(white, x + 20 + (i * 29) % 190, y + 50 + ph * 150, 4, 4);
             }
         }
         // 성공: 반짝이

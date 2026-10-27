@@ -29,6 +29,9 @@ public class SaveData {
     public List<ChestSave> chests = new ArrayList<>();
     public boolean sealBroken, finalDefeated, firstOreRoomUsed, tutorialDone;
     public int enhanceCount, destroyCount, awakenCount, kills, deaths;
+    public int greatCount, downCount;
+    /** 강화 숙련도 레벨과 그 레벨에서 쌓은 경험치 (모든 검 공유). 예전 저장은 0. */
+    public int masteryLevel, masteryExp;
     /** 반전 마법진이 바꾸는 키 (한 번 정해지면 고정). */
     public String inversion = "";
     /** 마왕 전에 던전 출구에서 되돌아선 횟수. */

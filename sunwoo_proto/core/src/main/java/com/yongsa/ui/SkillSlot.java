@@ -12,7 +12,8 @@ import java.util.Locale;
 /** 스킬 칸: 아이콘, 키, 쿨타임 동안 어둡게 + 남은 초 (FR-전투-04). */
 public class SkillSlot extends Actor {
     private final TextureRegion icon, white;
-    private final String key, name;
+    private String key;
+    private final String name;
     private final BitmapFont small, number;
     private final GlyphLayout layout = new GlyphLayout();
     private float remain, total;
@@ -21,6 +22,11 @@ public class SkillSlot extends Actor {
     /** 막기 칸: 게이지(0~1)를 아래에서 위로 채워 보여준다. 음수면 안 씀. */
     private float meter = -1;
     private boolean broken, active;
+
+    /** 칸 위에 적는 키 이름 (사용자가 조작 키를 바꾸면 바뀐다). */
+    public void setKey(String key) {
+        this.key = key;
+    }
 
     public SkillSlot(TextureRegion icon, TextureRegion white, String key, String name, BitmapFont small, BitmapFont number) {
         this.icon = icon;

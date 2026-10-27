@@ -34,6 +34,8 @@ public class Progress {
     public int exitRefusals;
 
     public int enhanceCount, destroyCount, awakenCount, kills, deaths;
+    /** 대성공·하락 횟수 (엔딩 기록). */
+    public int greatCount, downCount;
 
     public boolean defeated(String dungeonId) { return defeatedBosses.contains(dungeonId); }
     public Set<String> defeatedBosses() { return Collections.unmodifiableSet(defeatedBosses); }

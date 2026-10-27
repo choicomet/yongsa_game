@@ -70,6 +70,10 @@ public final class SaveMapper {
         d.kills = s.progress.kills;
         d.deaths = s.progress.deaths;
         d.exitRefusals = s.progress.exitRefusals;
+        d.greatCount = s.progress.greatCount;
+        d.downCount = s.progress.downCount;
+        d.masteryLevel = s.mastery.level();
+        d.masteryExp = s.mastery.exp();
         d.inversion = s.progress.inversion();
 
         for (Room r : s.rooms) {
@@ -124,6 +128,9 @@ public final class SaveMapper {
         s.progress.deaths = d.deaths;
         s.progress.setInversion(d.inversion);
         s.progress.exitRefusals = d.exitRefusals;
+        s.progress.greatCount = d.greatCount;
+        s.progress.downCount = d.downCount;
+        s.mastery.restore(d.masteryLevel, d.masteryExp);
 
         for (SaveData.RoomSave rs : d.rooms) {
             Room r = s.roomById.get(rs.id);

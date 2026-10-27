@@ -173,8 +173,9 @@ public class Hud implements Disposable {
         skills.add(guard).size(64);
         keyGuide = new Table(skin);
         keyGuide.setBackground(skin.getDrawable("panel-hud"));
-        keyGuide.add(new Label("WASD 이동   J 공격(가까운 적을 자동으로 바라봄)   Q 회전 베기   L 돌진 베기   Space 회피   Ctrl 막기(누르고 있기)", skin, "small-white")).row();
-        keyGuide.add(new Label("E 캐기·상호작용   I 가방   M 지도   Esc 메뉴", skin, "small-white"));
+        keyGuide.add(guideLine1 = new Label("", skin, "small-white")).row();
+        keyGuide.add(guideLine2 = new Label("", skin, "small-white"));
+        applyKeys(new com.yongsa.KeyBindings());
         Table bc = new Table();
         bc.setFillParent(true);
         bc.bottom().padBottom(34);
@@ -229,6 +230,23 @@ public class Hud implements Disposable {
         speechBox.clearActions();
         speechBox.getColor().a = 0;
         speechBox.addAction(Actions.sequence(Actions.fadeIn(0.25f), Actions.delay(seconds), Actions.fadeOut(0.6f)));
+    }
+
+    private Label guideLine1, guideLine2;
+
+    /** 바꾼 조작 키를 스킬 칸 위 키와 처음 키 안내에 반영한다. */
+    public void applyKeys(com.yongsa.KeyBindings k) {
+        whirl.setKey(k.primaryShort(com.yongsa.KeyBindings.Action.WHIRL));
+        dash.setKey(k.primaryShort(com.yongsa.KeyBindings.Action.DASH));
+        dodge.setKey(k.primaryShort(com.yongsa.KeyBindings.Action.DODGE));
+        guard.setKey(k.primaryShort(com.yongsa.KeyBindings.Action.GUARD));
+        String move = k.primaryShort(com.yongsa.KeyBindings.Action.MOVE_UP) + k.primaryShort(com.yongsa.KeyBindings.Action.MOVE_LEFT)
+                + k.primaryShort(com.yongsa.KeyBindings.Action.MOVE_DOWN) + k.primaryShort(com.yongsa.KeyBindings.Action.MOVE_RIGHT);
+        guideLine1.setText(move + " 이동   " + k.primaryShort(com.yongsa.KeyBindings.Action.ATTACK) + " 공격(가까운 적을 자동으로 바라봄)   "
+                + k.primaryShort(com.yongsa.KeyBindings.Action.WHIRL) + " 회전 베기   " + k.primaryShort(com.yongsa.KeyBindings.Action.DASH) + " 돌진 베기   "
+                + k.primaryShort(com.yongsa.KeyBindings.Action.DODGE) + " 회피   " + k.primaryShort(com.yongsa.KeyBindings.Action.GUARD) + " 막기(누르고 있기)");
+        guideLine2.setText(k.primaryShort(com.yongsa.KeyBindings.Action.INTERACT) + " 캐기·상호작용   " + k.primaryShort(com.yongsa.KeyBindings.Action.BAG)
+                + " 가방   " + k.primaryShort(com.yongsa.KeyBindings.Action.MAP) + " 지도   Esc 메뉴");
     }
 
     public void resize(float w, float h) {
