@@ -1,0 +1,27 @@
+{
+  "generator": "built-in image_gen",
+  "pixelProcessing": "Original generated PNGs copied byte-for-byte.",
+  "assets": [
+    {
+      "theme": "LEFT",
+      "asset": "assets/scenes/natural-v1/cave-mine.png",
+      "source": "exec-283644d4-02ab-4238-a0ba-2b199aebbfe9.png",
+      "size": [1536, 1024],
+      "sha256": "a769edfdf6b42b57d7487be59a7d109dacf79e1842f14110d26146f08040315d"
+    },
+    {
+      "theme": "RIGHT",
+      "asset": "assets/scenes/natural-v1/cave-citadel.png",
+      "source": "exec-f7bb255c-cae9-4420-aa53-908d28762b1d.png",
+      "size": [1536, 1024],
+      "sha256": "a56e5e4c8c3df45464013f7e1bb737fae9ed07ac5244e99b23b0d87334787c5b"
+    },
+    {
+      "theme": "TOP",
+      "asset": "assets/scenes/natural-v1/cave-tower.png",
+      "source": "exec-934bfff4-4a5f-4482-bddf-776f0c10d330.png",
+      "size": [1254, 1254],
+      "sha256": "a2e86ffaa312f496ca778120cf9d5d4d54c0cbb5bb0e56af9cbf4ba1c22fe016"
+    }
+  ]
+}

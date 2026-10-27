@@ -1,0 +1,208 @@
+[
+  {
+    "name": "villager_baker",
+    "dimensions": [
+      384,
+      160
+    ],
+    "frames": 3,
+    "visibleBoxes": [
+      [
+        20,
+        12,
+        108,
+        152
+      ],
+      [
+        20,
+        12,
+        107,
+        152
+      ],
+      [
+        26,
+        17,
+        102,
+        152
+      ]
+    ]
+  },
+  {
+    "name": "villager_redhood",
+    "dimensions": [
+      384,
+      160
+    ],
+    "frames": 3,
+    "visibleBoxes": [
+      [
+        20,
+        12,
+        108,
+        152
+      ],
+      [
+        19,
+        12,
+        108,
+        152
+      ],
+      [
+        23,
+        18,
+        104,
+        152
+      ]
+    ]
+  },
+  {
+    "name": "villager_child",
+    "dimensions": [
+      384,
+      160
+    ],
+    "frames": 3,
+    "visibleBoxes": [
+      [
+        32,
+        36,
+        95,
+        152
+      ],
+      [
+        33,
+        36,
+        95,
+        152
+      ],
+      [
+        32,
+        40,
+        95,
+        152
+      ]
+    ]
+  },
+  {
+    "name": "villager_elder",
+    "dimensions": [
+      384,
+      160
+    ],
+    "frames": 3,
+    "visibleBoxes": [
+      [
+        19,
+        12,
+        108,
+        152
+      ],
+      [
+        20,
+        12,
+        108,
+        152
+      ],
+      [
+        21,
+        22,
+        107,
+        152
+      ]
+    ]
+  },
+  {
+    "name": "villager_maid",
+    "dimensions": [
+      384,
+      160
+    ],
+    "frames": 3,
+    "visibleBoxes": [
+      [
+        29,
+        12,
+        98,
+        152
+      ],
+      [
+        29,
+        12,
+        98,
+        152
+      ],
+      [
+        29,
+        19,
+        98,
+        152
+      ]
+    ]
+  },
+  {
+    "name": "villager_boy",
+    "dimensions": [
+      384,
+      160
+    ],
+    "frames": 3,
+    "visibleBoxes": [
+      [
+        35,
+        28,
+        93,
+        152
+      ],
+      [
+        35,
+        28,
+        93,
+        152
+      ],
+      [
+        36,
+        34,
+        92,
+        152
+      ]
+    ]
+  },
+  {
+    "name": "crystal_prison",
+    "dimensions": [
+      352,
+      240
+    ],
+    "frames": 2,
+    "visibleBoxes": [
+      [
+        28,
+        16,
+        147,
+        224
+      ],
+      [
+        29,
+        16,
+        147,
+        224
+      ]
+    ]
+  },
+  {
+    "name": "hero_sleep",
+    "dimensions": [
+      192,
+      224
+    ],
+    "frames": 1,
+    "visibleBoxes": [
+      [
+        42,
+        8,
+        149,
+        216
+      ]
+    ]
+  }
+]

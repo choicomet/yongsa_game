@@ -1,0 +1,263 @@
+[
+  {
+    "id": "entry-CAMP-L1",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-c270b891-cab3-430b-9d84-7b8eeb562765.png",
+    "status": "superseded-by-separate-cave"
+  },
+  {
+    "id": "exit-CAMP-L1",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-096203e7-f269-4519-b1d5-4a2cef0d78dd.png",
+    "status": "superseded-by-separate-cave"
+  },
+  {
+    "id": "exit-L1-L2",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-a639b5ec-b71c-4fd0-a650-6547e24b4453.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-L1-L2.png",
+    "sha256": "5ecb0fa68224b8fa2701975dcc4c190a374a841bb3b1356f19e2fd288ebb16d5"
+  },
+  {
+    "id": "entry-L1-L8",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-03898b6c-2f06-4362-9ab2-e5430163fe37.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-L1-L8.png",
+    "sha256": "e05b5885bd5fd1fa6741469ce6e0eed58b167f1359bc3030e46f4a542efff700"
+  },
+  {
+    "id": "exit-L1-L8",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-ba927877-5522-48ae-bfaa-14dfd05ac23e.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-L1-L8.png",
+    "sha256": "be606949a12673caf59dc5b40110a5a1e9553f1c566f017e15cd94f8c398187d"
+  },
+  {
+    "id": "exit-L2-L3",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-5d81f614-ade3-44f6-a20b-455466170bf3.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-L2-L3.png",
+    "sha256": "b9a6ce5c3aeaab8715e0b88e5d5187f7f650ec2561ee6c76236b336f31bc15c9"
+  },
+  {
+    "id": "entry-L3-L4",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-8be1f30c-3e91-4539-ae09-c78d0bf35c62.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-L3-L4.png",
+    "sha256": "4d8be77b4945f7e7fa8b4793e85a4153a76d2a82474a962ab7b0c5496fdeb8d0"
+  },
+  {
+    "id": "exit-L3-L4",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-f576d06e-6705-496b-8e7f-a277c2d7e3c2.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-L3-L4.png",
+    "sha256": "f29363c2283ee2a4a49b77eaa24457edf18e0e176e2bc9ac1e1192173b299815"
+  },
+  {
+    "id": "entry-L5-L7",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-07b9d5f3-a090-4819-bd4a-aa304053948e.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-L5-L7.png",
+    "sha256": "39779555d7581bc2c96aa8321285d524b5b6dd6705765bcdee9409abfb806768"
+  },
+  {
+    "id": "exit-L5-L7",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-8f3ccbf0-d46b-4b24-8009-9905a2220f28.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-L5-L7.png",
+    "sha256": "9086fe50718785e9fab1b98668ecec0174791f391bd8bb7519d695ec6a4dd67d"
+  },
+  {
+    "id": "entry-L7-L6",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-73c90b6a-df72-45c6-b3d2-ae6debc78e3a.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-L7-L6.png",
+    "sha256": "730060f8887e0b925690cadf0f7def0bc374b22dfe69e2b14a6ed02b0e7a2ed1"
+  },
+  {
+    "id": "entry-CAMP-R1",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-e6d4a820-9e03-4e6a-ab1f-a0afe3b3aaf4.png",
+    "status": "superseded-by-separate-cave"
+  },
+  {
+    "id": "exit-CAMP-R1",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-2b1aa66a-b1fa-40c7-8f8b-81024c54c8f2.png",
+    "status": "superseded-by-separate-cave"
+  },
+  {
+    "id": "exit-R1-R2",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-cb9bc9d0-1bf8-4e78-907f-6c7e057fa328.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-R1-R2.png",
+    "sha256": "6285e459b2caec45b357f11286cd982e827176636ee994d5419d440a6d9c2ca2"
+  },
+  {
+    "id": "entry-R2-R7",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-749010d1-2e5d-407b-b4be-09469439e3cc.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-R2-R7.png",
+    "sha256": "c4556a26fd8db3f9749bdf9074948a9b3eb89679e69d7386f37b7cfb957ed17e"
+  },
+  {
+    "id": "exit-R2-R7",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-adf58689-133c-47fc-9d37-9cf8400b9816.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-R2-R7.png",
+    "sha256": "b3765c05a4b14b6835a0309a857107672a94a793e43f4319ea7f062dadaa4da2"
+  },
+  {
+    "id": "entry-R7-R3",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-c6942970-b346-4237-a577-e2c1ba67ce74.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-R7-R3.png",
+    "sha256": "2bd3f668ab529155000433e55eeeb28a437047e50c8b09c99af925b9d5f7d56c"
+  },
+  {
+    "id": "exit-R7-R3",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-fe4f1445-2019-4a3d-b056-e2178576aa62.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-R7-R3.png",
+    "sha256": "f77e7da31505eff3957d9b7567d2abea4de2ba94c34c0335b85be72fa657ed4a"
+  },
+  {
+    "id": "entry-R3-R4",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-c172f05e-c5e8-4680-aa0f-bbb2dff7851c.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-R3-R4.png",
+    "sha256": "0f3eaa46991b118649e2cb30ef66fa6e0571ecc226474b6a4b9409dddc66907a"
+  },
+  {
+    "id": "exit-R3-R4",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-1f2eea7d-8fd9-4ae5-ba1f-faab1e031319.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-R3-R4.png",
+    "sha256": "f6d424f193e87b64dbb428883a68214bd0e4eb740270c370d0d2efae56049a26"
+  },
+  {
+    "id": "entry-R3-R5",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-3d38ec9d-305a-4ca5-ba0b-47c5ce725e0f.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-R3-R5.png",
+    "sha256": "1036d1fcc987f5415fd5b6b37ed21b732f71acfca58cc4ad6768e4b36fd4f3cc"
+  },
+  {
+    "id": "exit-R3-R5",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-30f6c754-da2e-48e1-b145-191b90900e3a.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-R3-R5.png",
+    "sha256": "3e956d5b93f74321006c30aa17062e0c1849e99ec7d1871412bb1d9a473a4ea1"
+  },
+  {
+    "id": "entry-R5-R6",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-73401f1d-6832-4b09-a3c5-de73cbd93939.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-R5-R6.png",
+    "sha256": "9e6a2d41b2c56a6aa2e440bc9cc79ced381ec246935e782a8894f8542c2df4fc"
+  },
+  {
+    "id": "exit-R5-R6",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-c3c2d88f-0636-4d52-afb8-8bf9db666334.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-R5-R6.png",
+    "sha256": "3e1317277031b393d274af7d945cf84631197067c76ba303e0c9c5fccaf4ff25"
+  },
+  {
+    "id": "entry-CAMP-T1",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-0ff1c4f3-52cc-4e1e-82d7-e772892afc9e.png",
+    "status": "superseded-by-separate-cave"
+  },
+  {
+    "id": "exit-CAMP-T1",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-33efa870-0ddd-4a05-a05b-111b105e89b5.png",
+    "status": "superseded-by-separate-cave"
+  },
+  {
+    "id": "entry-T1-T2",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-f68882bc-7f01-4f68-944a-8026d8c6a87a.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-T1-T2.png",
+    "sha256": "e4406d3a0ed89dacb59ca65e1ed43f370e3dd7969d58145f1fce9ed55db38f7c"
+  },
+  {
+    "id": "exit-T1-T2",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-48e3aa1f-3a73-46d5-b7a7-22f788cf5da8.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-T1-T2.png",
+    "sha256": "9386e3cf0120b9ee7ce7bc112d31f5a401e8a9334fd98da330a7cee373e953bc"
+  },
+  {
+    "id": "entry-T2-T3",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-7f0d9b85-dce5-4d20-bd8e-8e433b7b86b0.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-T2-T3.png",
+    "sha256": "0cb843556b19d462976cd5f6b63b9f0d0a02567d927ab6b9e47f95e5a1cb10ad"
+  },
+  {
+    "id": "exit-T2-T3",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-ac970f15-73d0-4984-be2a-80fe3157da11.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-T2-T3.png",
+    "sha256": "ad5c11a31a1dcfb25275ff01da49f6b415a680a56f8ae04818c4a6dbfd5627b8"
+  },
+  {
+    "id": "entry-T3-T4",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-cb94564a-c40e-4187-bed9-7a739ba3aef6.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-T3-T4.png",
+    "sha256": "8bb10784406bdee553544cc1d8d72d85314b09f79c03e8f6df2f3ee16fa92969"
+  },
+  {
+    "id": "exit-T3-T4",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-401d6a00-0e6e-4301-9408-b726beae650c.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-T3-T4.png",
+    "sha256": "59b61d9627c0e62db774acb06fba0546d537841f2e723528a42f1234c3270e85"
+  },
+  {
+    "id": "entry-T3-T5",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-47add293-d6ac-40b9-ac67-c02ce8f921dc.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-T3-T5.png",
+    "sha256": "f4d0242c3624013e71e82242e04a442151f03ee17030b818c98561fd249c834d"
+  },
+  {
+    "id": "exit-T3-T5",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-27a31ada-fbed-433d-b528-6d3faec431b6.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-T3-T5.png",
+    "sha256": "905db4aae6a2dda86de22a7c309d74124b97a5f9b81ac5aaa16900088304f6cd"
+  },
+  {
+    "id": "entry-T5-T7",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-e4e6e476-9f42-4b33-8b21-d2abb184d3d7.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-T5-T7.png",
+    "sha256": "9311a8beecb0787bc6e4fc5ae7710d5c3f43d26e836c9c8ef65fb60ccf9ce4f2"
+  },
+  {
+    "id": "exit-T5-T7",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-8c2a01f3-cdb2-4949-9b2c-110dfc20ab2f.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-T5-T7.png",
+    "sha256": "5f77051ef51da3e05562d1488297e5b9107f4f791c4d8197cc4a36e9e43d8290"
+  },
+  {
+    "id": "entry-T7-T6",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-340769c3-ae31-4412-9b79-f498810f880e.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-T7-T6.png",
+    "sha256": "b6f73d04b9bd0da6151c9d45e6202ce63b79852c9398128379fb461e1a074626"
+  },
+  {
+    "id": "exit-T7-T6",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-6452665c-0b32-466b-9406-7f9933add470.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/exit-T7-T6.png",
+    "sha256": "5b766efa651969dcbfc53bd0a914f8f8d9e79dd1f9a8435cd0cce33782298914"
+  },
+  {
+    "id": "entry-CAMP-V",
+    "source": "C:\\Users\\최해성\\.codex\\generated_images\\01a1213b-bf3c-7df2-bfb8-9c217048be23\\exec-8311adc3-267d-408a-9c28-fdad7e0ca9a1.png",
+    "status": "installed",
+    "asset": "assets/scenes/joints-v2/entry-CAMP-V.png",
+    "sha256": "55a34a2c6acadafbeb0b61acf1ff0f1119f87e2ad01e5ec48bda2d38648446f5"
+  }
+]

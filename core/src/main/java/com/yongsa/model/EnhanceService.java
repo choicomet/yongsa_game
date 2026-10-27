@@ -1,146 +1,313 @@
 package com.yongsa.model;
 
-import com.yongsa.config.EnhanceDef;
+import com.yongsa.config.Balance;
+import com.yongsa.config.Balance.Band;
+import com.yongsa.config.Balance.MasteryCfg;
+import com.yongsa.config.Balance.OddsRow;
+import com.yongsa.config.Balance.WeaponDef;
 
 import java.util.Random;
 
 /**
- * 강화 한 번 판정: 비용 확인 → 광물 소모 → 성공/대성공/유지/하락/파괴 → 숙련도 경험치 → 결과 반환 (구현안 6장).
- * 2026-10-27: 대성공(+2, 마지막 단계는 +1)과 강화 숙련도({@link EnhanceMastery})를 더했다.
- * libGDX에 의존하지 않고, Random을 밖에서 받아 테스트에서 결과를 고정한다 (NFR-05, 07).
+ * 강화 한 번을 판정한다 (FR-대장간-05~10, 명세서 5.2).
+ * <p>
+ * 2026-10-27 김선우 결정: 결과는 성공(+1)·대성공(+2)·유지·하락(-1)·파괴 다섯 가지.
+ * 기본 확률은 balance.json 의 enhance.odds 표 그대로이고, 강화 숙련도가 오를수록 하락·파괴가 줄어
+ * 그만큼 유지로 옮겨 간다(성공 확률은 그대로). 숙련도 18~20 에서는 유지 몫 일부가 대성공으로 간다.
+ * 숙련도는 검마다가 아니라 용사 하나의 실력이라 모든 검이 함께 쓴다 ({@link GameState#masteryLevel}).
  */
 public class EnhanceService {
 
-    private final EnhanceTable table;
-    private final EnhanceDef def;
-    private final Random random;
+    public enum Outcome { SUCCESS, GREAT, KEEP, DOWN, DESTROY }
 
-    public EnhanceService(EnhanceTable table, EnhanceDef def, Random random) {
-        this.table = table;
-        this.def = def;
-        this.random = random;
+    /** 한 번 시도 기준 확률(%), 다섯 값의 합은 100. */
+    public static final class Odds {
+        public final double success, great, keep, down, destroy;
+
+        Odds(double success, double great, double keep, double down, double destroy) {
+            this.success = success;
+            this.great = great;
+            this.keep = keep;
+            this.down = down;
+            this.destroy = destroy;
+        }
+
+        public double total() {
+            return success + great + keep + down + destroy;
+        }
     }
 
-    /** 성검 공격력·흡혈 계산 (없으면 무기 자체 값만). */
-    private SwordPower power;
+    public static final class Result {
+        public final Outcome outcome;
+        public final int levelBefore, levelAfter;
+        public final boolean awakened;
+        public final int refund;
+        public final OreType refundOre;
+        /** 이번 강화로 얻은 숙련도 경험치와 그 뒤 숙련도 레벨 (레벨이 올랐는지 화면에서 보여 준다). */
+        public final int masteryGained, masteryBefore, masteryAfter;
 
-    public void setPower(SwordPower power) {
-        this.power = power;
+        Result(Outcome outcome, int before, int after, boolean awakened, int refund, OreType refundOre,
+               int masteryGained, int masteryBefore, int masteryAfter) {
+            this.outcome = outcome;
+            this.levelBefore = before;
+            this.levelAfter = after;
+            this.awakened = awakened;
+            this.refund = refund;
+            this.refundOre = refundOre;
+            this.masteryGained = masteryGained;
+            this.masteryBefore = masteryBefore;
+            this.masteryAfter = masteryAfter;
+        }
+
+        public boolean masteryLeveledUp() {
+            return masteryAfter > masteryBefore;
+        }
     }
 
-    /** 강화 숙련도 (모든 검 공유, Progress 에 저장). 없으면 숙련도 0 으로 계산하고 쌓지 않는다. */
-    private EnhanceMastery mastery;
+    private final Balance b;
+    private final Rules rules;
 
-    public void setMastery(EnhanceMastery mastery) {
-        this.mastery = mastery;
+    public EnhanceService(Balance b) {
+        this.b = b;
+        this.rules = new Rules(b);
     }
 
-    public EnhanceMastery mastery() {
-        return mastery;
+    private Band band(int level) {
+        for (Band band : b.enhance.bands) {
+            if (level >= band.fromLevel && level <= band.toLevel) return band;
+        }
+        throw new IllegalArgumentException("강화 구간 없음: +" + level);
     }
 
-    private int masteryLevel() {
-        return mastery == null ? 0 : mastery.level();
+    private OddsRow row(int level) {
+        for (OddsRow r : b.enhance.odds) if (r.level == level) return r;
+        throw new IllegalArgumentException("강화 확률 없음: +" + level);
     }
 
-    /** 지금 숙련도의 확률. */
-    public EnhanceOdds odds(int level) {
-        return table.odds(level, masteryLevel());
+    private MasteryCfg mastery() {
+        return b.enhance.mastery;
     }
 
-    public EnhanceTable table() {
-        return table;
+    /** 숙련도 0 기준 확률. */
+    public Odds odds(int level) {
+        return odds(level, 0);
+    }
+
+    /** 지금 상태(숙련도 포함)의 확률. */
+    public Odds odds(GameState s, int level) {
+        return odds(level, s.masteryLevel);
+    }
+
+    /**
+     * 숙련도 masteryLevel 에서의 확률. 하락·파괴는 레벨에 비례해 줄어 downZeroLevel·destroyZeroLevel 에서 0이 되고,
+     * 줄어든 만큼은 유지가 된다. greatBonus 레벨부터는 유지 몫에서 대성공으로 옮긴다.
+     */
+    public Odds odds(int level, int masteryLevel) {
+        OddsRow r = row(level);
+        MasteryCfg m = mastery();
+        int lv = Math.max(0, Math.min(masteryLevel, m.maxLevel));
+        double down = r.down * Math.max(0, 1 - (double) lv / m.downZeroLevel);
+        double destroy = r.destroy * Math.max(0, 1 - (double) lv / m.destroyZeroLevel);
+        double keep = r.keep + (r.down - down) + (r.destroy - destroy);
+        double great = r.great;
+        double bonus = Math.min(greatBonus(lv), keep);
+        great += bonus;
+        keep -= bonus;
+        return new Odds(r.success, great, keep, down, destroy);
+    }
+
+    /** 이 숙련도 레벨에서 대성공에 더하는 %p. */
+    public double greatBonus(int masteryLevel) {
+        double best = 0;
+        if (mastery().greatBonus == null) return 0;
+        for (Balance.GreatBonus g : mastery().greatBonus) if (masteryLevel >= g.level) best = Math.max(best, g.percent);
+        return best;
+    }
+
+    public int cost(int level) {
+        return band(level).cost;
+    }
+
+    public boolean isMax(Weapon w) {
+        return w.level >= b.enhance.maxLevel;
+    }
+
+    /** 지금 숙련도로 이 무기가 파괴될 수 있나. */
+    public boolean canDestroy(GameState s, Weapon w) {
+        return !isMax(w) && odds(s, w.level).destroy > 0;
+    }
+
+    /** 숙련도를 생각하지 않은 기본 확률로 파괴될 수 있는 단계인가. */
+    public boolean canDestroy(Weapon w) {
+        return !isMax(w) && odds(w.level).destroy > 0;
+    }
+
+    public OreType oreOf(Weapon w) {
+        WeaponDef d = b.weapon(w.defId);
+        return d.ore == null ? null : OreType.valueOf(d.ore);
     }
 
     public int destroyRefund(Weapon w) {
-        return (int) Math.floor(w.def().craftCost * def.destroyRefundRatio);
+        return (int) Math.floor(b.weapon(w.defId).craftCost * b.enhance.destroyRefundRatio);
     }
 
-    public EnhancePreview preview(Weapon w, Inventory inv, Hero hero) {
-        int atkNow = power != null ? power.attack(w, inv, hero) : DamageCalc.attack(w, hero, def);
-        float lsNow = power != null ? power.lifesteal(w, inv, hero) : lifesteal(w.level());
-        boolean maxed = w.level() >= table.maxLevel();
-        if (!w.def().enhanceable || maxed) {
-            return new EnhancePreview(w.def().enhanceable, maxed, new EnhanceOdds(0, 0, 0, 0, 0), 0,
-                    inv.ore(w.ore()), atkNow, atkNow, 0, 0, lsNow, lsNow);
+    // ───────────────────────── 숙련도
+
+    public int masteryMaxLevel() {
+        return mastery().maxLevel;
+    }
+
+    public boolean masteryMaxed(GameState s) {
+        return s.masteryLevel >= mastery().maxLevel;
+    }
+
+    /** masteryLevel 에서 다음 레벨까지 필요한 경험치. 최대 레벨이면 0. */
+    public int masteryNeed(int masteryLevel) {
+        MasteryCfg m = mastery();
+        if (masteryLevel >= m.maxLevel) return 0;
+        double l = masteryLevel;
+        return (int) Math.round(m.needBase + m.needLinear * l + m.needSquare * l * l);
+    }
+
+    /** 레벨 0부터 masteryLevel 까지 쌓아야 하는 경험치 합. */
+    public int masteryTotalTo(int masteryLevel) {
+        int sum = 0;
+        for (int l = 0; l < masteryLevel; l++) sum += masteryNeed(l);
+        return sum;
+    }
+
+    /** 이 결과로 얻는 숙련도 경험치: 결과별 기본값 × 강화하던 단계 구간의 배율. 0강에서도 쌓인다. */
+    public int masteryExp(Outcome o, int levelBefore) {
+        MasteryCfg m = mastery();
+        int base;
+        switch (o) {
+            case SUCCESS: base = m.expSuccess; break;
+            case GREAT: base = m.expGreat; break;
+            case KEEP: base = m.expKeep; break;
+            case DOWN: base = m.expDown; break;
+            default: base = m.expDestroy;
         }
-        int atkAfter = DamageCalc.attack(w.baseAttack() + w.def().attackPerLevel, hero, def);
-        // 개발자 도구 "강화 성공 100%"가 켜져 있으면 창에도 100%로 보인다
-        EnhanceOdds odds = alwaysSucceed ? new EnhanceOdds(100, 0, 0, 0, 0) : odds(w.level());
-        return new EnhancePreview(true, false, odds, table.cost(w.level()), inv.ore(w.ore()),
-                atkNow, atkAfter, destroyRefund(w), table.maxLevel() - w.level(), lsNow, lifesteal(w.level() + 1));
+        return Math.round(base * band(levelBefore).expMultiplier);
     }
 
-    private float lifesteal(int level) {
-        float[] t = def.lifesteal;
-        if (t.length == 0) return 0;
-        return t[Math.max(0, Math.min(t.length - 1, level))];
-    }
-
-    public EnhanceResult enhance(Weapon w, Inventory inv) {
-        int before = w.level();
-        if (!w.def().enhanceable) return none(EnhanceOutcome.NOT_ENHANCEABLE, w);
-        if (before >= table.maxLevel()) return none(EnhanceOutcome.MAX_LEVEL, w);
-        int cost = table.cost(before);
-        if (!inv.spendOre(w.ore(), cost)) return none(EnhanceOutcome.NOT_ENOUGH_ORE, w);
-        w.addEnhanceSpent(cost);
-
-        String name = w.displayName();
-        EnhanceOutcome outcome = roll(odds(before));
-        int mBefore = masteryLevel();
-        int gained = 0;
-        if (mastery != null) {
-            gained = mastery.expFor(outcome, before);
-            mastery.add(gained);
+    /** 경험치를 더하고 넘치면 레벨을 올린다. 최대 레벨이면 경험치는 0으로 둔다. */
+    public void addMasteryExp(GameState s, int exp) {
+        if (masteryMaxed(s)) {
+            s.masteryLevel = mastery().maxLevel;
+            s.masteryExp = 0;
+            return;
         }
-        int mAfter = masteryLevel();
+        s.masteryExp += Math.max(0, exp);
+        while (!masteryMaxed(s) && s.masteryExp >= masteryNeed(s.masteryLevel)) {
+            s.masteryExp -= masteryNeed(s.masteryLevel);
+            s.masteryLevel++;
+        }
+        if (masteryMaxed(s)) s.masteryExp = 0;
+    }
+
+    /** 예전 저장 파일이나 손으로 고친 값이 범위를 벗어나면 바로잡는다. */
+    public void clampMastery(GameState s) {
+        s.masteryLevel = Math.max(0, Math.min(s.masteryLevel, mastery().maxLevel));
+        s.masteryExp = masteryMaxed(s) ? 0 : Math.max(0, Math.min(s.masteryExp, masteryNeed(s.masteryLevel) - 1));
+    }
+
+    // ───────────────────────── 강화
+
+    /** 강화할 수 없는 이유. 할 수 있으면 null. */
+    public String blockReason(GameState s, Weapon w) {
+        if (w == null) return "장착한 무기가 없습니다";
+        WeaponDef d = b.weapon(w.defId);
+        if (!d.enhanceable) return d.name + "은 강화할 수 없습니다";
+        if (isMax(w)) return "이미 최대 단계입니다";
+        if (s.ore(oreOf(w)) < cost(w.level)) return oreOf(w).displayName + "이 모자랍니다";
+        return null;
+    }
+
+    public Result enhance(GameState s, Weapon w, Random rnd) {
+        String reason = blockReason(s, w);
+        if (reason != null) throw new IllegalStateException(reason);
+        OreType ore = oreOf(w);
+        int before = w.level;
+        s.addOre(ore, -cost(before));
+        s.stats.enhanceTries++;
+
+        Odds o = odds(s, before);
+        double r = rnd.nextDouble() * 100.0;
+        Outcome outcome;
+        if (r < o.success) outcome = Outcome.SUCCESS;
+        else if (r < o.success + o.great) outcome = Outcome.GREAT;
+        else if (r < o.success + o.great + o.keep) outcome = Outcome.KEEP;
+        else if (r < o.success + o.great + o.keep + o.down) outcome = Outcome.DOWN;
+        else outcome = Outcome.DESTROY;
+
+        int mBefore = s.masteryLevel;
+        int gained = masteryExp(outcome, before);
+        addMasteryExp(s, gained);
+
+        Result result;
         switch (outcome) {
-            case SUCCESS -> w.setLevel(before + 1);
-            // 대성공 +2, 다만 최대 단계는 넘지 않는다 (+9 에서는 +1)
-            case GREAT -> w.setLevel(Math.min(table.maxLevel(), before + 2));
-            case DOWN -> w.setLevel(Math.max(0, before - 1));
-            case DESTROY -> {
-                int refund = destroyRefund(w);
-                inv.remove(w);
-                inv.addOre(w.ore(), refund);
-                return new EnhanceResult(outcome, name, before, before, cost, refund, false, gained, mBefore, mAfter);
+            case SUCCESS:
+            case GREAT: {
+                // 대성공은 +2, 다만 최대 단계를 넘지 않는다 (+9 에서는 +1)
+                int step = outcome == Outcome.GREAT ? 2 : 1;
+                w.level = Math.min(b.enhance.maxLevel, w.level + step);
+                boolean awakenedNow = false;
+                if (isMax(w) && !w.awakened) {
+                    w.awakened = true;
+                    awakenedNow = true;
+                }
+                s.stats.enhanceSuccess++;
+                if (outcome == Outcome.GREAT) s.stats.enhanceGreat++;
+                result = new Result(outcome, before, w.level, awakenedNow, 0, null, gained, mBefore, s.masteryLevel);
+                break;
             }
-            default -> { }
+            case KEEP:
+                result = new Result(outcome, before, before, false, 0, null, gained, mBefore, s.masteryLevel);
+                break;
+            case DOWN:
+                w.level = Math.max(0, w.level - 1);
+                s.stats.enhanceDown++;
+                result = new Result(outcome, before, w.level, false, 0, null, gained, mBefore, s.masteryLevel);
+                break;
+            default: {
+                int refund = destroyRefund(w);
+                s.addOre(ore, refund);
+                s.weapons.remove(w);
+                Weapon holy = holySword(s);
+                s.equippedUid = holy == null ? 0 : holy.uid;
+                s.stats.destroyed++;
+                result = new Result(Outcome.DESTROY, before, -1, false, refund, ore, gained, mBefore, s.masteryLevel);
+            }
         }
-        boolean awakenedNow = false;
-        if (w.level() == table.maxLevel() && !w.awakened()) {
-            w.awaken();
-            awakenedNow = true;
+        log(s, w, result);
+        return result;
+    }
+
+    private Weapon holySword(GameState s) {
+        for (Weapon x : s.weapons) if (rules.isHoly(x)) return x;
+        return null;
+    }
+
+    private void log(GameState s, Weapon w, Result r) {
+        String name = b.weapon(w.defId).name;
+        String line;
+        switch (r.outcome) {
+            case SUCCESS:
+                line = name + " +" + r.levelBefore + " → +" + r.levelAfter + " 성공" + (r.awakened ? " (각성!)" : "");
+                break;
+            case GREAT:
+                line = name + " +" + r.levelBefore + " → +" + r.levelAfter + " 대성공" + (r.awakened ? " (각성!)" : "");
+                break;
+            case KEEP:
+                line = name + " +" + r.levelBefore + " 유지";
+                break;
+            case DOWN:
+                line = name + " +" + r.levelBefore + " → +" + r.levelAfter + " 하락";
+                break;
+            default:
+                line = name + " +" + r.levelBefore + " 파괴 (" + r.refundOre.displayName + " " + r.refund + "개 돌려받음)";
         }
-        return new EnhanceResult(outcome, name, before, w.level(), cost, 0, awakenedNow, gained, mBefore, mAfter);
-    }
-
-    private static EnhanceResult none(EnhanceOutcome o, Weapon w) {
-        return new EnhanceResult(o, w.displayName(), w.level(), w.level(), 0, 0, false);
-    }
-
-    /** 개발자 도구: 강화가 항상 성공 (확률 100%). 저장하지 않는다. */
-    private boolean alwaysSucceed;
-
-    public boolean alwaysSucceed() {
-        return alwaysSucceed;
-    }
-
-    public void setAlwaysSucceed(boolean on) {
-        alwaysSucceed = on;
-    }
-
-    /** 한 번 굴려서 다섯 결과 중 하나. 확률은 숙련도가 반영된 값. */
-    private EnhanceOutcome roll(EnhanceOdds o) {
-        if (alwaysSucceed) return EnhanceOutcome.SUCCESS;
-        double x = random.nextDouble() * 100.0;
-        if (x < o.success()) return EnhanceOutcome.SUCCESS;
-        x -= o.success();
-        if (x < o.great()) return EnhanceOutcome.GREAT;
-        x -= o.great();
-        if (x < o.keep()) return EnhanceOutcome.KEEP;
-        x -= o.keep();
-        if (x < o.down()) return EnhanceOutcome.DOWN;
-        return EnhanceOutcome.DESTROY;
+        s.enhanceLog.add(0, line);
+        while (s.enhanceLog.size() > 5) s.enhanceLog.remove(s.enhanceLog.size() - 1);
     }
 }
