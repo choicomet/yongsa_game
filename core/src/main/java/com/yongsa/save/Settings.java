@@ -15,4 +15,6 @@ public class Settings {
     public boolean devInfiniteOre = false;
     /** 개발용 (F1): 맞아도 체력이 줄지 않는다. */
     public boolean devGodMode = false;
+    /** 개발용 (F1): 걸을 수 있는 곳을 초록으로 표시한다. 저장하지 않아도 되지만 다른 개발 설정과 같이 둔다. */
+    public boolean devShowWalkable = false;
 }

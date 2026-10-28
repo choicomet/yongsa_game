@@ -207,6 +207,7 @@ public class GameScreen extends ScreenAdapter {
         Gdx.gl.glClearColor(0.02f, 0.018f, 0.03f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         worldViewport.apply();
+        renderer.showWalkable = game.settings.devShowWalkable;
         renderer.render(worldCam);
         stage.getViewport().apply();
         hud.render(stage.getCamera().combined, YongsaGame.WIDTH, YongsaGame.HEIGHT);

@@ -873,6 +873,9 @@ public class WorldRenderer implements Disposable {
 
     // ───────────────────────── 그리기
 
+    /** 개발용 (F1): 용사 발이 설 수 있는 곳을 초록으로 덮는다. 그림은 바닥인데 초록이 없으면 막힌 곳이다. */
+    public boolean showWalkable;
+
     public void render(OrthographicCamera cam) {
         computeView(cam);
         int tx0 = Math.max(0, (int) (viewX0 / T) - 1), ty0 = Math.max(0, (int) (viewY0 / T) - 2);
@@ -930,11 +933,23 @@ public class WorldRenderer implements Disposable {
         shapes.setProjectionMatrix(cam.combined);
         drawGlow();
         drawOverlays();
+        if (showWalkable) drawWalkable();
 
         batch.setProjectionMatrix(screenProj);
         batch.begin();
         drawTexts(cam);
         batch.end();
+    }
+
+    private void drawWalkable() {
+        final float step = 6;
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.setColor(0.1f, 1f, 0.3f, 0.32f);
+        for (float y = (float) Math.floor(viewY0 / step) * step; y < viewY1; y += step)
+            for (float x = (float) Math.floor(viewX0 / step) * step; x < viewX1; x += step)
+                if (map.free(x + step / 2, y + step / 2, 9, 6)) shapes.rect(x, y, step, step);
+        shapes.end();
     }
 
     // ───────────────────────── 타일

@@ -62,6 +62,8 @@ public class MapDef {
         public int pixelWidth, pixelHeight;
         /** 정규화된 그림 좌표: 왼쪽 위 (0,0), 오른쪽 아래 (1,1). */
         public float[] walkable;
+        /** 이동 마스크 PNG (assets 아래 경로). 있으면 walkable 대신 쓴다. */
+        public String walkMask;
         public List<float[]> path;
     }
 
