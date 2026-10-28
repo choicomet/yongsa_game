@@ -124,6 +124,18 @@ public class WorldMap {
         }
     }
 
+    /** 개발용: 이 자리를 덮는 그림들의 이동 마스크 경로 (방, 통로, 연결부 순). 칠할 파일을 찾을 때 쓴다. */
+    public List<String> walkMasksAt(float x,float y) {
+        List<String> out=new ArrayList<>();
+        for(Room r:rooms)
+            if(r.scene!=null && x>=r.originX && x<=r.originX+r.widthPx && y>=r.originY && y<=r.originY+r.heightPx)
+                out.add(r.id+" "+r.scene.walkMask+(r.flip?" (좌우 반전)":""));
+        Corridor c=corridorAtWorld(x,y);
+        if(c!=null && c.scene!=null) out.add("통로 "+c.scene.walkMask+(c.flip?" (좌우 반전)":""));
+        for(var j:paintedJoints) if(j.alpha(x,y)>0) out.add("연결부 "+j.walkMask);
+        return out;
+    }
+
     private PaintedJointLayout.Joint jointAt(float x,float y) {
         // Match painter's order where neighboring repair rectangles overlap.
         for(int i=paintedJoints.size()-1;i>=0;i--) {

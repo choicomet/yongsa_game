@@ -210,6 +210,7 @@ public class GameScreen extends ScreenAdapter {
         renderer.showWalkable = game.settings.devShowWalkable;
         renderer.render(worldCam);
         stage.getViewport().apply();
+        hud.showWalkMasks = game.settings.devShowWalkable;
         hud.render(stage.getCamera().combined, YongsaGame.WIDTH, YongsaGame.HEIGHT);
         hud.renderFade(fade);
         stage.act(delta);
