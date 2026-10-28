@@ -45,6 +45,13 @@ public class DevMenu extends Modal {
             rebuild();
         })).width(260).height(46).left().padBottom(8).row();
 
+        p.add(label("이동 영역 보기", "default", Ui.DIM)).left().padRight(24);
+        p.add(nav.add(screen.game.settings.devShowWalkable ? "켜짐 (초록 = 걸을 수 있음)" : "꺼짐", () -> {
+            screen.game.settings.devShowWalkable = !screen.game.settings.devShowWalkable;
+            screen.game.saveSettings();
+            rebuild();
+        })).width(260).height(46).left().padBottom(8).row();
+
         // 강화 숙련도 (발표·테스트용): 한 단계씩 올리거나 마스터로, 0 으로 되돌린다
         com.yongsa.model.EnhanceService es = g.enhance;
         p.add(label("강화 숙련도", "default", Ui.DIM)).left().padRight(24);

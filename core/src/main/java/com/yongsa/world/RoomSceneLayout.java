@@ -53,6 +53,8 @@ public final class RoomSceneLayout {
         public int pixelWidth, pixelHeight;
         public float suggestedWidthTiles;
         public float[] walkable, playerSpawn;
+        /** 이동 마스크 PNG (assets 아래 경로). 있으면 walkable·blocked 대신 쓴다. */
+        public String walkMask;
         public List<float[]> blocked = new ArrayList<>();
         public List<float[]> enemySpawns;
         public List<Portal> portals;
@@ -108,6 +110,8 @@ public final class RoomSceneLayout {
                     || !Float.isFinite(originX) || !Float.isFinite(originY)
                     || radius < 0 || !Float.isFinite(width) || width <= 0) return false;
             float px = worldX - originX, py = worldY - originY, h = height(width);
+            WalkMask mask = WalkMask.get(walkMask);
+            if (mask != null) return mask.fits(px / width, 1 - py / h, radius / width, radius / h);
             if (!fitsPolygon(walkable, px, py, radius, width, h, true)) return false;
             for (float[] polygon : blocked)
                 if (!fitsPolygon(polygon, px, py, radius, width, h, false)) return false;
