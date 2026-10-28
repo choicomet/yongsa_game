@@ -45,8 +45,8 @@ F1 개발 메뉴의 **이동 영역 보기**를 켜면 걸을 수 있는 곳이 
 ### 도형으로 되돌리기 / 다시 만들기
 
 - JSON에서 `"walkMask"` 줄을 지우면 그 그림은 예전 도형을 쓴다.
-- 그림을 새로 바꿔 마스크 초안이 다시 필요하면: `python design/walk-masks/make_masks.py --force <id>` (지금 도형으로 다시 칠함. 사람이 칠한 마스크를 덮어쓰니 주의).
-- 새 그림을 추가하면 `python design/walk-masks/make_masks.py` 가 없는 마스크만 만든다.
+- 그림을 새로 바꿔 마스크 초안이 다시 필요하면: `python tools/make_walk_masks.py --force <id>` (지금 도형으로 다시 칠함. 사람이 칠한 마스크를 덮어쓰니 주의).
+- 새 그림을 추가하면 `python tools/make_walk_masks.py` 가 없는 마스크만 만든다.
 
 ## GPT 작업 지시 (묶음 M)
 
