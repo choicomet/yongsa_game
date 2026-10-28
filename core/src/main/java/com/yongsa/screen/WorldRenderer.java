@@ -1726,7 +1726,7 @@ public class WorldRenderer implements Disposable {
         // 휘두를 때 몸을 살짝 찌그러뜨려 힘이 들어간 느낌을 준다
         float squash = h.swingT > 0 && h.swingKind == 0
                 ? 1f - .035f * MathUtils.sin(MathUtils.PI * HeroMotion.clamp(h.swingT / .18f)) : 1f;
-        float bob = heroBob(h);
+        float bob = heroBob(h, r instanceof HeroPose);
         float dw = w * (2f - squash), dh = hgt * squash;
         if (swordBehind) drawSword(h, alpha, r, squash, bob);
         if (h.stunT > 0) batch.setColor(0.7f, 0.55f, 0.85f, alpha); // 눈알에 굳음: 잿빛 보라
@@ -1842,8 +1842,11 @@ public class WorldRenderer implements Disposable {
         }
     }
 
-    private float heroBob(HeroActor h) {
-        return walkBlend * .65f * (1 - MathUtils.cos(h.walkTime * MathUtils.PI2 * 4));
+    private float heroBob(HeroActor h, boolean measuredWalk) {
+        // The measured contact/passing poses already contain the rise of a step.
+        // Large extra bobbing would lift the planted foot and look like hopping.
+        float amplitude = measuredWalk ? .10f : .65f;
+        return walkBlend * amplitude * (1 - MathUtils.cos(h.walkTime * MathUtils.PI2 * 4));
     }
 
     /** Species silhouette at rest: bat ~half hero height, imp ~three quarters, skeleton ~hero. */

@@ -35,6 +35,7 @@ public final class HeroEquipmentLauncher {
         private GameSession session;
         private WorldRenderer renderer;
         private int index;
+        private float walkStartX, walkStartY;
         Capture(String path) { output=new FileHandle(path); output.mkdirs(); }
 
         @Override public void create() {
@@ -44,6 +45,22 @@ public final class HeroEquipmentLauncher {
             session=new GameSession(balance,newMap(),state,42); session.monsters.clear();
             session.devGodMode=true;
             renderer=new WorldRenderer(session,art,fonts,batch,shapes); camera.zoom=.65f;
+            // Find a clear camp stretch for real movement in every direction, away from facilities.
+            var camp=session.map.room("CAMP");
+            float best=Float.MAX_VALUE;
+            for(float y=camp.originY;y<camp.originY+camp.heightPx;y+=8)
+                for(float x=camp.originX;x<camp.originX+camp.widthPx;x+=8) {
+                    boolean clear=true;
+                    for(Facing facing:directions) for(int tick=0;tick<=30 && clear;tick++) {
+                        float length=(float)Math.hypot(facing.sx,facing.sy);
+                        float distance=balance.hero.moveSpeedTiles*balance.tileSize*tick/60f;
+                        clear=session.map.free(x+distance*facing.sx/length,y+distance*facing.sy/length,
+                                session.hero.hw,session.hero.hh);
+                    }
+                    float distance=(float)Math.hypot(x-camp.spawnX(balance.tileSize),y-camp.spawnY(balance.tileSize));
+                    if(clear && distance<best){best=distance;walkStartX=x;walkStartY=y;}
+                }
+            if(best==Float.MAX_VALUE)throw new IllegalStateException("No clear camp walk fixture");
         }
 
         @Override public void render() {
@@ -64,18 +81,27 @@ public final class HeroEquipmentLauncher {
                 name="weapons/"+n+"-"+weapon.defId+"-"+facing;
             } else {
                 int n=index-regular-weapons;
-                facing=n<30?Facing.DOWN:Facing.DOWN_RIGHT; action=0;
+                facing=directions[n/30]; action=0;
                 name="walk-cycle/"+facing+"/"+String.format("%03d",n%30);
             }
             var h=session.hero; var r=session.map.room(room);
-            h.x=r.spawnX(balance.tileSize); h.y=r.spawnY(balance.tileSize);
+            boolean walkCycle=index>=regular+weapons;
+            if(!walkCycle){h.x=r.spawnX(balance.tileSize); h.y=r.spawnY(balance.tileSize);}
+            else if((index-regular-weapons)%30==0){h.x=walkStartX;h.y=walkStartY;h.walkTime=0;}
             h.facing=facing; h.rollFacing=facing; h.aimX=facing.sx; h.aimY=facing.sy;
-            h.moving=action<2; h.walkTime=action==1?.25f:0;
+            h.moving=action<2;
+            if(!walkCycle)h.walkTime=action==1?.25f:0;
             h.swingT=0; h.mineSwingT=0; h.rollT=0; h.invuln=0; h.flash=0; h.stunT=0;
             if(action==3 || action==4) {h.swingKind=action==3?0:1; h.swingT=action==3?.09f:.125f;}
             if(action==5) h.mineSwingT=.11f;
             if(action==6 || action==7) h.rollT=action==6?h.rollTotal*.5f:.01f;
-            if(index>=regular+weapons) h.walkTime=(index-regular-weapons)%30/60f;
+            if(walkCycle) {
+                var input=new Controls();input.moveX=facing.sx;input.moveY=facing.sy;
+                float x=h.x,y=h.y;session.update(1/60f,input);
+                float expected=balance.hero.moveSpeedTiles*balance.tileSize/60f;
+                if(Math.abs(Math.hypot(h.x-x,h.y-y)-expected)>.01f)
+                    throw new IllegalStateException("Blocked walk fixture: "+facing);
+            }
             renderer.update(1/60f);
             camera.position.set(h.x,h.y+22,0); camera.update();
             renderer.renderLights(camera);
@@ -89,7 +115,7 @@ public final class HeroEquipmentLauncher {
             try {png.write(file,pixels);} catch(java.io.IOException e) {throw new RuntimeException(e);}
             finally {png.dispose(); pixels.dispose();}
             if(index<regular && action==actions.length-1) System.out.println("EQUIPMENT_CAPTURE_OK "+room+" "+facing);
-            if(++index==regular+weapons+60) {
+            if(++index==regular+weapons+directions.length*30) {
                 System.out.println("EQUIPMENT_CAPTURE_COMPLETE "+index); Gdx.app.exit();
             }
         }

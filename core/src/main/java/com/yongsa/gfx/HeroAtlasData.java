@@ -6,7 +6,7 @@ import com.yongsa.combat.Facing;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Measured source rectangles and ground anchors; no source PNG needs resizing or repacking. */
+/** Measured native-pixel rectangles and anchors; display scaling never resamples the source files. */
 public final class HeroAtlasData {
     public record Source(String path, int width, int height, String sha256) {}
     public record Frame(String source, int x, int y, int width, int height,
