@@ -96,7 +96,7 @@ public class ForgeWindow extends Modal {
         tabButton(head, "제작", Tab.CRAFT);
         tabButton(head, "강화", Tab.ENHANCE);
         tabButton(head, "분해 · 흡수", Tab.DISMANTLE);
-        head.add(label("불꽃에서 깨어나는 힘", "small", Ui.DIM)).padLeft(24);
+        head.add(new MasteryBar(g.enhance, g.state, screen.game.fonts.small, art.white())).width(300).height(40).padLeft(20);
         p.add(head).left().padBottom(24).row();
 
         Table body = new Table();
@@ -247,22 +247,27 @@ public class ForgeWindow extends Modal {
             OreType ore = es.oreOf(w);
             int cost = es.cost(w.level);
             boolean enough = s.ore(ore) >= cost;
-            right.add(label(ore.displayName + " " + cost + "개 · 보유 " + s.ore(ore), "small",
-                    enough ? Ui.TEXT : Ui.ORANGE)).left().padBottom(8).row();
-            right.add(label("한 번의 확률  +" + w.level + " → +" + (w.level + 1), "small", Ui.DIM))
-                    .left().padBottom(6).row();
-            Odds o = es.odds(w.level);
+            // 숙련도 줄이 늘어난 만큼 비용과 단계를 한 줄로 (판 높이 470 안에 맞춘다)
+            right.add(label("+" + w.level + " → +" + (w.level + 1) + "  ·  " + ore.displayName + " " + cost + "개 (보유 " + s.ore(ore) + ")",
+                    "small", enough ? Ui.TEXT : Ui.ORANGE)).left().padBottom(6).row();
+            // 2026-10-27: 성공·대성공·유지·하락·파괴. 숙련도로 줄어든 하락·파괴는 원래 값과 함께 보여 준다
+            Odds o = es.odds(s, w.level);
+            Odds base = es.odds(w.level);
             Table odds = new Table();
             odds.add(label("성공 " + ProbBar.format(o.success) + "%", "small", Ui.BLUE)).width(138).left();
-            odds.add(label("유지 " + ProbBar.format(o.keep) + "%", "small", Ui.GREY)).width(138).left().row();
-            // 2026-10-14 팀 결정: 실패는 유지·파괴만 (하락은 비중 0, 남아 있으면만 보인다)
-            if (o.down > 0) odds.add(label("하락 " + ProbBar.format(o.down) + "%", "small", Ui.ORANGE)).left().padTop(5);
-            odds.add(label("파괴 " + ProbBar.format(o.destroy) + "%", "small", Ui.RED)).left().padTop(5);
-            right.add(odds).width(276).left().padBottom(10).row();
+            odds.add(label("대성공 " + ProbBar.format(o.great) + "%", "small", Ui.GOLD)).width(138).left().row();
+            odds.add(label("유지 " + ProbBar.format(o.keep) + "%", "small", Ui.GREY)).width(138).left().padTop(4);
+            if (base.down > 0) odds.add(label("하락 " + ProbBar.format(o.down) + "%" + reduced(base.down, o.down), "small",
+                    o.down > 0 ? Ui.ORANGE : Ui.DIM)).width(138).left().padTop(4);
+            odds.row();
+            if (base.destroy > 0) odds.add(label("파괴 " + ProbBar.format(o.destroy) + "%" + reduced(base.destroy, o.destroy), "small",
+                    o.destroy > 0 ? Ui.RED : Ui.DIM)).colspan(2).left().padTop(4).row();
+            right.add(odds).width(276).left().padBottom(8).row();
             int after = g.rules.attack(s, w) + d.perLevel;
             right.add(label("성공 시 공격력 " + g.rules.attack(s, w) + " → " + after, "small", Ui.TEXT))
-                    .left().padBottom(5).row();
-            right.add(label("각성까지 " + (g.balance.enhance.maxLevel - w.level) + "단계", "small", Ui.PURPLE))
+                    .left().padBottom(4).row();
+            right.add(label("각성까지 " + (g.balance.enhance.maxLevel - w.level) + "단계"
+                    + (w.level == g.balance.enhance.maxLevel - 1 ? " · 대성공도 +1" : " · 대성공은 +2"), "small", Ui.PURPLE))
                     .left().padBottom(4).row();
             com.yongsa.config.Balance.SkillDef sk = d.skill;
             if (sk != null) {
@@ -270,12 +275,14 @@ public class ForgeWindow extends Modal {
                 right.add(label(w.level >= lv ? "스킬 「" + sk.name + "」 열림 · 흡수 가능" : "+" + lv + " 에 스킬 「" + sk.name + "」 열림",
                         "small", w.level >= lv ? Ui.GOLD : Ui.DIM)).left().padBottom(8).row();
             }
-            boolean risk = es.canDestroy(w);
-            right.add(wrapped(risk ? "파괴 시 검 소멸 · " + ore.displayName + " " + es.destroyRefund(w) + "개 반환"
-                    : "+6부터 파괴될 수 있습니다.", "small", risk ? Ui.RED : Ui.DIM))
+            boolean risk = es.canDestroy(s, w);
+            String riskText = risk ? "파괴 시 검 소멸 · " + ore.displayName + " " + es.destroyRefund(w) + "개 반환"
+                    : es.canDestroy(w) ? "숙련도 덕분에 파괴되지 않습니다."
+                    : "+6부터 파괴될 수 있습니다.";
+            right.add(wrapped(riskText, "small", risk ? Ui.RED : es.canDestroy(w) ? Ui.GOLD : Ui.DIM))
                     .width(276).left().padBottom(10).row();
             TextButton enhance = nav.add(risk ? "강화하기 · 파괴 위험" : "강화하기", () -> {
-                if (es.canDestroy(w)) confirmRisk(w); else doEnhance(w);
+                if (es.canDestroy(g.state, w)) confirmRisk(w); else doEnhance(w);
             }, risk);
             enhance.setDisabled(motion.busy() || !enough);
             right.add(enhance).width(276).height(48).padBottom(10).row();
@@ -308,11 +315,12 @@ public class ForgeWindow extends Modal {
 
     private void confirmRisk(Weapon w) {
         EnhanceService es = g.enhance;
-        Odds o = es.odds(w.level);
+        Odds o = es.odds(g.state, w.level);
         OreType ore = es.oreOf(w);
         ConfirmDialog.Line[] lines = {
                 new ConfirmDialog.Line(g.rules.weaponName(w) + "을 강화합니다.", null),
-                new ConfirmDialog.Line("성공 " + ProbBar.format(o.success) + "%  ·  유지 " + ProbBar.format(o.keep)
+                new ConfirmDialog.Line("성공 " + ProbBar.format(o.success) + "%  ·  대성공 " + ProbBar.format(o.great)
+                        + "%  ·  유지 " + ProbBar.format(o.keep)
                         + (o.down > 0 ? "%  ·  하락 " + ProbBar.format(o.down) : "") + "%", Ui.TEXT),
                 new ConfirmDialog.Line("파괴 " + ProbBar.format(o.destroy) + "%", Ui.RED),
                 new ConfirmDialog.Line("파괴되면 무기가 사라지고 " + ore.displayName + " " + es.destroyRefund(w) + "개만 돌려받습니다.", Ui.DIM),
@@ -341,6 +349,12 @@ public class ForgeWindow extends Modal {
                     screen.game.sfx.play(r.awakened ? "awaken" : "success");
                     if (r.awakened) resultText += " · " + g.balance.weapon(w.defId).awakenedName + " 각성!";
                     break;
+                case GREAT:
+                    resultText = "대성공! +" + r.levelBefore + " → +" + r.levelAfter;
+                    resultColor = Ui.GOLD;
+                    screen.game.sfx.play(r.awakened ? "awaken" : "success");
+                    if (r.awakened) resultText += " · " + g.balance.weapon(w.defId).awakenedName + " 각성!";
+                    break;
                 case KEEP:
                     resultText = "유지. 단계가 그대로다";
                     resultColor = Ui.GREY;
@@ -357,9 +371,29 @@ public class ForgeWindow extends Modal {
                     screen.game.sfx.play("destroy");
                     screen.hud.toast(r.refundOre.displayName + " " + r.refund + "개를 돌려받았다. 봉인된 성검을 들었다");
             }
+            if (r.masteryGained > 0) resultText += "   (숙련 +" + r.masteryGained + ")";
+            if (r.masteryLeveledUp()) {
+                screen.hud.toast("강화 숙련도가 올랐다! Lv " + r.masteryAfter + masteryNote(r.masteryAfter));
+                screen.game.sfx.play("awaken");
+            }
             g.onWeaponsChanged();
             rebuild();
         });
+    }
+
+    /** 숙련도 레벨이 올랐을 때 눈에 띄는 변화 한마디. */
+    private String masteryNote(int lv) {
+        com.yongsa.config.Balance.MasteryCfg m = g.balance.enhance.mastery;
+        if (lv == m.destroyZeroLevel) return " · 이제 무기가 파괴되지 않는다";
+        if (lv == m.downZeroLevel) return " · 이제 단계가 떨어지지 않는다";
+        if (lv >= m.maxLevel) return " · 마스터! 대성공 확률 +" + ProbBar.format(g.enhance.greatBonus(lv)) + "%p";
+        if (g.enhance.greatBonus(lv) > g.enhance.greatBonus(lv - 1)) return " · 대성공 확률 +" + ProbBar.format(g.enhance.greatBonus(lv)) + "%p";
+        return " · 하락·파괴 확률이 줄었다";
+    }
+
+    /** 숙련도로 줄어든 확률이면 원래 값을 함께 (예: " (원래 21)"). */
+    private static String reduced(double base, double now) {
+        return Math.abs(base - now) < 1e-9 ? "" : " (" + ProbBar.format(base) + ")";
     }
 
     // ───────────────────────── 분해

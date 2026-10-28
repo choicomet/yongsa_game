@@ -114,6 +114,7 @@ public class GameSession {
 
         map.updateGates(state);
         absorb.migrateImprints(state);
+        enhance.clampMastery(state); // 숙련도가 없던 예전 저장은 0에서 시작한다
         if (state.mapVersion != WorldMap.VERSION) {
             // 방 배치가 바뀐 예전 저장: 광맥 자리와 이어하기 위치는 새 맵에 맞지 않는다
             for (RoomRecord rec : state.rooms.values()) rec.veins = null;
