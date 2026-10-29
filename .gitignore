@@ -1,0 +1,5 @@
+yongsa-mask-feedback*.json
+feedback-current.json
+*.tmp
+Thumbs.db
+.DS_Store
