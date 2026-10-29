@@ -1946,6 +1946,36 @@
       "height": 1024,
       "drawWidth": 576,
       "drawHeight": 380
+    },
+    "world_return_portal": {
+      "sheet": "world/portals/return-portal.png",
+      "x": 0,
+      "y": 0,
+      "width": 1536,
+      "height": 1024,
+      "drawWidth": 168,
+      "drawHeight": 112.0,
+      "pixelMip": true
+    },
+    "world_abyss_sealed": {
+      "sheet": "world/portals/abyss-sealed.png",
+      "x": 0,
+      "y": 0,
+      "width": 1536,
+      "height": 1024,
+      "drawWidth": 256,
+      "drawHeight": 170.66666666666666,
+      "pixelMip": true
+    },
+    "world_abyss_open": {
+      "sheet": "world/portals/abyss-open.png",
+      "x": 0,
+      "y": 0,
+      "width": 1536,
+      "height": 1024,
+      "drawWidth": 216,
+      "drawHeight": 144.0,
+      "pixelMip": true
     }
   }
 }

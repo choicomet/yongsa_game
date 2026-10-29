@@ -685,16 +685,16 @@ public class WorldRenderer implements Disposable {
                 p.endSize = 0;
             }
         }
-        // 귀환 포탈 소용돌이
+        // 귀환진 테두리에서 천천히 올라오는 청록빛 입자.
         Room hr = g.heroRoom();
-        if (hr != null && g.hasPortal(hr) && MathUtils.random() < dt * 30f) {
+        if (hr != null && g.hasPortal(hr) && MathUtils.random() < dt * 12f) {
             float px = g.portalX(hr), py = g.portalY(hr);
             float a = MathUtils.random(MathUtils.PI2);
-            Particles.P p = particles.spawn(px + MathUtils.cos(a) * 38, py + MathUtils.sin(a) * 18, 0.7f, 3,
-                    new Color(0.55f, 0.5f, 1f, 1f));
-            p.vx = -MathUtils.cos(a) * 50;
-            p.vy = -MathUtils.sin(a) * 25;
-            p.vz = 40;
+            Particles.P p = particles.spawn(px + MathUtils.cos(a) * 37, py + MathUtils.sin(a) * 19, 1.1f, 2,
+                    new Color(0.38f, 0.95f, 0.85f, 1f));
+            p.vx = -MathUtils.cos(a) * 8;
+            p.vy = -MathUtils.sin(a) * 4;
+            p.vz = 18;
             p.glow = true;
             p.endSize = 0;
         }
@@ -815,7 +815,7 @@ public class WorldRenderer implements Disposable {
                 }
             } else if (g.hasPortal(r)) {
                 float px = g.portalX(r), py = g.portalY(r);
-                if (inView(px, py)) lighting.add(px, py, 230, 0.55f, 0.5f, 1f, 0.8f + 0.1f * MathUtils.sin(time * 3f));
+                if (inView(px, py)) lighting.add(px, py, 145, 0.28f, 0.85f, 0.75f, 0.55f + 0.06f * MathUtils.sin(time * 2f));
             }
         }
         for (Hazard hz : g.hazards) {
@@ -899,6 +899,7 @@ public class WorldRenderer implements Disposable {
         roomGates.drawThresholds(batch,viewX0,viewY0,viewX1,viewY1);
         drawSceneDoors();
         drawFloorProps();
+        drawReturnPortals();
         drawTorches();
         batch.end();
 
@@ -1235,21 +1236,48 @@ public class WorldRenderer implements Disposable {
         return true;
     }
 
-    /** 캠프 바닥의 봉인 문양: 힘이 모일수록 밝아지고, 봉인이 풀리면 갈라진 채 보랏빛으로 빛난다. */
+    /** 캠프의 봉인석과 열린 심연. 바닥 원근은 원화에 있으므로 회전/찌그러뜨리지 않는다. */
     private void drawFloorProps() {
         for (Prop p : map.props) {
             if (p.kind != Prop.Kind.SEAL) continue;
             float cx = p.centerX(T), cy = p.centerY(T);
             if (!inView(cx, cy)) continue;
-            Color c = sealColor();
-            float pw = sealPower();
-            float size = p.width(T) * 1.5f;
-            batch.setColor(0.05f, 0.03f, 0.07f, 0.55f);
-            batch.draw(art.glow, cx - size * 0.6f, cy - size * 0.35f, size * 1.2f, size * 0.7f);
-            batch.setColor(c.r, c.g, c.b, 0.45f + 0.5f * pw);
-            batch.draw(art.world("seal"), cx - size / 2f, cy - size * 0.32f, size / 2f, size * 0.32f, size, size * 0.64f, 1f, 1f,
-                    g.state.unsealed ? time * 12f : 0f);
+            TextureRegion stone = art.world(g.state.unsealed ? "abyss_open" : "abyss_sealed");
             batch.setColor(Color.WHITE);
+            drawGroundSprite(stone, cx, cy);
+        }
+    }
+
+    private void drawReturnPortals() {
+        for (Room room : map.rooms) {
+            if (!g.hasPortal(room)) continue;
+            float x = g.portalX(room), y = g.portalY(room);
+            if (!inView(x, y)) continue;
+            batch.setColor(Color.WHITE);
+            drawGroundSprite(art.world("return_portal"), x, y);
+        }
+    }
+
+    private void drawGroundSprite(TextureRegion sprite, float x, float y) {
+        float w = art.width(sprite), h = art.height(sprite);
+        batch.draw(sprite, x - w / 2f, y - h / 2f, w, h);
+    }
+
+    /** 세 보스에 대응하는 보석만 밝힌다. 좌표는 봉인석 원본 1536x1024 기준. */
+    private void drawSealSockets(float cx, float cy, float pulse) {
+        TextureRegion stone = art.world("abyss_sealed");
+        float w = art.width(stone), h = art.height(stone);
+        float[][] sockets = {{767,257}, {459,590}, {1075,590}};
+        Color[] colors = {new Color(.5f,.75f,1f,1f), new Color(1f,.3f,.35f,1f), new Color(.4f,.95f,1f,1f)};
+        for (int i = 0; i < 3; i++) {
+            if (!g.state.bossDefeated(com.yongsa.model.AbsorbService.BOSS_ORDER[i])) continue;
+            float x = cx + (sockets[i][0] / 1536f - .5f) * w;
+            float y = cy + (.5f - sockets[i][1] / 1024f) * h;
+            Color c = g.absorb.canUnseal(g.state) ? Ui.GOLD : colors[i];
+            batch.setColor(c.r,c.g,c.b,.65f * pulse);
+            batch.draw(art.glow,x-10,y-7,20,14);
+            batch.setColor(c.r,c.g,c.b,.9f);
+            batch.draw(art.glow,x-3,y-2,6,4);
         }
     }
 
@@ -1282,15 +1310,6 @@ public class WorldRenderer implements Disposable {
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         Gdx.gl.glEnable(GL20.GL_BLEND);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        for (Room r : map.rooms) {
-            if (!g.hasPortal(r)) continue;
-            float px = g.portalX(r), py = g.portalY(r);
-            if (!inView(px, py)) continue;
-            shapes.setColor(0.05f, 0.02f, 0.12f, 0.85f);
-            shapes.ellipse(px - 44, py - 22, 88, 44, 40);
-            shapes.setColor(0.18f, 0.1f, 0.38f, 0.9f);
-            shapes.ellipse(px - 34, py - 16, 68, 32, 40);
-        }
         drawHazards();
         for (Monster m : g.monsters) {
             if (m.dead) continue;
@@ -2036,12 +2055,10 @@ public class WorldRenderer implements Disposable {
                 Color c = sealColor();
                 float cx = p.centerX(T), cy = p.centerY(T);
                 float pulse = 0.75f + 0.25f * MathUtils.sin(time * 3f);
-                batch.setColor(c.r, c.g, c.b, 0.35f * sealPower() * pulse);
-                batch.draw(art.glow, cx - 70, cy - 40, 140, 80);
-                if (g.state.unsealed) {
-                    batch.setColor(c.r, c.g, c.b, 0.3f * pulse);
-                    batch.draw(art.glow, cx - 30, cy - 10, 60, 140);
-                }
+                float strength = g.state.finalBossDefeated ? .07f : .18f;
+                batch.setColor(c.r, c.g, c.b, strength * sealPower() * pulse);
+                batch.draw(art.glow, cx - 62, cy - 30, 124, 60);
+                if (!g.state.unsealed) drawSealSockets(cx, cy, pulse);
             }
         }
         // 광맥 반짝임
@@ -2064,16 +2081,14 @@ public class WorldRenderer implements Disposable {
                 }
             }
         }
-        // 귀환 포탈 빛기둥
+        // 바닥에 붙는 약한 귀환진 빛. 캐릭터를 덮는 큰 빛기둥은 쓰지 않는다.
         for (Room r : map.rooms) {
             if (!g.hasPortal(r)) continue;
             float px = g.portalX(r), py = g.portalY(r);
             if (!inView(px, py)) continue;
-            float pulse = 0.8f + 0.2f * MathUtils.sin(time * 3f);
-            batch.setColor(0.5f, 0.45f, 1f, 0.5f * pulse);
-            batch.draw(art.glow, px - 40, py - 20, 80, 150);
-            batch.setColor(0.8f, 0.75f, 1f, 0.6f * pulse);
-            batch.draw(art.glow, px - 24, py - 14, 48, 28);
+            float pulse = 0.85f + 0.15f * MathUtils.sin(time * 2f);
+            batch.setColor(0.3f, 0.9f, 0.78f, 0.16f * pulse);
+            batch.draw(art.glow, px - 48, py - 25, 96, 50);
         }
         // 잠긴 던전 입구의 봉인 장벽
         for (Link l : map.links) {

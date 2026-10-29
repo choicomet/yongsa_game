@@ -74,7 +74,7 @@
         },
         {
           "kind": "SEAL",
-          "center": [0.506, 0.776],
+          "center": [0.506, 0.700],
           "widthTiles": 2,
           "heightTiles": 1.5,
           "baked": false
