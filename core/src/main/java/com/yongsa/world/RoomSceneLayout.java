@@ -53,6 +53,8 @@ public final class RoomSceneLayout {
         public int pixelWidth, pixelHeight;
         public float suggestedWidthTiles;
         public float[] walkable, playerSpawn;
+        /** Northern return doorway foot in original artwork coordinates. */
+        public float[] returnDoor;
         /** 이동 마스크 PNG (assets 아래 경로). 있으면 walkable·blocked 대신 쓴다. */
         public String walkMask;
         public List<float[]> blocked = new ArrayList<>();
@@ -75,6 +77,7 @@ public final class RoomSceneLayout {
                 for (float p : polygon) normalized(p);
             }
             point(playerSpawn);
+            if (returnDoor != null) point(returnDoor);
             if (enemySpawns == null || portals == null) throw new IllegalArgumentException("Missing anchors");
             for (float[] p : enemySpawns) point(p);
             for (Portal p : portals) point(p.foot);

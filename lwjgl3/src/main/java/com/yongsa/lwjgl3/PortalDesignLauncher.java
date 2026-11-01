@@ -23,7 +23,7 @@ public final class PortalDesignLauncher {
 
     private static final class Capture extends YongsaGame {
         private final String[] names={"seal-locked","seal-one","seal-two","seal-ready","abyss-open","abyss-cleared",
-                "return-mine","return-citadel","return-tower","boss-not-cleared"};
+                "return-mine","return-citadel","return-tower","closed-mine","closed-citadel","closed-tower"};
         private final FileHandle output;
         private GameSession session;
         private WorldRenderer renderer;
@@ -45,10 +45,10 @@ public final class PortalDesignLauncher {
                 Prop seal=session.map.props.stream().filter(p->p.kind==Prop.Kind.SEAL).findFirst().orElseThrow();
                 centerX=seal.centerX(balance.tileSize);centerY=seal.centerY(balance.tileSize);
             }else{
-                String dungeon=AbsorbService.BOSS_ORDER[scenario==9?0:scenario-6];
+                String dungeon=AbsorbService.BOSS_ORDER[(scenario-6)%3];
                 Room boss=session.map.rooms.stream().filter(r->r.type==RoomType.BOSS&&r.dungeonId.equals(dungeon)).findFirst().orElseThrow();
-                state.room(boss.id).cleared=scenario!=9;
-                if(session.hasPortal(boss)!=(scenario!=9))throw new AssertionError("Portal visibility state");
+                state.room(boss.id).cleared=scenario<9;
+                if(session.hasPortal(boss)!=(scenario<9))throw new AssertionError("Portal visibility state");
                 centerX=session.portalX(boss);centerY=session.portalY(boss);
             }
             session.hero.x=centerX+55;session.hero.y=centerY-32;
@@ -71,7 +71,7 @@ public final class PortalDesignLauncher {
             finally{png.dispose();pixels.dispose();}
             System.out.println("PORTAL_CAPTURE_OK "+name);
             frame=0;
-            if(++pose==3){pose=0;if(++scenario==names.length){System.out.println("PORTAL_CAPTURE_COMPLETE 30");Gdx.app.exit();return;}setup();}
+            if(++pose==3){pose=0;if(++scenario==names.length){System.out.println("PORTAL_CAPTURE_COMPLETE 36");Gdx.app.exit();return;}setup();}
         }
         @Override public void dispose(){if(renderer!=null)renderer.dispose();super.dispose();}
     }

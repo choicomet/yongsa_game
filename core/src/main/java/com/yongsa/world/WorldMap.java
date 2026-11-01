@@ -31,6 +31,8 @@ public class WorldMap {
     /** 통로 바닥과 그 벽 칸이 어느 통로에 속하나. */
     private final Corridor[] corridorAt;
 
+    /** Session-owned availability; geometry stays independent of rendering. */
+    public java.util.function.Predicate<Room> returnDoorOpen = r -> false;
     public final List<Room> rooms = new ArrayList<>();
     public final List<Link> links = new ArrayList<>();
     public final List<Prop> props = new ArrayList<>();
@@ -747,6 +749,15 @@ public class WorldMap {
      * 그림 방에서는 바닥 경계 다각형으로 정확히 보고, 닫힌 출구와 광맥 칸도 막는다.
      */
     public boolean free(float x, float y, float hw, float hh) {
+        if (!Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(hw) || !Float.isFinite(hh) || hw < 0 || hh < 0) return false;
+        Room doorRoom = roomAt((int)Math.floor(x / tileSize), (int)Math.floor(y / tileSize));
+        if (doorRoom != null && doorRoom.scene != null && doorRoom.scene.returnDoor != null) {
+            float dx = Math.abs(x - doorRoom.sceneX(doorRoom.scene.returnDoor[0]));
+            float dy = y - doorRoom.sceneY(doorRoom.scene.returnDoor[1]);
+            // Only stone feet and the closed barrier obstruct movement, never the tall arch silhouette.
+            if (Math.abs(dx - 55) < 15 + hw && Math.abs(dy - 12) < 8 + hh) return false;
+            if (!returnDoorOpen.test(doorRoom) && dx < 39 + hw && Math.abs(dy - 14) < 3 + hh) return false;
+        }
         if (def.passageScenes != null && !def.passageScenes.isEmpty()) return paintedFree(x, y, hw, hh);
         int T = tileSize;
         int tx0 = (int) Math.floor((x - hw) / T), tx1 = (int) Math.floor((x + hw - 0.01f) / T);

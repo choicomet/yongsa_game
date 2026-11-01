@@ -459,11 +459,11 @@ public class Hud {
                 shapes.rect(mcx - 8, mcy, 16, 2);
             }
             if (g.hasPortal(r)) {
-                float cx = mcx, cy = mcy;
+                float cx = ox + g.portalX(r) / g.balance.tileSize * k, cy = oy + g.portalY(r) / g.balance.tileSize * k;
                 shapes.setColor(0.55f, 0.45f, 1f, a);
-                shapes.ellipse(cx - 12, cy - 7, 24, 14, 20);
+                shapes.rect(cx - 8, cy - 7, 16, 18);
                 shapes.setColor(0.85f, 0.8f, 1f, a);
-                shapes.ellipse(cx - 6, cy - 3, 12, 6, 16);
+                shapes.rect(cx - 4, cy - 7, 8, 13);
             }
         }
         // 용사 위치

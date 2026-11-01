@@ -109,6 +109,7 @@ public class GameSession {
         this.absorb = new AbsorbService(balance);
         this.state = state;
         this.map = map;
+        map.returnDoorOpen = this::hasPortal;
         this.random = new Random(seed);
         this.T = balance.tileSize;
 
@@ -2243,7 +2244,7 @@ public class GameSession {
         return r != null && state.chests.contains(r.id);
     }
 
-    /** 보스방 상자는 귀환 포탈 오른쪽 옆 (바닥이 아니면 왼쪽), 잡몹방 상자는 방 가운데에서 가장 가까운 넓은 바닥. */
+    /** 보스방 상자는 방 가운데 오른쪽 옆 (바닥이 아니면 왼쪽), 잡몹방 상자는 방 가운데에서 가장 가까운 넓은 바닥. */
     public float chestX(Room r) {
         return center(chestTile(r)[0]);
     }
@@ -2363,7 +2364,7 @@ public class GameSession {
         return true;
     }
 
-    /** 보스를 쓰러뜨린 보스방 가운데에는 캠프로 돌아가는 포탈이 생긴다. */
+    /** 보스를 쓰러뜨리면 보스방 위쪽의 캠프 귀환문이 열린다. */
     public boolean hasPortal(Room r) {
         return r.type == RoomType.BOSS && state.bossDefeated(r.dungeonId) && state.room(r.id).cleared
                 && !revived.contains(r.dungeonId);
@@ -2436,11 +2437,11 @@ public class GameSession {
     }
 
     public float portalX(Room r) {
-        return center((int) r.centerTileX());
+        return r.scene != null && r.scene.returnDoor != null ? r.sceneX(r.scene.returnDoor[0]) : center((int) r.centerTileX());
     }
 
     public float portalY(Room r) {
-        return center((int) r.centerTileY());
+        return r.scene != null && r.scene.returnDoor != null ? r.sceneY(r.scene.returnDoor[1]) : center((int) r.centerTileY());
     }
 
     /** 마왕이 기다리는 심연. 봉인을 풀면 캠프 아래 계단과도 이어진다. */
@@ -2465,7 +2466,7 @@ public class GameSession {
         setEntry(null);
     }
 
-    /** 귀환 포탈로 캠프에 돌아간다. */
+    /** 귀환문으로 캠프에 돌아간다. */
     public void warpToCamp() {
         if (fightRoom != null) return;
         placeAtCampSpawn();

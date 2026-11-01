@@ -8,7 +8,9 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Image-reviewed floor samples supplement the existing door-to-door centreline tests. */
 class DungeonWalkabilityTest {
     private WorldMap unlocked() {
-        var map=TestData.map(); for(var link:map.links) link.gateClosed=false; return map;
+        var map=TestData.map(); for(var link:map.links) link.gateClosed=false;
+        map.returnDoorOpen = room -> true; // Audit traversable floors with all doors open.
+        return map;
     }
 
     @Test void visibleStairsLandingsAndMiningAlcovesFitTheHero() {

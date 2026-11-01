@@ -22,6 +22,7 @@ class RoomSceneLayoutTest {
             assertEquals(s.pixelHeight, image.getHeight(), s.id);
             float w = s.suggestedWidthTiles * data.referenceTileSize;
             assertFits(s, s.playerSpawn, w, data.footRadiusWorld, s.id + " player");
+            if (s.returnDoor != null) assertFits(s, s.returnDoor, w, data.footRadiusWorld, s.id + " return door");
             for (var p : s.portals) assertFits(s, p.foot, w, data.footRadiusWorld, s.id + " portal " + p.id);
             for (var p : s.enemySpawns) assertFits(s, p, w, data.footRadiusWorld, s.id + " enemy");
             assertFalse(s.allowsFoot(0, 0, data.footRadiusWorld, 0, 0, w), s.id);
@@ -81,6 +82,7 @@ class RoomSceneLayoutTest {
                     }
                 }
             }
+            if (s.returnDoor != null) assertReachable(s, s.returnDoor, w, step, nx, seen, "return door");
             for (var p : s.portals) assertReachable(s, p.foot, w, step, nx, seen, p.id);
             for (var p : s.enemySpawns) assertReachable(s, p, w, step, nx, seen, "enemy");
             // These visible floors/stairs were excluded by the earlier conservative outlines.

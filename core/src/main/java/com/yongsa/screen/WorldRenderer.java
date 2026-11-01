@@ -90,6 +90,7 @@ public class WorldRenderer implements Disposable {
     /** GPT 가 준 앞쪽 가림 레이어 (<장면>-front.png). 없는 장면은 null 로 기억한다. */
     private final Map<String, Texture> frontTex = new HashMap<>();
     private final SceneForegrounds sceneForegrounds;
+    private final BossReturnDoors returnDoors;
     private final Color ambient = new Color(0.6f, 0.55f, 0.5f, 1f);
     private boolean ambientSet;
     private float time, ghostT, moteT, emberT;
@@ -308,6 +309,7 @@ public class WorldRenderer implements Disposable {
         }
         passages = new PassagePainter(map, T);
         sceneForegrounds = new SceneForegrounds(passages);
+        returnDoors = new BossReturnDoors(g);
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
             if (r.scene != null) continue;
@@ -549,6 +551,7 @@ public class WorldRenderer implements Disposable {
         if(roomGates==null)roomGates=new RoomGates(map);
         roomGates.update(dt);
         sceneForegrounds.expire(time);
+        returnDoors.update(dt);
         for (Iterator<FloatText> it = floats.iterator(); it.hasNext(); ) {
             FloatText f = it.next();
             f.t += dt;
@@ -685,19 +688,7 @@ public class WorldRenderer implements Disposable {
                 p.endSize = 0;
             }
         }
-        // 귀환진 테두리에서 천천히 올라오는 청록빛 입자.
         Room hr = g.heroRoom();
-        if (hr != null && g.hasPortal(hr) && MathUtils.random() < dt * 12f) {
-            float px = g.portalX(hr), py = g.portalY(hr);
-            float a = MathUtils.random(MathUtils.PI2);
-            Particles.P p = particles.spawn(px + MathUtils.cos(a) * 37, py + MathUtils.sin(a) * 19, 1.1f, 2,
-                    new Color(0.38f, 0.95f, 0.85f, 1f));
-            p.vx = -MathUtils.cos(a) * 8;
-            p.vy = -MathUtils.sin(a) * 4;
-            p.vz = 18;
-            p.glow = true;
-            p.endSize = 0;
-        }
 
         // 방 분위기에 맞춰 바탕 밝기를 천천히 바꾼다 (통로는 조금 더 어둡다)
         Color target = ambientFor(room);
@@ -899,7 +890,6 @@ public class WorldRenderer implements Disposable {
         roomGates.drawThresholds(batch,viewX0,viewY0,viewX1,viewY1);
         drawSceneDoors();
         drawFloorProps();
-        drawReturnPortals();
         drawTorches();
         batch.end();
 
@@ -921,6 +911,8 @@ public class WorldRenderer implements Disposable {
         if(roomGates==null)roomGates=new RoomGates(map);
         for(var gate:roomGates.parts(batch,viewX0,viewY0,viewX1,viewY1))
             list.add(new Sorted(gate.depth(),()->gate.draw().run()));
+        for (Room r : map.rooms) if (r.type == RoomType.BOSS && inView(g.portalX(r), g.portalY(r)))
+            list.add(new Sorted(g.portalY(r) + 8, () -> returnDoors.draw(batch, r)));
         list.sort((a, b) -> Float.compare(b.y, a.y));
         for (Sorted s : list) s.call.draw();
         drawSceneFronts();
@@ -1245,16 +1237,6 @@ public class WorldRenderer implements Disposable {
             TextureRegion stone = art.world(g.state.unsealed ? "abyss_open" : "abyss_sealed");
             batch.setColor(Color.WHITE);
             drawGroundSprite(stone, cx, cy);
-        }
-    }
-
-    private void drawReturnPortals() {
-        for (Room room : map.rooms) {
-            if (!g.hasPortal(room)) continue;
-            float x = g.portalX(room), y = g.portalY(room);
-            if (!inView(x, y)) continue;
-            batch.setColor(Color.WHITE);
-            drawGroundSprite(art.world("return_portal"), x, y);
         }
     }
 
@@ -2081,15 +2063,6 @@ public class WorldRenderer implements Disposable {
                 }
             }
         }
-        // 바닥에 붙는 약한 귀환진 빛. 캐릭터를 덮는 큰 빛기둥은 쓰지 않는다.
-        for (Room r : map.rooms) {
-            if (!g.hasPortal(r)) continue;
-            float px = g.portalX(r), py = g.portalY(r);
-            if (!inView(px, py)) continue;
-            float pulse = 0.85f + 0.15f * MathUtils.sin(time * 2f);
-            batch.setColor(0.3f, 0.9f, 0.78f, 0.16f * pulse);
-            batch.draw(art.glow, px - 48, py - 25, 96, 50);
-        }
         // 잠긴 던전 입구의 봉인 장벽
         for (Link l : map.links) {
             if (!l.gateClosed) continue;
@@ -2513,6 +2486,7 @@ public class WorldRenderer implements Disposable {
         for (Texture t : frontTex.values()) if (t != null) t.dispose();
         frontTex.clear();
         sceneForegrounds.dispose();
+        returnDoors.dispose();
         spriteBlend.dispose();
         actorInk.dispose();
         for (Texture t : gateTex.values()) if (t != null) t.dispose();

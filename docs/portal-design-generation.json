@@ -22,6 +22,19 @@
       "original": "exec-1c4aa729-f14d-4c83-8330-a3f4a9582f59.png",
       "prompt": "Use case: precise-object-edit. Edit this game sprite to its OPENED state. Keep EXACT same canvas size 1536x1024, camera, perspective, outer ring silhouette/position/size, three jewel sockets and bronze trim, transparent background, pixel-like painterly style. Change ONLY the inner circular sword-engraved stone lid: it has cracked and sunk out of sight, revealing a deep dark abyss with a few broken descending stone steps visible along the inside back-left wall, fading down into black-violet depth. Restrained violet inner fissure light, dim magenta ember wisps INSIDE opening, no tall beam, no upright portal, no bright galaxy. The three existing rim gems now glow faintly violet. Keep all outer geometry aligned exactly to the input, no extra scenery, no text, no background. True alpha transparency. The result is the same ancient floor hatch after opening, clearly a downward entrance, not a puddle.",
       "drawWidth": 216
+    },
+    {
+      "key": "return_door",
+      "date": "2026-11-01",
+      "file": "return-door.png",
+      "original": "exec-1ff42e1c-ae3f-45b5-a9e7-78a6100d0bb2.png",
+      "reference": "assets/scenes/natural-v1/central-camp.png",
+      "size": [
+        1280,
+        1280
+      ],
+      "drawWidth": 180,
+      "prompt": "Extract/recreate the exact central NORTH-facing stone dungeon entrance from this game artwork as one isolated reusable game sprite, on transparent background. Reference image is style and exact architecture reference. Single symmetrical dark slate block masonry arch, chunky piers, rounded arch top, dark black tunnel interior and a tiny stone threshold. Same high angle 2.5D pixel-art painterly rendering and weathered stone block shapes as central upper doorway in reference. Show COMPLETE arched top, not cropped. NO attached surrounding walls, NO camp objects, NO characters, NO crates, NO barrels, NO vegetation, NO purple magical lights, NO torches, NO large floor platform. Neutral gray stone so usable in mine, red fortress and purple tower. Inner doorway opaque very dark tunnel, exterior fully transparent with clean alpha. Front-facing arch viewed from same slightly top-down game camera, not diagonal isometric rotation. Thin irregular stone rubble at base only. Centered sprite filling most of a square canvas, preserve full arch and both feet. This is OPEN door frame; do not include gate bars or panels."
     }
   ]
 }

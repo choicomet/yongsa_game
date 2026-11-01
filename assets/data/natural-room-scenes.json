@@ -425,6 +425,7 @@
     },
     {
       "id": "mine-boss-a",
+      "returnDoor": [0.5, 0.335],
       "title": "골렘의 붕괴 공동",
       "image": "scenes/natural-v1/mine-boss-a.png",
       "walkMask": "walkmask/rooms/mine-boss-a.png",
@@ -560,6 +561,7 @@
     },
     {
       "id": "citadel-boss-a",
+      "returnDoor": [0.5, 0.245],
       "title": "혈월 기사의 결투 홀",
       "image": "scenes/natural-v1/citadel-boss-a.png",
       "walkMask": "walkmask/rooms/citadel-boss-a.png",
@@ -694,6 +696,7 @@
     },
     {
       "id": "tower-boss-a",
+      "returnDoor": [0.5, 0.235],
       "title": "수문장의 마력 전당",
       "image": "scenes/natural-v1/tower-boss-a.png",
       "walkMask": "walkmask/rooms/tower-boss-a.png",
