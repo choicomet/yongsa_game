@@ -20,6 +20,18 @@ function validateFeedback(data) {
             }
         }
     }
+    // Old collision-only files remain valid. Layer data never changes collision strokes.
+    if (data.layerSchema != null && data.layerSchema !== 1) throw new Error('지원하지 않는 가림 검토안 버전이에요.');
+    if (data.layerSourceCommit && data.layerSourceCommit !== layerData.sourceCommit) throw new Error('가림 초안 버전이 달라요. 기존 파일은 보관하고 채팅으로 전달해주세요.');
+    for (const [key,r] of Object.entries(data.reviews)) {
+        if (!r.layers) continue;
+        const l=r.layers, record=layerData.items[key];
+        if (!l.overrides || Array.isArray(l.overrides) || !Array.isArray(l.strokes) || typeof l.done !== 'boolean') throw new Error('가림 검토 정보가 올바르지 않아요.');
+        const ids=new Set([...record.polygons.map(p=>p.id),...(record.raster?[record.raster.id]:[])]);
+        const valid=p=>['always','behind'].includes(p.mode)&&typeof p.disabled==='boolean'&&Number.isFinite(p.depth)&&p.depth>=0&&p.depth<=1;
+        for(const [id,p] of Object.entries(l.overrides))if(!ids.has(id)||!valid(p))throw new Error('가림 영역 기준이 올바르지 않아요.');
+        for(const p of l.strokes)if(!(valid(p)||p.mode==='erase-layer')||!Number.isFinite(p.width)||p.width<=0||p.width>500||!Array.isArray(p.points)||!p.points.length||p.points.some(q=>!Array.isArray(q)||q.length!==2||q.some(v=>!Number.isFinite(v)||v<0||v>1)))throw new Error('가림 표시 좌표가 올바르지 않아요.');
+    }
     if (data.artwork && data.artwork.some(a => !known.has(a.key) || known.get(a.key).artSha256 !== a.artSha256)) {
         throw new Error('다른 버전의 그림에 작성된 검토안이에요. 채팅으로 파일을 전달해주세요.');
     }
@@ -43,7 +55,7 @@ importInput.onchange = async () => {
     try {
         if (file.size > 10_000_000) throw new Error('검토안 파일은 10MB 이하여야 해요.');
         const incoming = validateFeedback(JSON.parse(await file.text()));
-        const hasWork = state.rules || Object.values(state.reviews).some(r => r.note || r.done || r.strokes.length);
+        const hasWork = state.rules || Object.values(state.reviews).some(r => r.note || r.done || r.strokes.length || r.layers?.done || r.layers?.strokes?.length || Object.keys(r.layers?.overrides || {}).length);
         if (hasWork && !confirm('현재 검토안을 불러올 파일로 바꿀까요? 현재 내용은 먼저 “파일로 받기”로 보관할 수 있어요.')) return;
         state = incoming;
         $('rules').value = state.rules;
