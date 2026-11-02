@@ -207,8 +207,10 @@ public class GameScreen extends ScreenAdapter {
         Gdx.gl.glClearColor(0.02f, 0.018f, 0.03f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         worldViewport.apply();
+        renderer.showWalkable = game.settings.devShowWalkable;
         renderer.render(worldCam);
         stage.getViewport().apply();
+        hud.showWalkMasks = game.settings.devShowWalkable;
         hud.render(stage.getCamera().combined, YongsaGame.WIDTH, YongsaGame.HEIGHT);
         hud.renderFade(fade);
         stage.act(delta);
@@ -426,7 +428,7 @@ public class GameScreen extends ScreenAdapter {
                         + game.balance.reward.chestOreMin + "~" + game.balance.reward.chestOreMax + "개)", null),
                 new ConfirmDialog.Line("열림: " + e.opened, Ui.BLUE),
                 new ConfirmDialog.Line(nextWeaponHint(), Ui.DIM),
-                new ConfirmDialog.Line("방 가운데 생긴 귀환 포탈(E)로 캠프에 바로 돌아갈 수 있다", Ui.PURPLE)
+                new ConfirmDialog.Line("방 위쪽에 열린 귀환문(E)으로 캠프에 돌아갈 수 있다", Ui.PURPLE)
         };
         modals.push(new MessageWindow(game.skin, "던전 클리어!", Ui.GOLD, lines, "확인"));
     }

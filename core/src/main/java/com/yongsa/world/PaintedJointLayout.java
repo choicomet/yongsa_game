@@ -14,6 +14,8 @@ public final class PaintedJointLayout {
         public float feather;
         /** Normalized visible floor in the new painting, including solid prop exclusions. */
         public float[] walkable;
+        /** 이동 마스크 PNG (assets 아래 경로). 있으면 walkable·blocked 대신 쓴다. */
+        public String walkMask;
         public List<float[]> blocked = new ArrayList<>();
         public List<SceneOcclusion.Mask> foregrounds = new ArrayList<>();
 
@@ -35,6 +37,8 @@ public final class PaintedJointLayout {
         }
         public boolean owns(float x,float y) {return alpha(x,y)>=1;}
         public boolean allowsFoot(float x,float y,float radius) {
+            WalkMask mask=WalkMask.get(walkMask);
+            if(mask!=null)return mask.fits((x-rect[0])/rect[2],1-(y-rect[1])/rect[3],radius/rect[2],radius/rect[3]);
             if(!RoomSceneLayout.Scene.fitsPolygon(walkable,x-rect[0],y-rect[1],radius,rect[2],rect[3],true))return false;
             for(float[] polygon:blocked)
                 if(!RoomSceneLayout.Scene.fitsPolygon(polygon,x-rect[0],y-rect[1],radius,rect[2],rect[3],false))return false;

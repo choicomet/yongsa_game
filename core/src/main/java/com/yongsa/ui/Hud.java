@@ -165,6 +165,9 @@ public class Hud {
         return out;
     }
 
+    /** 개발용 (F1 이동 영역 보기): 용사 발밑을 덮는 마스크 파일을 화면 아래에 적는다. */
+    public boolean showWalkMasks;
+
     public void render(Matrix4 projection, float w, float h) {
         this.projection = projection;
         this.w = w;
@@ -208,6 +211,13 @@ public class Hud {
             ox += 94;
         }
         text(fonts.small, "B  가방     M  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
+        if (showWalkMasks) {
+            float my = 130;
+            for (String m : g.map.walkMasksAt(g.hero.x, g.hero.y)) {
+                text(fonts.small, m, 24, my, Ui.GOLD);
+                my += 24;
+            }
+        }
 
         Room room = g.heroRoom();
         boolean village = room != null && room.type == RoomType.VILLAGE;
@@ -449,11 +459,11 @@ public class Hud {
                 shapes.rect(mcx - 8, mcy, 16, 2);
             }
             if (g.hasPortal(r)) {
-                float cx = mcx, cy = mcy;
+                float cx = ox + g.portalX(r) / g.balance.tileSize * k, cy = oy + g.portalY(r) / g.balance.tileSize * k;
                 shapes.setColor(0.55f, 0.45f, 1f, a);
-                shapes.ellipse(cx - 12, cy - 7, 24, 14, 20);
+                shapes.rect(cx - 8, cy - 7, 16, 18);
                 shapes.setColor(0.85f, 0.8f, 1f, a);
-                shapes.ellipse(cx - 6, cy - 3, 12, 6, 16);
+                shapes.rect(cx - 4, cy - 7, 8, 13);
             }
         }
         // 용사 위치

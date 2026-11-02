@@ -303,6 +303,29 @@ class GameSessionTest {
     }
 
     @Test
+    void allNorthernReturnDoorsRequireVictoryAndCloseOnRevival() {
+        for (String id : new String[]{"L6", "R6", "T6"}) {
+            GameState state = NewGame.create(b);
+            GameSession g = session(state);
+            Room room = g.map.room(id);
+            assertNotNull(room.scene.returnDoor);
+            assertTrue(room.scene.returnDoor[1] < .4f, "Door belongs to the north wall");
+            assertTrue(g.map.free(g.portalX(room), g.portalY(room), 9, 6), id + " doorway approach");
+            assertFalse(g.hasPortal(room));
+            assertFalse(g.map.free(g.portalX(room), g.portalY(room)+14, 9, 6), "Closed barrier blocks feet");
+            state.bossesDefeated.add(room.dungeonId);
+            state.room(id).cleared = true;
+            assertTrue(g.hasPortal(room));
+            assertTrue(g.map.free(g.portalX(room), g.portalY(room)+14, 9, 6), "Open doorway clears the barrier");
+            g.hero.x = g.portalX(room); g.hero.y = g.portalY(room);
+            Controls input = new Controls(); input.interact = true;
+            assertTrue(has(run(g, input, 1 / 60f), GameEvent.Type.WARP), id);
+            g.devReviveBoss(room.dungeonId);
+            assertFalse(g.hasPortal(room));
+        }
+    }
+
+    @Test
     void sleepingInTheBedRestsHalfwayAndWakesUp() {
         GameState s = NewGame.create(b);
         GameSession g = session(s);

@@ -28,6 +28,8 @@ public class Corridor {
         if (scene == null || !Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(radius) || radius < 0) return false;
         float px = x - originX;
         if (flip) px = widthPx - px;
+        WalkMask mask = WalkMask.get(scene.walkMask);
+        if (mask != null) return mask.fits(px / widthPx, 1 - (y - originY) / heightPx, radius / widthPx, radius / heightPx);
         return RoomSceneLayout.Scene.fitsPolygon(scene.walkable, px, y - originY, radius, widthPx, heightPx, true);
     }
 

@@ -43,6 +43,13 @@ public class DevMenu extends Modal {
             screen.game.saveSettings();
             g.devGodMode = screen.game.settings.devGodMode;
             rebuild();
+        })).width(260).height(46).left().padBottom(8).row();
+
+        p.add(label("이동 영역 보기", "default", Ui.DIM)).left().padRight(24);
+        p.add(nav.add(screen.game.settings.devShowWalkable ? "켜짐 (초록 = 걸을 수 있음)" : "꺼짐", () -> {
+            screen.game.settings.devShowWalkable = !screen.game.settings.devShowWalkable;
+            screen.game.saveSettings();
+            rebuild();
         })).width(260).height(46).left().padBottom(16).row();
 
         p.add(label("보스 부활 · 바로 가기", "default", Ui.GOLD)).colspan(3).left().padBottom(4).row();

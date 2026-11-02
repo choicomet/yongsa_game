@@ -31,6 +31,8 @@ public class WorldMap {
     /** 통로 바닥과 그 벽 칸이 어느 통로에 속하나. */
     private final Corridor[] corridorAt;
 
+    /** Session-owned availability; geometry stays independent of rendering. */
+    public java.util.function.Predicate<Room> returnDoorOpen = r -> false;
     public final List<Room> rooms = new ArrayList<>();
     public final List<Link> links = new ArrayList<>();
     public final List<Prop> props = new ArrayList<>();
@@ -122,6 +124,18 @@ public class WorldMap {
                 corridorAt[idx(x,y)]=floor?door.link.corridor:null;
             }
         }
+    }
+
+    /** 개발용: 이 자리를 덮는 그림들의 이동 마스크 경로 (방, 통로, 연결부 순). 칠할 파일을 찾을 때 쓴다. */
+    public List<String> walkMasksAt(float x,float y) {
+        List<String> out=new ArrayList<>();
+        for(Room r:rooms)
+            if(r.scene!=null && x>=r.originX && x<=r.originX+r.widthPx && y>=r.originY && y<=r.originY+r.heightPx)
+                out.add(r.id+" "+r.scene.walkMask+(r.flip?" (좌우 반전)":""));
+        Corridor c=corridorAtWorld(x,y);
+        if(c!=null && c.scene!=null) out.add("통로 "+c.scene.walkMask+(c.flip?" (좌우 반전)":""));
+        for(var j:paintedJoints) if(j.alpha(x,y)>0) out.add("연결부 "+j.walkMask);
+        return out;
     }
 
     private PaintedJointLayout.Joint jointAt(float x,float y) {
@@ -735,6 +749,15 @@ public class WorldMap {
      * 그림 방에서는 바닥 경계 다각형으로 정확히 보고, 닫힌 출구와 광맥 칸도 막는다.
      */
     public boolean free(float x, float y, float hw, float hh) {
+        if (!Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(hw) || !Float.isFinite(hh) || hw < 0 || hh < 0) return false;
+        Room doorRoom = roomAt((int)Math.floor(x / tileSize), (int)Math.floor(y / tileSize));
+        if (doorRoom != null && doorRoom.scene != null && doorRoom.scene.returnDoor != null) {
+            float dx = Math.abs(x - doorRoom.sceneX(doorRoom.scene.returnDoor[0]));
+            float dy = y - doorRoom.sceneY(doorRoom.scene.returnDoor[1]);
+            // Only stone feet and the closed barrier obstruct movement, never the tall arch silhouette.
+            if (Math.abs(dx - 55) < 15 + hw && Math.abs(dy - 12) < 8 + hh) return false;
+            if (!returnDoorOpen.test(doorRoom) && dx < 39 + hw && Math.abs(dy - 14) < 3 + hh) return false;
+        }
         if (def.passageScenes != null && !def.passageScenes.isEmpty()) return paintedFree(x, y, hw, hh);
         int T = tileSize;
         int tx0 = (int) Math.floor((x - hw) / T), tx1 = (int) Math.floor((x + hw - 0.01f) / T);
@@ -771,7 +794,6 @@ public class WorldMap {
             if(door.link.corridor.closed() && (r!=door.room || door.along(x,y)>=0))return false;
             return joint.allowsFoot(x,y,radius);
         }
-        if (r != null && r.allowsFoot(x, y, radius)) return true;
         // The soft edge is a blend of two floors. Do not switch back to an old
         // wall while the new paving is still dominant, or close an existing
         // route early by treating the entire feather strip as opaque artwork.
@@ -779,10 +801,14 @@ public class WorldMap {
         if(r==null || r.type!=RoomType.CAMP)for(int i=paintedJoints.size()-1;i>=0;i--) {
             var edge=paintedJoints.get(i);
             if(edge.alpha(x,y)<.5f)continue;
+            // A dominant repaint can also replace old floor with rock. Falling
+            // through to a room/corridor below would expose an isolated floor island.
+            if(!edge.allowsFoot(x,y,0))return false;
             Door door=jointDoors.get(edge);
             if(!door.link.corridor.closed() && edge.allowsFoot(x,y,radius))return true;
             break; // Respect the uppermost visible painting, not an older floor underneath.
         }
+        if (r != null && r.allowsFoot(x, y, radius)) return true;
         for (Corridor c : corridors) {
             if (x + radius < c.originX || x - radius > c.originX + c.widthPx
                     || y + radius < c.originY || y - radius > c.originY + c.heightPx || c.closed()) continue;

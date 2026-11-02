@@ -35,20 +35,26 @@ public final class ActorInk implements Disposable {
             uniform vec4 u_secondUV;
             uniform vec2 u_firstInset;
             uniform vec2 u_secondInset;
+            uniform vec4 u_firstPlacement;
+            uniform vec4 u_secondPlacement;
             uniform vec2 u_step;
             uniform float u_weight;
+            uniform float u_inkStrength;
+            uniform float u_shadowLift;
             vec4 pose(vec2 p) {
                 // Clamp to this cell, never the neighbouring frame of an animation atlas.
                 // Sample even outside the cell: a per-fragment early return makes implicit
                 // mip derivatives undefined at the quad edge on desktop GPUs.
-                float inside = step(0.0,p.x)*step(p.x,1.0)*step(0.0,p.y)*step(p.y,1.0);
-                vec2 aUV = clamp(p, u_firstInset, 1.0-u_firstInset);
+                vec2 ap = (p-u_firstPlacement.xy)/u_firstPlacement.zw;
+                float inside = step(0.0,ap.x)*step(ap.x,1.0)*step(0.0,ap.y)*step(ap.y,1.0);
+                vec2 aUV = clamp(ap, u_firstInset, 1.0-u_firstInset);
                 vec4 a = texture2D(u_texture, u_firstUV.xy + aUV*u_firstUV.zw);
                 a.a *= inside;
                 if (u_weight <= 0.0) return a;
-                vec2 bUV = clamp(p, u_secondInset, 1.0-u_secondInset);
+                vec2 bp = (p-u_secondPlacement.xy)/u_secondPlacement.zw;
+                vec2 bUV = clamp(bp, u_secondInset, 1.0-u_secondInset);
                 vec4 b = texture2D(u_other, u_secondUV.xy + bUV*u_secondUV.zw);
-                b.a *= inside;
+                b.a *= step(0.0,bp.x)*step(bp.x,1.0)*step(0.0,bp.y)*step(bp.y,1.0);
                 float alpha = mix(a.a, b.a, u_weight);
                 return vec4(mix(a.rgb*a.a, b.rgb*b.a, u_weight)/max(alpha, .00001), alpha);
             }
@@ -60,12 +66,13 @@ public final class ActorInk implements Disposable {
                 float top = pose(p-vec2(0.0,u_step.y)).a;
                 float bottom = pose(p+vec2(0.0,u_step.y)).a;
                 float surround = max(max(left,right),max(top,bottom));
-                float ink = surround*.48*(1.0-body.a);
+                float ink = surround*u_inkStrength*(1.0-body.a);
                 float alpha = body.a+ink;
                 // A small inner highlight separates dark cloth/stone from dark scenery.
                 // It is shaded by the same world light map as the actor, never an emissive glow.
                 float edge = clamp(body.a-min(min(left,right),min(top,bottom)),0.0,1.0);
-                vec3 color = mix(body.rgb, max(body.rgb,vec3(.66,.64,.59)),edge*.14);
+                vec3 base = mix(body.rgb, sqrt(max(body.rgb,vec3(0.0))), u_shadowLift);
+                vec3 color = mix(base, max(base,vec3(.66,.64,.59)),edge*.14);
                 vec3 rgb = (color*body.a+vec3(.07,.08,.10)*ink)/max(alpha,.00001);
                 gl_FragColor = v_color*vec4(rgb,alpha);
             }
@@ -83,24 +90,36 @@ public final class ActorInk implements Disposable {
     public void draw(SpriteBatch batch, TextureRegion a, TextureRegion b, float weight,
                      float x, float y, float width, float height) {
         if (width == 0 || height == 0) return;
-        float dx = EDGE/Math.abs(width), dy = EDGE/Math.abs(height);
+        boolean paintedHero = a instanceof HeroPose || b instanceof HeroPose;
+        float edgeWidth = paintedHero ? .45f : EDGE;
+        float dx = edgeWidth/Math.abs(width), dy = edgeWidth/Math.abs(height);
         ShaderProgram previous = batch.getShader();
         batch.setShader(shader);
         b.getTexture().bind(1);
         Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
         shader.setUniformi("u_other",1);
         shader.setUniformf("u_weight",weight);
+        // Painted hero art already has a contour; retain its detail in dark rooms.
+        shader.setUniformf("u_inkStrength",paintedHero ? .20f : .48f);
+        shader.setUniformf("u_shadowLift",paintedHero ? .12f : 0f);
         shader.setUniformf("u_step",dx,dy);
         shader.setUniformf("u_firstUV",a.getU(),a.getV(),a.getU2()-a.getU(),a.getV2()-a.getV());
         shader.setUniformf("u_secondUV",b.getU(),b.getV(),b.getU2()-b.getU(),b.getV2()-b.getV());
         shader.setUniformf("u_firstInset",.5f/a.getRegionWidth(),.5f/a.getRegionHeight());
         shader.setUniformf("u_secondInset",.5f/b.getRegionWidth(),.5f/b.getRegionHeight());
+        placement("u_firstPlacement", a);
+        placement("u_secondPlacement", b);
         float du=(a.getU2()-a.getU())*dx, dv=(a.getV2()-a.getV())*dy;
         // Padding exposes the outer edge without enlarging the actual sprite.
-        batch.draw(a.getTexture(),x-Math.signum(width)*EDGE,y-Math.signum(height)*EDGE,
-                width+Math.signum(width)*2*EDGE,height+Math.signum(height)*2*EDGE,
+        batch.draw(a.getTexture(),x-Math.signum(width)*edgeWidth,y-Math.signum(height)*edgeWidth,
+                width+Math.signum(width)*2*edgeWidth,height+Math.signum(height)*2*edgeWidth,
                 a.getU()-du,a.getV2()+dv,a.getU2()+du,a.getV()-dv);
         batch.setShader(previous);
+    }
+
+    private void placement(String uniform, TextureRegion region) {
+        if (region instanceof HeroPose p) shader.setUniformf(uniform,p.left,p.top,p.width,p.height);
+        else shader.setUniformf(uniform,0,0,1,1);
     }
 
     @Override public void dispose() { shader.dispose(); }

@@ -24,6 +24,8 @@ import com.yongsa.gfx.Art;
 import com.yongsa.gfx.ActorInk;
 import com.yongsa.gfx.Fonts;
 import com.yongsa.gfx.HeroMotion;
+import com.yongsa.gfx.HeroPose;
+import com.yongsa.gfx.HeroSword;
 import com.yongsa.gfx.SpriteBlend;
 import com.yongsa.gfx.Lighting;
 import com.yongsa.gfx.Particles;
@@ -88,6 +90,7 @@ public class WorldRenderer implements Disposable {
     /** GPT 가 준 앞쪽 가림 레이어 (<장면>-front.png). 없는 장면은 null 로 기억한다. */
     private final Map<String, Texture> frontTex = new HashMap<>();
     private final SceneForegrounds sceneForegrounds;
+    private final BossReturnDoors returnDoors;
     private final Color ambient = new Color(0.6f, 0.55f, 0.5f, 1f);
     private boolean ambientSet;
     private float time, ghostT, moteT, emberT;
@@ -284,8 +287,9 @@ public class WorldRenderer implements Disposable {
         this.shapes = shapes;
         this.map = g.map;
         this.T = g.balance.tileSize;
-        heroMotionAvailable = Gdx.files.internal("sprites/hero-motion/walk.png").exists()
-                && Gdx.files.internal("sprites/hero-motion/roll.png").exists();
+        heroMotionAvailable = Gdx.files.internal(com.yongsa.gfx.HeroMotionAtlas.MANIFEST).exists()
+                || (Gdx.files.internal("sprites/hero-motion/walk.png").exists()
+                && Gdx.files.internal("sprites/hero-motion/roll.png").exists());
         this.particles = new Particles(art.white(), art.glow);
         this.theme = new String[map.width * map.height];
         for (Room r : map.rooms) {
@@ -305,6 +309,7 @@ public class WorldRenderer implements Disposable {
         }
         passages = new PassagePainter(map, T);
         sceneForegrounds = new SceneForegrounds(passages);
+        returnDoors = new BossReturnDoors(g);
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
             if (r.scene != null) continue;
@@ -546,6 +551,7 @@ public class WorldRenderer implements Disposable {
         if(roomGates==null)roomGates=new RoomGates(map);
         roomGates.update(dt);
         sceneForegrounds.expire(time);
+        returnDoors.update(dt);
         for (Iterator<FloatText> it = floats.iterator(); it.hasNext(); ) {
             FloatText f = it.next();
             f.t += dt;
@@ -612,7 +618,7 @@ public class WorldRenderer implements Disposable {
                 gh.footOffset = motion ? HeroMotion.FOOT_OFFSET : 2;
                 gh.x = h.x;
                 gh.y = h.y;
-                gh.flip = h.rollFacing == Facing.LEFT;
+                gh.flip = h.rollFacing.leftward();
                 ghosts.add(gh);
             }
         }
@@ -682,19 +688,7 @@ public class WorldRenderer implements Disposable {
                 p.endSize = 0;
             }
         }
-        // 귀환 포탈 소용돌이
         Room hr = g.heroRoom();
-        if (hr != null && g.hasPortal(hr) && MathUtils.random() < dt * 30f) {
-            float px = g.portalX(hr), py = g.portalY(hr);
-            float a = MathUtils.random(MathUtils.PI2);
-            Particles.P p = particles.spawn(px + MathUtils.cos(a) * 38, py + MathUtils.sin(a) * 18, 0.7f, 3,
-                    new Color(0.55f, 0.5f, 1f, 1f));
-            p.vx = -MathUtils.cos(a) * 50;
-            p.vy = -MathUtils.sin(a) * 25;
-            p.vz = 40;
-            p.glow = true;
-            p.endSize = 0;
-        }
 
         // 방 분위기에 맞춰 바탕 밝기를 천천히 바꾼다 (통로는 조금 더 어둡다)
         Color target = ambientFor(room);
@@ -812,7 +806,7 @@ public class WorldRenderer implements Disposable {
                 }
             } else if (g.hasPortal(r)) {
                 float px = g.portalX(r), py = g.portalY(r);
-                if (inView(px, py)) lighting.add(px, py, 230, 0.55f, 0.5f, 1f, 0.8f + 0.1f * MathUtils.sin(time * 3f));
+                if (inView(px, py)) lighting.add(px, py, 145, 0.28f, 0.85f, 0.75f, 0.55f + 0.06f * MathUtils.sin(time * 2f));
             }
         }
         for (Hazard hz : g.hazards) {
@@ -870,6 +864,9 @@ public class WorldRenderer implements Disposable {
 
     // ───────────────────────── 그리기
 
+    /** 개발용 (F1): 용사 발이 설 수 있는 곳을 초록으로 덮는다. 그림은 바닥인데 초록이 없으면 막힌 곳이다. */
+    public boolean showWalkable;
+
     public void render(OrthographicCamera cam) {
         computeView(cam);
         int tx0 = Math.max(0, (int) (viewX0 / T) - 1), ty0 = Math.max(0, (int) (viewY0 / T) - 2);
@@ -914,6 +911,8 @@ public class WorldRenderer implements Disposable {
         if(roomGates==null)roomGates=new RoomGates(map);
         for(var gate:roomGates.parts(batch,viewX0,viewY0,viewX1,viewY1))
             list.add(new Sorted(gate.depth(),()->gate.draw().run()));
+        for (Room r : map.rooms) if (r.type == RoomType.BOSS && inView(g.portalX(r), g.portalY(r)))
+            list.add(new Sorted(g.portalY(r) + 8, () -> returnDoors.draw(batch, r)));
         list.sort((a, b) -> Float.compare(b.y, a.y));
         for (Sorted s : list) s.call.draw();
         drawSceneFronts();
@@ -927,11 +926,23 @@ public class WorldRenderer implements Disposable {
         shapes.setProjectionMatrix(cam.combined);
         drawGlow();
         drawOverlays();
+        if (showWalkable) drawWalkable();
 
         batch.setProjectionMatrix(screenProj);
         batch.begin();
         drawTexts(cam);
         batch.end();
+    }
+
+    private void drawWalkable() {
+        final float step = 6;
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.setColor(0.1f, 1f, 0.3f, 0.32f);
+        for (float y = (float) Math.floor(viewY0 / step) * step; y < viewY1; y += step)
+            for (float x = (float) Math.floor(viewX0 / step) * step; x < viewX1; x += step)
+                if (map.free(x + step / 2, y + step / 2, 9, 6)) shapes.rect(x, y, step, step);
+        shapes.end();
     }
 
     // ───────────────────────── 타일
@@ -1217,21 +1228,38 @@ public class WorldRenderer implements Disposable {
         return true;
     }
 
-    /** 캠프 바닥의 봉인 문양: 힘이 모일수록 밝아지고, 봉인이 풀리면 갈라진 채 보랏빛으로 빛난다. */
+    /** 캠프의 봉인석과 열린 심연. 바닥 원근은 원화에 있으므로 회전/찌그러뜨리지 않는다. */
     private void drawFloorProps() {
         for (Prop p : map.props) {
             if (p.kind != Prop.Kind.SEAL) continue;
             float cx = p.centerX(T), cy = p.centerY(T);
             if (!inView(cx, cy)) continue;
-            Color c = sealColor();
-            float pw = sealPower();
-            float size = p.width(T) * 1.5f;
-            batch.setColor(0.05f, 0.03f, 0.07f, 0.55f);
-            batch.draw(art.glow, cx - size * 0.6f, cy - size * 0.35f, size * 1.2f, size * 0.7f);
-            batch.setColor(c.r, c.g, c.b, 0.45f + 0.5f * pw);
-            batch.draw(art.world("seal"), cx - size / 2f, cy - size * 0.32f, size / 2f, size * 0.32f, size, size * 0.64f, 1f, 1f,
-                    g.state.unsealed ? time * 12f : 0f);
+            TextureRegion stone = art.world(g.state.unsealed ? "abyss_open" : "abyss_sealed");
             batch.setColor(Color.WHITE);
+            drawGroundSprite(stone, cx, cy);
+        }
+    }
+
+    private void drawGroundSprite(TextureRegion sprite, float x, float y) {
+        float w = art.width(sprite), h = art.height(sprite);
+        batch.draw(sprite, x - w / 2f, y - h / 2f, w, h);
+    }
+
+    /** 세 보스에 대응하는 보석만 밝힌다. 좌표는 봉인석 원본 1536x1024 기준. */
+    private void drawSealSockets(float cx, float cy, float pulse) {
+        TextureRegion stone = art.world("abyss_sealed");
+        float w = art.width(stone), h = art.height(stone);
+        float[][] sockets = {{767,257}, {459,590}, {1075,590}};
+        Color[] colors = {new Color(.5f,.75f,1f,1f), new Color(1f,.3f,.35f,1f), new Color(.4f,.95f,1f,1f)};
+        for (int i = 0; i < 3; i++) {
+            if (!g.state.bossDefeated(com.yongsa.model.AbsorbService.BOSS_ORDER[i])) continue;
+            float x = cx + (sockets[i][0] / 1536f - .5f) * w;
+            float y = cy + (.5f - sockets[i][1] / 1024f) * h;
+            Color c = g.absorb.canUnseal(g.state) ? Ui.GOLD : colors[i];
+            batch.setColor(c.r,c.g,c.b,.65f * pulse);
+            batch.draw(art.glow,x-10,y-7,20,14);
+            batch.setColor(c.r,c.g,c.b,.9f);
+            batch.draw(art.glow,x-3,y-2,6,4);
         }
     }
 
@@ -1264,15 +1292,6 @@ public class WorldRenderer implements Disposable {
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         Gdx.gl.glEnable(GL20.GL_BLEND);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        for (Room r : map.rooms) {
-            if (!g.hasPortal(r)) continue;
-            float px = g.portalX(r), py = g.portalY(r);
-            if (!inView(px, py)) continue;
-            shapes.setColor(0.05f, 0.02f, 0.12f, 0.85f);
-            shapes.ellipse(px - 44, py - 22, 88, 44, 40);
-            shapes.setColor(0.18f, 0.1f, 0.38f, 0.9f);
-            shapes.ellipse(px - 34, py - 16, 68, 32, 40);
-        }
         drawHazards();
         for (Monster m : g.monsters) {
             if (m.dead) continue;
@@ -1680,19 +1699,21 @@ public class WorldRenderer implements Disposable {
     }
 
     private TextureRegion motionFrame(String action, Facing facing, int frame) {
+        TextureRegion authored = art.heroMotion(action, facing, frame);
+        if (authored != null) return authored;
         if (!heroMotionAvailable) return null;
         return art.cell("sprites/hero-motion/" + action + ".png", 6, 3, HeroMotion.row(facing) * 6 + frame);
     }
 
     private TextureRegion heroRegion(HeroActor h) {
-        TextureRegion animated = motionFrame("walk", h.facing, h.moving ? HeroMotion.walkFrame(h.walkTime) : 2);
+        TextureRegion animated = motionFrame("walk", h.facing,
+                h.moving ? HeroMotion.walkFrame(h.walkTime, art.heroWalkCycle(h.facing)) : 2);
         if (animated != null) return animated;
         boolean walk = h.moving && ((int) (h.walkTime * 8)) % 2 == 1;
         String name;
-        switch (h.facing) {
-            case UP: name = "hero_up"; break;
-            case LEFT:
-            case RIGHT: name = "hero_side"; break;
+        switch (HeroMotion.row(h.facing)) {
+            case 1: name = "hero_up"; break;
+            case 2: name = "hero_side"; break;
             default: name = "hero_down";
         }
         return art.world(walk ? name + "_walk" : name);
@@ -1711,30 +1732,30 @@ public class WorldRenderer implements Disposable {
         }
         boolean blink = h.invuln > 0 && h.stunT <= 0 && ((int) (h.invuln * 20)) % 2 == 0;
         float alpha = blink ? 0.35f : 1f;
-        boolean flip = h.facing == Facing.LEFT;
+        boolean flip = h.facing.leftward();
         TextureRegion r = heroRegion(h);
         boolean motion = hasHeroMotion();
         float w = motion ? HeroMotion.WIDTH : art.width(r) * S * HERO_SCALE;
         float hgt = motion ? HeroMotion.HEIGHT : art.height(r) * S * HERO_SCALE;
         float foot = motion ? HeroMotion.FOOT_OFFSET : 2;
-        boolean swordBehind = h.facing == Facing.UP;
-        if (swordBehind) drawSword(h, alpha);
-        if (h.stunT > 0) batch.setColor(0.7f, 0.55f, 0.85f, alpha); // 눈알에 굳음: 잿빛 보라
-        else batch.setColor(1f, 1f, 1f, alpha);
+        boolean swordBehind = h.facing.sy > 0;
         // 휘두를 때 몸을 살짝 찌그러뜨려 힘이 들어간 느낌을 준다
         float squash = h.swingT > 0 && h.swingKind == 0
                 ? 1f - .035f * MathUtils.sin(MathUtils.PI * HeroMotion.clamp(h.swingT / .18f)) : 1f;
-        float bob = heroBob(h);
+        float bob = heroBob(h, r instanceof HeroPose);
         float dw = w * (2f - squash), dh = hgt * squash;
+        if (swordBehind) drawSword(h, alpha, r, squash, bob);
+        if (h.stunT > 0) batch.setColor(0.7f, 0.55f, 0.85f, alpha); // 눈알에 굳음: 잿빛 보라
+        else batch.setColor(1f, 1f, 1f, alpha);
+        // One discrete walk/idle pose: the sword uses this exact pose's hand anchor.
         actorInk.draw(batch, r, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
         if (h.flash > 0 && !blink) {
             Particles.additive(batch);
             batch.setColor(1f, 0.3f, 0.3f, Math.min(1f, h.flash * 3f) * 0.6f);
-            if (flip) batch.draw(r, h.x + dw / 2f, h.y - foot * squash + bob, -dw, dh);
-            else batch.draw(r, h.x - dw / 2f, h.y - foot * squash + bob, dw, dh);
+            actorInk.draw(batch, r, h.x + (flip ? dw/2 : -dw/2), h.y-foot*squash+bob, flip ? -dw : dw, dh);
             Particles.normal(batch);
         }
-        if (!swordBehind) drawSword(h, alpha);
+        if (!swordBehind) drawSword(h, alpha, r, squash, bob);
         batch.setColor(Color.WHITE);
     }
 
@@ -1772,10 +1793,10 @@ public class WorldRenderer implements Disposable {
         TextureRegion r = motionFrame("roll", h.rollFacing, HeroMotion.rollFrame(p));
         TextureRegion upright = motionFrame("walk", h.rollFacing, 2);
         if (r == null || upright == null) {
-            TextureRegion fallback = art.world(h.rollFacing == Facing.UP ? "hero_up"
-                    : h.rollFacing == Facing.DOWN ? "hero_down" : "hero_side");
+            int row = HeroMotion.row(h.rollFacing);
+            TextureRegion fallback = art.world(row == 1 ? "hero_up" : row == 0 ? "hero_down" : "hero_side");
             float w = art.width(fallback) * S * HERO_SCALE, height = art.height(fallback) * S * HERO_SCALE;
-            boolean left = h.rollFacing == Facing.LEFT;
+            boolean left = h.rollFacing.leftward();
             batch.setColor(Color.WHITE);
             actorInk.draw(batch, fallback, h.x + (left ? w/2 : -w/2), h.y - 2, left ? -w : w,
                     height * (1 - .23f * MathUtils.sin(p * MathUtils.PI)));
@@ -1783,21 +1804,22 @@ public class WorldRenderer implements Disposable {
         }
         float weight = HeroMotion.rollWeight(p);
         float w = HeroMotion.WIDTH, height = HeroMotion.HEIGHT;
-        boolean flip = h.rollFacing == Facing.LEFT;
+        boolean flip = h.rollFacing.leftward();
         float x = h.x + (flip ? w / 2 : -w / 2), signedW = flip ? -w : w;
         float y = h.y - HeroMotion.FOOT_OFFSET;
         batch.setColor(Color.WHITE);
         actorInk.draw(batch, upright, r, weight, x, y, signedW, height);
-        if (weight < 1) drawSword(h, 1 - weight);
+        // Hands are tucked/occluded during a roll; don't attach a sword to the walking pose.
         batch.setColor(Color.WHITE);
     }
 
-    private void drawSword(HeroActor h, float alpha) {
+    private void drawSword(HeroActor h, float alpha, TextureRegion pose, float squash, float bob) {
         Weapon w = g.state.equipped();
         if (w == null) return;
-        TextureRegion r = art.worldSword(w.defId, w.awakened);
+        HeroSword sword = pose instanceof HeroPose ? art.heroSword(w.defId, w.awakened) : null;
+        TextureRegion r = sword != null ? sword : art.worldSword(w.defId, w.awakened);
         float aim = MathUtils.atan2(h.aimY, h.aimX) * MathUtils.radDeg;
-        float rest = h.facing == Facing.LEFT ? 125 : h.facing == Facing.RIGHT ? 55 : h.facing == Facing.UP ? 100 : 75;
+        float rest = sword != null ? HeroMotion.attachedSwordAngle(h.facing) : HeroMotion.restAngle(h.facing);
         rest += MathUtils.sin(time * 2.5f) * 3f;
         float angle = rest;
         float scale = 1f;
@@ -1813,10 +1835,20 @@ public class WorldRenderer implements Disposable {
             angle = HeroMotion.swordAngle(rest, aim, p, 1);
             scale = 1 + .3f * MathUtils.sin(p * MathUtils.PI);
         }
-        float hx = h.x + (h.facing == Facing.LEFT ? -8 : 8) * HERO_SCALE;
-        float hy = h.y + 16 * HERO_SCALE + heroBob(h);
-        float grip = 6 * HERO_SCALE;
         batch.setColor(1f, 1f, 1f, alpha);
+        if (sword != null && pose instanceof HeroPose heroPose) {
+            var frame = heroPose.frame;
+            if (!frame.handVisible()) return;
+            var data = sword.data;
+            float hx = h.x + frame.handOffsetX(h.facing.leftward(), squash);
+            float hy = h.y + frame.handOffsetY(squash) + bob;
+            batch.draw(sword, hx-data.originX(), hy-data.originY(), data.originX(), data.originY(),
+                    data.worldWidth(), data.worldHeight(), scale, scale, angle-data.angleDegrees());
+            return; // The painted sealed holy sword already includes its two bindings.
+        }
+        float hx = h.x + (h.facing.leftward() ? -8 : 8) * HERO_SCALE;
+        float hy = h.y + 16 * HERO_SCALE + bob;
+        float grip = 6 * HERO_SCALE;
         // 그림 속 칼날은 45도로 누워 있으므로 그만큼 빼고 돌린다. 손잡이(왼쪽 아래)를 회전 중심으로.
         batch.draw(r, hx - grip, hy - grip, grip, grip, 32 * HERO_SCALE, 32 * HERO_SCALE, scale, scale, angle - 45);
         if ("holy_sealed".equals(w.defId) && !art.hasHd("sword_holy") && h.swingT <= 0) {
@@ -1826,8 +1858,11 @@ public class WorldRenderer implements Disposable {
         }
     }
 
-    private float heroBob(HeroActor h) {
-        return walkBlend * .65f * (1 - MathUtils.cos(h.walkTime * MathUtils.PI2 * 4));
+    private float heroBob(HeroActor h, boolean measuredWalk) {
+        // The measured contact/passing poses already contain the rise of a step.
+        // Large extra bobbing would lift the planted foot and look like hopping.
+        float amplitude = measuredWalk ? .10f : .65f;
+        return walkBlend * amplitude * (1 - MathUtils.cos(h.walkTime * MathUtils.PI2 * 4));
     }
 
     /** Species silhouette at rest: bat ~half hero height, imp ~three quarters, skeleton ~hero. */
@@ -1968,8 +2003,8 @@ public class WorldRenderer implements Disposable {
         for (Ghost gh : ghosts) {
             float a = 0.12f * (1f - gh.t / 0.2f);
             batch.setColor(0.45f, 0.7f, 1f, a);
-            if (gh.flip) batch.draw(gh.region, gh.x + gh.w / 2f, gh.y - gh.footOffset, -gh.w, gh.h);
-            else batch.draw(gh.region, gh.x - gh.w / 2f, gh.y - gh.footOffset, gh.w, gh.h);
+            actorInk.draw(batch, gh.region, gh.x + (gh.flip ? gh.w/2 : -gh.w/2),
+                    gh.y-gh.footOffset, gh.flip ? -gh.w : gh.w, gh.h);
         }
         Particles.normal(batch);
         batch.setColor(Color.WHITE);
@@ -2002,12 +2037,10 @@ public class WorldRenderer implements Disposable {
                 Color c = sealColor();
                 float cx = p.centerX(T), cy = p.centerY(T);
                 float pulse = 0.75f + 0.25f * MathUtils.sin(time * 3f);
-                batch.setColor(c.r, c.g, c.b, 0.35f * sealPower() * pulse);
-                batch.draw(art.glow, cx - 70, cy - 40, 140, 80);
-                if (g.state.unsealed) {
-                    batch.setColor(c.r, c.g, c.b, 0.3f * pulse);
-                    batch.draw(art.glow, cx - 30, cy - 10, 60, 140);
-                }
+                float strength = g.state.finalBossDefeated ? .07f : .18f;
+                batch.setColor(c.r, c.g, c.b, strength * sealPower() * pulse);
+                batch.draw(art.glow, cx - 62, cy - 30, 124, 60);
+                if (!g.state.unsealed) drawSealSockets(cx, cy, pulse);
             }
         }
         // 광맥 반짝임
@@ -2029,17 +2062,6 @@ public class WorldRenderer implements Disposable {
                     batch.draw(art.white(), px - 3 + (v.tileX % 3) * 4 - 4, py + 10, 6, 2);
                 }
             }
-        }
-        // 귀환 포탈 빛기둥
-        for (Room r : map.rooms) {
-            if (!g.hasPortal(r)) continue;
-            float px = g.portalX(r), py = g.portalY(r);
-            if (!inView(px, py)) continue;
-            float pulse = 0.8f + 0.2f * MathUtils.sin(time * 3f);
-            batch.setColor(0.5f, 0.45f, 1f, 0.5f * pulse);
-            batch.draw(art.glow, px - 40, py - 20, 80, 150);
-            batch.setColor(0.8f, 0.75f, 1f, 0.6f * pulse);
-            batch.draw(art.glow, px - 24, py - 14, 48, 28);
         }
         // 잠긴 던전 입구의 봉인 장벽
         for (Link l : map.links) {
@@ -2464,6 +2486,7 @@ public class WorldRenderer implements Disposable {
         for (Texture t : frontTex.values()) if (t != null) t.dispose();
         frontTex.clear();
         sceneForegrounds.dispose();
+        returnDoors.dispose();
         spriteBlend.dispose();
         actorInk.dispose();
         for (Texture t : gateTex.values()) if (t != null) t.dispose();
