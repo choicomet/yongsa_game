@@ -198,6 +198,15 @@ public class Balance {
         /** 마왕 2페이즈 촉수: 용사 자리와 그 둘레에 예고 뒤 솟는다. */
         public int tentacleCount;
         public float tentacleRingTiles, tentacleRadiusTiles, tentacleWarning, tentacleMultiplier;
+        /** 수문장 번개 감옥: 용사 둘레 사각형 번개 벽이 여러 번 번쩍이고 가운데가 터진다. 한쪽 벽만 늦게 터진다. */
+        public float cageHalfTiles, cageWidthTiles, cageWarning;
+        public int cagePulses;
+        public float cagePulseGap, cageCoreWarning, cageOpenDelay, cageMultiplier, cageCoreMultiplier;
+        /** 수문장 결계: 소환한 부하가 모두 쓰러지면 결계가 깨지며 이만큼 휘청인다. */
+        public float barrierStagger;
+        /** 수문장 유도 마탄: 천천히 날며 초당 homingTurn 라디안까지 용사 쪽으로 방향을 튼다. */
+        public int homingCount;
+        public float homingSpreadDegrees, homingSpeedTiles, homingTurn, homingLife;
         /** 구석 몰이 방지: 벽 가까이에서 용사가 cornerTime 초 넘게 붙어 있으면 순간이동하고 세 갈래 탄. */
         public float cornerTime, cornerCooldown;
         /** 마왕: 처음 쓰러지면 체력이 이만큼 다시 차서 2페이즈 (변신하는 동안은 무적). */
@@ -218,7 +227,7 @@ public class Balance {
         public float speedTiles;
         /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
         public String ai;
-        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes. */
+        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, cage, homing. */
         public List<String> patterns;
         /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;
@@ -226,6 +235,8 @@ public class Balance {
         public float telegraph, cooldown;
         /** 보스: 구석에 몰리면 순간이동해서 빠져나간다. */
         public boolean cornerBlink;
+        /** 보스: 소환한 부하가 살아 있는 동안 결계를 둘러 맞지 않는다 (탑의 수문장). */
+        public boolean summonBarrier;
         /** 보스 소환: 어느 던전의 잡몹을 몇 마리 부르나 (없으면 자기 던전 잡몹, monster.summonCount). */
         public String summonFrom;
         public int summonCount;

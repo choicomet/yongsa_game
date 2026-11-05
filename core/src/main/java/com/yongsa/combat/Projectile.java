@@ -9,5 +9,7 @@ public class Projectile {
     /** 그림 색 구분용: 쏜 몬스터의 그림 이름. */
     public String source;
     public boolean dead;
+    /** 0보다 크면 유도탄: 초당 이 각도(라디안)까지 용사 쪽으로 방향을 튼다. */
+    public float homing;
     public float age;
 }

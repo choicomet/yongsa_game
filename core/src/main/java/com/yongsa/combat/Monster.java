@@ -64,6 +64,8 @@ public class Monster extends Actor {
     public float cornerT;
     /** 공격력 배율 (보스를 잡은 던전의 잡몹, 마왕 2페이즈). */
     public float attackMul = 1f;
+    /** 결계 (수문장): 소환한 부하가 살아 있는 동안 맞지 않는다. */
+    public boolean barrier;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
