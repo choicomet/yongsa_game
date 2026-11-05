@@ -1948,11 +1948,16 @@ public class WorldRenderer implements Disposable {
             jx = MathUtils.sin(time * 50f) * 3f * (1f - m.progress());
         } else if (m.state == Monster.State.CHANNEL) {
             if ("firespin".equals(m.channelKind)) jx = MathUtils.sin(time * 30f) * 1.5f;
+        } else if (m.state == Monster.State.DOWNED) {
+            // 무너진 뼈 무더기: 납작하게, 일어날 때가 되면 들썩인다
+            sy *= 0.35f + 0.15f * m.progress() * m.progress();
+            jx = MathUtils.sin(time * 30f) * 1.2f * m.progress();
         }
         float dw = w * sx * appear, dh = hgt * sy * appear;
         boolean flip = m.dirX < -0.2f;
         float mx = m.x + jx;
         if (m.state == Monster.State.PHASE_SHIFT) batch.setColor(0.7f + 0.3f * MathUtils.sin(time * 20f), 0.4f, 1f, appear);
+        else if (m.state == Monster.State.DOWNED) batch.setColor(0.6f, 0.6f, 0.65f, appear);
         else if (m.phase2) batch.setColor(0.8f, 0.6f + 0.08f * MathUtils.sin(time * 6f), 1f, appear);
         else if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
@@ -2106,6 +2111,13 @@ public class WorldRenderer implements Disposable {
                 float pulse = 0.8f + 0.2f * MathUtils.sin(time * 4f);
                 batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, (0.18f + 0.25f * fr) * pulse);
                 batch.draw(art.glow, m.x - r, m.y - r * 0.2f, r * 2, r * 1.9f);
+            }
+            if (m.guardActive()) {
+                // 해골병 방패: 바라보는 쪽에 막이 보인다
+                float gr = m.hurtRadius * 1.6f * mobScale(m.def.sprite);
+                float gx = m.x + m.dirX * m.hurtRadius * 1.2f, gy = m.centerY() + m.dirY * m.hurtRadius * 0.8f;
+                batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, 0.45f);
+                batch.draw(art.glow, gx - gr, gy - gr, gr * 2, gr * 2);
             }
             if (m.state == Monster.State.CHANNEL) {
                 Color c = "lightning".equals(m.channelKind) ? PROJ_SKY : "firespin".equals(m.channelKind) ? PROJ_FIRE
@@ -2456,6 +2468,7 @@ public class WorldRenderer implements Disposable {
             case "warden": return PROJ_SKY;
             case "demonlord": return PROJ_DARK;
             case "fire": return new Color(1f, 0.42f, 0.12f, 1f);
+            case "bone": return BONE;
             default: return PROJ_FIRE;
         }
     }

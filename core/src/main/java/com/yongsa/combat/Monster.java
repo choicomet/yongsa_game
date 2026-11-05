@@ -20,7 +20,9 @@ public class Monster extends Actor {
         /** 보스: 제자리에서 낙석·낙뢰·회전 화염·피웅덩이 같은 긴 패턴을 이어 간다. */
         CHANNEL,
         /** 마왕: 1페이즈에서 쓰러져 2페이즈로 변하는 중. 무적. */
-        PHASE_SHIFT
+        PHASE_SHIFT,
+        /** 해골병: 쓰러져 뼈 무더기가 된 채 다시 일어나려는 중. 이때 때리면 완전히 부서진다. */
+        DOWNED
     }
 
     public final MonsterDef def;
@@ -64,6 +66,18 @@ public class Monster extends Actor {
     public float cornerT;
     /** 공격력 배율 (보스를 잡은 던전의 잡몹, 마왕 2페이즈). */
     public float attackMul = 1f;
+    /** 해골병 방패: 지금 들고 있나, 들기·내리기가 바뀔 때까지 남은 시간. */
+    public boolean guarding;
+    public float guardT;
+    /** 해골병 뼈 던지기 쿨타임. */
+    public float throwCd;
+    /** 해골병: 이미 한 번 다시 일어났다. */
+    public boolean revived;
+
+    /** 방패를 들고 맞설 수 있는 상태 (공격 중에는 내린다). */
+    public boolean guardActive() {
+        return guarding && state == State.CHASE;
+    }
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
