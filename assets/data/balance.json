@@ -256,6 +256,13 @@
     "pillarWarning": 1.0,
     "pillarGap": 0.35,
     "pillarMultiplier": 1.3,
+    "_demon2": "마왕 2페이즈: 삼키기는 용사를 마왕 쪽으로 끌어당기고 가운데에 닿으면 큰 피해. 최후의 발악은 체력 20% 아래에서 화면이 어두워지고 패턴 간격이 줄어든다",
+    "devourTime": 3.0,
+    "devourPullTiles": 2.2,
+    "devourCoreTiles": 1.3,
+    "devourMultiplier": 2.0,
+    "lastStandHpRatio": 0.2,
+    "lastStandGapMultiplier": 0.55,
     "cornerTime": 1.6,
     "cornerCooldown": 4.0,
     "finalPhase2HpMultiplier": 1.5,
@@ -290,7 +297,7 @@
   "finalBoss": { "name": "마왕", "hp": 7200, "attack": 80, "speedTiles": 2.0, "sprite": "demonlord",
                 "patterns": ["slam", "charge", "whip", "ring", "bonespike", "summon", "swamp", "darkorb", "brand", "pillars"],
                 "summonFrom": "RIGHT", "summonCount": 2,
-                "phase2Patterns": ["tentacle", "eyes", "ring", "rush", "whip", "eyes", "lightning"], "cornerBlink": true },
+                "phase2Patterns": ["tentacle", "eyes", "ring", "whip", "eyes", "devour"], "cornerBlink": true },
 
   "village": {
     "_note": "던전 밖 마을 (선우 버전에서 옮김). 좌표는 마을 그림 기준 (왼쪽 위 0,0 ~ 오른쪽 아래 1,1). 마을 그림이 바뀌면 at 을 옮긴다.",

@@ -598,6 +598,14 @@ public class GameSession {
             events.add(e);
             events.add(GameEvent.sound("roar"));
         }
+        if (m.finalBoss && m.phase2 && !m.lastStand && m.hp > 0 && m.hp <= m.maxHp * balance.monster.lastStandHpRatio) {
+            // 최후의 발악: 화면이 어두워지고 패턴 간격이 줄어든다
+            m.lastStand = true;
+            m.patternCd = Math.min(m.patternCd, 0.6f);
+            speech(m, "아직... 끝나지 않았다!");
+            events.add(GameEvent.toast("마왕이 최후의 발악을 한다! 공격이 더 빨라진다"));
+            events.add(GameEvent.sound("roar"));
+        }
         events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), GameEvent.Tone.MONSTER_HIT));
         events.add(GameEvent.sound("hit"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, m.x, m.centerY());
@@ -1421,7 +1429,7 @@ public class GameSession {
         if (m.patternCd <= 0 && dist < 11 * T) {
             String p = pickPattern(m);
             m.lastPattern = p;
-            m.patternCd = mc.bossPatternGap;
+            m.patternCd = mc.bossPatternGap * (m.lastStand ? mc.lastStandGapMultiplier : 1f);
             if (startPattern(m, p, summoned)) return;
         }
         if (dist <= reach && m.attackCd <= 0) {
@@ -1748,6 +1756,22 @@ public class GameSession {
                 events.add(GameEvent.sound("roar"));
                 return true;
             }
+            case "devour": {
+                // 삼키기: 용사를 끌어당긴다. 가운데 아가리에 닿으면 큰 피해
+                Hazard h = new Hazard(Hazard.Kind.CIRCLE, "maw");
+                h.x = m.x;
+                h.y = m.y;
+                h.radius = mc.devourCoreTiles * T;
+                h.delay = h.warning = mc.devourTime + 0.3f; // 삼키기가 끝나면 endDevour 가 지운다
+                h.multiplier = 0; // 표시만: 맞히는 건 channel 이 한다
+                hazards.add(h);
+                m.channelMark = h;
+                startChannel(m, p, 0, 0f);
+                m.channelT = mc.devourTime;
+                events.add(GameEvent.toast("마왕이 모든 것을 삼키려 한다! 바깥으로 도망쳐라"));
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
             case "eyes": {
                 // 눈알이 차례로 뜬다: 뜨는 순간 그쪽을 보고 있으면 안 된다
                 Room r = fightRoom;
@@ -1846,6 +1870,22 @@ public class GameSession {
                 m.enter(Monster.State.RECOVER, 0.4f);
                 return;
             }
+            case "devour": {
+                // 끌어당긴다: 구르는 동안은 버틸 수 있다
+                float dx = m.x - hero.x, dy = m.y - hero.y, d = (float) Math.sqrt(dx * dx + dy * dy);
+                float core = mc.devourCoreTiles * T;
+                if (d <= core + hero.hw * 0.6f) {
+                    endDevour(m);
+                    hitHero(m.attack(), mc.devourMultiplier, m.x, m.y);
+                    return;
+                }
+                if (!hero.rolling() && d > 0.01f) {
+                    float pull = Math.min(d, mc.devourPullTiles * T * dt);
+                    Physics.move(map, hero, dx / d * pull, dy / d * pull, T);
+                }
+                if (m.channelT <= 0) endDevour(m);
+                return;
+            }
             default:
                 m.enter(Monster.State.RECOVER, 0.5f);
         }
@@ -1883,6 +1923,12 @@ public class GameSession {
             p.source = "golem";
             projectiles.add(p);
         }
+    }
+
+    private void endDevour(Monster m) {
+        if (m.channelMark != null) m.channelMark.dead = true;
+        m.channelMark = null;
+        m.enter(Monster.State.RECOVER, 0.8f);
     }
 
     private void circleHazard(String style, float x, float y, float radius, float warning, int damage, float mult) {
@@ -1957,7 +2003,7 @@ public class GameSession {
                     continue;
                 }
                 if (h.kind != Hazard.Kind.POOL) {
-                    if (h.covers(hero.x, hero.y, hero.hw * 0.6f)) hitHero(h.damage, h.multiplier, h.x, h.y);
+                    if (h.multiplier > 0 && h.covers(hero.x, hero.y, hero.hw * 0.6f)) hitHero(h.damage, h.multiplier, h.x, h.y);
                     GameEvent fx = GameEvent.fx(GameEvent.Type.HAZARD_FX, h.x, h.y);
                     fx.text = h.style;
                     fx.size = h.radius;

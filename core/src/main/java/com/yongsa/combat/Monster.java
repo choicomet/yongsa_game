@@ -74,6 +74,10 @@ public class Monster extends Actor {
     public float leapX0, leapY0, leapX1, leapY1;
     /** 결계 (수문장): 소환한 부하가 살아 있는 동안 맞지 않는다. */
     public boolean barrier;
+    /** 긴 패턴에 딸린 바닥 표시 (마왕 삼키기의 아가리). */
+    public Hazard channelMark;
+    /** 마왕 2페이즈 최후의 발악 (체력 20% 아래). */
+    public boolean lastStand;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
