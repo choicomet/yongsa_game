@@ -1047,7 +1047,7 @@ public class GameSession {
             float dx = hero.x - m.x, dy = hero.y - m.y;
             float dist = (float) Math.sqrt(dx * dx + dy * dy);
             float reach = mc.attackReachTiles * T + m.hw + hero.hw;
-            if (m.boss && m.def.cornerBlink && cornered(m, dist, reach, dt)) continue;
+            if (m.boss && (m.def.cornerBlink || m.def.cornerLeap) && cornered(m, dist, reach, dt)) continue;
             switch (m.state) {
                 case CHASE:
                     if (dist > 0.01f) {
@@ -1163,6 +1163,20 @@ public class GameSession {
                 case CHANNEL:
                     channel(m, dt * speedUp);
                     break;
+                case LEAP: {
+                    m.stateT -= dt;
+                    float p = m.progress();
+                    m.x = m.leapX0 + (m.leapX1 - m.leapX0) * p;
+                    m.y = m.leapY0 + (m.leapY1 - m.leapY0) * p;
+                    if (m.stateT <= 0) {
+                        m.x = m.leapX1;
+                        m.y = m.leapY1;
+                        aimAtHero(m);
+                        m.enter(Monster.State.RECOVER, 0.5f);
+                        events.add(GameEvent.sound("slam"));
+                    }
+                    break;
+                }
                 case PHASE_SHIFT:
                     m.stateT -= dt;
                     // 변신하는 동안 체력이 다시 차오른다
@@ -1217,6 +1231,12 @@ public class GameSession {
         else m.cornerT = Math.max(0f, m.cornerT - dt * 0.5f);
         if (m.cornerT < mc.cornerTime || m.blinkCd > 0 || !idle) return false;
         m.cornerT = 0;
+        if (m.def.cornerLeap) {
+            // 혈월의 기사: 순간이동 대신 뒤로 크게 도약한다
+            if (!leapAway(m)) return false;
+            m.blinkCd = mc.cornerCooldown;
+            return true;
+        }
         if (!blinkAway(m)) return false;
         m.blinkCd = mc.cornerCooldown;
         aimAtHero(m);
@@ -1534,6 +1554,18 @@ public class GameSession {
                 events.add(GameEvent.sound("roar"));
                 return true;
             }
+            case "spinslash": {
+                // 회전 베기: 보스 둘레 원을 예고 뒤 한 번에 벤다
+                circleHazard("spin", m.x, m.y, mc.spinSlashRadiusTiles * T, mc.spinSlashWarning, m.attack(), mc.spinSlashMultiplier);
+                m.enter(Monster.State.RECOVER, mc.spinSlashWarning + 0.5f);
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "crescent":
+                // 혈월 검기: 모았다가 초승달 검기를 부채꼴로 날린다 (fire)
+                m.castKind = p;
+                m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
+                return true;
             case "eyes": {
                 // 눈알이 차례로 뜬다: 뜨는 순간 그쪽을 보고 있으면 안 된다
                 Room r = fightRoom;
@@ -1830,8 +1862,21 @@ public class GameSession {
     /** 너무 가까우면 용사 반대쪽 멀리 순간이동한다 (마족병, 구석에 몰린 보스). */
     private boolean blinkAway(Monster m) {
         if (!m.boss) m.blinkCd = balance.monster.blinkCooldown;
+        float[] spot = farSpot(m);
+        if (spot == null) return false;
+        events.add(GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY()));
+        m.x = spot[0];
+        m.y = spot[1];
+        events.add(GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY()));
+        events.add(GameEvent.sound("warp"));
+        m.attackCd = Math.max(m.attackCd, 0.5f);
+        return true;
+    }
+
+    /** 방 안에서 용사와 4.5칸 넘게 떨어진 빈자리 (순간이동·도약할 곳). 못 찾으면 null. */
+    private float[] farSpot(Monster m) {
         Room r = fightRoom;
-        if (r == null) return false;
+        if (r == null) return null;
         for (int tries = 0; tries < 40; tries++) {
             int tx = r.x0 + 2 + random.nextInt(Math.max(1, r.x1 - r.x0 - 3));
             int ty = r.y0 + 2 + random.nextInt(Math.max(1, r.y1 - r.y0 - 3));
@@ -1840,16 +1885,25 @@ public class GameSession {
             float hx = px - hero.x, hy = py - hero.y;
             if (hx * hx + hy * hy < (4.5f * T) * (4.5f * T)) continue;
             if (!Physics.free(map, px, py, m, T)) continue;
-            GameEvent a = GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY());
-            events.add(a);
-            m.x = px;
-            m.y = py;
-            events.add(GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY()));
-            events.add(GameEvent.sound("warp"));
-            m.attackCd = Math.max(m.attackCd, 0.5f);
-            return true;
+            return new float[]{px, py};
         }
-        return false;
+        return null;
+    }
+
+    /** 뒤로 도약: 용사에게서 먼 빈자리로 뛰어오른다. 착지할 자리에 충격파 예고가 먼저 뜬다. */
+    private boolean leapAway(Monster m) {
+        Balance.MonsterCfg mc = balance.monster;
+        float[] spot = farSpot(m);
+        if (spot == null) return false;
+        m.leapX0 = m.x;
+        m.leapY0 = m.y;
+        m.leapX1 = spot[0];
+        m.leapY1 = spot[1];
+        circleHazard("leap", spot[0], spot[1], mc.leapLandRadiusTiles * T, mc.leapTime, m.attack(), mc.leapLandMultiplier);
+        m.enter(Monster.State.LEAP, mc.leapTime);
+        m.attackCd = Math.max(m.attackCd, 0.6f);
+        events.add(GameEvent.sound("dash"));
+        return true;
     }
 
     /** 모은 투사체를 쏜다: cast(한 발), tri(세 갈래), volley(부채꼴), ring(사방). */
@@ -1864,6 +1918,17 @@ public class GameSession {
             int n = mc.ringCount + (m.finalBoss ? 4 : 0);
             float off = random.nextFloat() * 6.283f;
             for (int i = 0; i < n; i++) shoot(m, m.x, sy, off + 6.283f * i / n, speed * 0.8f, dmg, m.def.sprite);
+        } else if ("crescent".equals(kind)) {
+            // 혈월 검기: 크고 느린 붉은 검기 여러 줄
+            int n = mc.crescentCount;
+            float spread = (float) Math.toRadians(mc.crescentSpreadDegrees) * (n - 1);
+            float cs = mc.crescentSpeedTiles * T;
+            int cd = Math.max(1, Math.round(m.attack() * mc.crescentMultiplier));
+            for (int i = 0; i < n; i++) {
+                float a = base - spread / 2f + (n > 1 ? spread * i / (n - 1) : 0);
+                shoot(m, m.x, sy, a, cs, cd, m.def.sprite);
+                projectiles.get(projectiles.size() - 1).radius *= mc.crescentRadiusScale;
+            }
         } else if ("volley".equals(kind) || "tri".equals(kind)) {
             int n = "tri".equals(kind) ? 3 : mc.volleyCount;
             float spread = (float) Math.toRadians("tri".equals(kind) ? 30 : mc.volleySpreadDegrees);

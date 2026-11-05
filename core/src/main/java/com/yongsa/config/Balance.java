@@ -198,6 +198,13 @@ public class Balance {
         /** 마왕 2페이즈 촉수: 용사 자리와 그 둘레에 예고 뒤 솟는다. */
         public int tentacleCount;
         public float tentacleRingTiles, tentacleRadiusTiles, tentacleWarning, tentacleMultiplier;
+        /** 혈월의 기사 회전 베기: 보스 둘레 원을 예고 뒤 한 번에 벤다. */
+        public float spinSlashRadiusTiles, spinSlashWarning, spinSlashMultiplier;
+        /** 혈월의 기사 혈월 검기: 크고 붉은 초승달 검기 여러 줄을 부채꼴로 날린다. */
+        public int crescentCount;
+        public float crescentSpreadDegrees, crescentSpeedTiles, crescentRadiusScale, crescentMultiplier;
+        /** 뒤로 도약 (cornerLeap 보스): 구석에 몰리면 멀리 뛰어 물러나고 착지한 자리에 충격파. */
+        public float leapTime, leapLandRadiusTiles, leapLandMultiplier;
         /** 구석 몰이 방지: 벽 가까이에서 용사가 cornerTime 초 넘게 붙어 있으면 순간이동하고 세 갈래 탄. */
         public float cornerTime, cornerCooldown;
         /** 마왕: 처음 쓰러지면 체력이 이만큼 다시 차서 2페이즈 (변신하는 동안은 무적). */
@@ -218,7 +225,7 @@ public class Balance {
         public float speedTiles;
         /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
         public String ai;
-        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes. */
+        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, spinslash, crescent. */
         public List<String> patterns;
         /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;
@@ -226,6 +233,8 @@ public class Balance {
         public float telegraph, cooldown;
         /** 보스: 구석에 몰리면 순간이동해서 빠져나간다. */
         public boolean cornerBlink;
+        /** 보스: 구석에 몰리면 순간이동 대신 뒤로 크게 도약해서 빠져나간다 (혈월의 기사). */
+        public boolean cornerLeap;
         /** 보스 소환: 어느 던전의 잡몹을 몇 마리 부르나 (없으면 자기 던전 잡몹, monster.summonCount). */
         public String summonFrom;
         public int summonCount;

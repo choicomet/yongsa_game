@@ -20,7 +20,9 @@ public class Monster extends Actor {
         /** 보스: 제자리에서 낙석·낙뢰·회전 화염·피웅덩이 같은 긴 패턴을 이어 간다. */
         CHANNEL,
         /** 마왕: 1페이즈에서 쓰러져 2페이즈로 변하는 중. 무적. */
-        PHASE_SHIFT
+        PHASE_SHIFT,
+        /** 혈월의 기사: 구석에서 뒤로 크게 도약하는 중. 공중이라 맞지 않는다. */
+        LEAP
     }
 
     public final MonsterDef def;
@@ -64,6 +66,8 @@ public class Monster extends Actor {
     public float cornerT;
     /** 공격력 배율 (보스를 잡은 던전의 잡몹, 마왕 2페이즈). */
     public float attackMul = 1f;
+    /** 뒤로 도약: 뛰어오른 자리와 착지할 자리. */
+    public float leapX0, leapY0, leapX1, leapY1;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
@@ -116,7 +120,7 @@ public class Monster extends Actor {
 
     /** 변신 중이라 맞지 않는다. */
     public boolean invulnerable() {
-        return state == State.PHASE_SHIFT || state == State.SPAWN;
+        return state == State.PHASE_SHIFT || state == State.SPAWN || state == State.LEAP;
     }
 
     /** 머리 위에 ‘!’ 를 띄울 상태. */
