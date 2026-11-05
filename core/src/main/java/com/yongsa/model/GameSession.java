@@ -1383,9 +1383,16 @@ public class GameSession {
                 // 용사 둘레를 빙글빙글 돌다가 방향을 정하고 덮친다.
                 float orbit = mc.orbitTiles * T;
                 if (m.attackCd <= 0 && dist < orbit * 1.8f) {
+                    if (dist < mc.screechRangeTiles * T && random.nextFloat() < mc.screechChance) {
+                        // 초음파: 가까이 있으면 가끔 덮치는 대신 운다
+                        m.castKind = "screech";
+                        m.enter(Monster.State.CAST_TELEGRAPH, mc.screechTelegraph);
+                        return;
+                    }
                     m.lockX = m.dirX;
                     m.lockY = m.dirY;
                     m.enter(Monster.State.SWOOP_TELEGRAPH, m.telegraph(mc.swoopTelegraph));
+                    packSwoop(m);
                     return;
                 }
                 float tx = -m.dirY * m.orbitSign, ty = m.dirX * m.orbitSign;
@@ -1420,6 +1427,21 @@ public class GameSession {
                     Physics.move(map, m, pathX * m.speed * dt, pathY * m.speed * dt, T);
                     m.walkTime += dt;
                 }
+        }
+    }
+
+    /** 떼 지어 덮치기: 근처에서 맴돌던 박쥐 하나가 조금 늦게 같이 덮친다. */
+    private void packSwoop(Monster lead) {
+        Balance.MonsterCfg mc = balance.monster;
+        if (random.nextFloat() >= mc.packChance) return;
+        for (Monster o : monsters) {
+            if (o == lead || o.dead || !"swoop".equals(o.ai()) || o.state != Monster.State.CHASE) continue;
+            float dx = hero.x - o.x, dy = hero.y - o.y, d = (float) Math.sqrt(dx * dx + dy * dy);
+            if (d < 0.01f || d > mc.packRangeTiles * T) continue;
+            o.dirX = o.lockX = dx / d;
+            o.dirY = o.lockY = dy / d;
+            o.enter(Monster.State.SWOOP_TELEGRAPH, o.telegraph(mc.swoopTelegraph) + mc.packDelay);
+            return;
         }
     }
 
@@ -2183,7 +2205,19 @@ public class GameSession {
         float sy = m.centerY();
         String kind = m.castKind == null ? "cast" : m.castKind;
         int dmg = m.attack();
-        if ("ring".equals(kind)) {
+        if ("screech".equals(kind)) {
+            // 박쥐 초음파: 둘레에 있으면 (구르는 중이 아니면) 잠깐 느려진다. 피해는 없다
+            float r = mc.screechRadiusTiles * T;
+            float dx = hero.x - m.x, dy = hero.y - m.y;
+            if (dx * dx + dy * dy <= r * r && !hero.rolling()) {
+                hero.slowT = Math.max(hero.slowT, mc.screechSlow);
+                events.add(GameEvent.floatText(hero.x, hero.y + 40, "느려졌다", GameEvent.Tone.INFO));
+            }
+            GameEvent fx = GameEvent.fx(GameEvent.Type.HAZARD_FX, m.x, m.y);
+            fx.text = "screech";
+            fx.size = r;
+            events.add(fx);
+        } else if ("ring".equals(kind)) {
             int n = mc.ringCount + (m.finalBoss ? 4 : 0);
             float off = random.nextFloat() * 6.283f;
             for (int i = 0; i < n; i++) shoot(m, m.x, sy, off + 6.283f * i / n, speed * 0.8f, dmg, m.def.sprite);
