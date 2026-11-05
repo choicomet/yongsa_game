@@ -189,7 +189,7 @@ public class Hud {
         }
         card(24, h - 122, 326, 98);
         batch.setColor(Color.WHITE);
-        batch.draw(art.get("hero_down"), 30, h - 113, 53, 80);
+        batch.draw(art.world("hero_down"), 30, h - 113, 53, 80);
         text(fonts.small, "용사", 88, h - 40, Ui.GOLD);
         String hp = Math.max(0, s.hp) + " / " + maxHp;
         layout.setText(fonts.small, hp);
@@ -270,7 +270,7 @@ public class Hud {
             if (left[i] > 0) rect(x + 1, 25, 106, 86 * Math.min(1, left[i] / total), new Color(0, 0, 0, 0.5f));
             batch.setColor(Color.WHITE);
             if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
-            if (i == 1) batch.draw(art.get("hero_side_walk"), x + 48, 51, 34, 48);
+            if (i == 1) batch.draw(art.world("hero_side_walk"), x + 48, 51, 34, 48);
             if (sk != null) {
                 // 스킬 칸: 스킬 아이콘(sprites/skill/icon_<kind>.png, 없으면 그 검 그림) 뒤로 빛, 지금 못 쓰면 어둡게
                 if (sk.usable) {

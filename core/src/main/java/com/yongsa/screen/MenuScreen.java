@@ -96,7 +96,7 @@ public abstract class MenuScreen extends ScreenAdapter {
         b.draw(art.get("shadow"), cx - 150, cy - 8, 60, 16);
         b.draw(art.get("shadow"), cx - 30, cy - 10, 60, 18);
         b.setColor(1f, 0.85f, 0.7f, 1f);
-        b.draw(art.get("hero_side"), cx - 152, cy - 6, 48, 60);
+        b.draw(art.world("hero_side"), cx - 152, cy - 6, 48, 60);
         b.draw(art.get("sword_holy"), cx + 112, cy + 44, 0, 0, 48, 48, 1, 1, -135);
         b.draw(art.get("chain"), cx + 110, cy + 36, 0, 0, 36, 36, 1, 1, -135);
         b.setColor(Color.WHITE);
