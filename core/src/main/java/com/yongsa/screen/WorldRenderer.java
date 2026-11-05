@@ -231,7 +231,8 @@ public class WorldRenderer implements Disposable {
         float jx = m.state == Monster.State.STUNNED ? MathUtils.sin(time * 14f) * 1.5f
                 : m.state == Monster.State.CHARGE_TELEGRAPH ? MathUtils.sin(time * 60f) * 2f * m.progress() : 0;
         boolean faceRight = m.dirX > 0.2f;
-        float x0 = m.x + jx - size / 2f, y0 = m.y - (BOSS_CELL - BOSS_FOOT) * k;
+        float lift = m.state == Monster.State.LEAP ? MathUtils.sin(m.progress() * MathUtils.PI) * 70f : 0f; // 뒤로 도약
+        float x0 = m.x + jx - size / 2f, y0 = m.y - (BOSS_CELL - BOSS_FOOT) * k + lift;
         if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
         else if (m.finalBoss && m.phase2 && sheet.endsWith("boss_lich.png")) batch.setColor(0.95f, 0.62f + 0.08f * MathUtils.sin(time * 6f), 0.95f, appear); // 시트가 없는 경우만 임시 색상을 쓴다.
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
@@ -1465,7 +1466,7 @@ public class WorldRenderer implements Disposable {
         switch (style) {
             case "bolt": return PROJ_SKY;
             case "tentacle": return PROJ_DARK;
-            case "spear": case "blood": return PROJ_BLOOD;
+            case "spear": case "blood": case "spin": case "leap": return PROJ_BLOOD;
             case "bone": return BONE;
             case "whip": return WHIP;
             case "eye": return EYE_RED;
@@ -1978,7 +1979,8 @@ public class WorldRenderer implements Disposable {
         else if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
-        actorInk.draw(batch, r, mx + (flip ? dw/2 : -dw/2), m.y-2+bob, flip ? -dw : dw, dh);
+        float lift = m.state == Monster.State.LEAP ? MathUtils.sin(m.progress() * MathUtils.PI) * 70f : 0f; // 뒤로 도약
+        actorInk.draw(batch, r, mx + (flip ? dw/2 : -dw/2), m.y-2+bob+lift, flip ? -dw : dw, dh);
         if (m.flash > 0) {
             // 맞은 순간 하얗게 번쩍인다
             Particles.additive(batch);

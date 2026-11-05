@@ -22,7 +22,9 @@ public class Monster extends Actor {
         /** 마왕: 1페이즈에서 쓰러져 2페이즈로 변하는 중. 무적. */
         PHASE_SHIFT,
         /** 골렘: 땅속에 숨어 용사를 따라간다. 보이지 않고 맞지 않는다. */
-        BURROW
+        BURROW,
+        /** 혈월의 기사: 구석에서 뒤로 크게 도약하는 중. 공중이라 맞지 않는다. */
+        LEAP
     }
 
     public final MonsterDef def;
@@ -68,6 +70,8 @@ public class Monster extends Actor {
     public float attackMul = 1f;
     /** 땅속 잠행: 솟구칠 자리 (용사를 따라다니는 흙먼지). */
     public Hazard burrowMark;
+    /** 뒤로 도약: 뛰어오른 자리와 착지할 자리. */
+    public float leapX0, leapY0, leapX1, leapY1;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
@@ -120,7 +124,7 @@ public class Monster extends Actor {
 
     /** 변신 중이라 맞지 않는다. */
     public boolean invulnerable() {
-        return state == State.PHASE_SHIFT || state == State.SPAWN || state == State.BURROW;
+        return state == State.PHASE_SHIFT || state == State.SPAWN || state == State.BURROW || state == State.LEAP;
     }
 
     /** 머리 위에 ‘!’ 를 띄울 상태. */
