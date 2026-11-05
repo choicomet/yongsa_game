@@ -16,7 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 마왕 2페이즈: 돌진·낙뢰를 빼고 삼키기, 마력 흡수, 최후의 발악. */
+/** 마왕 2페이즈: 돌진·낙뢰를 빼고 삼키기, 최후의 발악. */
 class Mao2PhaseTest {
     private final Balance b = TestData.balance();
     private final Controls idle = new Controls();
@@ -84,7 +84,7 @@ class Mao2PhaseTest {
         assertFalse(p2.contains("rush"), "연속 돌진은 뺐다");
         assertFalse(p2.contains("lightning"), "낙뢰는 뺐다");
         assertTrue(p2.contains("devour"));
-        assertTrue(p2.contains("drain"));
+        assertFalse(p2.contains("drain"), "마력 흡수는 뺐다");
         assertFalse(b.finalBoss.patterns.contains("rush"));
         assertFalse(b.finalBoss.patterns.contains("lightning"));
     }
@@ -127,32 +127,6 @@ class Mao2PhaseTest {
         assertEquals(9999, s.hp, "바깥으로 걸으면 버틸 수 있다");
         assertNotEquals(Monster.State.CHANNEL, m.state);
         assertTrue(g.hazards.stream().noneMatch(h -> "maw".equals(h.style)), "끝나면 아가리 표시가 사라진다");
-    }
-
-    @Test
-    void drainClonesHealTheDemonUntilDestroyed() {
-        GameState s = NewGame.create(b);
-        GameSession g = demonFight(s);
-        Monster m = phaseTwo(g, "drain", 5 * b.tileSize);
-        run(g, idle, 2 / 60f);
-        List<Monster> clones = new ArrayList<>();
-        for (Monster o : g.monsters) if (!o.dead && "totem".equals(o.ai())) clones.add(o);
-        assertEquals(b.monster.drainCount, clones.size());
-        m.enter(Monster.State.RECOVER, 99f);
-        m.patternCd = 99f;
-        g.hero.invuln = 99f;
-        run(g, idle, b.monster.spawnSeconds * 1.5f);
-        m.hp = m.maxHp / 2;
-        int hp = m.hp;
-        float cx = clones.get(0).x, cy = clones.get(0).y;
-        run(g, idle, 1f);
-        assertTrue(m.hp > hp, "분신이 살아 있으면 회복한다");
-        assertEquals(cx, clones.get(0).x, 0.5f, "분신은 움직이지 않는다");
-        assertEquals(cy, clones.get(0).y, 0.5f);
-        for (Monster c : clones) c.dead = true;
-        hp = m.hp;
-        run(g, idle, 1f);
-        assertEquals(hp, m.hp, "분신을 부수면 회복이 멈춘다");
     }
 
     @Test

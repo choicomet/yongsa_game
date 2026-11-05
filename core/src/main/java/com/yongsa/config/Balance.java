@@ -200,9 +200,6 @@ public class Balance {
         public float tentacleRingTiles, tentacleRadiusTiles, tentacleWarning, tentacleMultiplier;
         /** 마왕 2페이즈 삼키기: devourTime 초 동안 용사를 끌어당기고, 가운데(devourCoreTiles)에 닿으면 큰 피해. */
         public float devourTime, devourPullTiles, devourCoreTiles, devourMultiplier;
-        /** 마왕 2페이즈 마력 흡수: 분신 drainCount 개, 하나당 초당 최대 체력의 drainHealRatio 만큼 마왕을 회복시킨다. */
-        public int drainCount, drainTotemHp;
-        public float drainHealRatio;
         /** 마왕 2페이즈 최후의 발악: 체력이 이 비율 아래면 화면이 어두워지고 패턴 간격이 줄어든다. */
         public float lastStandHpRatio, lastStandGapMultiplier;
         /** 구석 몰이 방지: 벽 가까이에서 용사가 cornerTime 초 넘게 붙어 있으면 순간이동하고 세 갈래 탄. */
@@ -223,9 +220,9 @@ public class Balance {
         public String name, sprite;
         public int hp, attack;
         public float speedTiles;
-        /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병), totem(제자리, 공격 안 함: 마왕의 분신). */
+        /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
         public String ai;
-        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, devour, drain. */
+        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, devour. */
         public List<String> patterns;
         /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;

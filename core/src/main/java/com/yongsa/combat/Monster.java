@@ -68,8 +68,6 @@ public class Monster extends Actor {
     public Hazard channelMark;
     /** 마왕 2페이즈 최후의 발악 (체력 20% 아래). */
     public boolean lastStand;
-    /** 마력 흡수로 쌓인 회복량 (1 넘으면 체력에 더한다). */
-    public float healAcc, healTextCd;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
