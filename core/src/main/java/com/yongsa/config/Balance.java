@@ -147,6 +147,10 @@ public class Balance {
         public float spawnSeconds;
         /** 박쥐: 주위를 돌다가 일직선으로 덮친다. */
         public float swoopTelegraph, swoopDistanceTiles, swoopTime, swoopRecover, orbitTiles;
+        /** 박쥐 초음파: 가까우면 screechChance 확률로 덮치기 대신 울어서 둘레 용사를 screechSlow 초 느리게 한다. */
+        public float screechChance, screechRangeTiles, screechRadiusTiles, screechTelegraph, screechSlow;
+        /** 박쥐 떼 덮치기: 한 마리가 덮칠 때 packChance 확률로 근처 박쥐 하나가 packDelay 초 늦게 따라 덮친다. */
+        public float packChance, packRangeTiles, packDelay;
         /** 해골병: 휘두르며 앞으로 한 발 내딛는다. */
         public float lungeTiles;
         /** 마족병: 떨어져서 불덩이를 쏜다. 가까이 오면 순간이동으로 물러난다. */
