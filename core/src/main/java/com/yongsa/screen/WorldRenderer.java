@@ -1419,6 +1419,12 @@ public class WorldRenderer implements Disposable {
                 particles.burst(e.x, e.y + 8, 10, new Color(0.6f, 1f, 0.5f, 1f), 160, 0.4f, 3, true);
                 ring(e.x, e.y, e.size * 0.3f, e.size, 0.3f, BONE);
                 break;
+            case "flame":
+                // 마족병 불기둥
+                particles.burst(e.x, e.y + 10, 18, c, 220, 0.5f, 3, true);
+                ring(e.x, e.y, e.size * 0.3f, e.size, 0.35f, c);
+                flash(e.x, e.y + 20, e.size * 2.5f, c, 0.3f);
+                break;
             case "eye":
                 eyeFlashes.add(new float[]{e.x, e.y, e.size, 0f});
                 flash(e.x, e.y, 220, EYE_RED, 0.35f);
@@ -1450,6 +1456,7 @@ public class WorldRenderer implements Disposable {
             case "bone": return BONE;
             case "whip": return WHIP;
             case "eye": return EYE_RED;
+            case "flame": return PROJ_FIRE;
             default: return new Color(1f, 0.6f, 0.35f, 1f);
         }
     }

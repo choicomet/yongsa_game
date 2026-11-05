@@ -64,6 +64,8 @@ public class Monster extends Actor {
     public float cornerT;
     /** 공격력 배율 (보스를 잡은 던전의 잡몹, 마왕 2페이즈). */
     public float attackMul = 1f;
+    /** 마족병이 지금까지 쏜 불덩이 수 (몇 번째마다 세 갈래). */
+    public int castCount;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;

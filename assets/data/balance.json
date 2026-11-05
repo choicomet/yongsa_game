@@ -113,6 +113,13 @@
     "castRangeTiles": 7.0,
     "keepAwayTiles": 3.5,
     "blinkCooldown": 3.5,
+    "_magician": "마족병: 세 번째 불덩이마다 세 갈래로 쏜다. 가끔 불덩이 대신 용사 발밑에 불기둥을 세운다. 순간이동하자마자 곧바로 한 발 쏜다",
+    "triEvery": 3,
+    "flameChance": 0.3,
+    "flameRadiusTiles": 1.0,
+    "flameWarning": 0.8,
+    "flameMultiplier": 1.2,
+    "blinkShotTelegraph": 0.3,
     "projectileSpeedTiles": 5.5,
     "projectileRadius": 7,
 
