@@ -24,7 +24,9 @@ public class Monster extends Actor {
         /** 골렘: 땅속에 숨어 용사를 따라간다. 보이지 않고 맞지 않는다. */
         BURROW,
         /** 혈월의 기사: 구석에서 뒤로 크게 도약하는 중. 공중이라 맞지 않는다. */
-        LEAP
+        LEAP,
+        /** 해골병: 쓰러져 뼈 무더기가 된 채 다시 일어나려는 중. 이때 때리면 완전히 부서진다. */
+        DOWNED
     }
 
     public final MonsterDef def;
@@ -78,6 +80,18 @@ public class Monster extends Actor {
     public Hazard channelMark;
     /** 마왕 2페이즈 최후의 발악 (체력 20% 아래). */
     public boolean lastStand;
+    /** 해골병 방패: 지금 들고 있나, 들기·내리기가 바뀔 때까지 남은 시간. */
+    public boolean guarding;
+    public float guardT;
+    /** 해골병 뼈 던지기 쿨타임. */
+    public float throwCd;
+    /** 해골병: 이미 한 번 다시 일어났다. */
+    public boolean revived;
+
+    /** 방패를 들고 맞설 수 있는 상태 (공격 중에는 내린다). */
+    public boolean guardActive() {
+        return guarding && state == State.CHASE;
+    }
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;

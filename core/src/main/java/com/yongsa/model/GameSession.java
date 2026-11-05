@@ -567,6 +567,15 @@ public class GameSession {
             return;
         }
         int dmg = roll(rules.attack(state), mult);
+        boolean guarded = false;
+        if (m.guardActive()) {
+            // 해골병 방패: 정면에서 오는 공격은 크게 줄어든다. 뒤나 옆은 그대로
+            float gx = hero.x - m.x, gy = hero.y - m.y, gl = (float) Math.sqrt(gx * gx + gy * gy);
+            if (gl < 0.01f || (gx * m.dirX + gy * m.dirY) / gl > 0.3f) {
+                dmg = Math.max(1, Math.round(dmg * (1f - balance.monster.guardReduction)));
+                guarded = true;
+            }
+        }
         m.flash = 0.15f;
         if (m.shield > 0) {
             // 방패가 남아 있으면 체력 대신 방패가 닳는다
@@ -606,8 +615,8 @@ public class GameSession {
             events.add(GameEvent.toast("마왕이 최후의 발악을 한다! 공격이 더 빨라진다"));
             events.add(GameEvent.sound("roar"));
         }
-        events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), GameEvent.Tone.MONSTER_HIT));
-        events.add(GameEvent.sound("hit"));
+        events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), guarded ? GameEvent.Tone.SHIELD : GameEvent.Tone.MONSTER_HIT));
+        events.add(GameEvent.sound(guarded ? "block" : "hit"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, m.x, m.centerY());
         fx.tone = GameEvent.Tone.MONSTER_HIT;
         float ddx = m.x - hero.x, ddy = m.centerY() - hero.centerY(), dl = (float) Math.sqrt(ddx * ddx + ddy * ddy);
@@ -617,6 +626,15 @@ public class GameSession {
         events.add(fx);
         if (m.hp <= 0 && m.finalBoss && !m.phase2) {
             startPhaseShift(m);
+            return;
+        }
+        if (m.hp <= 0 && !m.boss && m.def.revive && !m.revived) {
+            // 해골병: 처음 쓰러지면 뼈 무더기가 됐다가 다시 일어난다. 그 사이 때리면 완전히 부서진다
+            m.revived = true;
+            m.hp = 0;
+            m.guarding = false;
+            m.enter(Monster.State.DOWNED, balance.monster.reviveSeconds);
+            events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2.4f, "뼈가 꿈틀거린다", GameEvent.Tone.INFO));
             return;
         }
         if (m.hp <= 0) {
@@ -1053,6 +1071,14 @@ public class GameSession {
             m.flash -= dt;
             m.immuneMsgCd -= dt;
             m.blinkCd -= dt;
+            m.throwCd -= dt;
+            if (m.def.guard && !m.boss) {
+                m.guardT -= dt;
+                if (m.guardT <= 0) {
+                    m.guarding = !m.guarding;
+                    m.guardT = m.guarding ? mc.guardUp : mc.guardDown;
+                }
+            }
             if (m.kbT > 0) {
                 Physics.move(map, m, m.kbVX * dt, m.kbVY * dt, T);
                 m.kbT -= dt;
@@ -1072,7 +1098,10 @@ public class GameSession {
             if (m.boss && (m.def.cornerBlink || m.def.cornerLeap) && cornered(m, dist, reach, dt)) continue;
             switch (m.state) {
                 case CHASE:
-                    if (dist > 0.01f) {
+                    if (dist > 0.01f && m.guardActive()) {
+                        // 방패를 든 해골병은 천천히 돌아선다: 옆이나 뒤로 돌아 들어갈 틈
+                        turnToward(m, dx / dist, dy / dist, mc.guardTurn * dt);
+                    } else if (dist > 0.01f) {
                         m.dirX = dx / dist;
                         m.dirY = dy / dist;
                     }
@@ -1215,6 +1244,15 @@ public class GameSession {
                         m.state = Monster.State.CHASE;
                     }
                     break;
+                case DOWNED:
+                    m.stateT -= dt;
+                    if (m.stateT <= 0) {
+                        m.hp = Math.max(1, Math.round(m.maxHp * mc.reviveHpRatio));
+                        m.enter(Monster.State.RECOVER, 0.6f);
+                        events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2.4f, "다시 일어났다!", GameEvent.Tone.INFO));
+                        events.add(GameEvent.sound("monsterAttack"));
+                    }
+                    break;
                 case STUNNED:
                 case RECOVER:
                     m.stateT -= dt;
@@ -1243,6 +1281,17 @@ public class GameSession {
         GameEvent fx = GameEvent.fx(GameEvent.Type.SHIELD_BREAK, m.x, m.centerY());
         fx.size = m.hurtRadius * 2.4f;
         events.add(fx);
+    }
+
+    /** 바라보는 방향을 (tx, ty) 쪽으로 최대 maxTurn 라디안만 돌린다. */
+    private static void turnToward(Monster m, float tx, float ty, float maxTurn) {
+        float cur = (float) Math.atan2(m.dirY, m.dirX), want = (float) Math.atan2(ty, tx);
+        float diff = want - cur;
+        while (diff > Math.PI) diff -= (float) (2 * Math.PI);
+        while (diff < -Math.PI) diff += (float) (2 * Math.PI);
+        cur += Math.max(-maxTurn, Math.min(maxTurn, diff));
+        m.dirX = (float) Math.cos(cur);
+        m.dirY = (float) Math.sin(cur);
     }
 
     private void wallBump(Monster m) {
@@ -1421,10 +1470,18 @@ public class GameSession {
             }
             default:
                 // melee, brute: 다가가서 휘두른다
+                if (m.def.throwBones && m.throwCd <= 0 && dist > mc.boneThrowMinTiles * T && dist < mc.boneThrowRangeTiles * T) {
+                    // 해골병: 멀면 뼈를 던진다
+                    m.throwCd = mc.boneThrowCooldown;
+                    m.castKind = "bone";
+                    m.enter(Monster.State.CAST_TELEGRAPH, mc.boneThrowTelegraph);
+                    return;
+                }
                 if (dist <= reach * ("brute".equals(m.ai()) ? 1.6f : 1f) && m.attackCd <= 0) {
                     m.enter(Monster.State.TELEGRAPH, m.telegraph(mc.telegraphSeconds));
                 } else if (dist > reach * 0.7f) {
-                    Physics.move(map, m, pathX * m.speed * dt, pathY * m.speed * dt, T);
+                    float spd = m.speed * (m.guardActive() ? mc.guardSpeed : 1f);
+                    Physics.move(map, m, pathX * spd * dt, pathY * spd * dt, T);
                     m.walkTime += dt;
                 }
         }
@@ -2217,6 +2274,9 @@ public class GameSession {
             fx.text = "screech";
             fx.size = r;
             events.add(fx);
+        } else if ("bone".equals(kind)) {
+            // 해골병 뼈 던지기: 느린 뼈 하나
+            shoot(m, m.x, sy, base, mc.boneSpeedTiles * T, Math.max(1, Math.round(dmg * mc.boneMultiplier)), "bone");
         } else if ("ring".equals(kind)) {
             int n = mc.ringCount + (m.finalBoss ? 4 : 0);
             float off = random.nextFloat() * 6.283f;

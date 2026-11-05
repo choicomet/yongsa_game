@@ -153,6 +153,12 @@ public class Balance {
         public float packChance, packRangeTiles, packDelay;
         /** 해골병: 휘두르며 앞으로 한 발 내딛는다. */
         public float lungeTiles;
+        /** 해골병 방패: guardUp 초 들고 guardDown 초 내린다. 드는 동안 정면 피해 감소, 천천히 돈다, 느리게 걷는다. */
+        public float guardUp, guardDown, guardReduction, guardTurn, guardSpeed;
+        /** 해골병 뼈 던지기: boneThrowMinTiles ~ boneThrowRangeTiles 거리면 뼈 하나를 던진다. */
+        public float boneThrowMinTiles, boneThrowRangeTiles, boneThrowTelegraph, boneThrowCooldown, boneSpeedTiles, boneMultiplier;
+        /** 해골병 부활: 처음 쓰러지면 reviveSeconds 뒤 최대 체력의 reviveHpRatio 로 일어난다. */
+        public float reviveSeconds, reviveHpRatio;
         /** 마족병: 떨어져서 불덩이를 쏜다. 가까이 오면 순간이동으로 물러난다. */
         public float castTelegraph, castCooldown, castRangeTiles, keepAwayTiles, blinkCooldown;
         public float projectileSpeedTiles, projectileRadius;
@@ -270,6 +276,8 @@ public class Balance {
         public boolean cornerLeap;
         /** 보스: 소환한 부하가 살아 있는 동안 결계를 둘러 맞지 않는다 (탑의 수문장). */
         public boolean summonBarrier;
+        /** 잡몹(해골병): 방패를 들었다 내렸다 한다, 멀면 뼈를 던진다, 한 번 다시 일어난다. */
+        public boolean guard, throwBones, revive;
         /** 보스 소환: 어느 던전의 잡몹을 몇 마리 부르나 (없으면 자기 던전 잡몹, monster.summonCount). */
         public String summonFrom;
         public int summonCount;
