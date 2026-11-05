@@ -92,6 +92,8 @@ public class Monster extends Actor {
     public boolean guardActive() {
         return guarding && state == State.CHASE;
     }
+    /** 마족병이 지금까지 쏜 불덩이 수 (몇 번째마다 세 갈래). */
+    public int castCount;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;

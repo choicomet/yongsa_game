@@ -161,6 +161,9 @@ public class Balance {
         public float reviveSeconds, reviveHpRatio;
         /** 마족병: 떨어져서 불덩이를 쏜다. 가까이 오면 순간이동으로 물러난다. */
         public float castTelegraph, castCooldown, castRangeTiles, keepAwayTiles, blinkCooldown;
+        /** 마족병: triEvery 번째 사격마다 세 갈래, flameChance 확률로 불덩이 대신 용사 발밑 불기둥, 순간이동 직후 blinkShotTelegraph 만에 한 발. */
+        public int triEvery;
+        public float flameChance, flameRadiusTiles, flameWarning, flameMultiplier, blinkShotTelegraph;
         public float projectileSpeedTiles, projectileRadius;
         /** 보스 고유 패턴. */
         public float bossPatternGap;

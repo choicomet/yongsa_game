@@ -1454,9 +1454,20 @@ public class GameSession {
             }
             case "caster": {
                 float keep = mc.keepAwayTiles * T;
-                if (dist < keep * 0.6f && m.blinkCd <= 0 && blinkAway(m)) return;
-                if (m.attackCd <= 0 && dist < mc.castRangeTiles * T) {
+                if (dist < keep * 0.6f && m.blinkCd <= 0 && blinkAway(m)) {
+                    // 순간이동하자마자 곧바로 한 발
                     m.castKind = "cast";
+                    m.enter(Monster.State.CAST_TELEGRAPH, mc.blinkShotTelegraph);
+                    return;
+                }
+                if (m.attackCd <= 0 && dist < mc.castRangeTiles * T) {
+                    if (random.nextFloat() < mc.flameChance) {
+                        // 불기둥: 불덩이 대신 용사 발밑에 (fire)
+                        m.castKind = "flame";
+                    } else {
+                        m.castCount++;
+                        m.castKind = mc.triEvery > 0 && m.castCount % mc.triEvery == 0 ? "tri" : "cast";
+                    }
                     m.enter(Monster.State.CAST_TELEGRAPH, m.telegraph(mc.castTelegraph));
                     return;
                 }
@@ -2277,6 +2288,9 @@ public class GameSession {
         } else if ("bone".equals(kind)) {
             // 해골병 뼈 던지기: 느린 뼈 하나
             shoot(m, m.x, sy, base, mc.boneSpeedTiles * T, Math.max(1, Math.round(dmg * mc.boneMultiplier)), "bone");
+        } else if ("flame".equals(kind)) {
+            // 마족병 불기둥: 지금 용사가 있는 자리에 예고 뒤 솟는다
+            circleHazard("flame", hero.x, hero.y, mc.flameRadiusTiles * T, mc.flameWarning, dmg, mc.flameMultiplier);
         } else if ("ring".equals(kind)) {
             int n = mc.ringCount + (m.finalBoss ? 4 : 0);
             float off = random.nextFloat() * 6.283f;
