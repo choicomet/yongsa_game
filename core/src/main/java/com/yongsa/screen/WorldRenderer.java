@@ -1445,6 +1445,7 @@ public class WorldRenderer implements Disposable {
                 ring(e.x, e.y, 8, 120, 0.4f, EYE_RED);
                 break;
             case "whip":
+            case "cage":
             case "spear": {
                 float dx = e.dirX - e.x, dy = e.dirY - e.y;
                 for (int i = 0; i <= 10; i++) {
@@ -1464,7 +1465,7 @@ public class WorldRenderer implements Disposable {
 
     private static Color hazardColor(String style) {
         switch (style) {
-            case "bolt": return PROJ_SKY;
+            case "bolt": case "cage": return PROJ_SKY;
             case "tentacle": return PROJ_DARK;
             case "spear": case "blood": case "spin": case "leap": return PROJ_BLOOD;
             case "bone": return BONE;
@@ -2123,8 +2124,8 @@ public class WorldRenderer implements Disposable {
         // 방패, 긴 패턴의 기운
         for (Monster m : g.monsters) {
             if (m.dead) continue;
-            if (m.shield > 0) {
-                float fr = m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
+            if (m.shield > 0 || m.barrier) {
+                float fr = m.barrier ? 1f : m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
                 float r = m.hurtRadius * 2.6f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite));
                 float pulse = 0.8f + 0.2f * MathUtils.sin(time * 4f);
                 batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, (0.18f + 0.25f * fr) * pulse);

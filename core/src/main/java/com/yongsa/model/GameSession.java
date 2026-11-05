@@ -557,6 +557,15 @@ public class GameSession {
             }
             return;
         }
+        if (m.barrier) {
+            // 결계: 부하가 살아 있는 동안은 상처를 낼 수 없다
+            if (m.immuneMsgCd <= 0) {
+                m.immuneMsgCd = 1.2f;
+                events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2.2f, "결계에 막혔다", GameEvent.Tone.BLOCKED));
+                events.add(GameEvent.sound("block"));
+            }
+            return;
+        }
         int dmg = roll(rules.attack(state), mult);
         m.flash = 0.15f;
         if (m.shield > 0) {
@@ -1041,6 +1050,7 @@ public class GameSession {
                 if (m.stateT <= 0) m.state = Monster.State.CHASE;
                 continue;
             }
+            if (m.barrier && summoned.isEmpty() && !minionsAlive()) breakBarrier(m);
             float speedUp = m.enraged ? mc.phase2Speed : 1f;
             m.attackCd -= dt * speedUp;
             m.patternCd -= dt * speedUp;
@@ -1205,6 +1215,22 @@ public class GameSession {
         }
         monsters.addAll(summoned);
         separate();
+    }
+
+    private boolean minionsAlive() {
+        for (Monster o : monsters) if (!o.dead && !o.boss) return true;
+        return false;
+    }
+
+    /** 부하가 모두 쓰러졌다: 결계가 깨지며 보스가 휘청인다. */
+    private void breakBarrier(Monster m) {
+        m.barrier = false;
+        m.enter(Monster.State.STUNNED, balance.monster.barrierStagger);
+        events.add(GameEvent.toast(m.def.name + "의 결계가 깨졌다! 지금이 기회다"));
+        events.add(GameEvent.sound("slam"));
+        GameEvent fx = GameEvent.fx(GameEvent.Type.SHIELD_BREAK, m.x, m.centerY());
+        fx.size = m.hurtRadius * 2.4f;
+        events.add(fx);
     }
 
     private void wallBump(Monster m) {
@@ -1505,7 +1531,15 @@ public class GameSession {
                     Monster s = makeMonster(r, d.mob, false, false, false);
                     if (s != null) summoned.add(s);
                 }
-                events.add(GameEvent.toast(m.def.name + "이(가) 부하를 불렀다!"));
+                if (m.def.summonBarrier && !summoned.isEmpty()) {
+                    m.barrier = true;
+                    events.add(GameEvent.toast(m.def.name + "이(가) 부하를 부르고 결계를 둘렀다! 부하부터 쓰러뜨리자"));
+                    GameEvent bfx = GameEvent.fx(GameEvent.Type.SHIELD_UP, m.x, m.centerY());
+                    bfx.size = m.hurtRadius * 2.4f;
+                    events.add(bfx);
+                } else {
+                    events.add(GameEvent.toast(m.def.name + "이(가) 부하를 불렀다!"));
+                }
                 events.add(GameEvent.sound("roar"));
                 m.enter(Monster.State.RECOVER, 0.8f);
                 blind(m);
@@ -1616,6 +1650,38 @@ public class GameSession {
             }
             case "crescent":
                 // 혈월 검기: 모았다가 초승달 검기를 부채꼴로 날린다 (fire)
+                m.castKind = p;
+                m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
+                return true;
+            case "cage": {
+                // 번개 감옥: 용사 둘레 사각형 번개 벽이 여러 번 번쩍이고, 가운데가 터진다.
+                // 한쪽 벽(open)만 가운데가 터진 뒤에 터지니 그쪽으로 빠져나가야 한다.
+                float hs = mc.cageHalfTiles * T, cx = hero.x, cy = hero.y;
+                float[][] c = {{cx - hs, cy - hs}, {cx + hs, cy - hs}, {cx + hs, cy + hs}, {cx - hs, cy + hs}};
+                int open = random.nextInt(4);
+                for (int i = 0; i < 4; i++) {
+                    int pulses = i == open ? 1 : mc.cagePulses;
+                    for (int k = 0; k < pulses; k++) {
+                        Hazard h = new Hazard(Hazard.Kind.LINE, "cage");
+                        h.x = c[i][0];
+                        h.y = c[i][1];
+                        h.x2 = c[(i + 1) % 4][0];
+                        h.y2 = c[(i + 1) % 4][1];
+                        h.radius = mc.cageWidthTiles * T / 2f;
+                        h.delay = h.warning = i == open ? mc.cageOpenDelay : mc.cageWarning + mc.cagePulseGap * k;
+                        h.damage = m.attack();
+                        h.multiplier = mc.cageMultiplier;
+                        hazards.add(h);
+                    }
+                }
+                circleHazard("bolt", cx, cy, hs, mc.cageCoreWarning, m.attack(), mc.cageCoreMultiplier);
+                m.enter(Monster.State.RECOVER, mc.cageCoreWarning + 0.3f);
+                events.add(GameEvent.toast("번개 감옥! 늦게 빛나는 벽으로 빠져나가자"));
+                events.add(GameEvent.sound("cast"));
+                return true;
+            }
+            case "homing":
+                // 유도 마탄: 모았다가 천천히 따라오는 탄을 쏜다 (fire)
                 m.castKind = p;
                 m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
                 return true;
@@ -2022,6 +2088,18 @@ public class GameSession {
                 shoot(m, m.x, sy, a, cs, cd, m.def.sprite);
                 projectiles.get(projectiles.size() - 1).radius *= mc.crescentRadiusScale;
             }
+        } else if ("homing".equals(kind)) {
+            // 유도 마탄: 느리게 날며 용사 쪽으로 방향을 튼다. 벽에 닿으면 사라진다
+            int n = mc.homingCount;
+            float spread = (float) Math.toRadians(mc.homingSpreadDegrees);
+            for (int i = 0; i < n; i++) {
+                float a = base - spread / 2f + (n > 1 ? spread * i / (n - 1) : 0);
+                shoot(m, m.x, sy, a, mc.homingSpeedTiles * T, dmg, m.def.sprite);
+                Projectile p = projectiles.get(projectiles.size() - 1);
+                p.homing = mc.homingTurn;
+                p.life = mc.homingLife;
+                p.radius *= 1.2f;
+            }
         } else if ("volley".equals(kind) || "tri".equals(kind)) {
             int n = "tri".equals(kind) ? 3 : mc.volleyCount;
             float spread = (float) Math.toRadians("tri".equals(kind) ? 30 : mc.volleySpreadDegrees);
@@ -2050,6 +2128,7 @@ public class GameSession {
             if (p.dead) continue;
             p.age += dt;
             p.life -= dt;
+            if (p.homing > 0) steerHoming(p, dt);
             p.x += p.vx * dt;
             p.y += p.vy * dt;
             if (p.life <= 0 || map.solid(tileX(p.x), tileY(p.y - 6))) {
@@ -2066,6 +2145,20 @@ public class GameSession {
             }
         }
         projectiles.removeIf(p -> p.dead);
+    }
+
+    /** 유도탄: 속도는 그대로, 방향만 용사 쪽으로 조금씩 튼다. */
+    private void steerHoming(Projectile p, float dt) {
+        float sp = (float) Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        float cur = (float) Math.atan2(p.vy, p.vx);
+        float want = (float) Math.atan2(hero.centerY() - p.y, hero.x - p.x);
+        float diff = want - cur;
+        while (diff > Math.PI) diff -= (float) (2 * Math.PI);
+        while (diff < -Math.PI) diff += (float) (2 * Math.PI);
+        float step = p.homing * dt;
+        cur += Math.max(-step, Math.min(step, diff));
+        p.vx = (float) Math.cos(cur) * sp;
+        p.vy = (float) Math.sin(cur) * sp;
     }
 
     /** 몬스터끼리 겹치지 않게 살짝 민다. */

@@ -72,6 +72,8 @@ public class Monster extends Actor {
     public Hazard burrowMark;
     /** 뒤로 도약: 뛰어오른 자리와 착지할 자리. */
     public float leapX0, leapY0, leapX1, leapY1;
+    /** 결계 (수문장): 소환한 부하가 살아 있는 동안 맞지 않는다. */
+    public boolean barrier;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
