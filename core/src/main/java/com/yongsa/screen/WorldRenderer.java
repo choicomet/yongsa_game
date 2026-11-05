@@ -755,6 +755,13 @@ public class WorldRenderer implements Disposable {
         float bs = g.balance.monster.blindSeconds;
         float blind = g.blindT > 0 ? Math.min(1f, Math.min(g.blindT / 0.5f, (bs - g.blindT) / 0.3f)) : 0f;
         float amb = 1f - 0.92f * blind;
+        // 마왕 최후의 발악: 방 전체가 어두워진다
+        for (Monster lm : g.monsters) {
+            if (!lm.dead && lm.lastStand) {
+                amb *= 0.6f;
+                break;
+            }
+        }
         lighting.begin(ambient.r * amb, ambient.g * amb, ambient.b * amb);
         HeroActor h = g.hero;
         lighting.add(h.x, h.y + 14, 250 * (1f - 0.55f * blind), 1f, 0.92f, 0.8f, 0.6f);
@@ -1445,7 +1452,7 @@ public class WorldRenderer implements Disposable {
     private static Color hazardColor(String style) {
         switch (style) {
             case "bolt": return PROJ_SKY;
-            case "tentacle": return PROJ_DARK;
+            case "tentacle": case "maw": return PROJ_DARK;
             case "spear": case "blood": return PROJ_BLOOD;
             case "bone": return BONE;
             case "whip": return WHIP;
@@ -2109,7 +2116,8 @@ public class WorldRenderer implements Disposable {
             }
             if (m.state == Monster.State.CHANNEL) {
                 Color c = "lightning".equals(m.channelKind) ? PROJ_SKY : "firespin".equals(m.channelKind) ? PROJ_FIRE
-                        : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD : new Color(1f, 0.6f, 0.35f, 1f);
+                        : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD
+                        : "devour".equals(m.channelKind) ? PROJ_DARK : new Color(1f, 0.6f, 0.35f, 1f);
                 float r = m.hurtRadius * 2.4f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite)) * (0.9f + 0.1f * MathUtils.sin(time * 10f));
                 batch.setColor(c.r, c.g, c.b, 0.4f);
                 batch.draw(art.glow, m.x - r, m.centerY() - r, r * 2, r * 2);

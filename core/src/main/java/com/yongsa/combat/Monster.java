@@ -64,6 +64,12 @@ public class Monster extends Actor {
     public float cornerT;
     /** 공격력 배율 (보스를 잡은 던전의 잡몹, 마왕 2페이즈). */
     public float attackMul = 1f;
+    /** 긴 패턴에 딸린 바닥 표시 (마왕 삼키기의 아가리). */
+    public Hazard channelMark;
+    /** 마왕 2페이즈 최후의 발악 (체력 20% 아래). */
+    public boolean lastStand;
+    /** 마력 흡수로 쌓인 회복량 (1 넘으면 체력에 더한다). */
+    public float healAcc, healTextCd;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;

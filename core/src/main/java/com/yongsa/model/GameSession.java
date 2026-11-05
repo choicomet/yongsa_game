@@ -578,7 +578,7 @@ public class GameSession {
         }
         m.hp -= dmg;
         // 공격을 준비하거나 돌진하는 중에는 밀리지 않는다: 연타로 공격을 끊을 수 없다
-        if (!m.boss && !m.committed()) m.knockback(m.x - hero.x, m.y - hero.y, balance.monster.knockbackTiles * T);
+        if (!m.boss && !m.committed() && !"totem".equals(m.ai())) m.knockback(m.x - hero.x, m.y - hero.y, balance.monster.knockbackTiles * T);
         if (m.boss && !m.finalBoss && !m.enraged && m.hp > 0 && m.hp <= m.maxHp * balance.monster.phase2HpRatio) {
             m.enraged = true;
             m.patternCd = Math.min(m.patternCd, 0.6f);
@@ -587,6 +587,14 @@ public class GameSession {
             e.x = m.x;
             e.y = m.centerY();
             events.add(e);
+            events.add(GameEvent.sound("roar"));
+        }
+        if (m.finalBoss && m.phase2 && !m.lastStand && m.hp > 0 && m.hp <= m.maxHp * balance.monster.lastStandHpRatio) {
+            // 최후의 발악: 화면이 어두워지고 패턴 간격이 줄어든다
+            m.lastStand = true;
+            m.patternCd = Math.min(m.patternCd, 0.6f);
+            speech(m, "아직... 끝나지 않았다!");
+            events.add(GameEvent.toast("마왕이 최후의 발악을 한다! 공격이 더 빨라진다"));
             events.add(GameEvent.sound("roar"));
         }
         events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), GameEvent.Tone.MONSTER_HIT));
@@ -605,7 +613,11 @@ public class GameSession {
         if (m.hp <= 0) {
             m.hp = 0;
             m.dead = true;
-            if (m.finalBoss) speech(m, "이런 풋내기에게 당하다니!");
+            if (m.finalBoss) {
+                speech(m, "이런 풋내기에게 당하다니!");
+                // 마왕이 쓰러지면 분신과 부하도 함께 무너진다
+                for (Monster o : monsters) if (!o.boss) o.dead = true;
+            }
             state.stats.monstersKilled++;
             GameEvent died = GameEvent.fx(GameEvent.Type.MONSTER_DIED, m.x, m.y);
             died.sprite = m.def.sprite;
@@ -1041,6 +1053,7 @@ public class GameSession {
                 if (m.stateT <= 0) m.state = Monster.State.CHASE;
                 continue;
             }
+            if (m.finalBoss && m.phase2) drainHeal(m, dt);
             float speedUp = m.enraged ? mc.phase2Speed : 1f;
             m.attackCd -= dt * speedUp;
             m.patternCd -= dt * speedUp;
@@ -1188,6 +1201,28 @@ public class GameSession {
         separate();
     }
 
+    private int totemsAlive() {
+        int n = 0;
+        for (Monster o : monsters) if (!o.dead && "totem".equals(o.ai())) n++;
+        return n;
+    }
+
+    /** 마력 흡수: 살아 있는 분신마다 초당 최대 체력의 drainHealRatio 만큼 마왕이 회복한다. */
+    private void drainHeal(Monster m, float dt) {
+        int n = totemsAlive();
+        m.healTextCd -= dt;
+        if (n == 0 || m.hp >= m.maxHp || m.invulnerable()) return;
+        m.healAcc += m.maxHp * balance.monster.drainHealRatio * n * dt;
+        int add = (int) m.healAcc;
+        if (add <= 0) return;
+        m.healAcc -= add;
+        m.hp = Math.min(m.maxHp, m.hp + add);
+        if (m.healTextCd <= 0) {
+            m.healTextCd = 0.8f;
+            events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2.2f, "+" + Math.round(m.maxHp * balance.monster.drainHealRatio * n), GameEvent.Tone.HEAL));
+        }
+    }
+
     private void wallBump(Monster m) {
         events.add(GameEvent.sound("slam"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.SLAM_FX, m.x + m.lockX * m.hw, m.y + m.lockY * m.hh);
@@ -1316,6 +1351,9 @@ public class GameSession {
     private void chaseMob(Monster m, float dist, float reach, float dt) {
         Balance.MonsterCfg mc = balance.monster;
         switch (m.ai()) {
+            case "totem":
+                // 마왕의 분신: 제자리에서 마력만 빨아들인다
+                return;
             case "swoop": {
                 // 용사 둘레를 빙글빙글 돌다가 방향을 정하고 덮친다.
                 float orbit = mc.orbitTiles * T;
@@ -1366,7 +1404,7 @@ public class GameSession {
         if (m.patternCd <= 0 && dist < 11 * T) {
             String p = pickPattern(m);
             m.lastPattern = p;
-            m.patternCd = mc.bossPatternGap;
+            m.patternCd = mc.bossPatternGap * (m.lastStand ? mc.lastStandGapMultiplier : 1f);
             if (startPattern(m, p, summoned)) return;
         }
         if (dist <= reach && m.attackCd <= 0) {
@@ -1534,6 +1572,37 @@ public class GameSession {
                 events.add(GameEvent.sound("roar"));
                 return true;
             }
+            case "devour": {
+                // 삼키기: 용사를 끌어당긴다. 가운데 아가리에 닿으면 큰 피해
+                Hazard h = new Hazard(Hazard.Kind.CIRCLE, "maw");
+                h.x = m.x;
+                h.y = m.y;
+                h.radius = mc.devourCoreTiles * T;
+                h.delay = h.warning = mc.devourTime + 0.3f; // 삼키기가 끝나면 endDevour 가 지운다
+                h.multiplier = 0; // 표시만: 맞히는 건 channel 이 한다
+                hazards.add(h);
+                m.channelMark = h;
+                startChannel(m, p, 0, 0f);
+                m.channelT = mc.devourTime;
+                events.add(GameEvent.toast("마왕이 모든 것을 삼키려 한다! 바깥으로 도망쳐라"));
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "drain": {
+                // 마력 흡수: 분신을 세운다. 살아 있는 동안 마왕이 회복한다 (drainHeal)
+                if (totemsAlive() > 0) return false;
+                Room r = fightRoom;
+                if (r == null) return false;
+                for (int i = 0; i < mc.drainCount; i++) {
+                    Monster t = makeMonster(r, totemDef(), false, false, false);
+                    if (t != null) summoned.add(t);
+                }
+                if (summoned.isEmpty()) return false;
+                m.enter(Monster.State.RECOVER, 0.8f);
+                events.add(GameEvent.toast("마왕이 분신으로 마력을 빨아들인다! 분신부터 부수자"));
+                events.add(GameEvent.sound("cast"));
+                return true;
+            }
             case "eyes": {
                 // 눈알이 차례로 뜬다: 뜨는 순간 그쪽을 보고 있으면 안 된다
                 Room r = fightRoom;
@@ -1559,6 +1628,22 @@ public class GameSession {
             default:
                 return false;
         }
+    }
+
+    private Balance.MonsterDef totem;
+
+    /** 마력 흡수 분신: 움직이지도 때리지도 않고, 부서지기 전까지 마왕을 회복시킨다. */
+    private Balance.MonsterDef totemDef() {
+        if (totem == null) {
+            totem = new Balance.MonsterDef();
+            totem.name = "마력을 빨아들이는 분신";
+            totem.sprite = balance.finalBoss.sprite;
+            totem.hp = balance.monster.drainTotemHp;
+            totem.attack = 0;
+            totem.speedTiles = 0;
+            totem.ai = "totem";
+        }
+        return totem;
     }
 
     private void startChannel(Monster m, String kind, int count, float firstDelay) {
@@ -1631,9 +1716,31 @@ public class GameSession {
                 m.enter(Monster.State.RECOVER, 0.4f);
                 return;
             }
+            case "devour": {
+                // 끌어당긴다: 구르는 동안은 버틸 수 있다
+                float dx = m.x - hero.x, dy = m.y - hero.y, d = (float) Math.sqrt(dx * dx + dy * dy);
+                float core = mc.devourCoreTiles * T;
+                if (d <= core + hero.hw * 0.6f) {
+                    endDevour(m);
+                    hitHero(m.attack(), mc.devourMultiplier, m.x, m.y);
+                    return;
+                }
+                if (!hero.rolling() && d > 0.01f) {
+                    float pull = Math.min(d, mc.devourPullTiles * T * dt);
+                    Physics.move(map, hero, dx / d * pull, dy / d * pull, T);
+                }
+                if (m.channelT <= 0) endDevour(m);
+                return;
+            }
             default:
                 m.enter(Monster.State.RECOVER, 0.5f);
         }
+    }
+
+    private void endDevour(Monster m) {
+        if (m.channelMark != null) m.channelMark.dead = true;
+        m.channelMark = null;
+        m.enter(Monster.State.RECOVER, 0.8f);
     }
 
     private void circleHazard(String style, float x, float y, float radius, float warning, int damage, float mult) {
@@ -1703,7 +1810,7 @@ public class GameSession {
                     continue;
                 }
                 if (h.kind != Hazard.Kind.POOL) {
-                    if (h.covers(hero.x, hero.y, hero.hw * 0.6f)) hitHero(h.damage, h.multiplier, h.x, h.y);
+                    if (h.multiplier > 0 && h.covers(hero.x, hero.y, hero.hw * 0.6f)) hitHero(h.damage, h.multiplier, h.x, h.y);
                     GameEvent fx = GameEvent.fx(GameEvent.Type.HAZARD_FX, h.x, h.y);
                     fx.text = h.style;
                     fx.size = h.radius;
