@@ -320,7 +320,7 @@ public class GameSession {
         Monster best = null;
         float bestD = range * range;
         for (Monster m : monsters) {
-            if (m.dead || m.state == Monster.State.SPAWN) continue;
+            if (m.dead || m.state == Monster.State.SPAWN || m.state == Monster.State.BURROW) continue;
             float dx = m.x - hero.x, dy = m.centerY() - hero.centerY();
             float d = dx * dx + dy * dy;
             if (d < bestD) {
@@ -1163,6 +1163,11 @@ public class GameSession {
                 case CHANNEL:
                     channel(m, dt * speedUp);
                     break;
+                case BURROW:
+                    // 흙먼지(burrowMark)와 같은 시계로 센다: 흙먼지가 터지는 순간 솟구친다
+                    m.stateT -= dt;
+                    if (m.stateT <= 0) emerge(m);
+                    break;
                 case PHASE_SHIFT:
                     m.stateT -= dt;
                     // 변신하는 동안 체력이 다시 차오른다
@@ -1534,6 +1539,54 @@ public class GameSession {
                 events.add(GameEvent.sound("roar"));
                 return true;
             }
+            case "quake": {
+                // 지진 파동: 보스 둘레 고리 세 겹이 안에서 밖으로 차례로 터진다. 첫 고리는 보스 발밑 전체
+                float w = mc.quakeWaveTiles * T;
+                for (int i = 0; i < mc.quakeWaves; i++) {
+                    Hazard h = new Hazard(Hazard.Kind.CIRCLE, "quake");
+                    h.x = m.x;
+                    h.y = m.y;
+                    h.innerRadius = w * i;
+                    h.radius = w * (i + 1);
+                    h.delay = h.warning = mc.quakeWarning + mc.quakeGap * i;
+                    h.damage = m.attack();
+                    h.multiplier = mc.quakeMultiplier;
+                    hazards.add(h);
+                }
+                m.enter(Monster.State.RECOVER, mc.quakeWarning + mc.quakeGap * (mc.quakeWaves - 1) + 0.4f);
+                events.add(GameEvent.toast("땅이 울린다! 파동 사이로 피하자"));
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "boulder": {
+                // 바위 던지기: 용사 자리에 큰 바위가 떨어지고, 파편이 사방으로 튄다 (updateHazards 의 shatter)
+                aimAtHero(m);
+                circleHazard("boulder", hero.x, hero.y, mc.boulderRadiusTiles * T, mc.boulderWarning, m.attack(), mc.boulderMultiplier);
+                m.enter(Monster.State.RECOVER, 0.9f);
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "burrow": {
+                // 땅속 잠행: 흙먼지가 용사를 따라오다 멈추고, 그 자리에서 솟구친다
+                Hazard h = new Hazard(Hazard.Kind.CIRCLE, "burrow");
+                h.x = hero.x;
+                h.y = hero.y;
+                h.radius = mc.burrowRadiusTiles * T;
+                h.followT = mc.burrowFollow;
+                h.delay = h.warning = mc.burrowFollow + mc.burrowLock;
+                h.damage = m.attack();
+                h.multiplier = mc.burrowMultiplier;
+                hazards.add(h);
+                m.burrowMark = h;
+                m.enter(Monster.State.BURROW, mc.burrowFollow + mc.burrowLock);
+                GameEvent dust = GameEvent.fx(GameEvent.Type.HAZARD_FX, m.x, m.y);
+                dust.text = "rock";
+                dust.size = m.hurtRadius * 1.5f;
+                events.add(dust);
+                events.add(GameEvent.toast(m.def.name + "이(가) 땅속으로 파고들었다! 계속 움직이자"));
+                events.add(GameEvent.sound("slam"));
+                return true;
+            }
             case "eyes": {
                 // 눈알이 차례로 뜬다: 뜨는 순간 그쪽을 보고 있으면 안 된다
                 Room r = fightRoom;
@@ -1636,6 +1689,40 @@ public class GameSession {
         }
     }
 
+    /** 땅속 잠행이 끝났다: 흙먼지가 멈춘 자리에서 솟구치고 잠깐 숨을 고른다 (반격 기회). */
+    private void emerge(Monster m) {
+        Hazard h = m.burrowMark;
+        m.burrowMark = null;
+        if (h != null && Physics.free(map, h.x, h.y, m, T)) {
+            m.x = h.x;
+            m.y = h.y;
+        }
+        m.enter(Monster.State.RECOVER, balance.monster.burrowRecover);
+        events.add(GameEvent.sound("slam"));
+    }
+
+    /** 바위가 떨어진 자리에서 파편이 사방으로 튄다. */
+    private void shatter(Hazard h) {
+        Balance.MonsterCfg mc = balance.monster;
+        float speed = mc.shardSpeedTiles * T;
+        int dmg = Math.max(1, Math.round(h.damage * mc.shardMultiplier));
+        float off = random.nextFloat() * 6.283f;
+        for (int i = 0; i < mc.shardCount; i++) {
+            float a = off + 6.283f * i / mc.shardCount;
+            float cos = (float) Math.cos(a), sin = (float) Math.sin(a);
+            Projectile p = new Projectile();
+            p.x = h.x + cos * h.radius * 0.4f;
+            p.y = h.y + sin * h.radius * 0.4f;
+            p.vx = cos * speed;
+            p.vy = sin * speed;
+            p.radius = mc.projectileRadius;
+            p.life = mc.shardLife;
+            p.damage = dmg;
+            p.source = "golem";
+            projectiles.add(p);
+        }
+    }
+
     private void circleHazard(String style, float x, float y, float radius, float warning, int damage, float mult) {
         Hazard h = new Hazard(Hazard.Kind.CIRCLE, style);
         h.x = x;
@@ -1692,6 +1779,11 @@ public class GameSession {
         for (Hazard h : hazards) {
             if (h.dead) continue;
             h.age += dt;
+            if (h.followT > 0) {
+                h.followT -= dt;
+                h.x = hero.x;
+                h.y = hero.y;
+            }
             if (h.delay > 0) {
                 h.delay -= dt;
                 if (h.delay > 0) continue;
@@ -1713,6 +1805,7 @@ public class GameSession {
                     events.add(GameEvent.sound("bolt".equals(h.style) ? "cast" : "slam"));
                     h.dead = true;
                     if (justDied) return;
+                    if ("boulder".equals(h.style)) shatter(h);
                     continue;
                 }
             }

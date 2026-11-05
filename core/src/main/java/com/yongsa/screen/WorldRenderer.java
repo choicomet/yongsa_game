@@ -1384,12 +1384,31 @@ public class WorldRenderer implements Disposable {
                 }
                 default: {
                     float r = h.radius;
+                    if (h.innerRadius > 0) {
+                        // 가운데가 빈 고리 (지진 파동)
+                        float mid = (r + h.innerRadius) / 2f, th = r - h.innerRadius;
+                        ringBand(h.x, h.y, mid, th, c.r * 0.9f, c.g * 0.35f, c.b * 0.35f, blink);
+                        ringBand(h.x, h.y, mid, th * p, c.r, c.g * 0.6f, c.b * 0.6f, 0.32f);
+                        break;
+                    }
                     shapes.setColor(c.r * 0.9f, c.g * 0.35f, c.b * 0.35f, blink);
                     shapes.ellipse(h.x - r, h.y - r * 0.6f, r * 2, r * 1.2f, 40);
                     shapes.setColor(c.r, c.g * 0.6f, c.b * 0.6f, 0.32f);
                     shapes.ellipse(h.x - r * p, h.y - r * 0.6f * p, r * 2 * p, r * 1.2f * p, 40);
                 }
             }
+        }
+    }
+
+    /** 납작한 고리 띠: 지름 mid, 두께 th. */
+    private void ringBand(float x, float y, float mid, float th, float cr, float cg, float cb, float ca) {
+        if (th <= 0.5f) return;
+        shapes.setColor(cr, cg, cb, ca);
+        int n = 40;
+        for (int i = 0; i < n; i++) {
+            float a0 = MathUtils.PI2 * i / n, a1 = MathUtils.PI2 * (i + 1) / n;
+            shapes.rectLine(x + MathUtils.cos(a0) * mid, y + MathUtils.sin(a0) * mid * 0.6f,
+                    x + MathUtils.cos(a1) * mid, y + MathUtils.sin(a1) * mid * 0.6f, th * 0.8f);
         }
     }
 
@@ -1450,6 +1469,7 @@ public class WorldRenderer implements Disposable {
             case "bone": return BONE;
             case "whip": return WHIP;
             case "eye": return EYE_RED;
+            case "quake": case "boulder": case "burrow": return new Color(0.85f, 0.62f, 0.4f, 1f);
             default: return new Color(1f, 0.6f, 0.35f, 1f);
         }
     }
@@ -1918,6 +1938,7 @@ public class WorldRenderer implements Disposable {
     }
 
     private void drawMonster(Monster m) {
+        if (m.state == Monster.State.BURROW) return; // 땅속에 숨어 있다: 흙먼지 예고만 보인다
         String sheet = m.boss ? bossSheet(m.def.sprite, m.phase2) : null;
         if (sheet != null) {
             drawBossSheet(m, sheet);
@@ -2456,6 +2477,7 @@ public class WorldRenderer implements Disposable {
             case "warden": return PROJ_SKY;
             case "demonlord": return PROJ_DARK;
             case "fire": return new Color(1f, 0.42f, 0.12f, 1f);
+            case "golem": return new Color(0.8f, 0.62f, 0.42f, 1f);
             default: return PROJ_FIRE;
         }
     }

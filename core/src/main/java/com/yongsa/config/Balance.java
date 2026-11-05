@@ -198,6 +198,15 @@ public class Balance {
         /** 마왕 2페이즈 촉수: 용사 자리와 그 둘레에 예고 뒤 솟는다. */
         public int tentacleCount;
         public float tentacleRingTiles, tentacleRadiusTiles, tentacleWarning, tentacleMultiplier;
+        /** 골렘 2페이즈 지진 파동: 보스 둘레 고리가 안에서 밖으로 차례로 터진다. */
+        public int quakeWaves;
+        public float quakeWaveTiles, quakeWarning, quakeGap, quakeMultiplier;
+        /** 골렘 2페이즈 바위 던지기: 용사 자리에 큰 바위, 떨어지면 파편이 사방으로 튄다. */
+        public float boulderRadiusTiles, boulderWarning, boulderMultiplier;
+        public int shardCount;
+        public float shardSpeedTiles, shardMultiplier, shardLife;
+        /** 골렘 2페이즈 땅속 잠행: 땅속에서 용사를 따라오다 멈춘 자리에서 솟구친다. */
+        public float burrowFollow, burrowLock, burrowRadiusTiles, burrowMultiplier, burrowRecover;
         /** 구석 몰이 방지: 벽 가까이에서 용사가 cornerTime 초 넘게 붙어 있으면 순간이동하고 세 갈래 탄. */
         public float cornerTime, cornerCooldown;
         /** 마왕: 처음 쓰러지면 체력이 이만큼 다시 차서 2페이즈 (변신하는 동안은 무적). */
@@ -218,7 +227,7 @@ public class Balance {
         public float speedTiles;
         /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
         public String ai;
-        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes. */
+        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, quake, boulder, burrow. */
         public List<String> patterns;
         /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;
