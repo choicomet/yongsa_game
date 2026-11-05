@@ -614,7 +614,11 @@ public class GameSession {
         if (m.hp <= 0) {
             m.hp = 0;
             m.dead = true;
-            if (m.finalBoss) speech(m, "이런 풋내기에게 당하다니!");
+            if (m.finalBoss) {
+                speech(m, "이런 풋내기에게 당하다니!");
+                // 마왕이 쓰러지면 불러낸 부하도 함께 무너진다
+                for (Monster o : monsters) if (!o.boss) o.dead = true;
+            }
             state.stats.monstersKilled++;
             GameEvent died = GameEvent.fx(GameEvent.Type.MONSTER_DIED, m.x, m.y);
             died.sprite = m.def.sprite;
@@ -1492,7 +1496,7 @@ public class GameSession {
                 events.add(GameEvent.sound("roar"));
                 return true;
             case "bloodpool":
-                spawnPools(m);
+                spawnPools(m, "blood");
                 startChannel(m, p, 1, mc.spearDelay);
                 events.add(GameEvent.sound("cast"));
                 return true;
@@ -1685,6 +1689,65 @@ public class GameSession {
                 m.castKind = p;
                 m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
                 return true;
+            case "swamp":
+                // 늪: 피웅덩이와 같은 늪 셋(용사 발밑 하나 + 아무 데나 둘), 이어서 뼈창 세 줄
+                spawnPools(m, "swamp");
+                startChannel(m, p, 1, mc.spearDelay);
+                events.add(GameEvent.toast("발밑에 늪이 차오른다! 밟으면 느려진다"));
+                events.add(GameEvent.sound("cast"));
+                return true;
+            case "darkorb":
+                // 어둠 구체: 모았다가 느린 구체를 쏜다. 날아가다 터지며 사방으로 탄 (fire, updateProjectiles)
+                m.castKind = "orb";
+                m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
+                return true;
+            case "brand": {
+                // 마왕의 낙인: 용사를 따라다니다 멈추고, 잠시 뒤 그 자리에서 폭발한다
+                Hazard h = new Hazard(Hazard.Kind.CIRCLE, "brand");
+                h.x = hero.x;
+                h.y = hero.y;
+                h.radius = mc.brandRadiusTiles * T;
+                h.followT = mc.brandFollow;
+                h.delay = h.warning = mc.brandFollow + mc.brandLock;
+                h.damage = m.attack();
+                h.multiplier = mc.brandMultiplier;
+                hazards.add(h);
+                m.enter(Monster.State.RECOVER, 0.6f);
+                events.add(GameEvent.toast("마왕의 낙인이 찍혔다! 멈추는 순간 자리를 벗어나자"));
+                events.add(GameEvent.sound("cast"));
+                return true;
+            }
+            case "pillars": {
+                // 어둠 기둥: 용사 둘레 네 기둥, 기둥을 잇는 선(변 넷 + 대각선 둘)이 정해진 순서대로 터진다
+                float hs = mc.pillarHalfTiles * T, cx = hero.x, cy = hero.y;
+                float[][] c = {{cx - hs, cy - hs}, {cx + hs, cy - hs}, {cx + hs, cy + hs}, {cx - hs, cy + hs}};
+                int[][] links = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {0, 2}, {1, 3}};
+                List<Integer> order = new ArrayList<>();
+                for (int i = 0; i < links.length; i++) order.add(i);
+                java.util.Collections.shuffle(order, random);
+                float last = mc.pillarWarning + mc.pillarGap * (links.length - 1);
+                for (int k = 0; k < links.length; k++) {
+                    int[] ln = links[order.get(k)];
+                    Hazard h = new Hazard(Hazard.Kind.LINE, "darkline");
+                    h.x = c[ln[0]][0];
+                    h.y = c[ln[0]][1];
+                    h.x2 = c[ln[1]][0];
+                    h.y2 = c[ln[1]][1];
+                    h.radius = mc.pillarWidthTiles * T / 2f;
+                    h.delay = h.warning = mc.pillarWarning + mc.pillarGap * k;
+                    h.damage = m.attack();
+                    h.multiplier = mc.pillarMultiplier;
+                    hazards.add(h);
+                }
+                for (float[] pc : c) {
+                    if (map.solid(tileX(pc[0]), tileY(pc[1]))) continue;
+                    circleHazard("tentacle", pc[0], pc[1], T * 0.6f, last, m.attack(), mc.pillarMultiplier);
+                }
+                m.enter(Monster.State.RECOVER, last + 0.2f);
+                events.add(GameEvent.toast("어둠 기둥! 선이 터지는 순서를 보고 피하자"));
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
             case "eyes": {
                 // 눈알이 차례로 뜬다: 뜨는 순간 그쪽을 보고 있으면 안 된다
                 Room r = fightRoom;
@@ -1756,7 +1819,8 @@ public class GameSession {
                 if (m.stateT <= 0) m.enter(Monster.State.RECOVER, 1.1f);
                 return;
             }
-            case "bloodpool": {
+            case "bloodpool":
+            case "swamp": {
                 if (m.channelT > 0) return;
                 if (m.channelLeft > 0) {
                     m.channelLeft = 0;
@@ -1765,7 +1829,7 @@ public class GameSession {
                     float spread = (float) Math.toRadians(mc.spearSpreadDegrees);
                     for (int i = 0; i < mc.spearCount; i++) {
                         float a = base + spread * (i - (mc.spearCount - 1) / 2f);
-                        Hazard h = new Hazard(Hazard.Kind.LINE, "spear");
+                        Hazard h = new Hazard(Hazard.Kind.LINE, "swamp".equals(m.channelKind) ? "bonespear" : "spear");
                         h.x = m.x;
                         h.y = m.y;
                         h.x2 = m.x + (float) Math.cos(a) * mc.spearLengthTiles * T;
@@ -1843,7 +1907,7 @@ public class GameSession {
     }
 
     /** 피웅덩이: 용사 발밑 하나와 방 안 아무 데나 몇 개. */
-    private void spawnPools(Monster m) {
+    private void spawnPools(Monster m, String style) {
         Balance.MonsterCfg mc = balance.monster;
         Room r = fightRoom;
         for (int i = 0; i < mc.poolCount; i++) {
@@ -1858,7 +1922,7 @@ public class GameSession {
                     break;
                 }
             }
-            Hazard h = new Hazard(Hazard.Kind.POOL, "blood");
+            Hazard h = new Hazard(Hazard.Kind.POOL, style);
             h.x = px;
             h.y = py;
             h.startRadius = h.radius = mc.poolStartRadiusTiles * T;
@@ -2100,6 +2164,13 @@ public class GameSession {
                 p.life = mc.homingLife;
                 p.radius *= 1.2f;
             }
+        } else if ("orb".equals(kind)) {
+            // 어둠 구체: 크고 느린 구체 하나. orbFuse 초 뒤나 벽에 닿으면 터진다
+            shoot(m, m.x, sy, base, mc.orbSpeedTiles * T, dmg, m.def.sprite);
+            Projectile p = projectiles.get(projectiles.size() - 1);
+            p.radius *= mc.orbRadiusScale;
+            p.life = mc.orbFuse;
+            p.burst = mc.orbBurst;
         } else if ("volley".equals(kind) || "tri".equals(kind)) {
             int n = "tri".equals(kind) ? 3 : mc.volleyCount;
             float spread = (float) Math.toRadians("tri".equals(kind) ? 30 : mc.volleySpreadDegrees);
@@ -2124,6 +2195,7 @@ public class GameSession {
     }
 
     private void updateProjectiles(float dt) {
+        List<Projectile> bursts = new ArrayList<>();
         for (Projectile p : projectiles) {
             if (p.dead) continue;
             p.age += dt;
@@ -2133,6 +2205,7 @@ public class GameSession {
             p.y += p.vy * dt;
             if (p.life <= 0 || map.solid(tileX(p.x), tileY(p.y - 6))) {
                 p.dead = true;
+                if (p.burst > 0) burst(p, p.x - p.vx * dt, p.y - p.vy * dt, bursts);
                 continue;
             }
             float hx = hero.x - p.x, hy = hero.centerY() - p.y;
@@ -2142,9 +2215,33 @@ public class GameSession {
                 p.dead = true;
                 hitHero(p.damage, 1f, p.x - p.vx, p.y - p.vy);
                 if (justDied) return;
+                if (p.burst > 0) burst(p, p.x, p.y, bursts);
             }
         }
         projectiles.removeIf(p -> p.dead);
+        projectiles.addAll(bursts);
+    }
+
+    /** 어둠 구체가 터진다: 그 자리에서 작은 탄이 사방으로 퍼진다. */
+    private void burst(Projectile orb, float x, float y, List<Projectile> out) {
+        Balance.MonsterCfg mc = balance.monster;
+        float speed = mc.projectileSpeedTiles * T * 0.8f;
+        int dmg = Math.max(1, Math.round(orb.damage * mc.orbShardMultiplier));
+        float off = random.nextFloat() * 6.283f;
+        for (int i = 0; i < orb.burst; i++) {
+            float a = off + 6.283f * i / orb.burst;
+            Projectile p = new Projectile();
+            p.x = x;
+            p.y = y;
+            p.vx = (float) Math.cos(a) * speed;
+            p.vy = (float) Math.sin(a) * speed;
+            p.radius = mc.projectileRadius * 1.2f;
+            p.life = 3f;
+            p.damage = dmg;
+            p.source = orb.source;
+            out.add(p);
+        }
+        events.add(GameEvent.sound("cast"));
     }
 
     /** 유도탄: 속도는 그대로, 방향만 용사 쪽으로 조금씩 튼다. */
