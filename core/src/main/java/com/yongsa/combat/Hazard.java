@@ -10,7 +10,7 @@ public class Hazard {
     public enum Kind { CIRCLE, LINE, POOL, EYE }
 
     public final Kind kind;
-    /** 그림 구분: rock, bolt, tentacle, spear, blood, bone, whip, eye. */
+    /** 그림 구분: rock, bolt, tentacle, spear, blood, bone, whip, eye, quake, boulder, burrow, swamp, bonespear, brand, darkline. */
     public final String style;
     public float x, y;
     /** LINE 의 끝점. */
@@ -18,6 +18,10 @@ public class Hazard {
     /** CIRCLE·LINE 의 범위 (LINE 은 두께의 절반). POOL 은 지금 반지름. */
     public float radius;
     public float startRadius, maxRadius, grow;
+    /** CIRCLE: 0보다 크면 가운데가 빈 고리 (지진 파동). 이 반지름 안쪽은 맞지 않는다. */
+    public float innerRadius;
+    /** 남은 동안 용사를 따라다니다가, 다 되면 그 자리에 멈춘다 (골렘 땅속 잠행, 마왕의 낙인). */
+    public float followT;
     /** 터지기까지 남은 시간, 예고 전체 시간. */
     public float delay, warning;
     /** POOL 이 남아 있는 시간. */
@@ -41,7 +45,12 @@ public class Hazard {
     public boolean covers(float px, float py, float extra) {
         if (kind != Kind.LINE) {
             float dx = px - x, dy = py - y, r = radius + extra;
-            return dx * dx + dy * dy <= r * r;
+            float d2 = dx * dx + dy * dy;
+            if (innerRadius > 0) {
+                float in = Math.max(0f, innerRadius - extra);
+                if (d2 < in * in) return false;
+            }
+            return d2 <= r * r;
         }
         float vx = x2 - x, vy = y2 - y;
         float len2 = vx * vx + vy * vy;

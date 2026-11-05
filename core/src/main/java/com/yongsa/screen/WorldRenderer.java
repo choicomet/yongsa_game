@@ -228,7 +228,8 @@ public class WorldRenderer implements Disposable {
         float jx = m.state == Monster.State.STUNNED ? MathUtils.sin(time * 14f) * 1.5f
                 : m.state == Monster.State.CHARGE_TELEGRAPH ? MathUtils.sin(time * 60f) * 2f * m.progress() : 0;
         boolean faceRight = m.dirX > 0.2f;
-        float x0 = m.x + jx - size / 2f, y0 = m.y - (BOSS_CELL - BOSS_FOOT) * k;
+        float lift = m.state == Monster.State.LEAP ? MathUtils.sin(m.progress() * MathUtils.PI) * 70f : 0f; // 뒤로 도약
+        float x0 = m.x + jx - size / 2f, y0 = m.y - (BOSS_CELL - BOSS_FOOT) * k + lift;
         if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
         else if (m.finalBoss && m.phase2 && sheet.endsWith("boss_lich.png")) batch.setColor(0.95f, 0.62f + 0.08f * MathUtils.sin(time * 6f), 0.95f, appear); // 시트가 없는 경우만 임시 색상을 쓴다.
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
@@ -761,6 +762,13 @@ public class WorldRenderer implements Disposable {
         float bs = g.balance.monster.blindSeconds;
         float blind = g.blindT > 0 ? Math.min(1f, Math.min(g.blindT / 0.5f, (bs - g.blindT) / 0.3f)) : 0f;
         float amb = 1f - 0.92f * blind;
+        // 마왕 최후의 발악: 방 전체가 어두워진다
+        for (Monster lm : g.monsters) {
+            if (!lm.dead && lm.lastStand) {
+                amb *= 0.6f;
+                break;
+            }
+        }
         lighting.begin(ambient.r * amb, ambient.g * amb, ambient.b * amb);
         HeroActor h = g.hero;
         lighting.add(h.x, h.y + 14, 250 * (1f - 0.55f * blind), 1f, 0.92f, 0.8f, 0.6f);
@@ -768,6 +776,11 @@ public class WorldRenderer implements Disposable {
             for (Monster m : g.monsters) {
                 if (m.dead || !m.boss) continue;
                 lighting.add(m.x, m.y + 70, 70, 1f, 0.15f, 0.2f, 0.9f * blind);
+            }
+            // 캄캄한 동안 마법탄도 붉게 빛난다
+            for (Projectile p : g.projectiles) {
+                if (!inView(p.x, p.y)) continue;
+                lighting.add(p.x, p.y, 40 + p.radius * 3f, 1f, 0.15f, 0.2f, 0.8f * blind);
             }
         }
         if (h.swingT > 0) {
@@ -1336,9 +1349,12 @@ public class WorldRenderer implements Disposable {
                 case POOL: {
                     float r = h.radius;
                     float fade = Math.min(1f, h.life / 0.8f) * Math.min(1f, h.age / 0.35f);
-                    shapes.setColor(0.25f, 0.02f, 0.05f, 0.75f * fade);
+                    boolean swamp = "swamp".equals(h.style); // 마왕의 늪은 검푸른 초록
+                    if (swamp) shapes.setColor(0.05f, 0.18f, 0.08f, 0.75f * fade);
+                    else shapes.setColor(0.25f, 0.02f, 0.05f, 0.75f * fade);
                     shapes.ellipse(h.x - r, h.y - r * 0.6f, r * 2, r * 1.2f, 40);
-                    shapes.setColor(0.6f, 0.05f, 0.1f, (0.45f + 0.1f * MathUtils.sin(time * 4f + h.x)) * fade);
+                    if (swamp) shapes.setColor(0.25f, 0.5f, 0.15f, (0.45f + 0.1f * MathUtils.sin(time * 4f + h.x)) * fade);
+                    else shapes.setColor(0.6f, 0.05f, 0.1f, (0.45f + 0.1f * MathUtils.sin(time * 4f + h.x)) * fade);
                     shapes.ellipse(h.x - r * 0.8f, h.y - r * 0.48f, r * 1.6f, r * 0.96f, 40);
                     break;
                 }
@@ -1365,12 +1381,31 @@ public class WorldRenderer implements Disposable {
                 }
                 default: {
                     float r = h.radius;
+                    if (h.innerRadius > 0) {
+                        // 가운데가 빈 고리 (지진 파동)
+                        float mid = (r + h.innerRadius) / 2f, th = r - h.innerRadius;
+                        ringBand(h.x, h.y, mid, th, c.r * 0.9f, c.g * 0.35f, c.b * 0.35f, blink);
+                        ringBand(h.x, h.y, mid, th * p, c.r, c.g * 0.6f, c.b * 0.6f, 0.32f);
+                        break;
+                    }
                     shapes.setColor(c.r * 0.9f, c.g * 0.35f, c.b * 0.35f, blink);
                     shapes.ellipse(h.x - r, h.y - r * 0.6f, r * 2, r * 1.2f, 40);
                     shapes.setColor(c.r, c.g * 0.6f, c.b * 0.6f, 0.32f);
                     shapes.ellipse(h.x - r * p, h.y - r * 0.6f * p, r * 2 * p, r * 1.2f * p, 40);
                 }
             }
+        }
+    }
+
+    /** 납작한 고리 띠: 지름 mid, 두께 th. */
+    private void ringBand(float x, float y, float mid, float th, float cr, float cg, float cb, float ca) {
+        if (th <= 0.5f) return;
+        shapes.setColor(cr, cg, cb, ca);
+        int n = 40;
+        for (int i = 0; i < n; i++) {
+            float a0 = MathUtils.PI2 * i / n, a1 = MathUtils.PI2 * (i + 1) / n;
+            shapes.rectLine(x + MathUtils.cos(a0) * mid, y + MathUtils.sin(a0) * mid * 0.6f,
+                    x + MathUtils.cos(a1) * mid, y + MathUtils.sin(a1) * mid * 0.6f, th * 0.8f);
         }
     }
 
@@ -1400,12 +1435,26 @@ public class WorldRenderer implements Disposable {
                 particles.burst(e.x, e.y + 8, 10, new Color(0.6f, 1f, 0.5f, 1f), 160, 0.4f, 3, true);
                 ring(e.x, e.y, e.size * 0.3f, e.size, 0.3f, BONE);
                 break;
+            case "screech":
+                // 박쥐 초음파: 퍼지는 고리 두 겹
+                ring(e.x, e.y, e.size * 0.2f, e.size, 0.3f, c);
+                ring(e.x, e.y, e.size * 0.1f, e.size * 0.7f, 0.25f, c);
+                break;
+            case "flame":
+                // 마족병 불기둥
+                particles.burst(e.x, e.y + 10, 18, c, 220, 0.5f, 3, true);
+                ring(e.x, e.y, e.size * 0.3f, e.size, 0.35f, c);
+                flash(e.x, e.y + 20, e.size * 2.5f, c, 0.3f);
+                break;
             case "eye":
                 eyeFlashes.add(new float[]{e.x, e.y, e.size, 0f});
                 flash(e.x, e.y, 220, EYE_RED, 0.35f);
                 ring(e.x, e.y, 8, 120, 0.4f, EYE_RED);
                 break;
             case "whip":
+            case "cage":
+            case "bonespear":
+            case "darkline":
             case "spear": {
                 float dx = e.dirX - e.x, dy = e.dirY - e.y;
                 for (int i = 0; i <= 10; i++) {
@@ -1425,12 +1474,17 @@ public class WorldRenderer implements Disposable {
 
     private static Color hazardColor(String style) {
         switch (style) {
-            case "bolt": return PROJ_SKY;
-            case "tentacle": return PROJ_DARK;
-            case "spear": case "blood": return PROJ_BLOOD;
-            case "bone": return BONE;
+            case "bolt": case "cage": return PROJ_SKY;
+            case "tentacle": case "maw": return PROJ_DARK;
+            case "spear": case "blood": case "spin": case "leap": return PROJ_BLOOD;
+            case "bone": case "bonespear": return BONE;
+            case "swamp": return new Color(0.35f, 0.75f, 0.3f, 1f);
+            case "brand": case "darkline": return PROJ_DARK;
             case "whip": return WHIP;
             case "eye": return EYE_RED;
+            case "quake": case "boulder": case "burrow": return new Color(0.85f, 0.62f, 0.4f, 1f);
+            case "screech": return new Color(0.75f, 0.5f, 1f, 1f);
+            case "flame": return PROJ_FIRE;
             default: return new Color(1f, 0.6f, 0.35f, 1f);
         }
     }
@@ -1883,6 +1937,7 @@ public class WorldRenderer implements Disposable {
     }
 
     private void drawMonster(Monster m) {
+        if (m.state == Monster.State.BURROW) return; // 땅속에 숨어 있다: 흙먼지 예고만 보인다
         String sheet = m.boss ? bossSheet(m.def.sprite, m.phase2) : null;
         if (sheet != null) {
             drawBossSheet(m, sheet);
@@ -1913,16 +1968,22 @@ public class WorldRenderer implements Disposable {
             jx = MathUtils.sin(time * 50f) * 3f * (1f - m.progress());
         } else if (m.state == Monster.State.CHANNEL) {
             if ("firespin".equals(m.channelKind)) jx = MathUtils.sin(time * 30f) * 1.5f;
+        } else if (m.state == Monster.State.DOWNED) {
+            // 무너진 뼈 무더기: 납작하게, 일어날 때가 되면 들썩인다
+            sy *= 0.35f + 0.15f * m.progress() * m.progress();
+            jx = MathUtils.sin(time * 30f) * 1.2f * m.progress();
         }
         float dw = w * sx * appear, dh = hgt * sy * appear;
         boolean flip = m.dirX < -0.2f;
         float mx = m.x + jx;
         if (m.state == Monster.State.PHASE_SHIFT) batch.setColor(0.7f + 0.3f * MathUtils.sin(time * 20f), 0.4f, 1f, appear);
+        else if (m.state == Monster.State.DOWNED) batch.setColor(0.6f, 0.6f, 0.65f, appear);
         else if (m.phase2) batch.setColor(0.8f, 0.6f + 0.08f * MathUtils.sin(time * 6f), 1f, appear);
         else if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
-        actorInk.draw(batch, r, mx + (flip ? dw/2 : -dw/2), m.y-2+bob, flip ? -dw : dw, dh);
+        float lift = m.state == Monster.State.LEAP ? MathUtils.sin(m.progress() * MathUtils.PI) * 70f : 0f; // 뒤로 도약
+        actorInk.draw(batch, r, mx + (flip ? dw/2 : -dw/2), m.y-2+bob+lift, flip ? -dw : dw, dh);
         if (m.flash > 0) {
             // 맞은 순간 하얗게 번쩍인다
             Particles.additive(batch);
@@ -2078,16 +2139,25 @@ public class WorldRenderer implements Disposable {
         // 방패, 긴 패턴의 기운
         for (Monster m : g.monsters) {
             if (m.dead) continue;
-            if (m.shield > 0) {
-                float fr = m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
+            if (m.shield > 0 || m.barrier) {
+                float fr = m.barrier ? 1f : m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
                 float r = m.hurtRadius * 2.6f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite));
                 float pulse = 0.8f + 0.2f * MathUtils.sin(time * 4f);
                 batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, (0.18f + 0.25f * fr) * pulse);
                 batch.draw(art.glow, m.x - r, m.y - r * 0.2f, r * 2, r * 1.9f);
             }
+            if (m.guardActive()) {
+                // 해골병 방패: 바라보는 쪽에 막이 보인다
+                float gr = m.hurtRadius * 1.6f * mobScale(m.def.sprite);
+                float gx = m.x + m.dirX * m.hurtRadius * 1.2f, gy = m.centerY() + m.dirY * m.hurtRadius * 0.8f;
+                batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, 0.45f);
+                batch.draw(art.glow, gx - gr, gy - gr, gr * 2, gr * 2);
+            }
             if (m.state == Monster.State.CHANNEL) {
                 Color c = "lightning".equals(m.channelKind) ? PROJ_SKY : "firespin".equals(m.channelKind) ? PROJ_FIRE
-                        : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD : new Color(1f, 0.6f, 0.35f, 1f);
+                        : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD
+                        : "swamp".equals(m.channelKind) ? new Color(0.35f, 0.75f, 0.3f, 1f)
+                        : "devour".equals(m.channelKind) ? PROJ_DARK : new Color(1f, 0.6f, 0.35f, 1f);
                 float r = m.hurtRadius * 2.4f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite)) * (0.9f + 0.1f * MathUtils.sin(time * 10f));
                 batch.setColor(c.r, c.g, c.b, 0.4f);
                 batch.draw(art.glow, m.x - r, m.centerY() - r, r * 2, r * 2);
@@ -2434,6 +2504,8 @@ public class WorldRenderer implements Disposable {
             case "warden": return PROJ_SKY;
             case "demonlord": return PROJ_DARK;
             case "fire": return new Color(1f, 0.42f, 0.12f, 1f);
+            case "golem": return new Color(0.8f, 0.62f, 0.42f, 1f);
+            case "bone": return BONE;
             default: return PROJ_FIRE;
         }
     }

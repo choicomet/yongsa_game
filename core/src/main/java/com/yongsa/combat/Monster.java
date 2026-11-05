@@ -20,7 +20,13 @@ public class Monster extends Actor {
         /** 보스: 제자리에서 낙석·낙뢰·회전 화염·피웅덩이 같은 긴 패턴을 이어 간다. */
         CHANNEL,
         /** 마왕: 1페이즈에서 쓰러져 2페이즈로 변하는 중. 무적. */
-        PHASE_SHIFT
+        PHASE_SHIFT,
+        /** 골렘: 땅속에 숨어 용사를 따라간다. 보이지 않고 맞지 않는다. */
+        BURROW,
+        /** 혈월의 기사: 구석에서 뒤로 크게 도약하는 중. 공중이라 맞지 않는다. */
+        LEAP,
+        /** 해골병: 쓰러져 뼈 무더기가 된 채 다시 일어나려는 중. 이때 때리면 완전히 부서진다. */
+        DOWNED
     }
 
     public final MonsterDef def;
@@ -64,6 +70,30 @@ public class Monster extends Actor {
     public float cornerT;
     /** 공격력 배율 (보스를 잡은 던전의 잡몹, 마왕 2페이즈). */
     public float attackMul = 1f;
+    /** 땅속 잠행: 솟구칠 자리 (용사를 따라다니는 흙먼지). */
+    public Hazard burrowMark;
+    /** 뒤로 도약: 뛰어오른 자리와 착지할 자리. */
+    public float leapX0, leapY0, leapX1, leapY1;
+    /** 결계 (수문장): 소환한 부하가 살아 있는 동안 맞지 않는다. */
+    public boolean barrier;
+    /** 긴 패턴에 딸린 바닥 표시 (마왕 삼키기의 아가리). */
+    public Hazard channelMark;
+    /** 마왕 2페이즈 최후의 발악 (체력 20% 아래). */
+    public boolean lastStand;
+    /** 해골병 방패: 지금 들고 있나, 들기·내리기가 바뀔 때까지 남은 시간. */
+    public boolean guarding;
+    public float guardT;
+    /** 해골병 뼈 던지기 쿨타임. */
+    public float throwCd;
+    /** 해골병: 이미 한 번 다시 일어났다. */
+    public boolean revived;
+
+    /** 방패를 들고 맞설 수 있는 상태 (공격 중에는 내린다). */
+    public boolean guardActive() {
+        return guarding && state == State.CHASE;
+    }
+    /** 마족병이 지금까지 쏜 불덩이 수 (몇 번째마다 세 갈래). */
+    public int castCount;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
@@ -116,7 +146,7 @@ public class Monster extends Actor {
 
     /** 변신 중이라 맞지 않는다. */
     public boolean invulnerable() {
-        return state == State.PHASE_SHIFT || state == State.SPAWN;
+        return state == State.PHASE_SHIFT || state == State.SPAWN || state == State.BURROW || state == State.LEAP;
     }
 
     /** 머리 위에 ‘!’ 를 띄울 상태. */
