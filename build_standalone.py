@@ -40,8 +40,6 @@ def build():
     embed = '<script>window.REVIEW_EMBEDDED_ASSETS=' + json.dumps(assets, separators=(',', ':')) + ';\nfunction reviewAsset(path){return window.REVIEW_EMBEDDED_ASSETS[path]||path;}\n</script>\n'
     # All code is inline; image/mask data URLs are the only permitted resources.
     html = html.replace('<script>', embed + '<script>', 1)
-    html = html.replace('설치·인터넷 연결 없이 검토하는 원화 73장 · 게임에는 바로 적용되지 않아요.',
-                        '그림 내장 단일 파일 · 서버 없이 사용 · 검토 결과는 게임에 바로 적용되지 않아요.')
     # A modal keeps enlarged data images usable without blocked data-URL navigation.
     html = html.replace('</html>', '''<script>
 const originalDialog=document.createElement('dialog');

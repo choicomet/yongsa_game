@@ -78,11 +78,16 @@ if (portableMode) {
         $('saveStatus').textContent = '검토안 JSON 다운로드 요청됨';
         flash('다운로드 폴더의 yongsa-mask-feedback.json을 보관해주세요. 다른 컴퓨터에서는 “파일 불러오기”로 이어갈 수 있어요.');
     };
-    document.querySelector('header p').textContent = '설치·인터넷 연결 없이 검토하는 원화 73장 · 게임에는 바로 적용되지 않아요.';
+    const fileMode = location.protocol === 'file:';
+    document.title = fileMode ? '지도 검토 · 파일 직접 실행' : '지도 검토 · 웹주소에서 열림';
+    const modeLabel=document.querySelector('header p');
+    modeLabel.id='executionMode';
+    modeLabel.textContent=fileMode ? '파일 직접 실행 · 서버 사용 안 함 · 그림 73장 내장' : '웹주소에서 열림: '+location.origin+' · 서버 없이 쓰려면 폴더의 실행 바로가기를 여세요.';
+    modeLabel.style.color=fileMode?'#5ee2a8':'#edc87a';
     $('flash').nextElementSibling.textContent = '마치면 “검토안 파일 저장”을 눌러 JSON을 보관하세요. 다른 컴퓨터에서 “파일 불러오기”로 이어갈 수 있어요. 브라우저 자동 보관에만 의존하지 마세요.';
 }
 
-// Both the local server edition and file-open edition share import/export.
+// File-open only: no HTTP API or server-backed save path exists.
 init().catch(error => {
     flash(error.message);
     $('loading').textContent = '불러오기에 실패했어요. 새로고침해주세요.';
