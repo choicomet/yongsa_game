@@ -10,7 +10,7 @@ public class Hazard {
     public enum Kind { CIRCLE, LINE, POOL, EYE }
 
     public final Kind kind;
-    /** 그림 구분: rock, bolt, tentacle, spear, blood, bone, whip, eye. */
+    /** 그림 구분: rock, bolt, tentacle, spear, blood, bone, whip, eye, swamp, bonespear, brand, darkline. */
     public final String style;
     public float x, y;
     /** LINE 의 끝점. */
@@ -18,6 +18,8 @@ public class Hazard {
     /** CIRCLE·LINE 의 범위 (LINE 은 두께의 절반). POOL 은 지금 반지름. */
     public float radius;
     public float startRadius, maxRadius, grow;
+    /** 남은 동안 용사를 따라다니다가, 다 되면 그 자리에 멈춘다 (마왕의 낙인). */
+    public float followT;
     /** 터지기까지 남은 시간, 예고 전체 시간. */
     public float delay, warning;
     /** POOL 이 남아 있는 시간. */

@@ -9,5 +9,7 @@ public class Projectile {
     /** 그림 색 구분용: 쏜 몬스터의 그림 이름. */
     public String source;
     public boolean dead;
+    /** 0보다 크면 사라질 때 그 자리에서 이만큼 사방으로 작은 탄이 퍼진다 (어둠 구체). */
+    public int burst;
     public float age;
 }
