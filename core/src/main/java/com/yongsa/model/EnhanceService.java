@@ -11,29 +11,29 @@ import java.util.Random;
 /**
  * 강화 한 번을 판정한다 (FR-대장간-05~10, 명세서 5.2).
  * <p>
- * 2026-10-27 김선우 결정: 결과는 성공(+1)·대성공(+2)·유지·하락(-1)·파괴 다섯 가지.
+ * 결과는 성공(+1)·유지·하락(-1)·파괴 네 가지 (2026-11-07 플레이 피드백으로 대성공을 없앴다).
  * 기본 확률은 balance.json 의 enhance.odds 표 그대로이고, 강화 숙련도가 오를수록 하락·파괴가 줄어
- * 그만큼 유지로 옮겨 간다(성공 확률은 그대로). 숙련도 18~20 에서는 유지 몫 일부가 대성공으로 간다.
+ * 그만큼 유지로 옮겨 간다. 숙련도 18~20 에서는 유지 몫 일부가 성공으로 간다.
+ * 숙련도 경험치는 성공·유지·하락·파괴 모두에서 쌓인다.
  * 숙련도는 검마다가 아니라 용사 하나의 실력이라 모든 검이 함께 쓴다 ({@link GameState#masteryLevel}).
  */
 public class EnhanceService {
 
-    public enum Outcome { SUCCESS, GREAT, KEEP, DOWN, DESTROY }
+    public enum Outcome { SUCCESS, KEEP, DOWN, DESTROY }
 
-    /** 한 번 시도 기준 확률(%), 다섯 값의 합은 100. */
+    /** 한 번 시도 기준 확률(%), 네 값의 합은 100. */
     public static final class Odds {
-        public final double success, great, keep, down, destroy;
+        public final double success, keep, down, destroy;
 
-        Odds(double success, double great, double keep, double down, double destroy) {
+        Odds(double success, double keep, double down, double destroy) {
             this.success = success;
-            this.great = great;
             this.keep = keep;
             this.down = down;
             this.destroy = destroy;
         }
 
         public double total() {
-            return success + great + keep + down + destroy;
+            return success + keep + down + destroy;
         }
     }
 
@@ -100,7 +100,7 @@ public class EnhanceService {
 
     /**
      * 숙련도 masteryLevel 에서의 확률. 하락·파괴는 레벨에 비례해 줄어 downZeroLevel·destroyZeroLevel 에서 0이 되고,
-     * 줄어든 만큼은 유지가 된다. greatBonus 레벨부터는 유지 몫에서 대성공으로 옮긴다.
+     * 줄어든 만큼은 유지가 된다. successBonus 레벨부터는 유지 몫에서 성공으로 옮긴다.
      */
     public Odds odds(int level, int masteryLevel) {
         OddsRow r = row(level);
@@ -109,18 +109,16 @@ public class EnhanceService {
         double down = r.down * Math.max(0, 1 - (double) lv / m.downZeroLevel);
         double destroy = r.destroy * Math.max(0, 1 - (double) lv / m.destroyZeroLevel);
         double keep = r.keep + (r.down - down) + (r.destroy - destroy);
-        double great = r.great;
-        double bonus = Math.min(greatBonus(lv), keep);
-        great += bonus;
+        double bonus = Math.min(successBonus(lv), keep);
         keep -= bonus;
-        return new Odds(r.success, great, keep, down, destroy);
+        return new Odds(r.success + bonus, keep, down, destroy);
     }
 
-    /** 이 숙련도 레벨에서 대성공에 더하는 %p. */
-    public double greatBonus(int masteryLevel) {
+    /** 이 숙련도 레벨에서 성공에 더하는 %p (유지에서 옮겨 온다). */
+    public double successBonus(int masteryLevel) {
         double best = 0;
-        if (mastery().greatBonus == null) return 0;
-        for (Balance.GreatBonus g : mastery().greatBonus) if (masteryLevel >= g.level) best = Math.max(best, g.percent);
+        if (mastery().successBonus == null) return 0;
+        for (Balance.SuccessBonus g : mastery().successBonus) if (masteryLevel >= g.level) best = Math.max(best, g.percent);
         return best;
     }
 
@@ -182,7 +180,6 @@ public class EnhanceService {
         int base;
         switch (o) {
             case SUCCESS: base = m.expSuccess; break;
-            case GREAT: base = m.expGreat; break;
             case KEEP: base = m.expKeep; break;
             case DOWN: base = m.expDown; break;
             default: base = m.expDestroy;
@@ -235,9 +232,8 @@ public class EnhanceService {
         double r = rnd.nextDouble() * 100.0;
         Outcome outcome;
         if (r < o.success) outcome = Outcome.SUCCESS;
-        else if (r < o.success + o.great) outcome = Outcome.GREAT;
-        else if (r < o.success + o.great + o.keep) outcome = Outcome.KEEP;
-        else if (r < o.success + o.great + o.keep + o.down) outcome = Outcome.DOWN;
+        else if (r < o.success + o.keep) outcome = Outcome.KEEP;
+        else if (r < o.success + o.keep + o.down) outcome = Outcome.DOWN;
         else outcome = Outcome.DESTROY;
 
         int mBefore = s.masteryLevel;
@@ -246,22 +242,19 @@ public class EnhanceService {
 
         Result result;
         switch (outcome) {
-            case SUCCESS:
-            case GREAT: {
-                // 대성공은 +2, 다만 최대 단계를 넘지 않는다 (+9 에서는 +1)
-                int step = outcome == Outcome.GREAT ? 2 : 1;
-                w.level = Math.min(b.enhance.maxLevel, w.level + step);
+            case SUCCESS: {
+                w.level = Math.min(b.enhance.maxLevel, w.level + 1);
                 boolean awakenedNow = false;
                 if (isMax(w) && !w.awakened) {
                     w.awakened = true;
                     awakenedNow = true;
                 }
                 s.stats.enhanceSuccess++;
-                if (outcome == Outcome.GREAT) s.stats.enhanceGreat++;
                 result = new Result(outcome, before, w.level, awakenedNow, 0, null, gained, mBefore, s.masteryLevel);
                 break;
             }
             case KEEP:
+                s.stats.enhanceKeep++;
                 result = new Result(outcome, before, before, false, 0, null, gained, mBefore, s.masteryLevel);
                 break;
             case DOWN:
@@ -294,9 +287,6 @@ public class EnhanceService {
         switch (r.outcome) {
             case SUCCESS:
                 line = name + " +" + r.levelBefore + " → +" + r.levelAfter + " 성공" + (r.awakened ? " (각성!)" : "");
-                break;
-            case GREAT:
-                line = name + " +" + r.levelBefore + " → +" + r.levelAfter + " 대성공" + (r.awakened ? " (각성!)" : "");
                 break;
             case KEEP:
                 line = name + " +" + r.levelBefore + " 유지";

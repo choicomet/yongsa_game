@@ -134,28 +134,29 @@ public class Balance {
         public float expMultiplier = 1f;
     }
 
-    /** 한 단계의 확률 (%): 성공 +1, 대성공 +2, 유지, 하락 -1, 파괴. */
+    /** 한 단계의 확률 (%): 성공 +1, 유지, 하락 -1, 파괴. (대성공은 2026-11-07 플레이 피드백으로 없앴다) */
     public static class OddsRow {
         public int level;
-        public double success, great, keep, down, destroy;
+        public double success, keep, down, destroy;
     }
 
     /**
      * 강화 숙련도 (2026-10-27): 모든 검이 함께 쓰는 용사의 대장장이 실력.
-     * 레벨이 오를수록 하락·파괴 확률이 줄고(줄어든 만큼 유지), 마지막에는 대성공이 조금 늘어난다.
+     * 레벨이 오를수록 하락·파괴 확률이 줄고(줄어든 만큼 유지), 마지막에는 성공이 조금 늘어난다.
      */
     public static class MasteryCfg {
         public int maxLevel;
         /** 이 레벨에서 하락·파괴 확률이 0이 된다 (그 전까지는 레벨에 비례해 줄어든다). */
         public int downZeroLevel, destroyZeroLevel;
-        public List<GreatBonus> greatBonus;
-        /** 결과마다 얻는 기본 경험치 (구간 배율을 곱한다). */
-        public int expSuccess, expGreat, expKeep, expDown, expDestroy;
+        /** 이 레벨부터 유지 몫에서 성공으로 옮기는 %p. */
+        public List<SuccessBonus> successBonus;
+        /** 결과마다 얻는 기본 경험치 (구간 배율을 곱한다). 유지에도 쌓인다. */
+        public int expSuccess, expKeep, expDown, expDestroy;
         /** 다음 레벨까지 필요 경험치 = needBase + needLinear×Lv + needSquare×Lv² (반올림). */
         public float needBase, needLinear, needSquare;
     }
 
-    public static class GreatBonus {
+    public static class SuccessBonus {
         public int level;
         public double percent;
     }

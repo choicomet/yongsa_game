@@ -36,9 +36,7 @@ public final class ForgeScene extends Actor {
         batch.draw(art.get("shadow"), x + 222 * scale, y + 131 * scale, 84 * scale, 18 * scale);
 
         boolean destroyed = motion.outcome() == Outcome.DESTROY;
-        boolean great = motion.outcome() == Outcome.GREAT;
-        float lift = motion.outcome() == Outcome.SUCCESS ? 10 * scale
-                : great ? (16 + MathUtils.sin(time * 6) * 3) * scale : 0;
+        float lift = motion.outcome() == Outcome.SUCCESS ? 10 * scale : 0;
         if (!destroyed) {
             TextureRegion sword = art.worldSword(weaponId, weaponAwakened || motion.awakened());
             batch.draw(sword, baseX + 274 * scale, baseY + (134 * scale) + lift,
@@ -58,11 +56,11 @@ public final class ForgeScene extends Actor {
             sparks(batch, baseX + 334 * scale, baseY + 184 * scale, (beat - 0.7f) / 0.3f, scale, Ui.ORANGE, parentAlpha);
         if (motion.phase() == ForgeMotion.Phase.RESULT) {
             Color color = motion.outcome() == Outcome.SUCCESS ? (motion.awakened() ? Ui.GOLD : Ui.BLUE)
-                    : great ? Ui.GOLD : destroyed ? Ui.RED : Ui.GREY;
+                    : destroyed ? Ui.RED : Ui.GREY;
             if (motion.outcome() != Outcome.KEEP)
                 sparks(batch, baseX + 334 * scale, baseY + 190 * scale, motion.progress(), scale, color, parentAlpha);
-            if (great) {
-                // 대성공: 금빛 불꽃이 두 겹 더 크게 튀고, 검 둘레에 빛 고리가 퍼진다
+            if (motion.awakened()) {
+                // 각성: 금빛 불꽃이 두 겹 더 크게 튀고, 검 둘레에 빛 고리가 퍼진다 (대성공 연출을 각성에 옮겼다)
                 sparks(batch, baseX + 334 * scale, baseY + 190 * scale, Math.min(1, motion.progress() * 1.4f), scale * 1.8f, Ui.GOLD, parentAlpha);
                 ring(batch, baseX + 330 * scale, baseY + 190 * scale + lift, 20 + 70 * motion.progress(), scale, parentAlpha * (1 - motion.progress()));
             }

@@ -39,7 +39,7 @@ public class EndingScreen extends MenuScreen {
             Table t = new Table();
             row(t, "플레이 시간", (int) (s.playSeconds / 60) + "분 " + (int) (s.playSeconds % 60) + "초");
             row(t, "강화 시도 / 성공", s.enhanceTries + "번 / " + s.enhanceSuccess + "번");
-            row(t, "대성공 / 하락", s.enhanceGreat + "번 / " + s.enhanceDown + "번");
+            row(t, "유지 / 하락", s.enhanceKeep + "번 / " + s.enhanceDown + "번");
             row(t, "파괴된 무기", s.destroyed + "자루");
             row(t, "만든 무기", s.crafted + "자루");
             row(t, "캔 광물", s.oreMined + "개");

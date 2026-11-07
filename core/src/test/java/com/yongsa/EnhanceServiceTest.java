@@ -28,19 +28,19 @@ class EnhanceServiceTest {
 
     @Test
     void oddsMatchSpecTable() {
-        // 2026-10-27 김선우 결정: 성공·대성공(3%)·유지·하락·파괴. 숙련도 0 기준
+        // 2026-11-07 플레이 피드백: 대성공 없음, 성공 올림, 파괴 3~5%. 숙련도 0 기준
         Odds o = es.odds(6);
-        assertEquals(50, o.success, 1e-9);
-        assertEquals(3, o.great, 1e-9);
-        assertEquals(19, o.keep, 1e-9);
-        assertEquals(21, o.down, 1e-9);
-        assertEquals(7, o.destroy, 1e-9);
+        assertEquals(65, o.success, 1e-9);
+        assertEquals(18, o.keep, 1e-9);
+        assertEquals(14, o.down, 1e-9);
+        assertEquals(3, o.destroy, 1e-9);
         Odds o3 = es.odds(3);
-        assertEquals(71, o3.success, 1e-9);
-        assertEquals(13, o3.down, 1e-9);
+        assertEquals(80, o3.success, 1e-9);
+        assertEquals(8, o3.down, 1e-9);
         assertEquals(0, o3.destroy, 1e-9);
         assertEquals(5, es.odds(0).keep, 1e-9);
-        for (int lv = 0; lv < 10; lv++) assertEquals(3, es.odds(lv).great, 1e-9, "대성공은 모든 단계 3%");
+        for (int lv = 0; lv < 10; lv++) assertTrue(es.odds(lv).success >= 50, "성공은 모든 단계 50% 이상");
+        for (int lv = 0; lv < 10; lv++) assertTrue(es.odds(lv).destroy <= 5, "파괴는 많아야 5%");
         for (int lv = 0; lv < 3; lv++) assertEquals(0, es.odds(lv).down, 1e-9, "하락은 +3부터");
     }
 

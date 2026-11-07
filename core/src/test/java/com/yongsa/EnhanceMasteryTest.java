@@ -46,8 +46,8 @@ class EnhanceMasteryTest {
     void masteryShrinksDownAndDestroyIntoKeepButNotSuccess() {
         Odds o0 = es.odds(8, 0), o10 = es.odds(8, 10);
         assertEquals(o0.success, o10.success, 1e-9, "성공 확률은 그대로");
-        assertEquals(28 * (1 - 10 / 17.0), o10.down, 1e-9);
-        assertEquals(9 * (1 - 10 / 15.0), o10.destroy, 1e-9);
+        assertEquals(18 * (1 - 10 / 17.0), o10.down, 1e-9);
+        assertEquals(5 * (1 - 10 / 15.0), o10.destroy, 1e-9);
         assertTrue(o10.keep > o0.keep);
         // 파괴는 Lv 15, 하락은 Lv 17 에서 사라진다
         for (int lv = 0; lv < 10; lv++) {
@@ -56,55 +56,95 @@ class EnhanceMasteryTest {
             assertEquals(0, es.odds(lv, 17).down, 1e-9);
         }
         assertTrue(es.odds(9, 16).down > 0);
-        // Lv 17 부터는 유지·성공·대성공만
+        // Lv 17 부터는 유지·성공만
         Odds late = es.odds(9, 17);
-        assertEquals(100.0, late.success + late.great + late.keep, 1e-9);
+        assertEquals(100.0, late.success + late.keep, 1e-9);
     }
 
     @Test
-    void masterBonusMovesKeepIntoGreatSuccess() {
-        assertEquals(3, es.odds(6, 17).great, 1e-9);
-        assertEquals(4, es.odds(6, 18).great, 1e-9);
-        assertEquals(5, es.odds(6, 19).great, 1e-9);
-        assertEquals(6, es.odds(6, 20).great, 1e-9);
+    void masterBonusMovesKeepIntoSuccess() {
+        assertEquals(65, es.odds(6, 17).success, 1e-9);
+        assertEquals(66, es.odds(6, 18).success, 1e-9);
+        assertEquals(67, es.odds(6, 19).success, 1e-9);
+        assertEquals(68, es.odds(6, 20).success, 1e-9);
         assertEquals(es.odds(6, 17).keep - 3, es.odds(6, 20).keep, 1e-9);
     }
 
     @Test
-    void greatSuccessJumpsTwoButOnlyOneAtPlusNine() {
-        // 성공(50) 바로 뒤 = 대성공 칸
+    void successAlwaysRaisesExactlyOne() {
+        // 대성공이 없어졌다: 성공은 언제나 +1
         GameState s = withSword(6);
         Weapon w = s.equipped();
-        EnhanceService.Result r = es.enhance(s, w, fixed(0.515));
-        assertEquals(Outcome.GREAT, r.outcome);
-        assertEquals(8, w.level);
-        assertEquals(1, s.stats.enhanceGreat);
+        EnhanceService.Result r = es.enhance(s, w, fixed(0.0));
+        assertEquals(Outcome.SUCCESS, r.outcome);
+        assertEquals(7, w.level);
         assertEquals(1, s.stats.enhanceSuccess);
 
         GameState s9 = withSword(9);
         Weapon w9 = s9.equipped();
-        EnhanceService.Result r9 = es.enhance(s9, w9, fixed(0.30)); // 성공 29 바로 뒤
-        assertEquals(Outcome.GREAT, r9.outcome);
-        assertEquals(10, w9.level, "+9 대성공은 +10 까지만");
+        EnhanceService.Result r9 = es.enhance(s9, w9, fixed(0.0));
+        assertEquals(10, w9.level);
         assertTrue(w9.awakened);
+    }
+
+    @Test
+    void keepCountsAndTeachesTheHero() {
+        GameState s = withSword(6);
+        Weapon w = s.equipped();
+        // 성공 65 다음이 유지 18
+        EnhanceService.Result r = es.enhance(s, w, fixed(0.70));
+        assertEquals(Outcome.KEEP, r.outcome);
+        assertEquals(6, w.level);
+        assertEquals(1, s.stats.enhanceKeep);
+        assertEquals(20, r.masteryGained, "유지 10 × 2");
+    }
+
+    @Test
+    void enhancingAllThreeSwordsToTenRarelyDestroysMoreThanTwice() {
+        // 2026-11-07 플레이 피드백: 검 세 자루를 모두 +10 까지 올려도 파괴는 많아야 1~2번
+        int runs = 2000, three = 0;
+        long total = 0;
+        java.util.Random rnd = new java.util.Random(11);
+        for (int run = 0; run < runs; run++) {
+            GameState s = NewGame.create(b);
+            int destroyed = 0;
+            for (String id : new String[]{"blackiron", "bloodmoon", "skyfall"}) {
+                OreType ore = OreType.valueOf(b.weapon(id).ore);
+                Weapon w = s.newWeapon(id);
+                s.equippedUid = w.uid;
+                while (w.level < b.enhance.maxLevel) {
+                    s.addOre(ore, 10);
+                    EnhanceService.Result r = es.enhance(s, w, rnd);
+                    if (r.outcome == Outcome.DESTROY) {
+                        destroyed++;
+                        w = s.newWeapon(id);
+                        s.equippedUid = w.uid;
+                    }
+                }
+            }
+            total += destroyed;
+            if (destroyed >= 3) three++;
+        }
+        double mean = total / (double) runs;
+        assertTrue(mean < 0.5, "평균 파괴 " + mean);
+        assertTrue(three <= runs / 100, "세 번 이상 파괴 " + three + "/" + runs);
     }
 
     @Test
     void downLowersOneLevel() {
         GameState s = withSword(5);
         Weapon w = s.equipped();
-        // 성공 57 + 대성공 3 + 유지 20 = 80 이후가 하락
-        EnhanceService.Result r = es.enhance(s, w, fixed(0.85));
+        // 성공 70 + 유지 16 = 86 이후가 하락
+        EnhanceService.Result r = es.enhance(s, w, fixed(0.90));
         assertEquals(Outcome.DOWN, r.outcome);
         assertEquals(4, w.level);
         assertEquals(1, s.stats.enhanceDown);
     }
 
     @Test
-    void everyOutcomeExceptKeepGivesMasteryEvenAtPlusZero() {
+    void everyOutcomeGivesMasteryEvenAtPlusZero() {
         assertEquals(15, es.masteryExp(Outcome.SUCCESS, 0), "0강 성공도 숙련도가 쌓인다 (20 × 0.75)");
-        assertEquals(23, es.masteryExp(Outcome.GREAT, 0), "30 × 0.75 반올림");
-        assertEquals(0, es.masteryExp(Outcome.KEEP, 0));
+        assertEquals(8, es.masteryExp(Outcome.KEEP, 0), "유지도 쌓인다 (10 × 0.75 반올림)");
         assertEquals(45, es.masteryExp(Outcome.DOWN, 4), "하락 30 × 1.5");
         assertEquals(120, es.masteryExp(Outcome.DESTROY, 8), "파괴 60 × 2");
         assertEquals(40, es.masteryExp(Outcome.SUCCESS, 9));
