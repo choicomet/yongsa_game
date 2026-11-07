@@ -70,26 +70,30 @@ class Mao1PhaseTest {
     void phaseOnePatternList() {
         Balance.MonsterDef d = b.finalBoss;
         assertFalse(d.patterns.contains("combo"), "콤보는 뺐다");
-        for (String p : new String[]{"bonespike", "summon", "swamp", "darkorb", "brand", "pillars"}) {
+        for (String p : new String[]{"bonespike", "summon", "darkorb", "brand"}) {
             assertTrue(d.patterns.contains(p), p);
         }
+        for (String p : new String[]{"swamp", "pillars", "combo", "rush", "lightning"}) {
+            assertFalse(d.patterns.contains(p), "2026-11-07 피드백으로 뺐다: " + p);
+        }
+        assertTrue(d.noMeleePhase1, "1페이즈는 기본 근접 공격이 없다");
         assertEquals("RIGHT", d.summonFrom, "해골병을 부른다");
         assertTrue(d.summonCount > 0);
     }
 
     @Test
-    void boneSpikesRiseAndBlind() {
+    void boneSpikesRiseWithoutBlinding() {
         GameState s = NewGame.create(b);
         GameSession g = demonFight(s);
         forcePattern(g, "bonespike", 5 * b.tileSize);
         run(g, idle, 2 / 60f);
         long spikes = g.hazards.stream().filter(h -> "bone".equals(h.style)).count();
         assertEquals(b.monster.spikeCount, spikes, "바닥 다섯 곳");
-        assertTrue(g.blindT > 0, "실명");
+        assertTrue(g.blindT <= 0, "2026-11-07 피드백: 실명은 뺐다");
     }
 
     @Test
-    void summonsSkeletonSoldiersAndBlinds() {
+    void summonsSkeletonSoldiersWithoutBlinding() {
         GameState s = NewGame.create(b);
         GameSession g = demonFight(s);
         Monster boss = forcePattern(g, "summon", 5 * b.tileSize);
@@ -100,40 +104,32 @@ class Mao1PhaseTest {
         long skeletons = g.monsters.stream().filter(o -> !o.dead && !o.boss
                 && o.def.sprite.equals(b.dungeon("RIGHT").mob.sprite)).count();
         assertEquals(boss.def.summonCount, skeletons);
-        assertTrue(g.blindT > 0, "소환할 때도 캄캄해진다");
+        assertTrue(g.blindT <= 0, "소환해도 캄캄해지지 않는다");
     }
 
     @Test
-    void blindDoesNotRepeatWithinCooldown() {
+    void phaseOneKeepsItsDistanceInsteadOfMelee() {
         GameState s = NewGame.create(b);
         GameSession g = demonFight(s);
-        Monster m = forcePattern(g, "bonespike", 5 * b.tileSize);
-        run(g, idle, 2 / 60f);
-        assertTrue(g.blindT > 0);
-        run(g, idle, b.monster.blindSeconds + 0.1f);
-        assertTrue(g.blindT <= 0);
-        // 쿨타임(9초) 안에 다시 써도 실명은 걸리지 않는다
+        Monster m = g.activeBoss();
+        run(g, idle, 1.5f);
+        m.patternCd = 99f;
+        m.attackCd = 0;
+        m.x = g.hero.x + 1.2f * b.tileSize;
+        m.y = g.hero.y;
         m.enter(Monster.State.CHASE, 0);
-        m.lastPattern = null;
-        m.patternCd = 0;
-        run(g, idle, 2 / 60f);
-        assertTrue(g.blindT <= 0);
-    }
-
-    @Test
-    void swampSpreadsThreePoolsThenBoneSpears() {
-        GameState s = NewGame.create(b);
-        GameSession g = demonFight(s);
-        forcePattern(g, "swamp", 5 * b.tileSize);
-        run(g, idle, 2 / 60f);
-        List<Hazard> pools = new ArrayList<>();
-        for (Hazard h : g.hazards) if (h.kind == Hazard.Kind.POOL && "swamp".equals(h.style)) pools.add(h);
-        assertEquals(b.monster.poolCount, pools.size());
-        assertTrue(pools.stream().anyMatch(h -> h.x == g.hero.x && h.y == g.hero.y), "하나는 용사 발밑");
         g.hero.invuln = 99f;
-        run(g, idle, b.monster.spearDelay + 0.05f);
-        long spears = g.hazards.stream().filter(h -> "bonespear".equals(h.style)).count();
-        assertEquals(b.monster.spearCount, spears, "뼈창 세 개");
+        boolean swung = false;
+        for (int i = 0; i < 90; i++) {
+            g.update(1 / 60f, idle);
+            g.pollEvents();
+            m.patternCd = 99f;
+            if (m.state == Monster.State.TELEGRAPH) swung = true;
+        }
+        assertFalse(swung, "붙어 있어도 칼을 휘두르지 않는다");
+        float dx = m.x - g.hero.x, dy = m.y - g.hero.y;
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        assertTrue(d > 1.8f * b.tileSize, "뒤로 물러나 거리를 둔다: " + d / b.tileSize + "칸");
     }
 
     @Test
@@ -179,25 +175,6 @@ class Mao1PhaseTest {
         run(g, away, b.monster.brandLock + 0.2f);
         assertEquals(lx, brand.x, 0.01f, "멈춘 뒤에는 따라오지 않는다");
         assertEquals(999, s.hp, "멈춘 자리를 벗어나면 안 맞는다");
-    }
-
-    @Test
-    void darkPillarsLinesBurstOneAfterAnother() {
-        GameState s = NewGame.create(b);
-        GameSession g = demonFight(s);
-        Monster m = forcePattern(g, "pillars", 5 * b.tileSize);
-        run(g, idle, 2 / 60f);
-        hold(m);
-        List<Hazard> lines = new ArrayList<>();
-        for (Hazard h : g.hazards) if ("darkline".equals(h.style)) lines.add(h);
-        assertEquals(6, lines.size(), "변 넷 + 대각선 둘");
-        Set<Integer> times = new HashSet<>();
-        for (Hazard h : lines) times.add(Math.round(h.delay * 100));
-        assertEquals(6, times.size(), "선이 하나씩 차례로 터진다");
-        assertTrue(lines.stream().anyMatch(h -> h.covers(g.hero.x, g.hero.y, 0)), "대각선이 가운데를 지난다");
-        s.hp = 999;
-        run(g, idle, b.monster.pillarWarning + b.monster.pillarGap * 5 + 0.1f);
-        assertTrue(s.hp < 999, "가만히 있으면 맞는다");
     }
 
     @Test

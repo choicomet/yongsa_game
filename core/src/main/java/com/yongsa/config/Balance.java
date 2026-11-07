@@ -177,16 +177,14 @@ public class Balance {
         public float spawnSeconds;
         /** 박쥐: 주위를 돌다가 일직선으로 덮친다. */
         public float swoopTelegraph, swoopDistanceTiles, swoopTime, swoopRecover, orbitTiles;
-        /** 박쥐 초음파: 가까우면 screechChance 확률로 덮치기 대신 울어서 둘레 용사를 screechSlow 초 느리게 한다. */
-        public float screechChance, screechRangeTiles, screechRadiusTiles, screechTelegraph, screechSlow;
+        /** 박쥐 콩알탄: 공격할 차례에 pelletChance 확률로 덮치는 대신 작고 빠른 탄 하나를 뱉는다. */
+        public float pelletChance, pelletTelegraph, pelletSpeedTiles, pelletRadiusScale, pelletMultiplier;
         /** 박쥐 떼 덮치기: 한 마리가 덮칠 때 packChance 확률로 근처 박쥐 하나가 packDelay 초 늦게 따라 덮친다. */
         public float packChance, packRangeTiles, packDelay;
         /** 해골병: 휘두르며 앞으로 한 발 내딛는다. */
         public float lungeTiles;
         /** 해골병 방패: guardUp 초 들고 guardDown 초 내린다. 드는 동안 정면 피해 감소, 천천히 돈다, 느리게 걷는다. */
         public float guardUp, guardDown, guardReduction, guardTurn, guardSpeed;
-        /** 해골병 뼈 던지기: boneThrowMinTiles ~ boneThrowRangeTiles 거리면 뼈 하나를 던진다. */
-        public float boneThrowMinTiles, boneThrowRangeTiles, boneThrowTelegraph, boneThrowCooldown, boneSpeedTiles, boneMultiplier;
         /** 해골병 부활: 처음 쓰러지면 reviveSeconds 뒤 최대 체력의 reviveHpRatio 로 일어난다. */
         public float reviveSeconds, reviveHpRatio;
         /** 마족병: 떨어져서 불덩이를 쏜다. 가까이 오면 순간이동으로 물러난다. */
@@ -248,8 +246,9 @@ public class Balance {
         public float boulderRadiusTiles, boulderWarning, boulderMultiplier;
         public int shardCount;
         public float shardSpeedTiles, shardMultiplier, shardLife;
-        /** 골렘 2페이즈 땅속 잠행: 땅속에서 용사를 따라오다 멈춘 자리에서 솟구친다. */
-        public float burrowFollow, burrowLock, burrowRadiusTiles, burrowMultiplier, burrowRecover;
+        /** 골렘 2페이즈 연속 내려찍기: 용사 쪽으로 poundCount 번 쿵쿵 내려찍는다. 갈수록 멀고 넓다. 끝나면 poundRecover 초 숨을 고른다. */
+        public int poundCount;
+        public float poundStartTiles, poundStepTiles, poundRadiusTiles, poundRadiusGrowTiles, poundWarning, poundGap, poundMultiplier, poundRecover;
         /** 혈월의 기사 회전 베기: 보스 둘레 원을 예고 뒤 한 번에 벤다. */
         public float spinSlashRadiusTiles, spinSlashWarning, spinSlashMultiplier;
         /** 혈월의 기사 혈월 검기: 크고 붉은 초승달 검기 여러 줄을 부채꼴로 날린다. */
@@ -263,18 +262,16 @@ public class Balance {
         public float cagePulseGap, cageCoreWarning, cageOpenDelay, cageMultiplier, cageCoreMultiplier;
         /** 수문장 결계: 소환한 부하가 모두 쓰러지면 결계가 깨지며 이만큼 휘청인다. */
         public float barrierStagger;
-        /** 수문장 유도 마탄: 천천히 날며 초당 homingTurn 라디안까지 용사 쪽으로 방향을 튼다. */
+        /** 수문장 유도 마탄: 초당 homingTurn 라디안까지 용사 쪽으로 방향을 튼다. homingStopTiles 안으로 들어오면 더 꺾지 않고, 구르기로 피하면 사라진다. */
         public int homingCount;
-        public float homingSpreadDegrees, homingSpeedTiles, homingTurn, homingLife;
+        public float homingSpreadDegrees, homingSpeedTiles, homingTurn, homingLife, homingStopTiles;
         /** 마왕 1페이즈 어둠 구체: 느린 큰 구체가 orbFuse 초 뒤(또는 벽에 닿으면) 터지며 사방으로 탄을 뿌린다. */
         public float orbSpeedTiles, orbRadiusScale, orbFuse, orbShardMultiplier;
         public int orbBurst;
         /** 마왕 1페이즈 낙인: 용사를 따라다니다 멈추고, 잠시 뒤 그 자리에서 폭발한다. */
         public float brandFollow, brandLock, brandRadiusTiles, brandMultiplier;
-        /** 마왕 1페이즈 어둠 기둥: 용사 둘레 네 기둥을 잇는 선(변 넷 + 대각선 둘)이 차례로 터진다. */
-        public float pillarHalfTiles, pillarWidthTiles, pillarWarning, pillarGap, pillarMultiplier;
-        /** 마왕 2페이즈 삼키기: devourTime 초 동안 용사를 끌어당기고, 가운데(devourCoreTiles)에 닿으면 큰 피해. */
-        public float devourTime, devourPullTiles, devourCoreTiles, devourMultiplier;
+        /** 마왕 1페이즈 (noMeleePhase1): 기본 근접 공격 대신 용사와 이만큼 떨어져서 패턴만 쓴다. */
+        public float demonKeepTiles;
         /** 마왕 2페이즈 최후의 발악: 체력이 이 비율 아래면 화면이 어두워지고 패턴 간격이 줄어든다. */
         public float lastStandHpRatio, lastStandGapMultiplier;
         /** 구석 몰이 방지: 벽 가까이에서 용사가 cornerTime 초 넘게 붙어 있으면 순간이동하고 세 갈래 탄. */
@@ -297,7 +294,7 @@ public class Balance {
         public float speedTiles;
         /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
         public String ai;
-        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, quake, boulder, burrow, spinslash, crescent, cage, homing, swamp, darkorb, brand, pillars, devour. */
+        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, quake, boulder, pound, spinslash, crescent, cage, homing, darkorb, brand. */
         public List<String> patterns;
         /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;
@@ -309,8 +306,10 @@ public class Balance {
         public boolean cornerLeap;
         /** 보스: 소환한 부하가 살아 있는 동안 결계를 둘러 맞지 않는다 (탑의 수문장). */
         public boolean summonBarrier;
-        /** 잡몹(해골병): 방패를 들었다 내렸다 한다, 멀면 뼈를 던진다, 한 번 다시 일어난다. */
-        public boolean guard, throwBones, revive;
+        /** 잡몹(해골병): 방패를 들었다 내렸다 한다, 한 번 다시 일어난다. */
+        public boolean guard, revive;
+        /** 마왕: 1페이즈에서는 기본 근접 공격을 하지 않고 거리를 둔다 (monster.demonKeepTiles). */
+        public boolean noMeleePhase1;
         /** 보스 소환: 어느 던전의 잡몹을 몇 마리 부르나 (없으면 자기 던전 잡몹, monster.summonCount). */
         public String summonFrom;
         public int summonCount;

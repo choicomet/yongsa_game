@@ -185,6 +185,58 @@ class HouseKeeperTest {
         assertTrue(Math.abs(angle(after - want)) < Math.abs(angle(before - want)), "용사 쪽으로 방향을 튼다");
     }
 
+    /** 유도 마탄 하나를 용사 오른쪽 dx 에 만들어 둔다 (보스는 멈춰 둔다). */
+    private Projectile oneBolt(GameSession g, float dx) {
+        Monster m = forcePattern(g, "homing", 5 * b.tileSize);
+        run(g, idle, b.monster.volleyTelegraph + 0.05f);
+        m.enter(Monster.State.RECOVER, 99f);
+        m.patternCd = 99f;
+        Projectile bolt = null;
+        for (Projectile p : g.projectiles) if (p.homing > 0) bolt = p;
+        g.projectiles.clear();
+        g.projectiles.add(bolt);
+        bolt.x = g.hero.x + dx;
+        bolt.y = g.hero.centerY();
+        float sp = (float) Math.sqrt(bolt.vx * bolt.vx + bolt.vy * bolt.vy);
+        bolt.vx = -sp;
+        bolt.vy = 0;
+        return bolt;
+    }
+
+    @Test
+    void homingBoltsAreFasterAndShortLived() {
+        assertTrue(b.monster.homingSpeedTiles > 3.2f, "예전보다 빠르다");
+        assertTrue(b.monster.homingLife <= 3.5f, "예전(6초)보다 짧게 따라온다");
+    }
+
+    @Test
+    void rollingThroughAHomingBoltMakesItVanish() {
+        GameState s = hero();
+        GameSession g = wardenFight(s);
+        Projectile bolt = oneBolt(g, 0);
+        g.hero.invuln = 0;
+        g.hero.rollT = 0.3f;
+        s.hp = 999;
+        run(g, idle, 2 / 60f);
+        assertTrue(g.projectiles.isEmpty(), "한 번 피하면 사라진다");
+        assertEquals(999, s.hp);
+    }
+
+    @Test
+    void homingStopsTurningOnceClose() {
+        GameState s = hero();
+        GameSession g = wardenFight(s);
+        Projectile bolt = oneBolt(g, b.monster.homingStopTiles * b.tileSize * 0.8f);
+        g.hero.invuln = 99f;
+        run(g, idle, 1 / 60f);
+        assertEquals(0f, bolt.homing, 0.0001f, "가까이 오면 더 꺾지 않는다");
+        // 용사가 옆으로 비켜도 따라 꺾지 않는다
+        g.hero.y += 2 * b.tileSize;
+        float vy = bolt.vy;
+        run(g, idle, 0.2f);
+        assertEquals(vy, bolt.vy, 0.001f);
+    }
+
     private static float angle(float a) {
         while (a > Math.PI) a -= (float) (2 * Math.PI);
         while (a < -Math.PI) a += (float) (2 * Math.PI);

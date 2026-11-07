@@ -48,6 +48,10 @@ class GolemSkillTest {
         m.def.patterns = new ArrayList<>(List.of(pattern));
         m.def.phase2Patterns = new ArrayList<>(List.of(pattern));
         m.lastPattern = null;
+        // 방 한가운데에 용사, 그 오른쪽에 골렘 (벽에 걸리지 않게)
+        com.yongsa.world.Room r = g.map.room("L6");
+        g.hero.x = (r.centerTileX() - 1.5f) * b.tileSize;
+        g.hero.y = (r.centerTileY() + 0.5f) * b.tileSize;
         m.x = g.hero.x + dx;
         m.y = g.hero.y;
         m.enter(Monster.State.CHASE, 0);
@@ -59,7 +63,7 @@ class GolemSkillTest {
     void golemGetsThreeNewPatternsOnlyInPhaseTwo() {
         Balance.MonsterDef golem = b.dungeon("LEFT").boss;
         assertEquals(List.of("rush", "rockfall", "slam"), golem.patterns);
-        assertEquals(List.of("quake", "boulder", "burrow"), golem.phase2Patterns);
+        assertEquals(List.of("quake", "boulder", "pound"), golem.phase2Patterns);
     }
 
     @Test
@@ -102,44 +106,64 @@ class GolemSkillTest {
     }
 
     @Test
-    void burrowFollowsTheHeroThenErupts() {
+    void poundSlamsThreeTimesTowardTheHero() {
         GameState s = hero();
         GameSession g = golemFight(s);
-        Monster m = forcePattern(g, "burrow", 5 * b.tileSize);
+        Monster m = forcePattern(g, "pound", 6 * b.tileSize);
         run(g, idle, 2 / 60f);
-        assertEquals(Monster.State.BURROW, m.state);
-        assertTrue(m.invulnerable(), "땅속에서는 맞지 않는다");
-        Hazard mark = m.burrowMark;
-        assertNotNull(mark);
-
-        // 용사를 따라온다
-        Controls walk = new Controls();
-        walk.moveY = 1;
-        run(g, walk, 0.5f);
-        assertEquals(g.hero.x, mark.x, 1f);
-        assertEquals(g.hero.y, mark.y, 1f);
-
-        // 따라오기가 끝나면 멈추고, 걸어서 벗어나면 안 맞는다
-        run(g, idle, b.monster.burrowFollow - 0.5f + 0.03f);
-        float lockX = mark.x, lockY = mark.y;
-        s.hp = 999;
-        Controls away = new Controls();
-        away.moveY = -1;
-        run(g, away, b.monster.burrowLock + 0.2f);
-        assertEquals(lockX, mark.x, 0.01f);
-        assertEquals(lockY, mark.y, 0.01f);
-        assertEquals(999, s.hp, "멈춘 자리를 벗어나면 안 맞는다");
-        assertEquals(Monster.State.RECOVER, m.state, "솟구친 뒤 숨을 고른다");
-        assertFalse(m.invulnerable());
+        List<Hazard> slams = new ArrayList<>();
+        for (Hazard h : g.hazards) if ("pound".equals(h.style)) slams.add(h);
+        assertEquals(b.monster.poundCount, slams.size(), "쿵, 쿵, 쿵");
+        for (int i = 1; i < slams.size(); i++) {
+            Hazard prev = slams.get(i - 1), cur = slams.get(i);
+            assertTrue(cur.delay > prev.delay, "차례로 내려찍는다");
+            assertTrue(cur.x < prev.x, "용사 쪽으로 나아간다");
+            assertTrue(cur.radius > prev.radius, "갈수록 넓다");
+        }
+        assertEquals(Monster.State.RECOVER, m.state);
+        assertTrue(m.stateT > slams.get(slams.size() - 1).delay + 0.5f, "다 찍고 나서 오래 숨을 고른다 (반격 기회)");
     }
 
     @Test
-    void standingStillWhileBurrowedGetsYouHit() {
+    void eachPoundShakesTheScreen() {
         GameState s = hero();
         GameSession g = golemFight(s);
-        forcePattern(g, "burrow", 5 * b.tileSize);
+        forcePattern(g, "pound", 6 * b.tileSize);
+        g.hero.invuln = 99f;
+        List<GameEvent> ev = run(g, idle, b.monster.poundWarning + b.monster.poundGap * b.monster.poundCount + 0.1f);
+        long shakes = ev.stream().filter(e -> e.type == GameEvent.Type.SLAM_FX).count();
+        assertTrue(shakes >= b.monster.poundCount, "무거운 한 방마다 화면이 울린다: " + shakes);
+    }
+
+    @Test
+    void steppingAsideAvoidsThePound() {
+        GameState s = hero();
+        GameSession g = golemFight(s);
+        Monster m = forcePattern(g, "pound", 4 * b.tileSize);
+        run(g, idle, 2 / 60f);
+        m.patternCd = 99f;
         s.hp = 999;
-        run(g, idle, b.monster.burrowFollow + b.monster.burrowLock + 0.2f);
-        assertTrue(s.hp < 999, "가만히 있으면 솟구치는 골렘에게 맞는다");
+        Controls side = new Controls();
+        side.moveY = 1;
+        run(g, side, 0.6f);
+        run(g, idle, b.monster.poundWarning + b.monster.poundGap * b.monster.poundCount);
+        assertEquals(999, s.hp, "옆으로 비키면 안 맞는다");
+    }
+
+    @Test
+    void standingInLineGetsPounded() {
+        GameState s = hero();
+        GameSession g = golemFight(s);
+        Monster m = forcePattern(g, "pound", 4 * b.tileSize);
+        run(g, idle, 2 / 60f);
+        m.patternCd = 99f;
+        s.hp = 999;
+        run(g, idle, b.monster.poundWarning + b.monster.poundGap * b.monster.poundCount);
+        assertTrue(s.hp < 999);
+    }
+
+    @Test
+    void golemNoLongerBurrows() {
+        assertFalse(b.dungeon("LEFT").boss.phase2Patterns.contains("burrow"));
     }
 }

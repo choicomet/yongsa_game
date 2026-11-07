@@ -101,7 +101,7 @@ class BloodKnightTest {
         g.hero.invuln = 99f;
         run(g, idle, b.monster.volleyTelegraph);
         List<Projectile> waves = new ArrayList<>();
-        for (Projectile p : g.projectiles) if ("knight".equals(p.source)) waves.add(p);
+        for (Projectile p : g.projectiles) if ("crescent".equals(p.source)) waves.add(p);
         assertEquals(b.monster.crescentCount, waves.size());
         assertTrue(waves.get(0).radius > b.monster.projectileRadius * 1.5f, "보통 탄보다 크다");
         assertEquals(Math.round(m.attack() * b.monster.crescentMultiplier), waves.get(0).damage);

@@ -68,40 +68,43 @@ class BatTest {
     }
 
     @Test
-    void screechSlowsTheHeroWithoutDamage() {
+    void spitsASmallFastPellet() {
         Balance bal = TestData.balance();
-        bal.monster.screechChance = 1f;
+        bal.monster.pelletChance = 1f;
+        GameSession g = batRoom(bal);
+        Monster bat = bats(g).get(0);
+        freezeOthers(g, bat);
+        ready(g, bat, 3 * b.tileSize);
+        run(g, idle, 2 / 60f);
+        assertEquals(Monster.State.CAST_TELEGRAPH, bat.state);
+        assertEquals("pellet", bat.castKind);
+        g.projectiles.clear();
+        run(g, idle, bal.monster.pelletTelegraph);
+        assertEquals(1, g.projectiles.size(), "콩알탄 하나");
+        var p = g.projectiles.get(0);
+        assertTrue(p.radius < bal.monster.projectileRadius, "보통 탄보다 작다");
+        float sp = (float) Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        assertTrue(sp > bal.monster.projectileSpeedTiles * b.tileSize, "보통 탄보다 빠르다");
+        assertTrue(p.damage < bat.attack(), "약하다");
+        assertTrue(p.vx < 0, "용사 쪽(왼쪽)으로 날아간다");
+    }
+
+    @Test
+    void withoutPelletsBatsSwoop() {
+        Balance bal = TestData.balance();
+        bal.monster.pelletChance = 0f;
         GameSession g = batRoom(bal);
         Monster bat = bats(g).get(0);
         freezeOthers(g, bat);
         ready(g, bat, 1.2f * b.tileSize);
         run(g, idle, 2 / 60f);
-        assertEquals(Monster.State.CAST_TELEGRAPH, bat.state);
-        assertEquals("screech", bat.castKind);
-        g.hero.invuln = 0;
-        g.state.hp = 100;
-        g.hero.slowT = 0;
-        run(g, idle, bal.monster.screechTelegraph);
-        assertTrue(g.hero.slowT > 0, "초음파에 느려진다");
-        assertEquals(100, g.state.hp, "초음파는 피해가 없다");
-    }
-
-    @Test
-    void farBatsStillSwoop() {
-        Balance bal = TestData.balance();
-        bal.monster.screechChance = 1f;
-        GameSession g = batRoom(bal);
-        Monster bat = bats(g).get(0);
-        freezeOthers(g, bat);
-        ready(g, bat, 3.5f * b.tileSize);
-        run(g, idle, 2 / 60f);
-        assertEquals(Monster.State.SWOOP_TELEGRAPH, bat.state, "멀면 초음파 대신 덮친다");
+        assertEquals(Monster.State.SWOOP_TELEGRAPH, bat.state);
     }
 
     @Test
     void aSecondBatJoinsTheSwoopSlightlyLater() {
         Balance bal = TestData.balance();
-        bal.monster.screechChance = 0f;
+        bal.monster.pelletChance = 0f;
         bal.monster.packChance = 1f;
         GameSession g = batRoom(bal);
         List<Monster> bats = bats(g);

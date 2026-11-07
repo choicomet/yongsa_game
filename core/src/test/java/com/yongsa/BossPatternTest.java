@@ -287,7 +287,7 @@ class BossPatternTest {
     }
 
     @Test
-    void skeletonPriestRaisesBoneSpikesAndBlinds() {
+    void skeletonPriestRaisesBoneSpikes() {
         GameState s = strongHero();
         GameSession g = fightIn("T6", s);
         forcePattern(g, "bonespike", 5 * b.tileSize);
@@ -295,8 +295,9 @@ class BossPatternTest {
         long spikes = g.hazards.stream().filter(h -> "bone".equals(h.style)).count();
         assertTrue(spikes >= 3, "뼈 가시가 여러 개 솟는다: " + spikes);
         assertTrue(g.hazards.stream().anyMatch(h -> "bone".equals(h.style) && h.covers(g.hero.x, g.hero.y, 0)), "하나는 용사 발밑");
-        assertTrue(g.blindT > 0, "앞이 캄캄해진다");
-        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.TOAST && e.text.contains("캄캄")));
+        // 2026-11-07 플레이 피드백: 실명은 의미가 없어 껐다 (monster.blindSeconds = 0)
+        assertTrue(g.blindT <= 0, "앞이 캄캄해지지 않는다");
+        assertTrue(ev.stream().noneMatch(e -> e.type == GameEvent.Type.TOAST && e.text.contains("캄캄")));
         s.hp = 999;
         int hp = s.hp;
         run(g, idle, 1.2f);

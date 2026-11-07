@@ -83,50 +83,31 @@ class Mao2PhaseTest {
         List<String> p2 = b.finalBoss.phase2Patterns;
         assertFalse(p2.contains("rush"), "연속 돌진은 뺐다");
         assertFalse(p2.contains("lightning"), "낙뢰는 뺐다");
-        assertTrue(p2.contains("devour"));
+        assertFalse(p2.contains("devour"), "2026-11-07 피드백: 끌어당기는 삼키기는 억까라 뺐다");
         assertFalse(p2.contains("drain"), "마력 흡수는 뺐다");
         assertFalse(b.finalBoss.patterns.contains("rush"));
         assertFalse(b.finalBoss.patterns.contains("lightning"));
     }
 
     @Test
-    void devourPullsTheHeroIn() {
+    void eyeHurtsOnlyWhenTheHeroLooksAtIt() {
         GameState s = NewGame.create(b);
         GameSession g = demonFight(s);
-        Monster m = phaseTwo(g, "devour", 5 * b.tileSize);
+        Monster m = phaseTwo(g, "eyes", 5 * b.tileSize);
         run(g, idle, 2 / 60f);
-        assertEquals(Monster.State.CHANNEL, m.state);
-        assertEquals("devour", m.channelKind);
-        float d0 = Math.abs(m.x - g.hero.x);
-        g.hero.invuln = 99f;
-        run(g, idle, 0.6f);
-        assertTrue(Math.abs(m.x - g.hero.x) < d0 - b.tileSize, "가만히 있으면 끌려간다");
-    }
-
-    @Test
-    void reachingTheMawHurtsBadly() {
-        GameState s = NewGame.create(b);
-        GameSession g = demonFight(s);
-        Monster m = phaseTwo(g, "devour", 3 * b.tileSize);
-        s.hp = 9999;
-        run(g, idle, b.monster.devourTime);
-        assertTrue(s.hp < 9999, "아가리에 닿으면 맞는다");
-        assertNotEquals(Monster.State.CHANNEL, m.state, "삼키면 패턴이 끝난다");
-    }
-
-    @Test
-    void walkingAwayEscapesTheDevour() {
-        GameState s = NewGame.create(b);
-        GameSession g = demonFight(s);
-        Monster m = phaseTwo(g, "devour", 4 * b.tileSize);
-        run(g, idle, 2 / 60f);
-        Controls away = new Controls();
-        away.moveX = -1;
-        s.hp = 9999;
-        run(g, away, b.monster.devourTime / b.monster.phase2Speed + 0.2f);
-        assertEquals(9999, s.hp, "바깥으로 걸으면 버틸 수 있다");
-        assertNotEquals(Monster.State.CHANNEL, m.state);
-        assertTrue(g.hazards.stream().noneMatch(h -> "maw".equals(h.style)), "끝나면 아가리 표시가 사라진다");
+        m.enter(Monster.State.RECOVER, 99f);
+        m.patternCd = 99f;
+        com.yongsa.combat.Hazard eye = null;
+        for (com.yongsa.combat.Hazard h : g.hazards) if (h.kind == com.yongsa.combat.Hazard.Kind.EYE) { eye = h; break; }
+        assertNotNull(eye);
+        // 눈알 쪽을 보면 '보고 있음', 반대쪽을 보면 아님 (화면의 시선 줄도 이 판정을 그대로 쓴다)
+        float dx = eye.x - g.hero.x, dy = eye.y - g.hero.centerY(), l = (float) Math.sqrt(dx * dx + dy * dy);
+        g.hero.aimX = dx / l;
+        g.hero.aimY = dy / l;
+        assertTrue(g.lookingAt(eye));
+        g.hero.aimX = -dx / l;
+        g.hero.aimY = -dy / l;
+        assertFalse(g.lookingAt(eye));
     }
 
     @Test

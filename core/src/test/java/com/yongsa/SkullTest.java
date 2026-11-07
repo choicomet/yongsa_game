@@ -61,7 +61,6 @@ class SkullTest {
         m.dirX = -1;
         m.dirY = 0;
         m.attackCd = 99f;
-        m.throwCd = 99f;
         m.enter(Monster.State.CHASE, 0);
         return m;
     }
@@ -79,10 +78,9 @@ class SkullTest {
     }
 
     @Test
-    void skeletonMobHasAllThreeTraits() {
+    void skeletonMobGuardsAndRevivesButThrowsNothing() {
         Balance.MonsterDef d = TestData.balance().dungeon("RIGHT").mob;
         assertTrue(d.guard);
-        assertTrue(d.throwBones);
         assertTrue(d.revive);
     }
 
@@ -147,19 +145,14 @@ class SkullTest {
     }
 
     @Test
-    void throwsABoneFromAfar() {
+    void neverThrowsBonesFromAfar() {
+        // 2026-11-07 피드백: 해골병이 탄을 날리는 건 어색해서 뺐다
         Balance b = TestData.balance();
         GameSession g = skullRoom(b);
-        Monster m = lone(g, 4 * b.tileSize);
-        m.throwCd = 0;
-        run(g, idle, 2 / 60f);
-        assertEquals(Monster.State.CAST_TELEGRAPH, m.state);
-        assertEquals("bone", m.castKind);
-        run(g, idle, b.monster.boneThrowTelegraph);
-        Projectile bone = null;
-        for (Projectile p : g.projectiles) if ("bone".equals(p.source)) bone = p;
-        assertNotNull(bone, "뼈를 던진다");
-        assertTrue(m.throwCd > 1f, "자주 던지지는 않는다");
+        lone(g, 4 * b.tileSize);
+        g.projectiles.clear();
+        run(g, idle, 3f);
+        assertTrue(g.projectiles.isEmpty(), "멀리 있어도 아무것도 던지지 않는다");
     }
 
     @Test

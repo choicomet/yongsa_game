@@ -320,7 +320,7 @@ public class GameSession {
         Monster best = null;
         float bestD = range * range;
         for (Monster m : monsters) {
-            if (m.dead || m.state == Monster.State.SPAWN || m.state == Monster.State.BURROW) continue;
+            if (m.dead || m.state == Monster.State.SPAWN) continue;
             float dx = m.x - hero.x, dy = m.centerY() - hero.centerY();
             float d = dx * dx + dy * dy;
             if (d < bestD) {
@@ -1073,7 +1073,6 @@ public class GameSession {
             m.flash -= dt;
             m.immuneMsgCd -= dt;
             m.blinkCd -= dt;
-            m.throwCd -= dt;
             if (m.def.guard && !m.boss) {
                 m.guardT -= dt;
                 if (m.guardT <= 0) {
@@ -1215,11 +1214,6 @@ public class GameSession {
                     break;
                 case CHANNEL:
                     channel(m, dt * speedUp);
-                    break;
-                case BURROW:
-                    // 흙먼지(burrowMark)와 같은 시계로 센다: 흙먼지가 터지는 순간 솟구친다
-                    m.stateT -= dt;
-                    if (m.stateT <= 0) emerge(m);
                     break;
                 case LEAP: {
                     m.stateT -= dt;
@@ -1434,10 +1428,10 @@ public class GameSession {
                 // 용사 둘레를 빙글빙글 돌다가 방향을 정하고 덮친다.
                 float orbit = mc.orbitTiles * T;
                 if (m.attackCd <= 0 && dist < orbit * 1.8f) {
-                    if (dist < mc.screechRangeTiles * T && random.nextFloat() < mc.screechChance) {
-                        // 초음파: 가까이 있으면 가끔 덮치는 대신 운다
-                        m.castKind = "screech";
-                        m.enter(Monster.State.CAST_TELEGRAPH, mc.screechTelegraph);
+                    if (random.nextFloat() < mc.pelletChance) {
+                        // 콩알탄: 가끔 덮치는 대신 작고 빠른 탄을 뱉는다 (fire)
+                        m.castKind = "pellet";
+                        m.enter(Monster.State.CAST_TELEGRAPH, mc.pelletTelegraph);
                         return;
                     }
                     m.lockX = m.dirX;
@@ -1483,13 +1477,6 @@ public class GameSession {
             }
             default:
                 // melee, brute: 다가가서 휘두른다
-                if (m.def.throwBones && m.throwCd <= 0 && dist > mc.boneThrowMinTiles * T && dist < mc.boneThrowRangeTiles * T) {
-                    // 해골병: 멀면 뼈를 던진다
-                    m.throwCd = mc.boneThrowCooldown;
-                    m.castKind = "bone";
-                    m.enter(Monster.State.CAST_TELEGRAPH, mc.boneThrowTelegraph);
-                    return;
-                }
                 if (dist <= reach * ("brute".equals(m.ai()) ? 1.6f : 1f) && m.attackCd <= 0) {
                     m.enter(Monster.State.TELEGRAPH, m.telegraph(mc.telegraphSeconds));
                 } else if (dist > reach * 0.7f) {
@@ -1523,6 +1510,18 @@ public class GameSession {
             m.lastPattern = p;
             m.patternCd = mc.bossPatternGap * (m.lastStand ? mc.lastStandGapMultiplier : 1f);
             if (startPattern(m, p, summoned)) return;
+        }
+        if (m.finalBoss && !m.phase2 && m.def.noMeleePhase1) {
+            // 마왕 1페이즈: 기본 근접 공격 없이 거리를 두고 패턴만 쓴다
+            float keep = mc.demonKeepTiles * T, k = m.speed * dt;
+            if (dist > keep * 1.3f) {
+                Physics.move(map, m, pathX * k, pathY * k, T);
+                m.walkTime += dt;
+            } else if (dist < keep * 0.8f && dist > 0.01f) {
+                Physics.move(map, m, (m.x - hero.x) / dist * k, (m.y - hero.y) / dist * k, T);
+                m.walkTime += dt;
+            }
+            return;
         }
         if (dist <= reach && m.attackCd <= 0) {
             m.enter(Monster.State.TELEGRAPH, mc.telegraphSeconds);
@@ -1724,25 +1723,21 @@ public class GameSession {
                 events.add(GameEvent.sound("roar"));
                 return true;
             }
-            case "burrow": {
-                // 땅속 잠행: 흙먼지가 용사를 따라오다 멈추고, 그 자리에서 솟구친다
-                Hazard h = new Hazard(Hazard.Kind.CIRCLE, "burrow");
-                h.x = hero.x;
-                h.y = hero.y;
-                h.radius = mc.burrowRadiusTiles * T;
-                h.followT = mc.burrowFollow;
-                h.delay = h.warning = mc.burrowFollow + mc.burrowLock;
-                h.damage = m.attack();
-                h.multiplier = mc.burrowMultiplier;
-                hazards.add(h);
-                m.burrowMark = h;
-                m.enter(Monster.State.BURROW, mc.burrowFollow + mc.burrowLock);
-                GameEvent dust = GameEvent.fx(GameEvent.Type.HAZARD_FX, m.x, m.y);
-                dust.text = "rock";
-                dust.size = m.hurtRadius * 1.5f;
-                events.add(dust);
-                events.add(GameEvent.toast(m.def.name + "이(가) 땅속으로 파고들었다! 계속 움직이자"));
-                events.add(GameEvent.sound("slam"));
+            case "pound": {
+                // 연속 내려찍기: 용사 쪽으로 쿵, 쿵, 쿵. 갈수록 멀고 넓게 내려찍고, 끝나면 오래 숨을 고른다 (반격 기회)
+                aimAtHero(m);
+                float last = -1;
+                for (int i = 0; i < mc.poundCount; i++) {
+                    float d = (mc.poundStartTiles + mc.poundStepTiles * i) * T;
+                    float px = m.x + m.dirX * d, py = m.y + m.dirY * d;
+                    if (map.solid(tileX(px), tileY(py))) break; // 벽 너머로는 찍지 않는다
+                    last = mc.poundWarning + mc.poundGap * i;
+                    circleHazard("pound", px, py, (mc.poundRadiusTiles + mc.poundRadiusGrowTiles * i) * T, last, m.attack(), mc.poundMultiplier);
+                }
+                if (last < 0) return false; // 바로 앞이 벽이면 다른 패턴
+                m.enter(Monster.State.RECOVER, last + mc.poundRecover);
+                events.add(GameEvent.toast(m.def.name + "이(가) 주먹을 높이 든다! 옆으로 비키자"));
+                events.add(GameEvent.sound("roar"));
                 return true;
             }
             case "spinslash": {
@@ -1789,13 +1784,6 @@ public class GameSession {
                 m.castKind = p;
                 m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
                 return true;
-            case "swamp":
-                // 늪: 피웅덩이와 같은 늪 셋(용사 발밑 하나 + 아무 데나 둘), 이어서 뼈창 세 줄
-                spawnPools(m, "swamp");
-                startChannel(m, p, 1, mc.spearDelay);
-                events.add(GameEvent.toast("발밑에 늪이 차오른다! 밟으면 느려진다"));
-                events.add(GameEvent.sound("cast"));
-                return true;
             case "darkorb":
                 // 어둠 구체: 모았다가 느린 구체를 쏜다. 날아가다 터지며 사방으로 탄 (fire, updateProjectiles)
                 m.castKind = "orb";
@@ -1815,53 +1803,6 @@ public class GameSession {
                 m.enter(Monster.State.RECOVER, 0.6f);
                 events.add(GameEvent.toast("마왕의 낙인이 찍혔다! 멈추는 순간 자리를 벗어나자"));
                 events.add(GameEvent.sound("cast"));
-                return true;
-            }
-            case "pillars": {
-                // 어둠 기둥: 용사 둘레 네 기둥, 기둥을 잇는 선(변 넷 + 대각선 둘)이 정해진 순서대로 터진다
-                float hs = mc.pillarHalfTiles * T, cx = hero.x, cy = hero.y;
-                float[][] c = {{cx - hs, cy - hs}, {cx + hs, cy - hs}, {cx + hs, cy + hs}, {cx - hs, cy + hs}};
-                int[][] links = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {0, 2}, {1, 3}};
-                List<Integer> order = new ArrayList<>();
-                for (int i = 0; i < links.length; i++) order.add(i);
-                java.util.Collections.shuffle(order, random);
-                float last = mc.pillarWarning + mc.pillarGap * (links.length - 1);
-                for (int k = 0; k < links.length; k++) {
-                    int[] ln = links[order.get(k)];
-                    Hazard h = new Hazard(Hazard.Kind.LINE, "darkline");
-                    h.x = c[ln[0]][0];
-                    h.y = c[ln[0]][1];
-                    h.x2 = c[ln[1]][0];
-                    h.y2 = c[ln[1]][1];
-                    h.radius = mc.pillarWidthTiles * T / 2f;
-                    h.delay = h.warning = mc.pillarWarning + mc.pillarGap * k;
-                    h.damage = m.attack();
-                    h.multiplier = mc.pillarMultiplier;
-                    hazards.add(h);
-                }
-                for (float[] pc : c) {
-                    if (map.solid(tileX(pc[0]), tileY(pc[1]))) continue;
-                    circleHazard("tentacle", pc[0], pc[1], T * 0.6f, last, m.attack(), mc.pillarMultiplier);
-                }
-                m.enter(Monster.State.RECOVER, last + 0.2f);
-                events.add(GameEvent.toast("어둠 기둥! 선이 터지는 순서를 보고 피하자"));
-                events.add(GameEvent.sound("roar"));
-                return true;
-            }
-            case "devour": {
-                // 삼키기: 용사를 끌어당긴다. 가운데 아가리에 닿으면 큰 피해
-                Hazard h = new Hazard(Hazard.Kind.CIRCLE, "maw");
-                h.x = m.x;
-                h.y = m.y;
-                h.radius = mc.devourCoreTiles * T;
-                h.delay = h.warning = mc.devourTime + 0.3f; // 삼키기가 끝나면 endDevour 가 지운다
-                h.multiplier = 0; // 표시만: 맞히는 건 channel 이 한다
-                hazards.add(h);
-                m.channelMark = h;
-                startChannel(m, p, 0, 0f);
-                m.channelT = mc.devourTime;
-                events.add(GameEvent.toast("마왕이 모든 것을 삼키려 한다! 바깥으로 도망쳐라"));
-                events.add(GameEvent.sound("roar"));
                 return true;
             }
             case "eyes": {
@@ -1935,8 +1876,7 @@ public class GameSession {
                 if (m.stateT <= 0) m.enter(Monster.State.RECOVER, 1.1f);
                 return;
             }
-            case "bloodpool":
-            case "swamp": {
+            case "bloodpool": {
                 if (m.channelT > 0) return;
                 if (m.channelLeft > 0) {
                     m.channelLeft = 0;
@@ -1945,7 +1885,7 @@ public class GameSession {
                     float spread = (float) Math.toRadians(mc.spearSpreadDegrees);
                     for (int i = 0; i < mc.spearCount; i++) {
                         float a = base + spread * (i - (mc.spearCount - 1) / 2f);
-                        Hazard h = new Hazard(Hazard.Kind.LINE, "swamp".equals(m.channelKind) ? "bonespear" : "spear");
+                        Hazard h = new Hazard(Hazard.Kind.LINE, "spear");
                         h.x = m.x;
                         h.y = m.y;
                         h.x2 = m.x + (float) Math.cos(a) * mc.spearLengthTiles * T;
@@ -1962,37 +1902,9 @@ public class GameSession {
                 m.enter(Monster.State.RECOVER, 0.4f);
                 return;
             }
-            case "devour": {
-                // 끌어당긴다: 구르는 동안은 버틸 수 있다
-                float dx = m.x - hero.x, dy = m.y - hero.y, d = (float) Math.sqrt(dx * dx + dy * dy);
-                float core = mc.devourCoreTiles * T;
-                if (d <= core + hero.hw * 0.6f) {
-                    endDevour(m);
-                    hitHero(m.attack(), mc.devourMultiplier, m.x, m.y);
-                    return;
-                }
-                if (!hero.rolling() && d > 0.01f) {
-                    float pull = Math.min(d, mc.devourPullTiles * T * dt);
-                    Physics.move(map, hero, dx / d * pull, dy / d * pull, T);
-                }
-                if (m.channelT <= 0) endDevour(m);
-                return;
-            }
             default:
                 m.enter(Monster.State.RECOVER, 0.5f);
         }
-    }
-
-    /** 땅속 잠행이 끝났다: 흙먼지가 멈춘 자리에서 솟구치고 잠깐 숨을 고른다 (반격 기회). */
-    private void emerge(Monster m) {
-        Hazard h = m.burrowMark;
-        m.burrowMark = null;
-        if (h != null && Physics.free(map, h.x, h.y, m, T)) {
-            m.x = h.x;
-            m.y = h.y;
-        }
-        m.enter(Monster.State.RECOVER, balance.monster.burrowRecover);
-        events.add(GameEvent.sound("slam"));
     }
 
     /** 바위가 떨어진 자리에서 파편이 사방으로 튄다. */
@@ -2015,12 +1927,6 @@ public class GameSession {
             p.source = "golem";
             projectiles.add(p);
         }
-    }
-
-    private void endDevour(Monster m) {
-        if (m.channelMark != null) m.channelMark.dead = true;
-        m.channelMark = null;
-        m.enter(Monster.State.RECOVER, 0.8f);
     }
 
     private void circleHazard(String style, float x, float y, float radius, float warning, int damage, float mult) {
@@ -2103,6 +2009,12 @@ public class GameSession {
                     fx.dirY = h.y2;
                     events.add(fx);
                     events.add(GameEvent.sound("bolt".equals(h.style) ? "cast" : "slam"));
+                    if ("pound".equals(h.style) || "boulder".equals(h.style) || "quake".equals(h.style)) {
+                        // 골렘: 무거운 한 방마다 화면이 쿵 울린다
+                        GameEvent shake = GameEvent.fx(GameEvent.Type.SLAM_FX, h.x, h.y);
+                        shake.size = h.radius;
+                        events.add(shake);
+                    }
                     h.dead = true;
                     if (justDied) return;
                     if ("boulder".equals(h.style)) shatter(h);
@@ -2143,6 +2055,14 @@ public class GameSession {
     }
 
     /** 눈알이 뜬다: 용사가 그쪽을 보고 있으면 (구르는 중이 아니면) 지금 체력의 절반을 잃고 굳는다. */
+    /** 지금 용사가 이 눈알 쪽을 보고 있나 (뜨는 순간 이러면 맞는다). 화면에서 위험 표시에 쓴다. */
+    public boolean lookingAt(Hazard h) {
+        float dx = h.x - hero.x, dy = h.y - hero.centerY(), l = (float) Math.sqrt(dx * dx + dy * dy);
+        if (l < 0.01f) return false;
+        float cos = (dx * hero.aimX + dy * hero.aimY) / l;
+        return cos >= (float) Math.cos(Math.toRadians(balance.monster.eyeAngleDegrees / 2f));
+    }
+
     private void eyeOpens(Hazard h) {
         Balance.MonsterCfg mc = balance.monster;
         GameEvent fx = GameEvent.fx(GameEvent.Type.HAZARD_FX, h.x, h.y);
@@ -2152,8 +2072,7 @@ public class GameSession {
         events.add(GameEvent.sound("cast"));
         float dx = h.x - hero.x, dy = h.y - hero.centerY(), l = (float) Math.sqrt(dx * dx + dy * dy);
         if (l < 0.01f || hero.rolling() || hero.invuln > 0 || devGodMode) return;
-        float cos = (dx * hero.aimX + dy * hero.aimY) / l;
-        if (cos < (float) Math.cos(Math.toRadians(mc.eyeAngleDegrees / 2f))) return;
+        if (!lookingAt(h)) return;
         int take = state.hp / 2; // 절반이라 이것만으로는 쓰러지지 않는다
         state.hp -= take;
         hero.stunT = mc.eyeStun;
@@ -2277,21 +2196,10 @@ public class GameSession {
         float sy = m.centerY();
         String kind = m.castKind == null ? "cast" : m.castKind;
         int dmg = m.attack();
-        if ("screech".equals(kind)) {
-            // 박쥐 초음파: 둘레에 있으면 (구르는 중이 아니면) 잠깐 느려진다. 피해는 없다
-            float r = mc.screechRadiusTiles * T;
-            float dx = hero.x - m.x, dy = hero.y - m.y;
-            if (dx * dx + dy * dy <= r * r && !hero.rolling()) {
-                hero.slowT = Math.max(hero.slowT, mc.screechSlow);
-                events.add(GameEvent.floatText(hero.x, hero.y + 40, "느려졌다", GameEvent.Tone.INFO));
-            }
-            GameEvent fx = GameEvent.fx(GameEvent.Type.HAZARD_FX, m.x, m.y);
-            fx.text = "screech";
-            fx.size = r;
-            events.add(fx);
-        } else if ("bone".equals(kind)) {
-            // 해골병 뼈 던지기: 느린 뼈 하나
-            shoot(m, m.x, sy, base, mc.boneSpeedTiles * T, Math.max(1, Math.round(dmg * mc.boneMultiplier)), "bone");
+        if ("pellet".equals(kind)) {
+            // 박쥐 콩알탄: 작고 빠른 탄 하나 (약하다)
+            shoot(m, m.x, sy, base, mc.pelletSpeedTiles * T, Math.max(1, Math.round(dmg * mc.pelletMultiplier)), m.def.sprite);
+            projectiles.get(projectiles.size() - 1).radius *= mc.pelletRadiusScale;
         } else if ("flame".equals(kind)) {
             // 마족병 불기둥: 지금 용사가 있는 자리에 예고 뒤 솟는다
             circleHazard("flame", hero.x, hero.y, mc.flameRadiusTiles * T, mc.flameWarning, dmg, mc.flameMultiplier);
@@ -2307,7 +2215,7 @@ public class GameSession {
             int cd = Math.max(1, Math.round(m.attack() * mc.crescentMultiplier));
             for (int i = 0; i < n; i++) {
                 float a = base - spread / 2f + (n > 1 ? spread * i / (n - 1) : 0);
-                shoot(m, m.x, sy, a, cs, cd, m.def.sprite);
+                shoot(m, m.x, sy, a, cs, cd, "crescent");
                 projectiles.get(projectiles.size() - 1).radius *= mc.crescentRadiusScale;
             }
         } else if ("homing".equals(kind)) {
@@ -2319,6 +2227,7 @@ public class GameSession {
                 shoot(m, m.x, sy, a, mc.homingSpeedTiles * T, dmg, m.def.sprite);
                 Projectile p = projectiles.get(projectiles.size() - 1);
                 p.homing = mc.homingTurn;
+                p.dodgeVanish = true;
                 p.life = mc.homingLife;
                 p.radius *= 1.2f;
             }
@@ -2368,8 +2277,17 @@ public class GameSession {
             }
             float hx = hero.x - p.x, hy = hero.centerY() - p.y;
             float r = p.radius + hero.hw;
+            if (p.homing > 0) {
+                // 유도 마탄: 가까이 오면 더 꺾지 않고 곧게 날아간다 (옆으로 비키거나 굴러서 피할 수 있다)
+                float stop = balance.monster.homingStopTiles * T;
+                if (hx * hx + hy * hy < stop * stop) p.homing = 0;
+            }
             if (hx * hx + hy * hy < r * r) {
-                if (hero.rolling()) continue; // 굴러서 피한다
+                if (hero.rolling()) {
+                    // 굴러서 피한다. 유도 마탄은 한 번 피하면 사라진다
+                    if (p.dodgeVanish) p.dead = true;
+                    continue;
+                }
                 p.dead = true;
                 hitHero(p.damage, 1f, p.x - p.vx, p.y - p.vy);
                 if (justDied) return;

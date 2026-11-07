@@ -1349,16 +1349,25 @@ public class WorldRenderer implements Disposable {
                 case POOL: {
                     float r = h.radius;
                     float fade = Math.min(1f, h.life / 0.8f) * Math.min(1f, h.age / 0.35f);
-                    boolean swamp = "swamp".equals(h.style); // 마왕의 늪은 검푸른 초록
-                    if (swamp) shapes.setColor(0.05f, 0.18f, 0.08f, 0.75f * fade);
-                    else shapes.setColor(0.25f, 0.02f, 0.05f, 0.75f * fade);
+                    shapes.setColor(0.25f, 0.02f, 0.05f, 0.75f * fade);
                     shapes.ellipse(h.x - r, h.y - r * 0.6f, r * 2, r * 1.2f, 40);
-                    if (swamp) shapes.setColor(0.25f, 0.5f, 0.15f, (0.45f + 0.1f * MathUtils.sin(time * 4f + h.x)) * fade);
-                    else shapes.setColor(0.6f, 0.05f, 0.1f, (0.45f + 0.1f * MathUtils.sin(time * 4f + h.x)) * fade);
+                    shapes.setColor(0.6f, 0.05f, 0.1f, (0.45f + 0.1f * MathUtils.sin(time * 4f + h.x)) * fade);
                     shapes.ellipse(h.x - r * 0.8f, h.y - r * 0.48f, r * 1.6f, r * 0.96f, 40);
                     break;
                 }
                 case EYE: {
+                    if (h == nextEye()) {
+                        // 다음에 뜰 눈알 쪽으로 '시선 줄': 지금 그쪽을 보고 있으면 빨갛게, 아니면 흐리게
+                        boolean looking = g.lookingAt(h);
+                        float hx = g.hero.x, hy = g.hero.centerY();
+                        float ex = hx + (h.x - hx) * 0.82f, ey = hy + (h.y - hy) * 0.82f;
+                        if (looking) shapes.setColor(EYE_RED.r, EYE_RED.g, EYE_RED.b, 0.35f + 0.25f * blink * 4f);
+                        else shapes.setColor(0.8f, 0.8f, 0.85f, 0.14f);
+                        for (int i = 0; i < 10; i += 2) {
+                            float t0 = i / 10f, t1 = (i + 1) / 10f;
+                            shapes.rectLine(hx + (ex - hx) * t0, hy + (ey - hy) * t0, hx + (ex - hx) * t1, hy + (ey - hy) * t1, looking ? 4f : 2.5f);
+                        }
+                    }
                     if (eyeRegion(0) != null) break;
                     // 감긴 눈이 천천히 떠진다
                     float r = h.radius, open = Math.max(0.08f, p * p);
@@ -1395,6 +1404,14 @@ public class WorldRenderer implements Disposable {
                 }
             }
         }
+    }
+
+    /** 가장 먼저 뜰 눈알 (시선 줄은 하나만 그린다). */
+    private Hazard nextEye() {
+        Hazard best = null;
+        for (Hazard h : g.hazards)
+            if (h.kind == Hazard.Kind.EYE && !h.dead && (best == null || h.delay < best.delay)) best = h;
+        return best;
     }
 
     /** 납작한 고리 띠: 지름 mid, 두께 th. */
@@ -1435,10 +1452,10 @@ public class WorldRenderer implements Disposable {
                 particles.burst(e.x, e.y + 8, 10, new Color(0.6f, 1f, 0.5f, 1f), 160, 0.4f, 3, true);
                 ring(e.x, e.y, e.size * 0.3f, e.size, 0.3f, BONE);
                 break;
-            case "screech":
-                // 박쥐 초음파: 퍼지는 고리 두 겹
-                ring(e.x, e.y, e.size * 0.2f, e.size, 0.3f, c);
-                ring(e.x, e.y, e.size * 0.1f, e.size * 0.7f, 0.25f, c);
+            case "pound":
+                // 골렘 내려찍기: 흙과 돌이 크게 튄다
+                particles.debris(e.x, e.y + 6, 18, c, 240, 4);
+                ring(e.x, e.y, e.size * 0.2f, e.size * 1.1f, 0.35f, c);
                 break;
             case "flame":
                 // 마족병 불기둥
@@ -1447,14 +1464,12 @@ public class WorldRenderer implements Disposable {
                 flash(e.x, e.y + 20, e.size * 2.5f, c, 0.3f);
                 break;
             case "eye":
+                // 눈알은 범위 공격이 아니라 '보고 있었나'로 맞는다: 넓은 고리 대신 눈 둘레만 번쩍인다
                 eyeFlashes.add(new float[]{e.x, e.y, e.size, 0f});
-                flash(e.x, e.y, 220, EYE_RED, 0.35f);
-                ring(e.x, e.y, 8, 120, 0.4f, EYE_RED);
+                flash(e.x, e.y, e.size * 2.2f, EYE_RED, 0.3f);
                 break;
             case "whip":
             case "cage":
-            case "bonespear":
-            case "darkline":
             case "spear": {
                 float dx = e.dirX - e.x, dy = e.dirY - e.y;
                 for (int i = 0; i <= 10; i++) {
@@ -1475,15 +1490,13 @@ public class WorldRenderer implements Disposable {
     private static Color hazardColor(String style) {
         switch (style) {
             case "bolt": case "cage": return PROJ_SKY;
-            case "tentacle": case "maw": return PROJ_DARK;
+            case "tentacle": return PROJ_DARK;
             case "spear": case "blood": case "spin": case "leap": return PROJ_BLOOD;
-            case "bone": case "bonespear": return BONE;
-            case "swamp": return new Color(0.35f, 0.75f, 0.3f, 1f);
-            case "brand": case "darkline": return PROJ_DARK;
+            case "bone": return BONE;
+            case "brand": return PROJ_DARK;
             case "whip": return WHIP;
             case "eye": return EYE_RED;
-            case "quake": case "boulder": case "burrow": return new Color(0.85f, 0.62f, 0.4f, 1f);
-            case "screech": return new Color(0.75f, 0.5f, 1f, 1f);
+            case "quake": case "boulder": case "pound": return new Color(0.85f, 0.62f, 0.4f, 1f);
             case "flame": return PROJ_FIRE;
             default: return new Color(1f, 0.6f, 0.35f, 1f);
         }
@@ -1937,7 +1950,6 @@ public class WorldRenderer implements Disposable {
     }
 
     private void drawMonster(Monster m) {
-        if (m.state == Monster.State.BURROW) return; // 땅속에 숨어 있다: 흙먼지 예고만 보인다
         String sheet = m.boss ? bossSheet(m.def.sprite, m.phase2) : null;
         if (sheet != null) {
             drawBossSheet(m, sheet);
@@ -2155,9 +2167,7 @@ public class WorldRenderer implements Disposable {
             }
             if (m.state == Monster.State.CHANNEL) {
                 Color c = "lightning".equals(m.channelKind) ? PROJ_SKY : "firespin".equals(m.channelKind) ? PROJ_FIRE
-                        : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD
-                        : "swamp".equals(m.channelKind) ? new Color(0.35f, 0.75f, 0.3f, 1f)
-                        : "devour".equals(m.channelKind) ? PROJ_DARK : new Color(1f, 0.6f, 0.35f, 1f);
+                        : "bloodpool".equals(m.channelKind) ? PROJ_BLOOD : new Color(1f, 0.6f, 0.35f, 1f);
                 float r = m.hurtRadius * 2.4f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite)) * (0.9f + 0.1f * MathUtils.sin(time * 10f));
                 batch.setColor(c.r, c.g, c.b, 0.4f);
                 batch.draw(art.glow, m.x - r, m.centerY() - r, r * 2, r * 2);
@@ -2202,6 +2212,7 @@ public class WorldRenderer implements Disposable {
             }
         }
         for (Projectile p : g.projectiles) {
+            if ("crescent".equals(p.source) && drawCrescent(p)) continue;
             Color c = projectileColor(p.source);
             float r = p.radius;
             float pulse = 1f + 0.15f * MathUtils.sin(time * 25f + p.x);
@@ -2497,6 +2508,22 @@ public class WorldRenderer implements Disposable {
     }
 
     /** 투사체 색: 쏜 몬스터마다 다르다. */
+    /**
+     * 혈월 검기 그림 (sprites/fx/crescent.png, 오른쪽을 보는 초승달 한 장). 그림이 아직 없으면 false 를 돌려
+     * 보통 탄처럼 그린다. 그림을 넣기만 하면 날아가는 쪽으로 돌려서 그려진다.
+     */
+    private boolean drawCrescent(Projectile p) {
+        String path = "sprites/fx/crescent.png";
+        if (!SHEET_EXISTS.computeIfAbsent(path, k -> Gdx.files.internal(k).exists())) return false;
+        TextureRegion t = art.cell(path, 1, 1, 0);
+        if (t == null) return false;
+        float w = p.radius * 3.2f, h = w * t.getRegionHeight() / Math.max(1f, t.getRegionWidth());
+        float deg = MathUtils.atan2(p.vy, p.vx) * MathUtils.radiansToDegrees;
+        batch.setColor(Color.WHITE);
+        batch.draw(t, p.x - w / 2f, p.y - h / 2f, w / 2f, h / 2f, w, h, 1f, 1f, deg);
+        return true;
+    }
+
     private static Color projectileColor(String source) {
         if (source == null) return PROJ_FIRE;
         switch (source) {
@@ -2505,7 +2532,8 @@ public class WorldRenderer implements Disposable {
             case "demonlord": return PROJ_DARK;
             case "fire": return new Color(1f, 0.42f, 0.12f, 1f);
             case "golem": return new Color(0.8f, 0.62f, 0.42f, 1f);
-            case "bone": return BONE;
+            case "crescent": return PROJ_BLOOD;
+            case "bat": return new Color(0.75f, 0.6f, 1f, 1f);
             default: return PROJ_FIRE;
         }
     }
