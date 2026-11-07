@@ -9,7 +9,7 @@ public final class NewGame {
 
     public static GameState create(Balance b) {
         GameState s = new GameState();
-        s.mapVersion = com.yongsa.world.WorldMap.VERSION;
+        s.mapVersion = com.yongsa.map.WorldMap.VERSION;
         Weapon sword = s.newWeapon(Rules.HOLY_SEALED);
         s.equippedUid = sword.uid;
         s.hp = b.hero.baseMaxHp;

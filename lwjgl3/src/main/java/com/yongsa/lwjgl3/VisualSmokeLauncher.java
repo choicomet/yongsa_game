@@ -16,7 +16,7 @@ import com.yongsa.model.Weapon;
 import com.yongsa.screen.GameScreen;
 import com.yongsa.ui.BagWindow;
 import com.yongsa.ui.ForgeWindow;
-import com.yongsa.world.Room;
+import com.yongsa.map.Room;
 
 /** Explicit developer-only entry point. Saves real GL frames using an isolated save directory. */
 public final class VisualSmokeLauncher {

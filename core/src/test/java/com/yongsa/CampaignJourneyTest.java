@@ -1,10 +1,10 @@
 package com.yongsa;
 
-import com.yongsa.combat.Monster;
+import com.yongsa.enemy.Monster;
 import com.yongsa.config.Balance;
 import com.yongsa.model.*;
 import com.yongsa.save.SaveManager;
-import com.yongsa.world.Door;
+import com.yongsa.map.Door;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

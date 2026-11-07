@@ -1,4 +1,5 @@
 package com.yongsa.gfx;
+import com.yongsa.combat.Actor;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;

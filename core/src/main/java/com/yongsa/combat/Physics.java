@@ -1,6 +1,6 @@
 package com.yongsa.combat;
 
-import com.yongsa.world.WorldMap;
+import com.yongsa.map.WorldMap;
 
 /** 타일과 발 사각형의 겹침으로 막힌 곳을 처리한다. 물리 엔진은 쓰지 않는다. */
 public final class Physics {

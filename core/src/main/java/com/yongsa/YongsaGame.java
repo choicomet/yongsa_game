@@ -9,15 +9,16 @@ import com.yongsa.config.Balance;
 import com.yongsa.config.Story;
 import com.yongsa.gfx.Art;
 import com.yongsa.gfx.Fonts;
-import com.yongsa.gfx.Sfx;
+import com.yongsa.audio.Bgm;
+import com.yongsa.audio.Sfx;
 import com.yongsa.model.GameState;
 import com.yongsa.save.SaveManager;
 import com.yongsa.save.Settings;
-import com.yongsa.screen.TitleScreen;
+import com.yongsa.ui.TitleScreen;
 import com.yongsa.ui.Ui;
-import com.yongsa.world.MapDef;
-import com.yongsa.world.RoomSceneLayout;
-import com.yongsa.world.WorldMap;
+import com.yongsa.map.MapDef;
+import com.yongsa.map.RoomSceneLayout;
+import com.yongsa.map.WorldMap;
 
 import java.io.IOException;
 
@@ -32,6 +33,8 @@ public class YongsaGame extends Game {
     public Fonts fonts;
     public Art art;
     public Sfx sfx;
+    /** 배경음악 (audio/Bgm). */
+    public Bgm bgm;
     public Skin skin;
     public SpriteBatch batch;
     public ShapeRenderer shapes;
@@ -47,6 +50,7 @@ public class YongsaGame extends Game {
         fonts = new Fonts();
         art = new Art();
         sfx = new Sfx();
+        bgm = new Bgm();
         skin = Ui.createSkin(fonts, art);
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();
@@ -62,6 +66,7 @@ public class YongsaGame extends Game {
 
     public void applySettings() {
         sfx.volume = settings.volume;
+        bgm.setVolume(settings.volume);
         if (settings.fullscreen && !Gdx.graphics.isFullscreen()) {
             Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
         } else if (!settings.fullscreen && Gdx.graphics.isFullscreen()) {
@@ -91,6 +96,7 @@ public class YongsaGame extends Game {
         batch.dispose();
         shapes.dispose();
         sfx.dispose();
+        bgm.dispose();
         art.dispose();
         fonts.dispose();
         skin.dispose();

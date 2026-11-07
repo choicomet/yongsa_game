@@ -25,9 +25,12 @@ import com.yongsa.ui.ModalStack;
 import com.yongsa.ui.PauseMenu;
 import com.yongsa.ui.Ui;
 import com.yongsa.ui.UnsealScene;
-import com.yongsa.world.CameraFollow;
-import com.yongsa.world.Room;
-import com.yongsa.world.RoomType;
+import com.yongsa.map.CameraFollow;
+import com.yongsa.map.Room;
+import com.yongsa.map.RoomType;
+import com.yongsa.ui.EndingScreen;
+import com.yongsa.ui.StoryScreen;
+import com.yongsa.ui.TitleScreen;
 
 /**
  * 플레이 화면. 창이 열려 있으면 게임 시간(이동, 전투, 쿨타임)은 멈추고 UI 시간(버튼, 연출)만 흐른다:

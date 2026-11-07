@@ -6,8 +6,8 @@ import com.yongsa.model.GameEvent;
 import com.yongsa.model.GameSession;
 import com.yongsa.model.GameState;
 import com.yongsa.model.NewGame;
-import com.yongsa.world.Door;
-import com.yongsa.world.RoomType;
+import com.yongsa.map.Door;
+import com.yongsa.map.RoomType;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

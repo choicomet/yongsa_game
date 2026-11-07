@@ -10,7 +10,7 @@ import com.yongsa.YongsaGame;
 import com.yongsa.combat.Facing;
 import com.yongsa.model.*;
 import com.yongsa.screen.WorldRenderer;
-import com.yongsa.world.WorldMap;
+import com.yongsa.map.WorldMap;
 
 /** Fixed-pose visual checks of the shipped renderer. Separate QA saves, hidden window, no player input. */
 public final class HeroEquipmentLauncher {

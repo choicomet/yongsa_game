@@ -1,6 +1,6 @@
 package com.yongsa;
 
-import com.yongsa.world.RoomSceneLayout;
+import com.yongsa.map.RoomSceneLayout;
 import org.junit.jupiter.api.Test;
 import javax.imageio.ImageIO;
 import java.nio.file.Files;

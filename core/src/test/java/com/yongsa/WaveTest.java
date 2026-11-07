@@ -1,6 +1,6 @@
 package com.yongsa;
 
-import com.yongsa.combat.Monster;
+import com.yongsa.enemy.Monster;
 import com.yongsa.config.Balance;
 import com.yongsa.model.Controls;
 import com.yongsa.model.GameEvent;

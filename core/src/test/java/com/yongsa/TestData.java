@@ -4,12 +4,12 @@ import com.yongsa.config.Balance;
 import com.yongsa.model.Controls;
 import com.yongsa.model.GameEvent;
 import com.yongsa.model.GameSession;
-import com.yongsa.world.Corridor;
-import com.yongsa.world.Door;
-import com.yongsa.world.Room;
-import com.yongsa.world.MapDef;
-import com.yongsa.world.RoomSceneLayout;
-import com.yongsa.world.WorldMap;
+import com.yongsa.map.Corridor;
+import com.yongsa.map.Door;
+import com.yongsa.map.Room;
+import com.yongsa.map.MapDef;
+import com.yongsa.map.RoomSceneLayout;
+import com.yongsa.map.WorldMap;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -82,7 +82,7 @@ public final class TestData {
     public static boolean walkThrough(GameSession g, Door d, List<GameEvent> out, BooleanSupplier stop) {
         if (d.link.transition) {
             if (!walkTransition(g, d, out, stop)) return false;
-            if (d.partner().room.type == com.yongsa.world.RoomType.TUNNEL) {
+            if (d.partner().room.type == com.yongsa.map.RoomType.TUNNEL) {
                 Door exit = d.partner().room.doors.stream().filter(x -> x != d.partner()).findFirst().orElseThrow();
                 return walkTransition(g, exit, out, stop);
             }
@@ -112,7 +112,7 @@ public final class TestData {
         Controls c = new Controls();
         // Follow the open middle of a cave before approaching the opposite mouth.
         // Its natural walls need not allow a diagonal shortcut from mouth to mouth.
-        if (g.heroRoom()==d.room && d.room.type==com.yongsa.world.RoomType.TUNNEL
+        if (g.heroRoom()==d.room && d.room.type==com.yongsa.map.RoomType.TUNNEL
                 && Math.hypot(g.hero.x-d.arriveX,g.hero.y-d.arriveY)>120) {
             float t=g.balance.tileSize;
             for(float[] point:new float[][]{{(d.room.centerTileX()+.5f)*t,(d.room.centerTileY()+.5f)*t},{d.arriveX,d.arriveY}}) {

@@ -7,7 +7,7 @@ import com.google.gson.GsonBuilder;
 import com.yongsa.YongsaGame;
 import com.yongsa.model.*;
 import com.yongsa.screen.WorldRenderer;
-import com.yongsa.world.*;
+import com.yongsa.map.*;
 import java.lang.reflect.*;
 import java.util.*;
 

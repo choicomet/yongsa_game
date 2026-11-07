@@ -2,9 +2,9 @@ package com.yongsa;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.yongsa.world.MapDef;
-import com.yongsa.world.RoomSceneLayout;
-import com.yongsa.world.WalkMask;
+import com.yongsa.map.MapDef;
+import com.yongsa.map.RoomSceneLayout;
+import com.yongsa.map.WalkMask;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
