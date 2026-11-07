@@ -114,6 +114,20 @@ public final class Rules {
         return out;
     }
 
+    /**
+     * 조작 키 창에 보일 스킬 칸 이름 (0=스킬 1 … 3=성검 스킬). 아직 안 열린 칸은 null 이라 창에서 감춘다.
+     * 2026-11-07 플레이 피드백: 열린 스킬만, 이름과 함께 보여 준다.
+     */
+    public String[] skillKeyNames(GameState s) {
+        String[] out = new String[SKILL_SLOTS];
+        SkillSlot[] slots = skillSlots(s);
+        for (int i = 0; i < SKILL_SLOTS; i++) {
+            if (slots[i] == null || slots[i].def == null) continue;
+            out[i] = (i == HOLY_SLOT ? "성검 스킬" : "스킬 " + (i + 1)) + " · " + slots[i].def.name;
+        }
+        return out;
+    }
+
     public String weaponName(Weapon w) {
         WeaponDef d = b.weapon(w.defId);
         String name = w.awakened && d.awakenedName != null ? d.awakenedName : d.name;

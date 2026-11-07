@@ -27,7 +27,8 @@ public class PauseMenu extends Modal {
             close();
         })).width(w).height(h).padBottom(8).row();
         p.add(nav.add("설정", () -> screen.modals.push(new SettingsWindow(screen.game)))).width(w).height(h).padBottom(8).row();
-        p.add(nav.add("조작 키", () -> screen.modals.push(new ControlsWindow(screen.game, screen::applyKeyNames)))).width(w).height(h).padBottom(8).row();
+        p.add(nav.add("조작 키", () -> screen.modals.push(new ControlsWindow(screen.game, screen::applyKeyNames,
+                screen.session.rules.skillKeyNames(screen.session.state))))).width(w).height(h).padBottom(8).row();
         if (screen.session.inDungeon()) {
             com.badlogic.gdx.scenes.scene2d.ui.TextButton b = nav.add("던전 나가기", () -> {
                 if (screen.session.exitDungeon()) {

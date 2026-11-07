@@ -14,6 +14,7 @@ import com.yongsa.save.KeyBindings.Action;
  * 동작마다 키 칸이 세 개 있다. 칸을 고르고 Enter(또는 클릭) → 바꿀 키를 누르면 그 키로 바뀐다.
  * 다른 동작이 쓰던 키면 그쪽에서 빠진다는 안내가 뜬다. 기다리는 동안 Esc 는 취소, Backspace·Delete 는 칸 비우기.
  * Esc(메뉴), F1(개발용 메뉴), Enter(창 선택)는 바꿀 수 없다. 바꾼 키는 설정 파일에 바로 저장된다.
+ * 2026-11-07 플레이 피드백: 스킬 키 줄은 그 스킬을 열었을 때만, 스킬 이름과 함께 보인다.
  */
 public class ControlsWindow extends Modal {
     /** 바꿀 수 없는 키 안내. */
@@ -28,6 +29,8 @@ public class ControlsWindow extends Modal {
     private final YongsaGame game;
     /** 키를 바꾼 뒤 할 일 (게임 화면의 안내 문구 갱신). 없으면 null. */
     private final Runnable onChanged;
+    /** 스킬 칸 이름 (KeyBindings.SKILLS 순서). 안 열린 칸은 null 이고 그 줄은 감춘다. 타이틀 화면에서는 모두 null. */
+    private final String[] skillNames;
     /** 새 키를 기다리는 칸. 없으면 null. */
     private Action waitingAction;
     private int waitingSlot;
@@ -36,10 +39,36 @@ public class ControlsWindow extends Modal {
     private float scrollY = -1;
     private ScrollPane scroll;
 
+    /** 타이틀 화면: 진행 중인 게임이 없어 스킬 키 줄은 감춘다. */
     public ControlsWindow(YongsaGame game, Runnable onChanged) {
+        this(game, onChanged, new String[KeyBindings.SKILLS.length]);
+    }
+
+    /** 게임 중: skillNames 는 열린 스킬 칸의 이름 (Rules.skillKeyNames). */
+    public ControlsWindow(YongsaGame game, Runnable onChanged, String[] skillNames) {
         super(game.skin);
         this.game = game;
         this.onChanged = onChanged;
+        this.skillNames = skillNames;
+    }
+
+    /** 이 동작의 스킬 칸 번호. 스킬이 아니면 -1. */
+    private static int skillIndex(Action a) {
+        for (int i = 0; i < KeyBindings.SKILLS.length; i++) if (KeyBindings.SKILLS[i] == a) return i;
+        return -1;
+    }
+
+    /** 이 줄에 보일 이름. 안 열린 스킬이면 null (줄을 감춘다). */
+    private String title(Action a) {
+        int si = skillIndex(a);
+        if (si < 0) return a.title;
+        return si < skillNames.length ? skillNames[si] : null;
+    }
+
+    /** 안내 문구에 쓸 이름: 감춘 스킬 칸이면 원래 이름. */
+    private String nameOf(Action a) {
+        String t = title(a);
+        return t != null ? t : a.title;
     }
 
     private KeyBindings keys() {
@@ -58,8 +87,14 @@ public class ControlsWindow extends Modal {
         rows.add(label("동작", "small", Ui.DIM)).width(330).left();
         for (int i = 0; i < KeyBindings.SLOTS; i++) rows.add(label("키 " + (i + 1), "small", Ui.DIM)).width(150).left();
         rows.add().width(90).row();
+        boolean hiddenSkill = false;
         for (Action a : Action.values()) {
-            rows.add(label(a.title, "default", keys().unbound(a) ? Ui.ORANGE : Ui.TEXT)).width(330).left().padBottom(6);
+            String title = title(a);
+            if (title == null) {
+                hiddenSkill = true;
+                continue;
+            }
+            rows.add(label(title, "default", keys().unbound(a) ? Ui.ORANGE : Ui.TEXT)).width(330).left().padBottom(6);
             for (int i = 0; i < KeyBindings.SLOTS; i++) {
                 int slot = i;
                 boolean waiting = waitingAction == a && waitingSlot == i;
@@ -72,10 +107,13 @@ public class ControlsWindow extends Modal {
             }
             TextButton reset = nav.add("기본", () -> {
                 keys().reset(a);
-                changed("「" + a.title + "」을(를) 기본 키(" + keys().names(a) + ")로 되돌렸습니다.", false);
+                changed("「" + title + "」을(를) 기본 키(" + keys().names(a) + ")로 되돌렸습니다.", false);
             });
             rows.add(reset).width(82).height(38).left().padBottom(6).row();
         }
+        if (hiddenSkill)
+            rows.add(label("아직 열지 않은 스킬은 열면 여기에 나타납니다.", "small", Ui.DIM))
+                    .colspan(KeyBindings.SLOTS + 2).left().padTop(2).padBottom(4).row();
         rows.add(label("바꿀 수 없는 키", "default", Ui.GOLD)).colspan(KeyBindings.SLOTS + 2).left().padTop(14).padBottom(6).row();
         for (String[] f : FIXED) {
             rows.add(label(f[0], "small", Ui.DIM)).width(330).left().padBottom(5);
@@ -92,7 +130,7 @@ public class ControlsWindow extends Modal {
         }
 
         Label info = label(notice != null ? notice
-                        : waitingAction != null ? "「" + waitingAction.title + "」 키 " + (waitingSlot + 1) + " — 바꿀 키를 누르세요.  Esc 취소 · Backspace/Delete 칸 비우기"
+                        : waitingAction != null ? "「" + title(waitingAction) + "」 키 " + (waitingSlot + 1) + " — 바꿀 키를 누르세요.  Esc 취소 · Backspace/Delete 칸 비우기"
                         : "Esc 닫기 · 방향키/Tab 이동 · Enter 선택",
                 "small", noticeWarn ? Ui.ORANGE : waitingAction != null ? Ui.GOLD : Ui.DIM);
         info.setWrap(true);
@@ -132,7 +170,7 @@ public class ControlsWindow extends Modal {
         }
         if (keycode == Input.Keys.BACKSPACE || keycode == Input.Keys.FORWARD_DEL) {
             keys().clear(a, slot);
-            changed("「" + a.title + "」 키 " + (slot + 1) + " 칸을 비웠습니다."
+            changed("「" + nameOf(a) + "」 키 " + (slot + 1) + " 칸을 비웠습니다."
                     + (keys().unbound(a) ? " 이 동작은 이제 키가 없습니다!" : ""), keys().unbound(a));
             return true;
         }
@@ -143,12 +181,12 @@ public class ControlsWindow extends Modal {
             return true;
         }
         Action previous = keys().bind(a, slot, keycode);
-        String msg = "「" + a.title + "」 키 " + (slot + 1) + " → " + KeyBindings.keyName(keycode);
+        String msg = "「" + nameOf(a) + "」 키 " + (slot + 1) + " → " + KeyBindings.keyName(keycode);
         boolean warn = false;
         if (previous != null) {
-            msg += ".  「" + previous.title + "」에서 쓰던 키라 그쪽에서는 뺐습니다.";
+            msg += ".  「" + nameOf(previous) + "」에서 쓰던 키라 그쪽에서는 뺐습니다.";
             if (keys().unbound(previous)) {
-                msg += " 「" + previous.title + "」은(는) 이제 키가 없습니다!";
+                msg += " 「" + nameOf(previous) + "」은(는) 이제 키가 없습니다!";
                 warn = true;
             }
         }
