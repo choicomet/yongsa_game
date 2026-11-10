@@ -40,7 +40,9 @@ class EnhanceServiceTest {
         assertEquals(0, o3.destroy, 1e-9);
         assertEquals(5, es.odds(0).keep, 1e-9);
         for (int lv = 0; lv < 10; lv++) assertTrue(es.odds(lv).success >= 50, "성공은 모든 단계 50% 이상");
-        for (int lv = 0; lv < 10; lv++) assertTrue(es.odds(lv).destroy <= 5, "파괴는 많아야 5%");
+        for (int lv = 0; lv < 10; lv++) assertTrue(es.odds(lv).destroy <= 6, "파괴는 많아야 6%");
+        assertEquals(6, es.odds(9).destroy, 1e-9, "+9 → +10 은 파괴 6%");
+        assertEquals(24, es.odds(9).keep, 1e-9);
         for (int lv = 0; lv < 3; lv++) assertEquals(0, es.odds(lv).down, 1e-9, "하락은 +3부터");
     }
 
