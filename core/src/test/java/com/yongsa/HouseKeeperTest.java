@@ -78,12 +78,13 @@ class HouseKeeperTest {
     }
 
     @Test
-    void wardenLearnsCageAndHomingAndKeepsSummonWithBarrier() {
+    void wardenLearnsCageAndHomingAndSummonsTwoOrThree() {
         Balance.MonsterDef w = b.dungeon("TOP").boss;
         assertTrue(w.patterns.contains("cage"));
         assertTrue(w.patterns.contains("homing"));
         assertTrue(w.phase2Patterns.contains("summon"));
-        assertTrue(w.summonBarrier);
+        assertEquals(2, w.summonCount);
+        assertEquals(3, w.summonCountMax);
     }
 
     @Test
@@ -137,30 +138,23 @@ class HouseKeeperTest {
     }
 
     @Test
-    void barrierHoldsUntilTheSummonsFall() {
-        GameState s = hero();
-        GameSession g = wardenFight(s);
-        Monster m = forcePattern(g, "summon", 5 * b.tileSize);
-        run(g, idle, 2 / 60f);
-        assertTrue(m.barrier, "부하를 부르면 결계를 두른다");
-        List<Monster> minions = new ArrayList<>();
-        for (Monster o : g.monsters) if (!o.boss && !o.dead) minions.add(o);
-        assertFalse(minions.isEmpty());
-
-        int hp = m.hp;
-        List<GameEvent> ev = hitBoss(g, m);
-        assertEquals(hp, m.hp, "결계가 있으면 상처를 낼 수 없다");
-        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.FLOAT_TEXT && "결계에 막혔다".equals(e.text)));
-
-        for (Monster o : minions) o.dead = true;
-        ev = run(g, idle, 2 / 60f);
-        assertFalse(m.barrier, "부하가 모두 쓰러지면 결계가 깨진다");
-        assertEquals(Monster.State.STUNNED, m.state, "결계가 깨지면 휘청인다");
-        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.SHIELD_BREAK));
-
-        hp = m.hp;
-        hitBoss(g, m);
-        assertTrue(m.hp < hp, "결계가 깨지면 다시 상처를 낼 수 있다");
+    void summonsTwoOrThreeMinionsAtRandomWithoutABarrier() {
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        for (int seed = 0; seed < 12; seed++) {
+            GameState s = hero();
+            GameSession g = new GameSession(b, TestData.map(), s, seed);
+            TestData.walkIn(g, g.map.room("T6"));
+            Monster m = forcePattern(g, "summon", 5 * b.tileSize);
+            run(g, idle, 2 / 60f);
+            long n = g.monsters.stream().filter(o -> !o.boss && !o.dead).count();
+            assertTrue(n >= 2 && n <= 3, "2~3마리: " + n);
+            seen.add(n);
+            // 결계는 없다: 부하가 살아 있어도 보스가 맞는다
+            int hp = m.hp;
+            hitBoss(g, m);
+            assertTrue(m.hp < hp, "부하가 살아 있어도 상처를 낼 수 있다");
+        }
+        assertEquals(java.util.Set.of(2L, 3L), seen, "2마리도 3마리도 나온다");
     }
 
     @Test

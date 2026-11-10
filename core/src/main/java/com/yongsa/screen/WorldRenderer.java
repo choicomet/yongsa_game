@@ -2151,8 +2151,8 @@ public class WorldRenderer implements Disposable {
         // 방패, 긴 패턴의 기운
         for (Monster m : g.monsters) {
             if (m.dead) continue;
-            if (m.shield > 0 || m.barrier) {
-                float fr = m.barrier ? 1f : m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
+            if (m.shield > 0) {
+                float fr = m.shieldMax > 0 ? (float) m.shield / m.shieldMax : 1f;
                 float r = m.hurtRadius * 2.6f * (m.boss ? bossScale(m.def.sprite) : mobScale(m.def.sprite));
                 float pulse = 0.8f + 0.2f * MathUtils.sin(time * 4f);
                 batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, (0.18f + 0.25f * fr) * pulse);

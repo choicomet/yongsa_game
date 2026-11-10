@@ -70,41 +70,13 @@ class Mao1PhaseTest {
     void phaseOnePatternList() {
         Balance.MonsterDef d = b.finalBoss;
         assertFalse(d.patterns.contains("combo"), "콤보는 뺐다");
-        for (String p : new String[]{"bonespike", "summon", "darkorb", "brand"}) {
+        for (String p : new String[]{"darkorb", "brand"}) {
             assertTrue(d.patterns.contains(p), p);
         }
-        for (String p : new String[]{"swamp", "pillars", "combo", "rush", "lightning"}) {
-            assertFalse(d.patterns.contains(p), "2026-11-07 피드백으로 뺐다: " + p);
+        for (String p : new String[]{"swamp", "pillars", "combo", "rush", "lightning", "bonespike", "summon"}) {
+            assertFalse(d.patterns.contains(p), "피드백으로 뺐다: " + p);
         }
         assertTrue(d.noMeleePhase1, "1페이즈는 기본 근접 공격이 없다");
-        assertEquals("RIGHT", d.summonFrom, "해골병을 부른다");
-        assertTrue(d.summonCount > 0);
-    }
-
-    @Test
-    void boneSpikesRiseWithoutBlinding() {
-        GameState s = NewGame.create(b);
-        GameSession g = demonFight(s);
-        forcePattern(g, "bonespike", 5 * b.tileSize);
-        run(g, idle, 2 / 60f);
-        long spikes = g.hazards.stream().filter(h -> "bone".equals(h.style)).count();
-        assertEquals(b.monster.spikeCount, spikes, "바닥 다섯 곳");
-        assertTrue(g.blindT <= 0, "2026-11-07 피드백: 실명은 뺐다");
-    }
-
-    @Test
-    void summonsSkeletonSoldiersWithoutBlinding() {
-        GameState s = NewGame.create(b);
-        GameSession g = demonFight(s);
-        Monster boss = forcePattern(g, "summon", 5 * b.tileSize);
-        // 실명은 뼈 가시를 가진 보스만 건다: 목록에 뼈 가시를 두되 이번에는 소환을 고르게 한다
-        boss.def.patterns = new ArrayList<>(List.of("summon", "bonespike"));
-        boss.lastPattern = "bonespike";
-        run(g, idle, 2 / 60f);
-        long skeletons = g.monsters.stream().filter(o -> !o.dead && !o.boss
-                && o.def.sprite.equals(b.dungeon("RIGHT").mob.sprite)).count();
-        assertEquals(boss.def.summonCount, skeletons);
-        assertTrue(g.blindT <= 0, "소환해도 캄캄해지지 않는다");
     }
 
     @Test
@@ -182,6 +154,8 @@ class Mao1PhaseTest {
         GameState s = NewGame.create(b);
         GameSession g = demonFight(s);
         Monster m = forcePattern(g, "summon", 5 * b.tileSize);
+        m.def.summonFrom = "RIGHT"; // 마왕은 이제 소환하지 않지만, 혹시 남은 부하가 있으면 함께 사라지는지 본다
+        m.def.summonCount = 2;
         run(g, idle, 2 / 60f);
         assertTrue(g.monsters.stream().anyMatch(o -> !o.boss && !o.dead));
         // 2페이즈에서 마지막 일격

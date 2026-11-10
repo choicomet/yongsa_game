@@ -70,8 +70,6 @@ public class Monster extends Actor {
     public float attackMul = 1f;
     /** 뒤로 도약: 뛰어오른 자리와 착지할 자리. */
     public float leapX0, leapY0, leapX1, leapY1;
-    /** 결계 (수문장): 소환한 부하가 살아 있는 동안 맞지 않는다. */
-    public boolean barrier;
     /** 마왕 2페이즈 최후의 발악 (체력 20% 아래). */
     public boolean lastStand;
     /** 해골병 방패: 지금 들고 있나, 들기·내리기가 바뀔 때까지 남은 시간. */

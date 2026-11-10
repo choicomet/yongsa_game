@@ -60,30 +60,60 @@ class GolemSkillTest {
     }
 
     @Test
-    void golemGetsThreeNewPatternsOnlyInPhaseTwo() {
+    void golemGetsNewPatternsOnlyInPhaseTwo() {
         Balance.MonsterDef golem = b.dungeon("LEFT").boss;
         assertEquals(List.of("rush", "rockfall", "slam"), golem.patterns);
-        assertEquals(List.of("quake", "boulder", "pound"), golem.phase2Patterns);
+        assertEquals(List.of("boulder", "pound"), golem.phase2Patterns, "지진 파동은 내려찍기에 합쳤다");
     }
 
     @Test
-    void quakeRingsBurstFromTheInsideOut() {
+    void eachPoundSendsQuakeRingsFromTheInsideOut() {
         GameState s = hero();
         GameSession g = golemFight(s);
-        Monster m = forcePattern(g, "quake", 4 * b.tileSize);
+        Monster m = forcePattern(g, "pound", 6 * b.tileSize);
+        g.hero.invuln = 99f;
         run(g, idle, 2 / 60f);
+        m.patternCd = 99f;
+        assertTrue(g.hazards.stream().noneMatch(h -> "quake".equals(h.style)), "찍기 전에는 파동이 없다");
+        Hazard slam = null;
+        for (Hazard h : g.hazards) if ("pound".equals(h.style)) { slam = h; break; }
+        float sx = slam.x, sy = slam.y, sr = slam.radius;
+        run(g, idle, b.monster.poundWarning + 1 / 60f);
         List<Hazard> rings = new ArrayList<>();
         for (Hazard h : g.hazards) if ("quake".equals(h.style)) rings.add(h);
-        assertEquals(b.monster.quakeWaves, rings.size());
+        assertEquals(b.monster.quakeWaves, rings.size(), "찍는 순간 그 자리에서 파동 세 겹");
+        assertEquals(sr, rings.get(0).innerRadius, 0.01f, "첫 고리는 찍은 자리 바로 바깥");
+        for (Hazard r : rings) assertEquals(sx, r.x, 0.01f);
         for (int i = 1; i < rings.size(); i++) {
             assertTrue(rings.get(i).delay > rings.get(i - 1).delay, "바깥 고리가 더 늦게 터진다");
             assertEquals(rings.get(i - 1).radius, rings.get(i).innerRadius, 0.01f);
         }
-        // 고리는 가운데가 비어 있다
-        Hazard outer = rings.get(rings.size() - 1);
-        assertFalse(outer.covers(m.x, m.y, 0), "바깥 고리의 가운데는 안전하다");
-        float mid = (outer.innerRadius + outer.radius) / 2f;
-        assertTrue(outer.covers(m.x + mid, m.y, 0));
+        assertFalse(rings.get(rings.size() - 1).covers(sx, sy, 0), "고리 가운데는 비어 있다");
+    }
+
+    @Test
+    void secondPoundLandsWhenTheFirstRingVanishes() {
+        GameState s = hero();
+        GameSession g = golemFight(s);
+        Monster m = forcePattern(g, "pound", 6 * b.tileSize);
+        g.hero.invuln = 99f;
+        run(g, idle, 2 / 60f);
+        m.patternCd = 99f;
+        List<Hazard> slams = new ArrayList<>();
+        for (Hazard h : g.hazards) if ("pound".equals(h.style)) slams.add(h);
+        assertEquals(2, slams.size(), "두 번만 내려찍는다");
+        Hazard second = slams.get(1);
+        // 첫 번째가 떨어진 직후: 첫 파동의 첫 고리와 두 번째 내려찍기가 같은 순간에 터진다
+        run(g, idle, b.monster.poundWarning + 1 / 60f);
+        Hazard firstRing = null;
+        for (Hazard h : g.hazards) if ("quake".equals(h.style) && (firstRing == null || h.delay < firstRing.delay)) firstRing = h;
+        assertNotNull(firstRing);
+        assertEquals(firstRing.delay, second.delay, 0.02f);
+        assertFalse(second.dead);
+        run(g, idle, firstRing.delay + 1 / 60f);
+        assertTrue(firstRing.dead && second.dead, "첫 고리가 사라질 때 두 번째가 떨어진다");
+        long rings = g.hazards.stream().filter(h -> "quake".equals(h.style) && h.x == second.x).count();
+        assertEquals(b.monster.quakeWaves, rings, "두 번째 자리에서도 파동");
     }
 
     @Test
@@ -106,14 +136,15 @@ class GolemSkillTest {
     }
 
     @Test
-    void poundSlamsThreeTimesTowardTheHero() {
+    void poundSlamsTwiceTowardTheHero() {
         GameState s = hero();
         GameSession g = golemFight(s);
         Monster m = forcePattern(g, "pound", 6 * b.tileSize);
         run(g, idle, 2 / 60f);
         List<Hazard> slams = new ArrayList<>();
         for (Hazard h : g.hazards) if ("pound".equals(h.style)) slams.add(h);
-        assertEquals(b.monster.poundCount, slams.size(), "쿵, 쿵, 쿵");
+        assertEquals(2, b.monster.poundCount);
+        assertEquals(b.monster.poundCount, slams.size(), "쿵, 쿵");
         for (int i = 1; i < slams.size(); i++) {
             Hazard prev = slams.get(i - 1), cur = slams.get(i);
             assertTrue(cur.delay > prev.delay, "차례로 내려찍는다");
@@ -130,24 +161,9 @@ class GolemSkillTest {
         GameSession g = golemFight(s);
         forcePattern(g, "pound", 6 * b.tileSize);
         g.hero.invuln = 99f;
-        List<GameEvent> ev = run(g, idle, b.monster.poundWarning + b.monster.poundGap * b.monster.poundCount + 0.1f);
+        List<GameEvent> ev = run(g, idle, b.monster.poundWarning + b.monster.quakeGap * b.monster.poundCount + 0.1f);
         long shakes = ev.stream().filter(e -> e.type == GameEvent.Type.SLAM_FX).count();
         assertTrue(shakes >= b.monster.poundCount, "무거운 한 방마다 화면이 울린다: " + shakes);
-    }
-
-    @Test
-    void steppingAsideAvoidsThePound() {
-        GameState s = hero();
-        GameSession g = golemFight(s);
-        Monster m = forcePattern(g, "pound", 4 * b.tileSize);
-        run(g, idle, 2 / 60f);
-        m.patternCd = 99f;
-        s.hp = 999;
-        Controls side = new Controls();
-        side.moveY = 1;
-        run(g, side, 0.6f);
-        run(g, idle, b.monster.poundWarning + b.monster.poundGap * b.monster.poundCount);
-        assertEquals(999, s.hp, "옆으로 비키면 안 맞는다");
     }
 
     @Test
@@ -158,7 +174,7 @@ class GolemSkillTest {
         run(g, idle, 2 / 60f);
         m.patternCd = 99f;
         s.hp = 999;
-        run(g, idle, b.monster.poundWarning + b.monster.poundGap * b.monster.poundCount);
+        run(g, idle, b.monster.poundWarning + b.monster.quakeGap * b.monster.poundCount);
         assertTrue(s.hp < 999);
     }
 

@@ -559,15 +559,6 @@ public class GameSession {
             }
             return;
         }
-        if (m.barrier) {
-            // 결계: 부하가 살아 있는 동안은 상처를 낼 수 없다
-            if (m.immuneMsgCd <= 0) {
-                m.immuneMsgCd = 1.2f;
-                events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2.2f, "결계에 막혔다", GameEvent.Tone.BLOCKED));
-                events.add(GameEvent.sound("block"));
-            }
-            return;
-        }
         int dmg = roll(rules.attack(state), mult);
         boolean guarded = false;
         if (m.guardActive()) {
@@ -1089,7 +1080,6 @@ public class GameSession {
                 if (m.stateT <= 0) m.state = Monster.State.CHASE;
                 continue;
             }
-            if (m.barrier && summoned.isEmpty() && !minionsAlive()) breakBarrier(m);
             float speedUp = m.enraged ? mc.phase2Speed : 1f;
             m.attackCd -= dt * speedUp;
             m.patternCd -= dt * speedUp;
@@ -1261,22 +1251,6 @@ public class GameSession {
         }
         monsters.addAll(summoned);
         separate();
-    }
-
-    private boolean minionsAlive() {
-        for (Monster o : monsters) if (!o.dead && !o.boss) return true;
-        return false;
-    }
-
-    /** 부하가 모두 쓰러졌다: 결계가 깨지며 보스가 휘청인다. */
-    private void breakBarrier(Monster m) {
-        m.barrier = false;
-        m.enter(Monster.State.STUNNED, balance.monster.barrierStagger);
-        events.add(GameEvent.toast(m.def.name + "의 결계가 깨졌다! 지금이 기회다"));
-        events.add(GameEvent.sound("slam"));
-        GameEvent fx = GameEvent.fx(GameEvent.Type.SHIELD_BREAK, m.x, m.centerY());
-        fx.size = m.hurtRadius * 2.4f;
-        events.add(fx);
     }
 
     /** 바라보는 방향을 (tx, ty) 쪽으로 최대 maxTurn 라디안만 돌린다. */
@@ -1624,6 +1598,7 @@ public class GameSession {
             }
             case "summon": {
                 int count = m.def.summonCount > 0 ? m.def.summonCount : mc.summonCount;
+                if (m.def.summonCountMax > count) count += random.nextInt(m.def.summonCountMax - count + 1); // 2~3마리 무작위
                 int alive = 0;
                 for (Monster o : monsters) if (!o.dead && !o.boss) alive++;
                 if (alive >= count) return false;
@@ -1634,15 +1609,7 @@ public class GameSession {
                     Monster s = makeMonster(r, d.mob, false, false, false);
                     if (s != null) summoned.add(s);
                 }
-                if (m.def.summonBarrier && !summoned.isEmpty()) {
-                    m.barrier = true;
-                    events.add(GameEvent.toast(m.def.name + "이(가) 부하를 부르고 결계를 둘렀다! 부하부터 쓰러뜨리자"));
-                    GameEvent bfx = GameEvent.fx(GameEvent.Type.SHIELD_UP, m.x, m.centerY());
-                    bfx.size = m.hurtRadius * 2.4f;
-                    events.add(bfx);
-                } else {
-                    events.add(GameEvent.toast(m.def.name + "이(가) 부하를 불렀다!"));
-                }
+                events.add(GameEvent.toast(m.def.name + "이(가) 부하를 불렀다!"));
                 events.add(GameEvent.sound("roar"));
                 m.enter(Monster.State.RECOVER, 0.8f);
                 blind(m);
@@ -1696,25 +1663,6 @@ public class GameSession {
                 events.add(GameEvent.sound("roar"));
                 return true;
             }
-            case "quake": {
-                // 지진 파동: 보스 둘레 고리 세 겹이 안에서 밖으로 차례로 터진다. 첫 고리는 보스 발밑 전체
-                float w = mc.quakeWaveTiles * T;
-                for (int i = 0; i < mc.quakeWaves; i++) {
-                    Hazard h = new Hazard(Hazard.Kind.CIRCLE, "quake");
-                    h.x = m.x;
-                    h.y = m.y;
-                    h.innerRadius = w * i;
-                    h.radius = w * (i + 1);
-                    h.delay = h.warning = mc.quakeWarning + mc.quakeGap * i;
-                    h.damage = m.attack();
-                    h.multiplier = mc.quakeMultiplier;
-                    hazards.add(h);
-                }
-                m.enter(Monster.State.RECOVER, mc.quakeWarning + mc.quakeGap * (mc.quakeWaves - 1) + 0.4f);
-                events.add(GameEvent.toast("땅이 울린다! 파동 사이로 피하자"));
-                events.add(GameEvent.sound("roar"));
-                return true;
-            }
             case "boulder": {
                 // 바위 던지기: 용사 자리에 큰 바위가 떨어지고, 파편이 사방으로 튄다 (updateHazards 의 shatter)
                 aimAtHero(m);
@@ -1724,18 +1672,19 @@ public class GameSession {
                 return true;
             }
             case "pound": {
-                // 연속 내려찍기: 용사 쪽으로 쿵, 쿵, 쿵. 갈수록 멀고 넓게 내려찍고, 끝나면 오래 숨을 고른다 (반격 기회)
+                // 연속 내려찍기: 용사 쪽으로 쿵, 쿵. 찍을 때마다 그 자리에서 지진 파동이 퍼지고 (quakeFrom),
+                // 두 번째는 첫 파동의 첫 고리가 사라지는 순간 떨어진다. 다 찍으면 오래 숨을 고른다 (반격 기회)
                 aimAtHero(m);
                 float last = -1;
                 for (int i = 0; i < mc.poundCount; i++) {
                     float d = (mc.poundStartTiles + mc.poundStepTiles * i) * T;
                     float px = m.x + m.dirX * d, py = m.y + m.dirY * d;
                     if (map.solid(tileX(px), tileY(py))) break; // 벽 너머로는 찍지 않는다
-                    last = mc.poundWarning + mc.poundGap * i;
+                    last = mc.poundWarning + mc.quakeGap * i;
                     circleHazard("pound", px, py, (mc.poundRadiusTiles + mc.poundRadiusGrowTiles * i) * T, last, m.attack(), mc.poundMultiplier);
                 }
                 if (last < 0) return false; // 바로 앞이 벽이면 다른 패턴
-                m.enter(Monster.State.RECOVER, last + mc.poundRecover);
+                m.enter(Monster.State.RECOVER, last + mc.quakeGap * mc.quakeWaves + mc.poundRecover);
                 events.add(GameEvent.toast(m.def.name + "이(가) 주먹을 높이 든다! 옆으로 비키자"));
                 events.add(GameEvent.sound("roar"));
                 return true;
@@ -1907,6 +1856,23 @@ public class GameSession {
         }
     }
 
+    /** 골렘이 내려찍은 자리에서 지진 파동: 둘레 고리 quakeWaves 겹이 quakeGap 간격으로 안에서 밖으로 터진다. */
+    private void quakeFrom(Hazard slam, List<Hazard> out) {
+        Balance.MonsterCfg mc = balance.monster;
+        float w = mc.quakeWaveTiles * T;
+        for (int i = 0; i < mc.quakeWaves; i++) {
+            Hazard h = new Hazard(Hazard.Kind.CIRCLE, "quake");
+            h.x = slam.x;
+            h.y = slam.y;
+            h.innerRadius = slam.radius + w * i;
+            h.radius = slam.radius + w * (i + 1);
+            h.delay = h.warning = mc.quakeGap * (i + 1);
+            h.damage = slam.damage;
+            h.multiplier = mc.quakeMultiplier;
+            out.add(h);
+        }
+    }
+
     /** 바위가 떨어진 자리에서 파편이 사방으로 튄다. */
     private void shatter(Hazard h) {
         Balance.MonsterCfg mc = balance.monster;
@@ -1982,6 +1948,7 @@ public class GameSession {
     private void updateHazards(float dt) {
         Balance.MonsterCfg mc = balance.monster;
         boolean inPool = false;
+        List<Hazard> spawned = new ArrayList<>();
         for (Hazard h : hazards) {
             if (h.dead) continue;
             h.age += dt;
@@ -2009,7 +1976,7 @@ public class GameSession {
                     fx.dirY = h.y2;
                     events.add(fx);
                     events.add(GameEvent.sound("bolt".equals(h.style) ? "cast" : "slam"));
-                    if ("pound".equals(h.style) || "boulder".equals(h.style) || "quake".equals(h.style)) {
+                    if ("pound".equals(h.style) || "boulder".equals(h.style)) {
                         // 골렘: 무거운 한 방마다 화면이 쿵 울린다
                         GameEvent shake = GameEvent.fx(GameEvent.Type.SLAM_FX, h.x, h.y);
                         shake.size = h.radius;
@@ -2018,6 +1985,7 @@ public class GameSession {
                     h.dead = true;
                     if (justDied) return;
                     if ("boulder".equals(h.style)) shatter(h);
+                    if ("pound".equals(h.style)) quakeFrom(h, spawned);
                     continue;
                 }
             }
@@ -2030,6 +1998,7 @@ public class GameSession {
             }
         }
         hazards.removeIf(h -> h.dead);
+        hazards.addAll(spawned);
         poolTextCd -= dt;
         if (inPool) {
             if (hero.slowT <= 0.2f) hero.slowT = mc.slowSeconds;

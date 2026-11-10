@@ -311,9 +311,11 @@ class BossPatternTest {
         Monster boss = forcePattern(g, "summon", 5 * b.tileSize);
         for (Monster o : g.monsters) if (!o.boss) o.dead = true;
         run(g, idle, 2 / 60f);
-        long skeletons = g.monsters.stream().filter(o -> !o.dead && !o.boss
-                && o.def.sprite.equals(b.dungeon("RIGHT").mob.sprite)).count();
-        assertEquals(boss.def.summonCount, skeletons);
+        // 2026-11-10: 탑의 수문장은 자기 탑의 부하를 2~3마리 무작위로 부른다
+        // (예전 이 검사는 summonCount 가 0 이라 0 == 0 으로 늘 통과하고 있었다)
+        long minions = g.monsters.stream().filter(o -> !o.dead && !o.boss
+                && o.def.sprite.equals(b.dungeon("TOP").mob.sprite)).count();
+        assertTrue(minions >= boss.def.summonCount && minions <= boss.def.summonCountMax, "부하 " + minions + "마리");
     }
 
     /** 2026-10-27 버그: 스킬(검기)로 마왕 1페이즈를 마무리하면 ConcurrentModificationException 으로 게임이 꺼졌다. */
