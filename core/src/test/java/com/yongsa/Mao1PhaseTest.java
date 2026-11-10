@@ -70,10 +70,8 @@ class Mao1PhaseTest {
     void phaseOnePatternList() {
         Balance.MonsterDef d = b.finalBoss;
         assertFalse(d.patterns.contains("combo"), "콤보는 뺐다");
-        for (String p : new String[]{"darkorb", "brand"}) {
-            assertTrue(d.patterns.contains(p), p);
-        }
-        for (String p : new String[]{"swamp", "pillars", "combo", "rush", "lightning", "bonespike", "summon"}) {
+        assertEquals(List.of("ring", "darkorb", "brand"), d.patterns);
+        for (String p : new String[]{"swamp", "pillars", "combo", "rush", "lightning", "bonespike", "summon", "slam", "charge", "whip"}) {
             assertFalse(d.patterns.contains(p), "피드백으로 뺐다: " + p);
         }
         assertTrue(d.noMeleePhase1, "1페이즈는 기본 근접 공격이 없다");

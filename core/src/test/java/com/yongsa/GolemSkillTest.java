@@ -62,7 +62,7 @@ class GolemSkillTest {
     @Test
     void golemGetsNewPatternsOnlyInPhaseTwo() {
         Balance.MonsterDef golem = b.dungeon("LEFT").boss;
-        assertEquals(List.of("rush", "rockfall", "slam"), golem.patterns);
+        assertEquals(List.of("rush", "slam"), golem.patterns, "2026-11-10: 낙석은 뺐다");
         assertEquals(List.of("boulder", "pound"), golem.phase2Patterns, "지진 파동은 내려찍기에 합쳤다");
     }
 
@@ -176,6 +176,71 @@ class GolemSkillTest {
         s.hp = 999;
         run(g, idle, b.monster.poundWarning + b.monster.quakeGap * b.monster.poundCount);
         assertTrue(s.hp < 999);
+    }
+
+    /** 연속 돌진을 방 한가운데에서 시작한다. 용사는 dx 오른쪽. */
+    private Monster rush(GameSession g, float dx) {
+        Monster m = g.activeBoss();
+        run(g, idle, 1.5f);
+        com.yongsa.world.Room r = g.map.room("L6");
+        m.x = (r.centerTileX() + 0.5f) * b.tileSize;
+        m.y = (r.centerTileY() + 0.5f) * b.tileSize;
+        g.hero.x = m.x + dx;
+        g.hero.y = m.y;
+        g.hero.invuln = 99f;
+        m.rushLeft = b.monster.rushCount;
+        m.lastPattern = "rush";
+        m.patternCd = 99f;
+        m.dirX = m.lockX = 1; // 용사 쪽(오른쪽)을 노린다
+        m.dirY = m.lockY = 0;
+        m.enter(Monster.State.CHARGE_TELEGRAPH, 0.2f);
+        return m;
+    }
+
+    @Test
+    void firstTwoRushesStopShortOfTheWallWithoutReeling() {
+        GameState s = hero();
+        GameSession g = golemFight(s);
+        Monster m = rush(g, 3 * b.tileSize);
+        int charges = 0, bumps = 0;
+        Monster.State last = m.state;
+        for (int i = 0; i < 60 * 10 && m.state != Monster.State.STUNNED; i++) {
+            g.update(1 / 60f, idle);
+            for (GameEvent e : g.pollEvents()) if (e.type == GameEvent.Type.SLAM_FX) bumps++;
+            if (m.state == Monster.State.CHARGING && last != Monster.State.CHARGING) {
+                charges++;
+                assertEquals(0, bumps, "앞선 돌진에서는 벽에 부딪히지 않았다 (" + charges + "번째 시작)");
+            }
+            last = m.state;
+            assertNotEquals(Monster.State.RECOVER, m.state, "중간에 쉬거나 휘청이지 않는다");
+        }
+        assertEquals(b.monster.rushCount, charges);
+        assertEquals(Monster.State.STUNNED, m.state, "셋째 돌진 끝에 기절");
+        assertEquals(b.monster.rushStun, m.stateTotal, 0.01f);
+        assertTrue(bumps >= 1, "셋째는 벽에 부딪힌다");
+    }
+
+    @Test
+    void thirdRushRunsAllTheWayIntoTheWall() {
+        GameState s = hero();
+        GameSession g = golemFight(s);
+        Monster m = rush(g, 3 * b.tileSize);
+        m.rushLeft = 1;
+        float x0 = m.x, wall = clear(g, m.x, m.y);
+        for (int i = 0; i < 60 * 8 && m.state != Monster.State.STUNNED; i++) {
+            g.update(1 / 60f, idle);
+            g.pollEvents();
+        }
+        assertEquals(Monster.State.STUNNED, m.state);
+        float ran = (m.x - x0) / b.tileSize;
+        assertTrue(ran > 3.5f, "용사(3칸)를 지나 계속 달린다");
+        assertEquals(wall, ran, 0.5f, "벽에 닿을 때까지 달려간다");
+    }
+
+    private float clear(GameSession g, float x0, float y) {
+        float d = 0;
+        while (com.yongsa.combat.Physics.free(g.map, x0 + d + 4, y, g.activeBoss(), b.tileSize) && d < 40 * b.tileSize) d += 4;
+        return d / b.tileSize;
     }
 
     @Test

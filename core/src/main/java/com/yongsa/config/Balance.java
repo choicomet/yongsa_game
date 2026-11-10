@@ -209,6 +209,8 @@ public class Balance {
         public float rushTelegraph;
         /** 연속 돌진의 마지막 돌진이 끝나면 이만큼 휘청인다 (선우 버전 좀비킹). */
         public float rushStun;
+        /** 연속 돌진 첫째·둘째는 벽에서 이만큼 앞에서 멈춘다 (부딪히지 않는다). 셋째는 벽까지 달려가 부딪힌다. */
+        public float rushWallMarginTiles;
         /** 해골 사제 뼈 가시 (선우 버전 리치): 용사 발밑 하나 + 주변 몇 개. */
         public int spikeCount;
         public float spikeRadiusTiles, spikeSpreadTiles, spikeWarning, spikeMultiplier;
@@ -231,6 +233,9 @@ public class Balance {
         public float slowRatio, slowSeconds;
         public int spearCount;
         public float spearDelay, spearWarning, spearWidthTiles, spearLengthTiles, spearMultiplier, spearSpreadDegrees;
+        /** 혈월의 기사 창 찌르기: 멈춰 선 채 spearStandVolleys 번, spearStandInterval 초마다 창 세 줄. 움직이면 남은 창은 사라진다. */
+        public int spearStandVolleys;
+        public float spearStandInterval, spearStandWarning;
         /** 낙뢰: 용사 자리에 차례로 번개. */
         public int strikeCount;
         public float strikeInterval, strikeWarning, strikeRadiusTiles, strikeMultiplier;
@@ -295,7 +300,7 @@ public class Balance {
         public float speedTiles;
         /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
         public String ai;
-        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, boulder, pound, spinslash, crescent, cage, homing, darkorb, brand. */
+        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, boulder, pound, spearstand, spinslash, crescent, cage, homing, darkorb, brand. */
         public List<String> patterns;
         /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;

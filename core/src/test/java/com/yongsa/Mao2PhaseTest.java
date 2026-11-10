@@ -82,6 +82,7 @@ class Mao2PhaseTest {
     void phaseTwoPatternList() {
         List<String> p2 = b.finalBoss.phase2Patterns;
         assertFalse(p2.contains("rush"), "연속 돌진은 뺐다");
+        assertFalse(p2.contains("whip"), "2026-11-10: 척추 채찍은 뺐다");
         assertFalse(p2.contains("lightning"), "낙뢰는 뺐다");
         assertFalse(p2.contains("devour"), "2026-11-07 피드백: 끌어당기는 삼키기는 억까라 뺐다");
         assertFalse(p2.contains("drain"), "마력 흡수는 뺐다");

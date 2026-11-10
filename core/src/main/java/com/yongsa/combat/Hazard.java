@@ -22,6 +22,8 @@ public class Hazard {
     public float innerRadius;
     /** 남은 동안 용사를 따라다니다가, 다 되면 그 자리에 멈춘다 (마왕의 낙인). */
     public float followT;
+    /** 이 몬스터가 멈춰 서 있는 동안만 터진다. 움직이기 시작하면(CHANNEL 이 끝나면) 사라진다 (기사의 창 찌르기). */
+    public Monster standingOwner;
     /** 터지기까지 남은 시간, 예고 전체 시간. */
     public float delay, warning;
     /** POOL 이 남아 있는 시간. */

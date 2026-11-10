@@ -1148,11 +1148,10 @@ public class GameSession {
                     }
                     boolean over = m.dashLeft <= 0.5f || m.stateT <= 0 || blocked;
                     if (charge && over && m.rushLeft > 1) {
-                        // 연속 돌진: 숨을 고르고 다시 조준한다
+                        // 연속 돌진 첫째·둘째: 벽 앞에서 멈추고(부딪히지 않는다) 다시 조준한다. 기절은 없다
                         m.rushLeft--;
                         aimAtHero(m);
                         m.enter(Monster.State.CHARGE_TELEGRAPH, mc.rushTelegraph);
-                        if (blocked) wallBump(m);
                     } else if (charge && over && (blocked || m.rushLeft == 1)) {
                         // 벽에 부딪히거나 연속 돌진을 다 쓰면 휘청인다: 반격할 기회
                         boolean lastRush = m.rushLeft == 1;
@@ -1198,6 +1197,14 @@ public class GameSession {
                     if (m.stateT <= 0) {
                         m.enter(Monster.State.CHARGING, 3f);
                         m.dashLeft = mc.chargeMaxTiles * T;
+                        if (m.rushLeft > 1) {
+                            // 연속 돌진 첫째·둘째: 벽 앞에서 멈춘다
+                            m.dashLeft = Math.min(m.dashLeft, Math.max(T * 0.5f, clearRun(m) - mc.rushWallMarginTiles * T));
+                        } else if (m.rushLeft == 1) {
+                            // 셋째: 벽에 닿을 때까지 달린다 (반드시 부딪혀서 기절)
+                            m.dashLeft = 99 * T;
+                            m.stateT = m.stateTotal = 6f;
+                        }
                         m.dashHit = false;
                         events.add(GameEvent.sound("dash"));
                     }
@@ -1262,6 +1269,17 @@ public class GameSession {
         cur += Math.max(-maxTurn, Math.min(maxTurn, diff));
         m.dirX = (float) Math.cos(cur);
         m.dirY = (float) Math.sin(cur);
+    }
+
+    /** 돌진 방향(lockX, lockY)으로 벽에 닿기 전까지 갈 수 있는 거리. */
+    private float clearRun(Monster m) {
+        float step = T * 0.25f, d = 0;
+        while (d < balance.monster.chargeMaxTiles * T) {
+            float nx = m.x + m.lockX * (d + step), ny = m.y + m.lockY * (d + step);
+            if (!Physics.free(map, nx, ny, m, T)) break;
+            d += step;
+        }
+        return d;
     }
 
     private void wallBump(Monster m) {
@@ -1568,6 +1586,12 @@ public class GameSession {
                 m.orbitSign = random.nextBoolean() ? 1 : -1;
                 events.add(GameEvent.sound("roar"));
                 return true;
+            case "spearstand":
+                // 혈월의 기사 창 찌르기: 멈춰 선 채로만 창이 나온다 (channel)
+                startChannel(m, p, mc.spearStandVolleys, 0.25f);
+                events.add(GameEvent.toast(m.def.name + "이(가) 멈춰 서서 창을 겨눈다!"));
+                events.add(GameEvent.sound("cast"));
+                return true;
             case "bloodpool":
                 spawnPools(m, "blood");
                 startChannel(m, p, 1, mc.spearDelay);
@@ -1825,6 +1849,36 @@ public class GameSession {
                 if (m.stateT <= 0) m.enter(Monster.State.RECOVER, 1.1f);
                 return;
             }
+            case "spearstand": {
+                if (m.channelT > 0) return;
+                if (m.channelLeft <= 0) {
+                    // 마지막 창이 다 터질 때까지 서 있다가 다시 움직인다 (2페이즈 빠른 시계에서도 창이 잘리지 않게)
+                    for (Hazard h : hazards) if (h.standingOwner == m && !h.dead && h.delay > 0) return;
+                    m.enter(Monster.State.RECOVER, 0.4f);
+                    return;
+                }
+                m.channelLeft--;
+                aimAtHero(m);
+                float base = (float) Math.atan2(m.dirY, m.dirX);
+                float spread = (float) Math.toRadians(mc.spearSpreadDegrees);
+                for (int i = 0; i < mc.spearCount; i++) {
+                    float a = base + spread * (i - (mc.spearCount - 1) / 2f);
+                    Hazard h = new Hazard(Hazard.Kind.LINE, "spear");
+                    h.x = m.x;
+                    h.y = m.y;
+                    h.x2 = m.x + (float) Math.cos(a) * mc.spearLengthTiles * T;
+                    h.y2 = m.y + (float) Math.sin(a) * mc.spearLengthTiles * T;
+                    h.radius = mc.spearWidthTiles * T / 2f;
+                    h.delay = h.warning = mc.spearStandWarning;
+                    h.damage = m.attack();
+                    h.multiplier = mc.spearMultiplier;
+                    h.standingOwner = m;
+                    hazards.add(h);
+                }
+                // 마지막 줄은 창이 다 터질 때까지 서 있다가 움직인다
+                m.channelT = m.channelLeft > 0 ? mc.spearStandInterval : mc.spearStandWarning + 0.05f;
+                return;
+            }
             case "bloodpool": {
                 if (m.channelT > 0) return;
                 if (m.channelLeft > 0) {
@@ -1951,6 +2005,12 @@ public class GameSession {
         List<Hazard> spawned = new ArrayList<>();
         for (Hazard h : hazards) {
             if (h.dead) continue;
+            if (h.standingOwner != null && h.delay > 0
+                    && (h.standingOwner.dead || h.standingOwner.state != Monster.State.CHANNEL)) {
+                // 기사가 다시 움직이면 아직 안 나온 창은 나오지 않는다
+                h.dead = true;
+                continue;
+            }
             h.age += dt;
             if (h.followT > 0) {
                 h.followT -= dt;
