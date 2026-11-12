@@ -24,6 +24,9 @@ final class PaintedJoints implements Disposable {
         Painting(PaintedJointLayout.Joint joint){this.joint=joint;}
     }
     private final List<Painting> paintings=new ArrayList<>();
+    private Set<String> reviewedScenes=Set.of();
+
+    void setReviewedScenes(Set<String> scenes) {reviewedScenes=Set.copyOf(scenes);}
 
     PaintedJoints(WorldMap map) {
         if(Boolean.getBoolean("yongsa.disablePaintedJoints"))return;
@@ -65,6 +68,7 @@ final class PaintedJoints implements Disposable {
                 pixels.put(i,(byte)Math.round((pixels.get(i)&255)*j.alpha(j.x((x+.5f)/w),j.y((y+.5f)/h))));
             }
             p.texture=texture(src);
+            if(reviewedScenes.contains("joints/"+j.id))return;
             for(var mask:j.foregrounds) {
                 int x0=(int)(mask.minX()*w),y0=(int)(mask.minY()*h);
                 int x1=Math.min(w,(int)Math.ceil(mask.maxX()*w)),y1=Math.min(h,(int)Math.ceil(mask.maxY()*h));

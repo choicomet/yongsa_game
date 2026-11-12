@@ -90,6 +90,7 @@ public class WorldRenderer implements Disposable {
     /** GPT 가 준 앞쪽 가림 레이어 (<장면>-front.png). 없는 장면은 null 로 기억한다. */
     private final Map<String, Texture> frontTex = new HashMap<>();
     private final SceneForegrounds sceneForegrounds;
+    private final ReviewedForegrounds reviewedForegrounds;
     private final BossReturnDoors returnDoors;
     private final Color ambient = new Color(0.6f, 0.55f, 0.5f, 1f);
     private boolean ambientSet;
@@ -309,6 +310,7 @@ public class WorldRenderer implements Disposable {
         }
         passages = new PassagePainter(map, T);
         sceneForegrounds = new SceneForegrounds(passages);
+        reviewedForegrounds = new ReviewedForegrounds(map, passages);
         returnDoors = new BossReturnDoors(g);
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
@@ -899,9 +901,13 @@ public class WorldRenderer implements Disposable {
         drawGhosts();
         List<Sorted> list = new ArrayList<>();
         collect(list, tx0, ty0, tx1, ty1);
+        var reviewed = reviewedForegrounds.visible(viewX0, viewY0, viewX1, viewY1);
+        for (var front : reviewed) if (!front.always)
+            list.add(new Sorted(front.depth, () -> front.draw(batch)));
         for (Room r : map.rooms) {
             if (r.scene == null || r.originX > viewX1 || r.originX + r.widthPx < viewX0
                     || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            if (reviewedForegrounds.has("rooms/" + r.scene.id)) continue;
             for (SceneForegrounds.Piece piece : sceneForegrounds.pieces(r, time)) {
                 list.add(new Sorted(r.sceneY(piece.depth), () -> sceneForegrounds.draw(batch, r, piece)));
             }
@@ -916,6 +922,7 @@ public class WorldRenderer implements Disposable {
         list.sort((a, b) -> Float.compare(b.y, a.y));
         for (Sorted s : list) s.call.draw();
         drawSceneFronts();
+        for (var front : reviewed) if (front.always) front.draw(batch);
         particles.drawNormal(batch);
         batch.setColor(Color.WHITE);
         batch.end();
@@ -1083,6 +1090,7 @@ public class WorldRenderer implements Disposable {
     private void drawSceneFronts() {
         for (Room r : map.rooms) {
             if (r.scene == null) continue;
+            if (reviewedForegrounds.has("rooms/" + r.scene.id)) continue;
             if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
             Texture tex = frontTexture(r);
             if (tex == null) continue;
@@ -2485,6 +2493,7 @@ public class WorldRenderer implements Disposable {
         for (Texture t : frontTex.values()) if (t != null) t.dispose();
         frontTex.clear();
         sceneForegrounds.dispose();
+        reviewedForegrounds.dispose();
         returnDoors.dispose();
         spriteBlend.dispose();
         actorInk.dispose();

@@ -1,0 +1,470 @@
+{
+  "joints/exit-R1-R2": {
+    "movement": {
+      "0": {
+        "polygon": [
+          0.591,
+          0.455,
+          0.646,
+          0.452,
+          0.679,
+          0.476,
+          0.65,
+          0.502,
+          0.602,
+          0.494
+        ],
+        "reason": "Only the pillar footing blocks movement. Its tall face previously blocked the landing behind it."
+      }
+    }
+  },
+  "rooms/mine": {
+    "layers": {
+      "0": {
+        "polygon": [
+          0.155,
+          0.495,
+          0.178,
+          0.472,
+          0.188,
+          0.476,
+          0.236,
+          0.53,
+          0.24,
+          0.545,
+          0.234,
+          0.577,
+          0.217,
+          0.591,
+          0.205,
+          0.588,
+          0.192,
+          0.6,
+          0.178,
+          0.583,
+          0.171,
+          0.573,
+          0.161,
+          0.577,
+          0.153,
+          0.557
+        ],
+        "depth": 0.603,
+        "reason": "Follow the cart body and wheels instead of the round brush envelope."
+      }
+    }
+  },
+  "passages/tower-bridge": {
+    "layers": {
+      "0": {
+        "polygon": [
+          0.28,
+          0.523,
+          0.294,
+          0.506,
+          0.313,
+          0.519,
+          0.315,
+          0.534,
+          0.309,
+          0.544,
+          0.309,
+          0.596,
+          0.285,
+          0.596,
+          0.283,
+          0.541
+        ]
+      },
+      "1": {
+        "polygon": [
+          0.357,
+          0.562,
+          0.376,
+          0.546,
+          0.394,
+          0.564,
+          0.394,
+          0.58,
+          0.387,
+          0.584,
+          0.388,
+          0.636,
+          0.363,
+          0.634,
+          0.363,
+          0.58,
+          0.357,
+          0.576
+        ]
+      },
+      "2": {
+        "polygon": [
+          0.602,
+          0.566,
+          0.62,
+          0.55,
+          0.64,
+          0.563,
+          0.64,
+          0.577,
+          0.634,
+          0.586,
+          0.633,
+          0.641,
+          0.607,
+          0.64,
+          0.607,
+          0.581,
+          0.602,
+          0.576
+        ]
+      },
+      "3": {
+        "polygon": [
+          0.685,
+          0.518,
+          0.699,
+          0.508,
+          0.716,
+          0.52,
+          0.719,
+          0.536,
+          0.712,
+          0.544,
+          0.712,
+          0.599,
+          0.69,
+          0.6,
+          0.69,
+          0.542,
+          0.684,
+          0.537
+        ]
+      },
+      "6": {
+        "polygon": [
+          0.216,
+          0.541,
+          0.277,
+          0.57,
+          0.277,
+          0.594,
+          0.236,
+          0.579,
+          0.216,
+          0.558
+        ]
+      }
+    }
+  },
+  "joints/exit-L1-L2": {
+    "movement": {
+      "0": {
+        "polygon": [
+          0.294,
+          0.386,
+          0.316,
+          0.379,
+          0.333,
+          0.399,
+          0.332,
+          0.417,
+          0.349,
+          0.435,
+          0.369,
+          0.448,
+          0.379,
+          0.489,
+          0.372,
+          0.515,
+          0.345,
+          0.52,
+          0.33,
+          0.477,
+          0.3,
+          0.44,
+          0.29,
+          0.417
+        ],
+        "reason": "Trace the fence footings; leave the visible path behind the posts open."
+      }
+    },
+    "layers": {
+      "0": {
+        "polygon": [
+          0.3,
+          0.326,
+          0.313,
+          0.322,
+          0.322,
+          0.33,
+          0.325,
+          0.396,
+          0.314,
+          0.409,
+          0.301,
+          0.401
+        ],
+        "reason": "Trace post/rock outline; exclude bare path around the brush."
+      },
+      "1": {
+        "polygon": [
+          0.345,
+          0.402,
+          0.359,
+          0.395,
+          0.371,
+          0.401,
+          0.374,
+          0.5,
+          0.36,
+          0.516,
+          0.344,
+          0.507
+        ],
+        "reason": "Trace post/rock outline; exclude bare path around the brush."
+      },
+      "2": {
+        "polygon": [
+          0.376,
+          0.449,
+          0.393,
+          0.439,
+          0.406,
+          0.446,
+          0.42,
+          0.445,
+          0.439,
+          0.453,
+          0.445,
+          0.48,
+          0.459,
+          0.493,
+          0.468,
+          0.495,
+          0.481,
+          0.509,
+          0.482,
+          0.526,
+          0.467,
+          0.54,
+          0.45,
+          0.533,
+          0.439,
+          0.544,
+          0.423,
+          0.538,
+          0.407,
+          0.545,
+          0.383,
+          0.533,
+          0.372,
+          0.52,
+          0.371,
+          0.49
+        ],
+        "reason": "Trace post/rock outline; exclude bare path around the brush."
+      },
+      "3": {
+        "polygon": [
+          0.46,
+          0.245,
+          0.475,
+          0.231,
+          0.487,
+          0.242,
+          0.486,
+          0.29,
+          0.473,
+          0.301,
+          0.46,
+          0.29
+        ],
+        "reason": "Trace post/rock outline; exclude bare path around the brush."
+      },
+      "4": {
+        "polygon": [
+          0.519,
+          0.176,
+          0.537,
+          0.171,
+          0.548,
+          0.18,
+          0.541,
+          0.284,
+          0.526,
+          0.296,
+          0.513,
+          0.281
+        ],
+        "reason": "Trace post/rock outline; exclude bare path around the brush."
+      }
+    }
+  },
+  "passages/citadel-crossing": {
+    "movement": {
+      "0": {
+        "polygon": [
+          0.651,
+          0.626,
+          0.676,
+          0.626,
+          0.699,
+          0.638,
+          0.725,
+          0.65,
+          0.751,
+          0.648,
+          0.754,
+          0.673,
+          0.72,
+          0.686,
+          0.684,
+          0.659,
+          0.653,
+          0.653
+        ],
+        "reason": "Parapet foot only; the tall front face must not block the road behind it."
+      }
+    }
+  },
+  "passages/tower-stair-bend": {
+    "movement": {
+      "0": {
+        "polygon": [
+          0.1,
+          0.275,
+          0.12,
+          0.275,
+          0.128,
+          0.289,
+          0.118,
+          0.299,
+          0.098,
+          0.294
+        ],
+        "reason": "Move collision to the visible base, away from the stair landing behind the column."
+      },
+      "1": {
+        "polygon": [
+          0.195,
+          0.386,
+          0.216,
+          0.386,
+          0.224,
+          0.402,
+          0.211,
+          0.412,
+          0.193,
+          0.405
+        ],
+        "reason": "Move collision to the visible base, away from the stair landing behind the column."
+      },
+      "2": {
+        "polygon": [
+          0.32,
+          0.462,
+          0.345,
+          0.462,
+          0.355,
+          0.477,
+          0.34,
+          0.489,
+          0.318,
+          0.48
+        ],
+        "reason": "Move collision to the visible base, away from the stair landing behind the column."
+      },
+      "3": {
+        "polygon": [
+          0.607,
+          0.828,
+          0.63,
+          0.825,
+          0.639,
+          0.842,
+          0.625,
+          0.855,
+          0.604,
+          0.846
+        ],
+        "reason": "Move collision to the visible base, away from the stair landing behind the column."
+      }
+    }
+  },
+  "joints/entry-R2-R7": {
+    "movementExtra": [
+      {
+        "mode": "block",
+        "polygon": [
+          0.755,
+          0,
+          0.84,
+          0,
+          0.84,
+          0.125,
+          0.76,
+          0.125
+        ],
+        "reason": "Remove a five-sample isolated floor sliver on the upper-right cliff after closing the adjacent pillar."
+      }
+    ]
+  },
+  "joints/exit-T7-T6": {
+    "movementExtra": [
+      {
+        "mode": "block",
+        "polygon": [
+          0.652,
+          0.27,
+          0.73,
+          0.27,
+          0.73,
+          0.39,
+          0.67,
+          0.41,
+          0.645,
+          0.36
+        ],
+        "reason": "The banner wall face below the cap is solid too; do not leave an isolated walkable speck on it."
+      },
+      {
+        "mode": "block",
+        "polygon": [
+          0.84,
+          0.235,
+          0.9,
+          0.235,
+          0.91,
+          0.28,
+          0.85,
+          0.31
+        ],
+        "reason": "Close the remaining single sampled floor point on the adjoining stone cap."
+      }
+    ]
+  },
+  "joints/entry-T3-T5": {
+    "movementExtra": [
+      {
+        "mode": "open",
+        "polygon": [
+          0.91,
+          0.647,
+          0.95,
+          0.625,
+          1,
+          0.635,
+          1,
+          0.718,
+          0.946,
+          0.733,
+          0.915,
+          0.711
+        ],
+        "reason": "The rooms/tower paving correction is covered by this joint at UV .96325,.66743. Open the same visible paving in the dominant composite mask; no dynamic prop occupies it."
+      }
+    ]
+  }
+}
