@@ -23,10 +23,10 @@ class ForgeMotionTest {
     }
 
     @Test void everyActualOutcomeSurvivesPresentationAndChargesOnlyOnce() {
-        // 하락은 없어졌다 (2026-10-14 팀 결정): +6 은 성공 53 · 유지 39.95 · 파괴 7.05
-        double[] rolls = {0.1, 0.6, 0.85, 0.99};
-        var outcomes = new EnhanceService.Outcome[]{EnhanceService.Outcome.SUCCESS, EnhanceService.Outcome.KEEP,
-                EnhanceService.Outcome.KEEP, EnhanceService.Outcome.DESTROY};
+        // 2026-11-07: +6 은 성공 65 · 유지 18 · 하락 14 · 파괴 3 (숙련도 0)
+        double[] rolls = {0.1, 0.7, 0.9, 0.99};
+        var outcomes = new EnhanceService.Outcome[]{EnhanceService.Outcome.SUCCESS,
+                EnhanceService.Outcome.KEEP, EnhanceService.Outcome.DOWN, EnhanceService.Outcome.DESTROY};
         for (int i = 0; i < rolls.length; i++) {
             var balance = TestData.balance();
             var state = NewGame.create(balance);

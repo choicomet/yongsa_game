@@ -50,6 +50,9 @@ public class GameState {
     public int mapVersion;
 
     public List<String> enhanceLog = new ArrayList<>();
+    /** 강화 숙련도 레벨과 지금 레벨에서 쌓은 경험치. 검이 아니라 용사의 실력이라 모든 검이 함께 쓴다. */
+    public int masteryLevel;
+    public int masteryExp;
     public Stats stats = new Stats();
 
     public int ore(OreType t) {
