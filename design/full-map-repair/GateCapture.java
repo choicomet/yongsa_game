@@ -7,7 +7,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.yongsa.YongsaGame;
 import com.yongsa.model.*;
 import com.yongsa.screen.WorldRenderer;
-import com.yongsa.world.*;
+import com.yongsa.map.*;
 import java.util.*;
 
 /** Actual-renderer evidence of all 46 closed room boundaries; never uses the player's save. */

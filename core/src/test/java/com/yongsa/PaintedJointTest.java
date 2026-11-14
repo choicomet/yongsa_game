@@ -1,6 +1,6 @@
 package com.yongsa;
 
-import com.yongsa.world.PaintedJointLayout;
+import com.yongsa.map.PaintedJointLayout;
 import org.junit.jupiter.api.Test;
 import java.nio.file.*;
 import javax.imageio.ImageIO;

@@ -1,14 +1,14 @@
 package com.yongsa;
 
-import com.yongsa.combat.Monster;
-import com.yongsa.combat.Projectile;
+import com.yongsa.enemy.Monster;
+import com.yongsa.enemy.Projectile;
 import com.yongsa.config.Balance;
 import com.yongsa.model.Controls;
 import com.yongsa.model.GameEvent;
 import com.yongsa.model.GameSession;
 import com.yongsa.model.GameState;
 import com.yongsa.model.NewGame;
-import com.yongsa.world.Room;
+import com.yongsa.map.Room;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

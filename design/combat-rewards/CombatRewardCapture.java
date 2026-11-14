@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.yongsa.YongsaGame;
-import com.yongsa.combat.Hazard;
+import com.yongsa.enemy.Hazard;
 import com.yongsa.model.*;
 import com.yongsa.screen.WorldRenderer;
 import java.util.*;
@@ -28,7 +28,7 @@ public final class CombatRewardCapture {
   }
   void setup(String name){
    if(renderer!=null)renderer.dispose();
-   var s=NewGame.create(balance);s.mapVersion=com.yongsa.world.WorldMap.VERSION;s.bossesDefeated.addAll(List.of("LEFT","RIGHT","TOP"));s.unsealed=true;
+   var s=NewGame.create(balance);s.mapVersion=com.yongsa.map.WorldMap.VERSION;s.bossesDefeated.addAll(List.of("LEFT","RIGHT","TOP"));s.unsealed=true;
    var map=newMap();boolean eye=name.startsWith("eye-");var room=map.room(eye?"F":name.substring(0,2));
    s.resumeX=room.spawnX(balance.tileSize);s.resumeY=room.spawnY(balance.tileSize);
    session=new GameSession(balance,map,s,42);session.monsters.clear();session.devGodMode=true;

@@ -7,7 +7,7 @@ import com.yongsa.YongsaGame;
 import com.yongsa.combat.*;
 import com.yongsa.model.*;
 import com.yongsa.screen.WorldRenderer;
-import com.yongsa.world.*;
+import com.yongsa.map.*;
 import java.util.*;
 
 /** Hidden real renderer, fixed seed/camera; never reads or writes the player's save. */

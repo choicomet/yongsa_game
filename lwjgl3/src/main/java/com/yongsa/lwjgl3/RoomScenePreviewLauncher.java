@@ -20,7 +20,7 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.yongsa.gfx.Art;
-import com.yongsa.world.RoomSceneLayout;
+import com.yongsa.map.RoomSceneLayout;
 
 /**
  * Standalone asset/layout preview. No GameSession, saves, combat or room links are modified.

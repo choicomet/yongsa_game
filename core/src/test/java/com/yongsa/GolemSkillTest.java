@@ -1,7 +1,7 @@
 package com.yongsa;
 
-import com.yongsa.combat.Hazard;
-import com.yongsa.combat.Monster;
+import com.yongsa.enemy.Hazard;
+import com.yongsa.enemy.Monster;
 import com.yongsa.config.Balance;
 import com.yongsa.model.Controls;
 import com.yongsa.model.GameEvent;
@@ -49,7 +49,7 @@ class GolemSkillTest {
         m.def.phase2Patterns = new ArrayList<>(List.of(pattern));
         m.lastPattern = null;
         // 방 한가운데에 용사, 그 오른쪽에 골렘 (벽에 걸리지 않게)
-        com.yongsa.world.Room r = g.map.room("L6");
+        com.yongsa.map.Room r = g.map.room("L6");
         g.hero.x = (r.centerTileX() - 1.5f) * b.tileSize;
         g.hero.y = (r.centerTileY() + 0.5f) * b.tileSize;
         m.x = g.hero.x + dx;
@@ -182,7 +182,7 @@ class GolemSkillTest {
     private Monster rush(GameSession g, float dx) {
         Monster m = g.activeBoss();
         run(g, idle, 1.5f);
-        com.yongsa.world.Room r = g.map.room("L6");
+        com.yongsa.map.Room r = g.map.room("L6");
         m.x = (r.centerTileX() + 0.5f) * b.tileSize;
         m.y = (r.centerTileY() + 0.5f) * b.tileSize;
         g.hero.x = m.x + dx;

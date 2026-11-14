@@ -4,12 +4,12 @@ import com.yongsa.model.GameState;
 import com.yongsa.model.NewGame;
 import com.yongsa.model.OreType;
 import com.yongsa.model.Vein;
-import com.yongsa.world.Door;
-import com.yongsa.world.Link;
-import com.yongsa.world.Room;
-import com.yongsa.world.RoomType;
-import com.yongsa.world.VeinGenerator;
-import com.yongsa.world.WorldMap;
+import com.yongsa.map.Door;
+import com.yongsa.map.Link;
+import com.yongsa.map.Room;
+import com.yongsa.map.RoomType;
+import com.yongsa.map.VeinGenerator;
+import com.yongsa.map.WorldMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

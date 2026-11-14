@@ -62,11 +62,12 @@ Windows (JDK 17 필요, `JAVA_HOME` 설정):
 
 ## 구조
 
-- `core/` 게임 로직과 화면 (`com.yongsa`)
-  - `model/` 규칙 (강화, 제작, 흡수, 저장 상태) — 화면과 분리되어 테스트 가능
-  - `world/` 방 배치, 문, 광맥 생성
-  - `combat/` 용사와 몬스터, 충돌
-  - `ui/`, `screen/`, `gfx/` 화면과 그림
+- `core/` 게임 로직과 화면 (`com.yongsa`). 담당별로 폴더를 나눠 서로 같은 파일을 덜 고치게 했다.
+  - `map/` **맵 담당**: 방 배치·문·통로·광맥 자리(`WorldMap`, `Room`, `Door` …)와 맵 그리기(`MapPainter`, `PassagePainter`, `RoomGates` …)
+  - `enemy/` **보스·몬스터 담당**: `Monster`·`Hazard`·`Projectile`, 잡몹 AI(`MonsterBrain`), 보스 패턴(`BossBrain`), 몬스터·보스 그리기(`EnemyPainter`)
+  - `ui/` **UI 담당**: HUD·창·메뉴(`Hud`, `ForgeWindow` …)와 타이틀·메뉴·인트로·스토리·엔딩 화면
+  - `audio/` **음악 담당**: 효과음(`Sfx`), 배경음악(`Bgm`, `assets/audio/bgm/<이름>.ogg`)
+  - 공용: `model/` 규칙과 게임 진행(`GameSession`), `combat/` 용사·충돌, `gfx/` 그림·빛·알갱이, `config/`, `save/`, `screen/` 게임 화면(`GameScreen`)과 그리기 순서(`WorldRenderer`)
 - `lwjgl3/` 데스크톱 실행기
 - `assets/data/balance.json` 모든 수치 (체력, 공격력, 강화 확률, 몬스터)
 - `assets/data/map.json` 방 배치(그림·크기)와 문 이음, 잠긴 던전 입구 조건

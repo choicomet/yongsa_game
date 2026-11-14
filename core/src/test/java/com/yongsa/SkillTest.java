@@ -1,6 +1,6 @@
 package com.yongsa;
 
-import com.yongsa.combat.Monster;
+import com.yongsa.enemy.Monster;
 import com.yongsa.config.Balance;
 import com.yongsa.model.Controls;
 import com.yongsa.model.GameEvent;
@@ -44,7 +44,7 @@ class SkillTest {
 
     /** 몬스터 하나만 남겨 용사 오른쪽 dx 에 세운다. */
     private Monster lineUp(GameSession g, float dx) {
-        com.yongsa.world.Room r = g.map.room("L1");
+        com.yongsa.map.Room r = g.map.room("L1");
         g.hero.x = (r.centerTileX() + 0.5f) * b.tileSize;
         g.hero.y = (r.centerTileY() + 0.5f) * b.tileSize;
         Monster m = g.monsters.get(0);

@@ -2,7 +2,7 @@ package com.yongsa;
 
 import com.yongsa.combat.Physics;
 import com.yongsa.model.*;
-import com.yongsa.world.*;
+import com.yongsa.map.*;
 import org.junit.jupiter.api.Test;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;

@@ -6,10 +6,10 @@ import com.yongsa.model.GameEvent;
 import com.yongsa.model.GameSession;
 import com.yongsa.model.GameState;
 import com.yongsa.model.NewGame;
-import com.yongsa.world.Door;
-import com.yongsa.world.Prop;
-import com.yongsa.world.Room;
-import com.yongsa.world.RoomType;
+import com.yongsa.map.Door;
+import com.yongsa.map.Prop;
+import com.yongsa.map.Room;
+import com.yongsa.map.RoomType;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -231,7 +231,7 @@ class GameSessionTest {
         GameSession g = session(s);
         assertTrue(g.inCamp(), "예전 위치는 새 맵에 맞지 않아 캠프에서 시작");
         assertNull(s.room("L2").veins, "예전 광맥 자리는 버린다");
-        assertEquals(com.yongsa.world.WorldMap.VERSION, s.mapVersion);
+        assertEquals(com.yongsa.map.WorldMap.VERSION, s.mapVersion);
     }
 
     @Test
@@ -246,7 +246,7 @@ class GameSessionTest {
     @Test
     void previousMapSaveKeepsProgressButDropsStaleWorldCoordinates() {
         GameState s = NewGame.create(b);
-        s.mapVersion = com.yongsa.world.WorldMap.VERSION - 1;
+        s.mapVersion = com.yongsa.map.WorldMap.VERSION - 1;
         s.resumeX = 1000; s.resumeY = 1000;
         s.potionDrops.add(new float[]{1000, 1000});
         s.bossesDefeated.add("LEFT");

@@ -8,7 +8,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.yongsa.YongsaGame;
 import com.yongsa.model.*;
 import com.yongsa.screen.WorldRenderer;
-import com.yongsa.world.*;
+import com.yongsa.map.*;
 
 /** Render the shipped portal/seal states with isolated QA saves, without changing player progress. */
 public final class PortalDesignLauncher {
