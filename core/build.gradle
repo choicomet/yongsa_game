@@ -20,6 +20,7 @@ tasks.named('test') {
     inputs.files(fileTree(rootProject.file('assets/sprites/hero-motion/harmony')) { include '**/*.png' })
     inputs.files(fileTree(rootProject.file('assets/walkmask')) { include '**/*.png' })
     inputs.file(rootProject.file('docs/walk-mask-review.json'))
+    inputs.files(fileTree(rootProject.file('assets/occlusion')) { include '**/*.png' })
     inputs.files(fileTree(rootProject.file('assets/scenes')) { include '**/*.png' })
     testLogging {
         events 'failed'
