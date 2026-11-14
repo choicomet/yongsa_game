@@ -465,6 +465,13 @@ public class WorldRenderer implements Disposable {
         float bs = g.balance.monster.blindSeconds;
         float blind = g.blindT > 0 ? Math.min(1f, Math.min(g.blindT / 0.5f, (bs - g.blindT) / 0.3f)) : 0f;
         float amb = 1f - 0.92f * blind;
+        // 마왕 최후의 발악: 방 전체가 어두워진다
+        for (Monster lm : g.monsters) {
+            if (!lm.dead && lm.lastStand) {
+                amb *= 0.6f;
+                break;
+            }
+        }
         lighting.begin(ambient.r * amb, ambient.g * amb, ambient.b * amb);
         HeroActor h = g.hero;
         lighting.add(h.x, h.y + 14, 250 * (1f - 0.55f * blind), 1f, 0.92f, 0.8f, 0.6f);

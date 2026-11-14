@@ -2,6 +2,7 @@ package com.yongsa.screen;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.yongsa.save.KeyBindings;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.ScreenAdapter;
@@ -80,6 +81,7 @@ public class GameScreen extends ScreenAdapter {
         this.hud = new Hud(session, game.art, game.fonts, game.batch, game.shapes);
         zoom = targetZoom();
         worldCam.zoom = zoom;
+        applyKeyNames();
         if (session.inCamp()) hud.banner("용사의 캠프");
     }
 
@@ -98,52 +100,29 @@ public class GameScreen extends ScreenAdapter {
                     return true;
                 }
                 if (endingDelay >= 0) return true;
-                switch (keycode) {
-                    case Input.Keys.ESCAPE:
-                        openPause();
-                        return true;
-                    case Input.Keys.B:
-                        openBag();
-                        return true;
-                    case Input.Keys.M:
-                    case Input.Keys.TAB:
+                if (keycode == Input.Keys.ESCAPE) {
+                    openPause();
+                    return true;
+                }
+                // 조작 키는 사용자가 바꿀 수 있다 (설정 → 조작 키)
+                KeyBindings.Action a = game.settings.keys().owner(keycode);
+                if (a == null) return false;
+                switch (a) {
+                    case BAG: openBag(); return true;
+                    case MAP:
                         hud.toggleMap();
                         game.sfx.play("select");
                         return true;
-                    case Input.Keys.E:
-                        interactPressed = true;
-                        return true;
-                    case Input.Keys.SPACE:
-                    case Input.Keys.SHIFT_LEFT:
-                    case Input.Keys.K:
-                        rollPressed = true;
-                        return true;
-                    case Input.Keys.J:
-                        attackPressed = true;
-                        return true;
-                    case Input.Keys.L:
-                        skillPressed = 0;
-                        return true;
-                    case Input.Keys.U:
-                        skillPressed = 1;
-                        return true;
-                    case Input.Keys.I:
-                        skillPressed = 2;
-                        return true;
-                    case Input.Keys.O:
-                        skillPressed = 3;
-                        return true;
-                    case Input.Keys.EQUALS:
-                    case Input.Keys.PLUS:
-                    case Input.Keys.NUMPAD_ADD:
-                        stepZoom(1);
-                        return true;
-                    case Input.Keys.MINUS:
-                    case Input.Keys.NUMPAD_SUBTRACT:
-                        stepZoom(-1);
-                        return true;
-                    default:
-                        return false;
+                    case INTERACT: interactPressed = true; return true;
+                    case ROLL: rollPressed = true; return true;
+                    case ATTACK: attackPressed = true; return true;
+                    case SKILL_1: skillPressed = 0; return true;
+                    case SKILL_2: skillPressed = 1; return true;
+                    case SKILL_3: skillPressed = 2; return true;
+                    case SKILL_HOLY: skillPressed = 3; return true;
+                    case ZOOM_IN: stepZoom(1); return true;
+                    case ZOOM_OUT: stepZoom(-1); return true;
+                    default: return false; // 이동은 readControls 에서 누르고 있는지 본다
                 }
             }
 
@@ -283,16 +262,39 @@ public class GameScreen extends ScreenAdapter {
 
     private void readControls() {
         controls.clear();
-        boolean l = Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT);
-        boolean r = Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT);
-        boolean u = Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP);
-        boolean d = Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN);
+        KeyBindings keys = game.settings.keys();
+        boolean l = held(keys, KeyBindings.Action.MOVE_LEFT);
+        boolean r = held(keys, KeyBindings.Action.MOVE_RIGHT);
+        boolean u = held(keys, KeyBindings.Action.MOVE_UP);
+        boolean d = held(keys, KeyBindings.Action.MOVE_DOWN);
         controls.moveX = (r ? 1 : 0) - (l ? 1 : 0);
         controls.moveY = (u ? 1 : 0) - (d ? 1 : 0);
-        controls.attack = attackPressed || Gdx.input.isKeyPressed(Input.Keys.J);
+        controls.attack = attackPressed || held(keys, KeyBindings.Action.ATTACK);
         controls.roll = rollPressed;
         controls.skill = skillPressed;
         controls.interact = interactPressed;
+    }
+
+    /** 이 동작의 키 중 하나라도 누르고 있나. */
+    private static boolean held(KeyBindings keys, KeyBindings.Action a) {
+        for (int i = 0; i < KeyBindings.SLOTS; i++) {
+            int k = keys.key(a, i);
+            if (k != KeyBindings.NONE && Gdx.input.isKeyPressed(k)) return true;
+        }
+        return false;
+    }
+
+    /** 화면 안내 문구에 쓸 키 이름을 세션에 알려 준다 (조작 키를 바꾼 뒤에도 부른다). */
+    public void applyKeyNames() {
+        KeyBindings keys = game.settings.keys();
+        session.interactKey = keys.primaryName(KeyBindings.Action.INTERACT);
+        for (int i = 0; i < KeyBindings.SKILLS.length; i++) session.skillKeys[i] = keys.primaryShort(KeyBindings.SKILLS[i]);
+        hud.attackKey = keys.primaryShort(KeyBindings.Action.ATTACK);
+        hud.rollKey = keys.primaryShort(KeyBindings.Action.ROLL);
+        hud.mapKey = keys.primaryName(KeyBindings.Action.MAP);
+        hud.bagKey = keys.primaryName(KeyBindings.Action.BAG);
+        hud.moveKeys = keys.primaryShort(KeyBindings.Action.MOVE_UP) + " " + keys.primaryShort(KeyBindings.Action.MOVE_LEFT) + " "
+                + keys.primaryShort(KeyBindings.Action.MOVE_DOWN) + " " + keys.primaryShort(KeyBindings.Action.MOVE_RIGHT);
     }
 
     private void handleEvents() {
@@ -427,11 +429,11 @@ public class GameScreen extends ScreenAdapter {
         ConfirmDialog.Line[] lines = {
                 new ConfirmDialog.Line(e.text + "의 힘을 흡수했다.", Ui.GOLD),
                 new ConfirmDialog.Line("최대 체력 +" + e.hpGain + "  (이제 " + maxHp + ")", Ui.GREEN),
-                new ConfirmDialog.Line("보상: 보물상자가 나타났다 (E 로 열면 " + e.ore.displayName + " "
+                new ConfirmDialog.Line("보상: 보물상자가 나타났다 (" + session.interactKey + " 로 열면 " + e.ore.displayName + " "
                         + game.balance.reward.chestOreMin + "~" + game.balance.reward.chestOreMax + "개)", null),
                 new ConfirmDialog.Line("열림: " + e.opened, Ui.BLUE),
                 new ConfirmDialog.Line(nextWeaponHint(), Ui.DIM),
-                new ConfirmDialog.Line("방 위쪽에 열린 귀환문(E)으로 캠프에 돌아갈 수 있다", Ui.PURPLE)
+                new ConfirmDialog.Line("방 위쪽에 열린 귀환문(" + session.interactKey + ")으로 캠프에 돌아갈 수 있다", Ui.PURPLE)
         };
         modals.push(new MessageWindow(game.skin, "던전 클리어!", Ui.GOLD, lines, "확인"));
     }

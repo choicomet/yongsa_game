@@ -38,6 +38,9 @@ class NaturalCampTest {
         assertEquals(g.rules.maxHp(g.state), g.state.hp);
         interact(g, .524f, .582f);
         assertEquals("E  모닥불", g.prompt);
+        g.interactKey = "G"; // 조작 키를 바꾸면 안내도 그 키로
+        interact(g, .524f, .582f);
+        assertEquals("G  모닥불", g.prompt);
         g.state.unsealed = true;
         assertEvent(interact(g, .506f, .776f), GameEvent.Type.FALL);
     }

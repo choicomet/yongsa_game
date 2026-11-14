@@ -17,4 +17,20 @@ public class Settings {
     public boolean devGodMode = false;
     /** 개발용 (F1): 걸을 수 있는 곳을 초록으로 표시한다. 저장하지 않아도 되지만 다른 개발 설정과 같이 둔다. */
     public boolean devShowWalkable = false;
+
+    /** 조작 키 (동작 이름 → 키 코드). 없으면 기본 키. 화면에서 바꾸면 여기에 다시 적는다. */
+    public java.util.Map<String, int[]> keyBindings;
+
+    private transient KeyBindings keys;
+
+    /** 지금 조작 키. 처음 부를 때 저장된 값(없으면 기본)으로 만든다. */
+    public KeyBindings keys() {
+        if (keys == null) keys = KeyBindings.fromSaved(keyBindings);
+        return keys;
+    }
+
+    /** 바꾼 조작 키를 저장할 값에 옮긴다 (설정 저장 전에 부른다). */
+    public void storeKeys() {
+        if (keys != null) keyBindings = keys.toSaved();
+    }
 }

@@ -115,6 +115,7 @@ public class GameSession {
 
         map.updateGates(state);
         absorb.migrateImprints(state);
+        enhance.clampMastery(state); // 숙련도가 없던 예전 저장은 0에서 시작한다
         if (state.mapVersion != WorldMap.VERSION) {
             // 방 배치가 바뀐 예전 저장: 광맥 자리와 이어하기 위치는 새 맵에 맞지 않는다
             for (RoomRecord rec : state.rooms.values()) rec.veins = null;
@@ -169,6 +170,11 @@ public class GameSession {
     /** 지금 싸우는 방 (없으면 null). */
     public Room fightRoom() {
         return fightRoom;
+    }
+
+    /** 용사가 이 눈알(마왕 2페이즈)을 바라보고 있는가. 판정은 enemy/BossBrain. */
+    public boolean lookingAt(Hazard h) {
+        return bosses.lookingAt(h);
     }
 
     public Room heroRoom() {
@@ -372,8 +378,10 @@ public class GameSession {
 
     private float skillMsgCd;
 
-    /** 스킬 칸 키 이름 (화면 안내용). */
-    public static final String[] SKILL_KEYS = {"L", "U", "I", "O"};
+    /** 스킬 칸 키 이름 (화면 안내용). 사용자가 조작 키를 바꾸면 화면이 다시 알려 준다. */
+    public final String[] skillKeys = {"L", "U", "I", "O"};
+    /** 상호작용 키 이름 (안내 문구 "E  대장간" 의 앞부분). */
+    public String interactKey = "E";
 
     /**
      * 스킬 칸 하나를 쓴다. 칸은 검 스킬이 열린 차례대로 채워진다 (+10 강화·각성 또는 흡수).
@@ -463,7 +471,7 @@ public class GameSession {
         if (!rules.noteOpenedSkills(state)) return;
         for (int i = before; i < state.skillOrder.size(); i++) {
             Balance.SkillDef sk = balance.weapon(state.skillOrder.get(i)).skill;
-            events.add(GameEvent.toast("새 스킬 「" + sk.name + "」 열림: " + SKILL_KEYS[i] + " 키"));
+            events.add(GameEvent.toast("새 스킬 「" + sk.name + "」 열림: " + skillKeys[i] + " 키"));
         }
         events.add(GameEvent.sound("awaken"));
     }
@@ -568,6 +576,15 @@ public class GameSession {
             return;
         }
         int dmg = roll(rules.attack(state), mult);
+        boolean guarded = false;
+        if (m.guardActive()) {
+            // 해골병 방패: 정면에서 오는 공격은 크게 줄어든다. 뒤나 옆은 그대로
+            float gx = hero.x - m.x, gy = hero.y - m.y, gl = (float) Math.sqrt(gx * gx + gy * gy);
+            if (gl < 0.01f || (gx * m.dirX + gy * m.dirY) / gl > 0.3f) {
+                dmg = Math.max(1, Math.round(dmg * (1f - balance.monster.guardReduction)));
+                guarded = true;
+            }
+        }
         m.flash = 0.15f;
         if (m.shield > 0) {
             // 방패가 남아 있으면 체력 대신 방패가 닳는다
@@ -599,8 +616,16 @@ public class GameSession {
             events.add(e);
             events.add(GameEvent.sound("roar"));
         }
-        events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), GameEvent.Tone.MONSTER_HIT));
-        events.add(GameEvent.sound("hit"));
+        if (m.finalBoss && m.phase2 && !m.lastStand && m.hp > 0 && m.hp <= m.maxHp * balance.monster.lastStandHpRatio) {
+            // 최후의 발악: 화면이 어두워지고 패턴 간격이 줄어든다
+            m.lastStand = true;
+            m.patternCd = Math.min(m.patternCd, 0.6f);
+            bosses.speech(m, "아직... 끝나지 않았다!");
+            events.add(GameEvent.toast("마왕이 최후의 발악을 한다! 공격이 더 빨라진다"));
+            events.add(GameEvent.sound("roar"));
+        }
+        events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), guarded ? GameEvent.Tone.SHIELD : GameEvent.Tone.MONSTER_HIT));
+        events.add(GameEvent.sound(guarded ? "block" : "hit"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, m.x, m.centerY());
         fx.tone = GameEvent.Tone.MONSTER_HIT;
         float ddx = m.x - hero.x, ddy = m.centerY() - hero.centerY(), dl = (float) Math.sqrt(ddx * ddx + ddy * ddy);
@@ -612,10 +637,23 @@ public class GameSession {
             bosses.startPhaseShift(m);
             return;
         }
+        if (m.hp <= 0 && !m.boss && m.def.revive && !m.revived) {
+            // 해골병: 처음 쓰러지면 뼈 무더기가 됐다가 다시 일어난다. 그 사이 때리면 완전히 부서진다
+            m.revived = true;
+            m.hp = 0;
+            m.guarding = false;
+            m.enter(Monster.State.DOWNED, balance.monster.reviveSeconds);
+            events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2.4f, "뼈가 꿈틀거린다", GameEvent.Tone.INFO));
+            return;
+        }
         if (m.hp <= 0) {
             m.hp = 0;
             m.dead = true;
-            if (m.finalBoss) bosses.speech(m, "이런 풋내기에게 당하다니!");
+            if (m.finalBoss) {
+                bosses.speech(m, "이런 풋내기에게 당하다니!");
+                // 마왕이 쓰러지면 불러낸 부하도 함께 무너진다
+                for (Monster o : monsters) if (!o.boss) o.dead = true;
+            }
             state.stats.monstersKilled++;
             GameEvent died = GameEvent.fx(GameEvent.Type.MONSTER_DIED, m.x, m.y);
             died.sprite = m.def.sprite;
@@ -1101,7 +1139,7 @@ public class GameSession {
             }
             if (near != null) {
                 targetVillager = near;
-                prompt = villagersFree() ? "E  " + near.name + "와(과) 이야기하기" : "E  " + near.name + " 살펴보기";
+                prompt = villagersFree() ? interactKey + "  " + near.name + "와(과) 이야기하기" : interactKey + "  " + near.name + " 살펴보기";
                 promptX = villagerX(near);
                 promptY = villagerY(near) + 2.2f * T;
                 return;
@@ -1111,7 +1149,7 @@ public class GameSession {
             float d = (float) Math.hypot(chestX(heroRoom) - hero.x, chestY(heroRoom) - hero.y);
             if (d < 1.3f * T) {
                 targetChest = true;
-                prompt = "E  보물상자 열기";
+                prompt = interactKey + "  보물상자 열기";
                 promptX = chestX(heroRoom);
                 promptY = chestY(heroRoom) + 1.6f * T;
                 return;
@@ -1121,7 +1159,7 @@ public class GameSession {
             float d = (float) Math.hypot(portalX(heroRoom) - hero.x, portalY(heroRoom) - hero.y);
             if (d < 1.1f * T) {
                 targetPortal = true;
-                prompt = "E  캠프로 귀환";
+                prompt = interactKey + "  캠프로 귀환";
                 promptX = portalX(heroRoom);
                 promptY = portalY(heroRoom) + 1.6f * T;
                 return;
@@ -1138,15 +1176,15 @@ public class GameSession {
         }
         if (targetProp != null) {
             switch (targetProp.kind) {
-                case FORGE: prompt = "E  대장간"; break;
-                case BED: prompt = "E  침대 (회복·저장)"; break;
+                case FORGE: prompt = interactKey + "  대장간"; break;
+                case BED: prompt = interactKey + "  침대 (회복·저장)"; break;
                 case SEAL:
-                    if (absorb.canUnseal(state)) prompt = "E  성검의 봉인 풀기";
-                    else if (state.unsealed && !state.finalBossDefeated) prompt = "E  심연으로 내려가기 (마왕)";
-                    else if (state.unsealed) prompt = "E  심연 (마왕 다시 보기는 개발 메뉴)";
+                    if (absorb.canUnseal(state)) prompt = interactKey + "  성검의 봉인 풀기";
+                    else if (state.unsealed && !state.finalBossDefeated) prompt = interactKey + "  심연으로 내려가기 (마왕)";
+                    else if (state.unsealed) prompt = interactKey + "  심연 (마왕 다시 보기는 개발 메뉴)";
                     else prompt = "봉인된 문양 · 세 보스의 힘이 필요하다";
                     break;
-                default: prompt = "E  모닥불"; break;
+                default: prompt = interactKey + "  모닥불"; break;
             }
             promptX = targetProp.centerX(T);
             promptY = targetProp.y(T) + targetProp.height(T) + 18;
@@ -1164,7 +1202,7 @@ public class GameSession {
                 }
             }
             if (targetVein != null) {
-                prompt = "E  채굴 (" + targetVein.hitsLeft + "번 남음)";
+                prompt = interactKey + "  채굴 (" + targetVein.hitsLeft + "번 남음)";
                 promptX = center(targetVein.tileX);
                 promptY = (targetVein.tileY + 1) * T + 14;
                 return;

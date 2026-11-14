@@ -4,6 +4,9 @@ package com.yongsa.model;
 public class Stats {
     public int enhanceTries;
     public int enhanceSuccess;
+    /** 유지 (단계 그대로). */
+    public int enhanceKeep;
+    public int enhanceDown;
     public int destroyed;
     public int crafted;
     public int deaths;

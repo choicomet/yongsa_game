@@ -287,7 +287,7 @@ class BossPatternTest {
     }
 
     @Test
-    void skeletonPriestRaisesBoneSpikesAndBlinds() {
+    void skeletonPriestRaisesBoneSpikes() {
         GameState s = strongHero();
         GameSession g = fightIn("T6", s);
         forcePattern(g, "bonespike", 5 * b.tileSize);
@@ -295,8 +295,9 @@ class BossPatternTest {
         long spikes = g.hazards.stream().filter(h -> "bone".equals(h.style)).count();
         assertTrue(spikes >= 3, "뼈 가시가 여러 개 솟는다: " + spikes);
         assertTrue(g.hazards.stream().anyMatch(h -> "bone".equals(h.style) && h.covers(g.hero.x, g.hero.y, 0)), "하나는 용사 발밑");
-        assertTrue(g.blindT > 0, "앞이 캄캄해진다");
-        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.TOAST && e.text.contains("캄캄")));
+        // 2026-11-07 플레이 피드백: 실명은 의미가 없어 껐다 (monster.blindSeconds = 0)
+        assertTrue(g.blindT <= 0, "앞이 캄캄해지지 않는다");
+        assertTrue(ev.stream().noneMatch(e -> e.type == GameEvent.Type.TOAST && e.text.contains("캄캄")));
         s.hp = 999;
         int hp = s.hp;
         run(g, idle, 1.2f);
@@ -310,9 +311,35 @@ class BossPatternTest {
         Monster boss = forcePattern(g, "summon", 5 * b.tileSize);
         for (Monster o : g.monsters) if (!o.boss) o.dead = true;
         run(g, idle, 2 / 60f);
-        long skeletons = g.monsters.stream().filter(o -> !o.dead && !o.boss
-                && o.def.sprite.equals(b.dungeon("RIGHT").mob.sprite)).count();
-        assertEquals(boss.def.summonCount, skeletons);
+        // 2026-11-10: 탑의 수문장은 자기 탑의 부하를 2~3마리 무작위로 부른다
+        // (예전 이 검사는 summonCount 가 0 이라 0 == 0 으로 늘 통과하고 있었다)
+        long minions = g.monsters.stream().filter(o -> !o.dead && !o.boss
+                && o.def.sprite.equals(b.dungeon("TOP").mob.sprite)).count();
+        assertTrue(minions >= boss.def.summonCount && minions <= boss.def.summonCountMax, "부하 " + minions + "마리");
+    }
+
+    /** 2026-10-27 버그: 스킬(검기)로 마왕 1페이즈를 마무리하면 ConcurrentModificationException 으로 게임이 꺼졌다. */
+    @Test
+    void finishingPhaseOneWithASkillShotDoesNotCrash() {
+        GameState s = NewGame.create(b);
+        GameSession g = demonFight(s);
+        Monster m = g.activeBoss();
+        s.hp = 999;
+        m.hp = 1;
+        m.enter(Monster.State.RECOVER, 5f);
+        for (int i = 0; i < 3; i++) { // 검기 여러 개가 동시에 날아가는 중
+            com.yongsa.combat.HeroShot h = new com.yongsa.combat.HeroShot();
+            h.kind = "beam";
+            h.x = m.x;
+            h.y = m.centerY();
+            h.radius = 40;
+            h.life = 1f;
+            h.multiplier = 1f;
+            g.shots.add(h);
+        }
+        assertDoesNotThrow(() -> run(g, idle, 0.5f));
+        assertTrue(m.phase2, "스킬로 마무리해도 2페이즈로 넘어간다");
+        assertTrue(g.shots.isEmpty(), "변신하면 날아가던 검기는 사라진다");
     }
 
     private GameSession demonFight(GameState s) {

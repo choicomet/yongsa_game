@@ -46,7 +46,7 @@ public class TitleScreen extends MenuScreen {
             col.add(cont).width(310).height(52).padBottom(8).row();
             col.add(nav.add("새 게임", TitleScreen.this::newGame)).width(310).height(52).padBottom(8).row();
             col.add(nav.add("설정", () -> modals.push(new SettingsWindow(game)))).width(310).height(46).padBottom(8).row();
-            col.add(nav.add("조작 키", () -> modals.push(new ControlsWindow(game.skin)))).width(310).height(46).padBottom(8).row();
+            col.add(nav.add("조작 키", () -> modals.push(new ControlsWindow(game, null)))).width(310).height(46).padBottom(8).row();
             col.add(nav.add("종료", () -> Gdx.app.exit())).width(310).height(46).row();
             col.add(label("방향키로 이동  ·  Enter 선택", "small", Ui.DIM)).padTop(24).row();
             add(col).expand().left().padLeft(80).padBottom(12);

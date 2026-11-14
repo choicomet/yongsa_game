@@ -1,5 +1,6 @@
 package com.yongsa.enemy;
 
+import com.yongsa.combat.HeroShot;
 import com.yongsa.combat.Physics;
 import com.yongsa.config.Balance;
 import com.yongsa.config.Balance.DungeonDef;
@@ -47,6 +48,12 @@ public class BossBrain extends EnemyContext {
         else m.cornerT = Math.max(0f, m.cornerT - dt * 0.5f);
         if (m.cornerT < mc.cornerTime || m.blinkCd > 0 || !idle) return false;
         m.cornerT = 0;
+        if (m.def.cornerLeap) {
+            // 혈월의 기사: 순간이동 대신 뒤로 크게 도약한다
+            if (!leapAway(m)) return false;
+            m.blinkCd = mc.cornerCooldown;
+            return true;
+        }
         if (!blinkAway(m)) return false;
         m.blinkCd = mc.cornerCooldown;
         mobs.aimAtHero(m);
@@ -71,8 +78,20 @@ public class BossBrain extends EnemyContext {
         if (m.patternCd <= 0 && dist < 11 * T) {
             String p = pickPattern(m);
             m.lastPattern = p;
-            m.patternCd = mc.bossPatternGap;
+            m.patternCd = mc.bossPatternGap * (m.lastStand ? mc.lastStandGapMultiplier : 1f);
             if (startPattern(m, p, summoned)) return;
+        }
+        if (m.finalBoss && !m.phase2 && m.def.noMeleePhase1) {
+            // 마왕 1페이즈: 기본 근접 공격 없이 거리를 두고 패턴만 쓴다
+            float keep = mc.demonKeepTiles * T, k = m.speed * dt;
+            if (dist > keep * 1.3f) {
+                Physics.move(map, m, mobs.pathX * k, mobs.pathY * k, T);
+                m.walkTime += dt;
+            } else if (dist < keep * 0.8f && dist > 0.01f) {
+                Physics.move(map, m, (m.x - hero.x) / dist * k, (m.y - hero.y) / dist * k, T);
+                m.walkTime += dt;
+            }
+            return;
         }
         if (dist <= reach && m.attackCd <= 0) {
             m.enter(Monster.State.TELEGRAPH, mc.telegraphSeconds);
@@ -145,8 +164,14 @@ public class BossBrain extends EnemyContext {
                 m.orbitSign = random.nextBoolean() ? 1 : -1;
                 events.add(GameEvent.sound("roar"));
                 return true;
+            case "spearstand":
+                // 혈월의 기사 창 찌르기: 멈춰 선 채로만 창이 나온다 (channel)
+                startChannel(m, p, mc.spearStandVolleys, 0.25f);
+                events.add(GameEvent.toast(m.def.name + "이(가) 멈춰 서서 창을 겨눈다!"));
+                events.add(GameEvent.sound("cast"));
+                return true;
             case "bloodpool":
-                spawnPools(m);
+                spawnPools(m, "blood");
                 startChannel(m, p, 1, mc.spearDelay);
                 events.add(GameEvent.sound("cast"));
                 return true;
@@ -175,6 +200,7 @@ public class BossBrain extends EnemyContext {
             }
             case "summon": {
                 int count = m.def.summonCount > 0 ? m.def.summonCount : mc.summonCount;
+                if (m.def.summonCountMax > count) count += random.nextInt(m.def.summonCountMax - count + 1); // 2~3마리 무작위
                 int alive = 0;
                 for (Monster o : monsters) if (!o.dead && !o.boss) alive++;
                 if (alive >= count) return false;
@@ -237,6 +263,97 @@ public class BossBrain extends EnemyContext {
                 m.slamY = m.y;
                 m.slamRadius = 0;
                 events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "boulder": {
+                // 바위 던지기: 용사 자리에 큰 바위가 떨어지고, 파편이 사방으로 튄다 (updateHazards 의 shatter)
+                mobs.aimAtHero(m);
+                circleHazard("boulder", hero.x, hero.y, mc.boulderRadiusTiles * T, mc.boulderWarning, m.attack(), mc.boulderMultiplier);
+                m.enter(Monster.State.RECOVER, 0.9f);
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "pound": {
+                // 연속 내려찍기: 용사 쪽으로 쿵, 쿵. 찍을 때마다 그 자리에서 지진 파동이 퍼지고 (quakeFrom),
+                // 두 번째는 첫 파동의 첫 고리가 사라지는 순간 떨어진다. 다 찍으면 오래 숨을 고른다 (반격 기회)
+                mobs.aimAtHero(m);
+                float last = -1;
+                for (int i = 0; i < mc.poundCount; i++) {
+                    float d = (mc.poundStartTiles + mc.poundStepTiles * i) * T;
+                    float px = m.x + m.dirX * d, py = m.y + m.dirY * d;
+                    if (map.solid(tileX(px), tileY(py))) break; // 벽 너머로는 찍지 않는다
+                    last = mc.poundWarning + mc.quakeGap * i;
+                    circleHazard("pound", px, py, (mc.poundRadiusTiles + mc.poundRadiusGrowTiles * i) * T, last, m.attack(), mc.poundMultiplier);
+                }
+                if (last < 0) return false; // 바로 앞이 벽이면 다른 패턴
+                m.enter(Monster.State.RECOVER, last + mc.quakeGap * mc.quakeWaves + mc.poundRecover);
+                events.add(GameEvent.toast(m.def.name + "이(가) 주먹을 높이 든다! 옆으로 비키자"));
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "spinslash": {
+                // 회전 베기: 보스 둘레 원을 예고 뒤 한 번에 벤다
+                circleHazard("spin", m.x, m.y, mc.spinSlashRadiusTiles * T, mc.spinSlashWarning, m.attack(), mc.spinSlashMultiplier);
+                m.enter(Monster.State.RECOVER, mc.spinSlashWarning + 0.5f);
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "crescent":
+                // 혈월 검기: 모았다가 초승달 검기를 부채꼴로 날린다 (fire)
+                m.castKind = p;
+                m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
+                return true;
+            case "cage": {
+                // 번개 감옥: 용사 둘레 사각형 번개 벽이 여러 번 번쩍이고, 가운데가 터진다.
+                // 한쪽 벽(open)만 가운데가 터진 뒤에 터지니 그쪽으로 빠져나가야 한다.
+                float hs = mc.cageHalfTiles * T, cx = hero.x, cy = hero.y;
+                float[][] c = {{cx - hs, cy - hs}, {cx + hs, cy - hs}, {cx + hs, cy + hs}, {cx - hs, cy + hs}};
+                int open = random.nextInt(4);
+                for (int i = 0; i < 4; i++) {
+                    int pulses = i == open ? 1 : mc.cagePulses;
+                    for (int k = 0; k < pulses; k++) {
+                        Hazard h = new Hazard(Hazard.Kind.LINE, "cage");
+                        h.x = c[i][0];
+                        h.y = c[i][1];
+                        h.x2 = c[(i + 1) % 4][0];
+                        h.y2 = c[(i + 1) % 4][1];
+                        h.radius = mc.cageWidthTiles * T / 2f;
+                        h.delay = h.warning = i == open ? mc.cageOpenDelay : mc.cageWarning + mc.cagePulseGap * k;
+                        h.damage = m.attack();
+                        h.multiplier = mc.cageMultiplier;
+                        hazards.add(h);
+                    }
+                }
+                circleHazard("bolt", cx, cy, hs, mc.cageCoreWarning, m.attack(), mc.cageCoreMultiplier);
+                m.enter(Monster.State.RECOVER, mc.cageCoreWarning + 0.3f);
+                events.add(GameEvent.toast("번개 감옥! 늦게 빛나는 벽으로 빠져나가자"));
+                events.add(GameEvent.sound("cast"));
+                return true;
+            }
+            case "homing":
+                // 유도 마탄: 모았다가 천천히 따라오는 탄을 쏜다 (fire)
+                m.castKind = p;
+                m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
+                return true;
+            case "darkorb":
+                // 어둠 구체: 모았다가 느린 구체를 쏜다. 날아가다 터지며 사방으로 탄 (fire, updateProjectiles)
+                m.castKind = "orb";
+                m.enter(Monster.State.CAST_TELEGRAPH, mc.volleyTelegraph);
+                return true;
+            case "brand": {
+                // 마왕의 낙인: 용사를 따라다니다 멈추고, 잠시 뒤 그 자리에서 폭발한다
+                Hazard h = new Hazard(Hazard.Kind.CIRCLE, "brand");
+                h.x = hero.x;
+                h.y = hero.y;
+                h.radius = mc.brandRadiusTiles * T;
+                h.followT = mc.brandFollow;
+                h.delay = h.warning = mc.brandFollow + mc.brandLock;
+                h.damage = m.attack();
+                h.multiplier = mc.brandMultiplier;
+                hazards.add(h);
+                m.enter(Monster.State.RECOVER, 0.6f);
+                events.add(GameEvent.toast("마왕의 낙인이 찍혔다! 멈추는 순간 자리를 벗어나자"));
+                events.add(GameEvent.sound("cast"));
                 return true;
             }
             case "eyes": {
@@ -310,6 +427,36 @@ public class BossBrain extends EnemyContext {
                 if (m.stateT <= 0) m.enter(Monster.State.RECOVER, 1.1f);
                 return;
             }
+            case "spearstand": {
+                if (m.channelT > 0) return;
+                if (m.channelLeft <= 0) {
+                    // 마지막 창이 다 터질 때까지 서 있다가 다시 움직인다 (2페이즈 빠른 시계에서도 창이 잘리지 않게)
+                    for (Hazard h : hazards) if (h.standingOwner == m && !h.dead && h.delay > 0) return;
+                    m.enter(Monster.State.RECOVER, 0.4f);
+                    return;
+                }
+                m.channelLeft--;
+                mobs.aimAtHero(m);
+                float base = (float) Math.atan2(m.dirY, m.dirX);
+                float spread = (float) Math.toRadians(mc.spearSpreadDegrees);
+                for (int i = 0; i < mc.spearCount; i++) {
+                    float a = base + spread * (i - (mc.spearCount - 1) / 2f);
+                    Hazard h = new Hazard(Hazard.Kind.LINE, "spear");
+                    h.x = m.x;
+                    h.y = m.y;
+                    h.x2 = m.x + (float) Math.cos(a) * mc.spearLengthTiles * T;
+                    h.y2 = m.y + (float) Math.sin(a) * mc.spearLengthTiles * T;
+                    h.radius = mc.spearWidthTiles * T / 2f;
+                    h.delay = h.warning = mc.spearStandWarning;
+                    h.damage = m.attack();
+                    h.multiplier = mc.spearMultiplier;
+                    h.standingOwner = m;
+                    hazards.add(h);
+                }
+                // 마지막 줄은 창이 다 터질 때까지 서 있다가 움직인다
+                m.channelT = m.channelLeft > 0 ? mc.spearStandInterval : mc.spearStandWarning + 0.05f;
+                return;
+            }
             case "bloodpool": {
                 if (m.channelT > 0) return;
                 if (m.channelLeft > 0) {
@@ -341,6 +488,45 @@ public class BossBrain extends EnemyContext {
         }
     }
 
+    /** 골렘이 내려찍은 자리에서 지진 파동: 둘레 고리 quakeWaves 겹이 quakeGap 간격으로 안에서 밖으로 터진다. */
+    void quakeFrom(Hazard slam, List<Hazard> out) {
+        Balance.MonsterCfg mc = balance.monster;
+        float w = mc.quakeWaveTiles * T;
+        for (int i = 0; i < mc.quakeWaves; i++) {
+            Hazard h = new Hazard(Hazard.Kind.CIRCLE, "quake");
+            h.x = slam.x;
+            h.y = slam.y;
+            h.innerRadius = slam.radius + w * i;
+            h.radius = slam.radius + w * (i + 1);
+            h.delay = h.warning = mc.quakeGap * (i + 1);
+            h.damage = slam.damage;
+            h.multiplier = mc.quakeMultiplier;
+            out.add(h);
+        }
+    }
+
+    /** 바위가 떨어진 자리에서 파편이 사방으로 튄다. */
+    void shatter(Hazard h) {
+        Balance.MonsterCfg mc = balance.monster;
+        float speed = mc.shardSpeedTiles * T;
+        int dmg = Math.max(1, Math.round(h.damage * mc.shardMultiplier));
+        float off = random.nextFloat() * 6.283f;
+        for (int i = 0; i < mc.shardCount; i++) {
+            float a = off + 6.283f * i / mc.shardCount;
+            float cos = (float) Math.cos(a), sin = (float) Math.sin(a);
+            Projectile p = new Projectile();
+            p.x = h.x + cos * h.radius * 0.4f;
+            p.y = h.y + sin * h.radius * 0.4f;
+            p.vx = cos * speed;
+            p.vy = sin * speed;
+            p.radius = mc.projectileRadius;
+            p.life = mc.shardLife;
+            p.damage = dmg;
+            p.source = "golem";
+            projectiles.add(p);
+        }
+    }
+
     void circleHazard(String style, float x, float y, float radius, float warning, int damage, float mult) {
         Hazard h = new Hazard(Hazard.Kind.CIRCLE, style);
         h.x = x;
@@ -363,7 +549,7 @@ public class BossBrain extends EnemyContext {
     }
 
     /** 피웅덩이: 용사 발밑 하나와 방 안 아무 데나 몇 개. */
-    void spawnPools(Monster m) {
+    void spawnPools(Monster m, String style) {
         Balance.MonsterCfg mc = balance.monster;
         Room r = g.fightRoom();
         for (int i = 0; i < mc.poolCount; i++) {
@@ -378,7 +564,7 @@ public class BossBrain extends EnemyContext {
                     break;
                 }
             }
-            Hazard h = new Hazard(Hazard.Kind.POOL, "blood");
+            Hazard h = new Hazard(Hazard.Kind.POOL, style);
             h.x = px;
             h.y = py;
             h.startRadius = h.radius = mc.poolStartRadiusTiles * T;
@@ -394,9 +580,21 @@ public class BossBrain extends EnemyContext {
     public void updateHazards(float dt) {
         Balance.MonsterCfg mc = balance.monster;
         boolean inPool = false;
+        List<Hazard> spawned = new ArrayList<>();
         for (Hazard h : hazards) {
             if (h.dead) continue;
+            if (h.standingOwner != null && h.delay > 0
+                    && (h.standingOwner.dead || h.standingOwner.state != Monster.State.CHANNEL)) {
+                // 기사가 다시 움직이면 아직 안 나온 창은 나오지 않는다
+                h.dead = true;
+                continue;
+            }
             h.age += dt;
+            if (h.followT > 0) {
+                h.followT -= dt;
+                h.x = hero.x;
+                h.y = hero.y;
+            }
             if (h.delay > 0) {
                 h.delay -= dt;
                 if (h.delay > 0) continue;
@@ -408,7 +606,7 @@ public class BossBrain extends EnemyContext {
                     continue;
                 }
                 if (h.kind != Hazard.Kind.POOL) {
-                    if (h.covers(hero.x, hero.y, hero.hw * 0.6f)) hitHero(h.damage, h.multiplier, h.x, h.y);
+                    if (h.multiplier > 0 && h.covers(hero.x, hero.y, hero.hw * 0.6f)) hitHero(h.damage, h.multiplier, h.x, h.y);
                     GameEvent fx = GameEvent.fx(GameEvent.Type.HAZARD_FX, h.x, h.y);
                     fx.text = h.style;
                     fx.size = h.radius;
@@ -416,8 +614,16 @@ public class BossBrain extends EnemyContext {
                     fx.dirY = h.y2;
                     events.add(fx);
                     events.add(GameEvent.sound("bolt".equals(h.style) ? "cast" : "slam"));
+                    if ("pound".equals(h.style) || "boulder".equals(h.style)) {
+                        // 골렘: 무거운 한 방마다 화면이 쿵 울린다
+                        GameEvent shake = GameEvent.fx(GameEvent.Type.SLAM_FX, h.x, h.y);
+                        shake.size = h.radius;
+                        events.add(shake);
+                    }
                     h.dead = true;
                     if (g.heroJustDied()) return;
+                    if ("boulder".equals(h.style)) shatter(h);
+                    if ("pound".equals(h.style)) quakeFrom(h, spawned);
                     continue;
                 }
             }
@@ -430,6 +636,7 @@ public class BossBrain extends EnemyContext {
             }
         }
         hazards.removeIf(h -> h.dead);
+        hazards.addAll(spawned);
         poolTextCd -= dt;
         if (inPool) {
             if (hero.slowT <= 0.2f) hero.slowT = mc.slowSeconds;
@@ -455,6 +662,14 @@ public class BossBrain extends EnemyContext {
     }
 
     /** 눈알이 뜬다: 용사가 그쪽을 보고 있으면 (구르는 중이 아니면) 지금 체력의 절반을 잃고 굳는다. */
+    /** 지금 용사가 이 눈알 쪽을 보고 있나 (뜨는 순간 이러면 맞는다). 화면에서 위험 표시에 쓴다. */
+    public boolean lookingAt(Hazard h) {
+        float dx = h.x - hero.x, dy = h.y - hero.centerY(), l = (float) Math.sqrt(dx * dx + dy * dy);
+        if (l < 0.01f) return false;
+        float cos = (dx * hero.aimX + dy * hero.aimY) / l;
+        return cos >= (float) Math.cos(Math.toRadians(balance.monster.eyeAngleDegrees / 2f));
+    }
+
     void eyeOpens(Hazard h) {
         Balance.MonsterCfg mc = balance.monster;
         GameEvent fx = GameEvent.fx(GameEvent.Type.HAZARD_FX, h.x, h.y);
@@ -464,8 +679,7 @@ public class BossBrain extends EnemyContext {
         events.add(GameEvent.sound("cast"));
         float dx = h.x - hero.x, dy = h.y - hero.centerY(), l = (float) Math.sqrt(dx * dx + dy * dy);
         if (l < 0.01f || hero.rolling() || hero.invuln > 0 || g.devGodMode) return;
-        float cos = (dx * hero.aimX + dy * hero.aimY) / l;
-        if (cos < (float) Math.cos(Math.toRadians(mc.eyeAngleDegrees / 2f))) return;
+        if (!lookingAt(h)) return;
         int take = state.hp / 2; // 절반이라 이것만으로는 쓰러지지 않는다
         state.hp -= take;
         hero.stunT = mc.eyeStun;
@@ -489,11 +703,13 @@ public class BossBrain extends EnemyContext {
         m.shield = m.shieldMax = 0;
         m.rushLeft = 0;
         m.enter(Monster.State.PHASE_SHIFT, mc.phaseShiftSeconds);
-        hazards.clear();
+        // 스킬·탄환·장판 목록을 도는 중에 불릴 수 있다 (스킬로 1페이즈를 마무리할 때).
+        // 목록을 바로 비우면 ConcurrentModificationException 으로 게임이 꺼지므로, 끝남 표시만 하고 각 update 끝의 removeIf 가 치운다.
+        for (Hazard h : hazards) h.dead = true;
         g.blindT = 0;
         hero.stunT = 0;
-        projectiles.clear();
-        g.shots.clear();
+        for (Projectile p : projectiles) p.dead = true;
+        for (HeroShot h : g.shots) h.dead = true;
         speech(m, "이번 용사는 강하군. 나도 본격적으로 해주마!");
         GameEvent e = new GameEvent(GameEvent.Type.BOSS_PHASE2);
         e.text = m.def.name;
@@ -526,8 +742,21 @@ public class BossBrain extends EnemyContext {
     /** 너무 가까우면 용사 반대쪽 멀리 순간이동한다 (마족병, 구석에 몰린 보스). */
     boolean blinkAway(Monster m) {
         if (!m.boss) m.blinkCd = balance.monster.blinkCooldown;
+        float[] spot = farSpot(m);
+        if (spot == null) return false;
+        events.add(GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY()));
+        m.x = spot[0];
+        m.y = spot[1];
+        events.add(GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY()));
+        events.add(GameEvent.sound("warp"));
+        m.attackCd = Math.max(m.attackCd, 0.5f);
+        return true;
+    }
+
+    /** 방 안에서 용사와 4.5칸 넘게 떨어진 빈자리 (순간이동·도약할 곳). 못 찾으면 null. */
+    float[] farSpot(Monster m) {
         Room r = g.fightRoom();
-        if (r == null) return false;
+        if (r == null) return null;
         for (int tries = 0; tries < 40; tries++) {
             int tx = r.x0 + 2 + random.nextInt(Math.max(1, r.x1 - r.x0 - 3));
             int ty = r.y0 + 2 + random.nextInt(Math.max(1, r.y1 - r.y0 - 3));
@@ -536,15 +765,24 @@ public class BossBrain extends EnemyContext {
             float hx = px - hero.x, hy = py - hero.y;
             if (hx * hx + hy * hy < (4.5f * T) * (4.5f * T)) continue;
             if (!Physics.free(map, px, py, m, T)) continue;
-            GameEvent a = GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY());
-            events.add(a);
-            m.x = px;
-            m.y = py;
-            events.add(GameEvent.fx(GameEvent.Type.BLINK_FX, m.x, m.centerY()));
-            events.add(GameEvent.sound("warp"));
-            m.attackCd = Math.max(m.attackCd, 0.5f);
-            return true;
+            return new float[]{px, py};
         }
-        return false;
+        return null;
+    }
+
+    /** 뒤로 도약: 용사에게서 먼 빈자리로 뛰어오른다. 착지할 자리에 충격파 예고가 먼저 뜬다. */
+    boolean leapAway(Monster m) {
+        Balance.MonsterCfg mc = balance.monster;
+        float[] spot = farSpot(m);
+        if (spot == null) return false;
+        m.leapX0 = m.x;
+        m.leapY0 = m.y;
+        m.leapX1 = spot[0];
+        m.leapY1 = spot[1];
+        circleHazard("leap", spot[0], spot[1], mc.leapLandRadiusTiles * T, mc.leapTime, m.attack(), mc.leapLandMultiplier);
+        m.enter(Monster.State.LEAP, mc.leapTime);
+        m.attackCd = Math.max(m.attackCd, 0.6f);
+        events.add(GameEvent.sound("dash"));
+        return true;
     }
 }

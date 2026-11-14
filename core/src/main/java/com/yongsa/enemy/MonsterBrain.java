@@ -39,6 +39,13 @@ public class MonsterBrain extends EnemyContext {
             m.flash -= dt;
             m.immuneMsgCd -= dt;
             m.blinkCd -= dt;
+            if (m.def.guard && !m.boss) {
+                m.guardT -= dt;
+                if (m.guardT <= 0) {
+                    m.guarding = !m.guarding;
+                    m.guardT = m.guarding ? mc.guardUp : mc.guardDown;
+                }
+            }
             if (m.kbT > 0) {
                 Physics.move(map, m, m.kbVX * dt, m.kbVY * dt, T);
                 m.kbT -= dt;
@@ -54,10 +61,13 @@ public class MonsterBrain extends EnemyContext {
             float dx = hero.x - m.x, dy = hero.y - m.y;
             float dist = (float) Math.sqrt(dx * dx + dy * dy);
             float reach = mc.attackReachTiles * T + m.hw + hero.hw;
-            if (m.boss && m.def.cornerBlink && boss.cornered(m, dist, reach, dt)) continue;
+            if (m.boss && (m.def.cornerBlink || m.def.cornerLeap) && boss.cornered(m, dist, reach, dt)) continue;
             switch (m.state) {
                 case CHASE:
-                    if (dist > 0.01f) {
+                    if (dist > 0.01f && m.guardActive()) {
+                        // 방패를 든 해골병은 천천히 돌아선다: 옆이나 뒤로 돌아 들어갈 틈
+                        turnToward(m, dx / dist, dy / dist, mc.guardTurn * dt);
+                    } else if (dist > 0.01f) {
                         m.dirX = dx / dist;
                         m.dirY = dy / dist;
                     }
@@ -113,11 +123,10 @@ public class MonsterBrain extends EnemyContext {
                     }
                     boolean over = m.dashLeft <= 0.5f || m.stateT <= 0 || blocked;
                     if (charge && over && m.rushLeft > 1) {
-                        // 연속 돌진: 숨을 고르고 다시 조준한다
+                        // 연속 돌진 첫째·둘째: 벽 앞에서 멈추고(부딪히지 않는다) 다시 조준한다. 기절은 없다
                         m.rushLeft--;
                         aimAtHero(m);
                         m.enter(Monster.State.CHARGE_TELEGRAPH, mc.rushTelegraph);
-                        if (blocked) wallBump(m);
                     } else if (charge && over && (blocked || m.rushLeft == 1)) {
                         // 벽에 부딪히거나 연속 돌진을 다 쓰면 휘청인다: 반격할 기회
                         boolean lastRush = m.rushLeft == 1;
@@ -163,6 +172,14 @@ public class MonsterBrain extends EnemyContext {
                     if (m.stateT <= 0) {
                         m.enter(Monster.State.CHARGING, 3f);
                         m.dashLeft = mc.chargeMaxTiles * T;
+                        if (m.rushLeft > 1) {
+                            // 연속 돌진 첫째·둘째: 벽 앞에서 멈춘다
+                            m.dashLeft = Math.min(m.dashLeft, Math.max(T * 0.5f, clearRun(m) - mc.rushWallMarginTiles * T));
+                        } else if (m.rushLeft == 1) {
+                            // 셋째: 벽에 닿을 때까지 달린다 (반드시 부딪혀서 기절)
+                            m.dashLeft = 99 * T;
+                            m.stateT = m.stateTotal = 6f;
+                        }
                         m.dashHit = false;
                         events.add(GameEvent.sound("dash"));
                     }
@@ -170,6 +187,20 @@ public class MonsterBrain extends EnemyContext {
                 case CHANNEL:
                     boss.channel(m, dt * speedUp);
                     break;
+                case LEAP: {
+                    m.stateT -= dt;
+                    float p = m.progress();
+                    m.x = m.leapX0 + (m.leapX1 - m.leapX0) * p;
+                    m.y = m.leapY0 + (m.leapY1 - m.leapY0) * p;
+                    if (m.stateT <= 0) {
+                        m.x = m.leapX1;
+                        m.y = m.leapY1;
+                        aimAtHero(m);
+                        m.enter(Monster.State.RECOVER, 0.5f);
+                        events.add(GameEvent.sound("slam"));
+                    }
+                    break;
+                }
                 case PHASE_SHIFT:
                     m.stateT -= dt;
                     // 변신하는 동안 체력이 다시 차오른다
@@ -179,6 +210,15 @@ public class MonsterBrain extends EnemyContext {
                         m.enraged = true;
                         m.patternCd = 0.8f;
                         m.state = Monster.State.CHASE;
+                    }
+                    break;
+                case DOWNED:
+                    m.stateT -= dt;
+                    if (m.stateT <= 0) {
+                        m.hp = Math.max(1, Math.round(m.maxHp * mc.reviveHpRatio));
+                        m.enter(Monster.State.RECOVER, 0.6f);
+                        events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2.4f, "다시 일어났다!", GameEvent.Tone.INFO));
+                        events.add(GameEvent.sound("monsterAttack"));
                     }
                     break;
                 case STUNNED:
@@ -193,6 +233,28 @@ public class MonsterBrain extends EnemyContext {
         }
         monsters.addAll(summoned);
         separate();
+    }
+
+    /** 바라보는 방향을 (tx, ty) 쪽으로 최대 maxTurn 라디안만 돌린다. */
+    static void turnToward(Monster m, float tx, float ty, float maxTurn) {
+        float cur = (float) Math.atan2(m.dirY, m.dirX), want = (float) Math.atan2(ty, tx);
+        float diff = want - cur;
+        while (diff > Math.PI) diff -= (float) (2 * Math.PI);
+        while (diff < -Math.PI) diff += (float) (2 * Math.PI);
+        cur += Math.max(-maxTurn, Math.min(maxTurn, diff));
+        m.dirX = (float) Math.cos(cur);
+        m.dirY = (float) Math.sin(cur);
+    }
+
+    /** 돌진 방향(lockX, lockY)으로 벽에 닿기 전까지 갈 수 있는 거리. */
+    float clearRun(Monster m) {
+        float step = T * 0.25f, d = 0;
+        while (d < balance.monster.chargeMaxTiles * T) {
+            float nx = m.x + m.lockX * (d + step), ny = m.y + m.lockY * (d + step);
+            if (!Physics.free(map, nx, ny, m, T)) break;
+            d += step;
+        }
+        return d;
     }
 
     void wallBump(Monster m) {
@@ -295,9 +357,16 @@ public class MonsterBrain extends EnemyContext {
                 // 용사 둘레를 빙글빙글 돌다가 방향을 정하고 덮친다.
                 float orbit = mc.orbitTiles * T;
                 if (m.attackCd <= 0 && dist < orbit * 1.8f) {
+                    if (random.nextFloat() < mc.pelletChance) {
+                        // 콩알탄: 가끔 덮치는 대신 작고 빠른 탄을 뱉는다 (fire)
+                        m.castKind = "pellet";
+                        m.enter(Monster.State.CAST_TELEGRAPH, mc.pelletTelegraph);
+                        return;
+                    }
                     m.lockX = m.dirX;
                     m.lockY = m.dirY;
                     m.enter(Monster.State.SWOOP_TELEGRAPH, m.telegraph(mc.swoopTelegraph));
+                    packSwoop(m);
                     return;
                 }
                 float tx = -m.dirY * m.orbitSign, ty = m.dirX * m.orbitSign;
@@ -310,9 +379,20 @@ public class MonsterBrain extends EnemyContext {
             }
             case "caster": {
                 float keep = mc.keepAwayTiles * T;
-                if (dist < keep * 0.6f && m.blinkCd <= 0 && boss.blinkAway(m)) return;
-                if (m.attackCd <= 0 && dist < mc.castRangeTiles * T) {
+                if (dist < keep * 0.6f && m.blinkCd <= 0 && boss.blinkAway(m)) {
+                    // 순간이동하자마자 곧바로 한 발
                     m.castKind = "cast";
+                    m.enter(Monster.State.CAST_TELEGRAPH, mc.blinkShotTelegraph);
+                    return;
+                }
+                if (m.attackCd <= 0 && dist < mc.castRangeTiles * T) {
+                    if (random.nextFloat() < mc.flameChance) {
+                        // 불기둥: 불덩이 대신 용사 발밑에 (fire)
+                        m.castKind = "flame";
+                    } else {
+                        m.castCount++;
+                        m.castKind = mc.triEvery > 0 && m.castCount % mc.triEvery == 0 ? "tri" : "cast";
+                    }
                     m.enter(Monster.State.CAST_TELEGRAPH, m.telegraph(mc.castTelegraph));
                     return;
                 }
@@ -329,9 +409,25 @@ public class MonsterBrain extends EnemyContext {
                 if (dist <= reach * ("brute".equals(m.ai()) ? 1.6f : 1f) && m.attackCd <= 0) {
                     m.enter(Monster.State.TELEGRAPH, m.telegraph(mc.telegraphSeconds));
                 } else if (dist > reach * 0.7f) {
-                    Physics.move(map, m, pathX * m.speed * dt, pathY * m.speed * dt, T);
+                    float spd = m.speed * (m.guardActive() ? mc.guardSpeed : 1f);
+                    Physics.move(map, m, pathX * spd * dt, pathY * spd * dt, T);
                     m.walkTime += dt;
                 }
+        }
+    }
+
+    /** 떼 지어 덮치기: 근처에서 맴돌던 박쥐 하나가 조금 늦게 같이 덮친다. */
+    void packSwoop(Monster lead) {
+        Balance.MonsterCfg mc = balance.monster;
+        if (random.nextFloat() >= mc.packChance) return;
+        for (Monster o : monsters) {
+            if (o == lead || o.dead || !"swoop".equals(o.ai()) || o.state != Monster.State.CHASE) continue;
+            float dx = hero.x - o.x, dy = hero.y - o.y, d = (float) Math.sqrt(dx * dx + dy * dy);
+            if (d < 0.01f || d > mc.packRangeTiles * T) continue;
+            o.dirX = o.lockX = dx / d;
+            o.dirY = o.lockY = dy / d;
+            o.enter(Monster.State.SWOOP_TELEGRAPH, o.telegraph(mc.swoopTelegraph) + mc.packDelay);
+            return;
         }
     }
 
@@ -352,10 +448,48 @@ public class MonsterBrain extends EnemyContext {
         float sy = m.centerY();
         String kind = m.castKind == null ? "cast" : m.castKind;
         int dmg = m.attack();
-        if ("ring".equals(kind)) {
+        if ("pellet".equals(kind)) {
+            // 박쥐 콩알탄: 작고 빠른 탄 하나 (약하다)
+            shoot(m, m.x, sy, base, mc.pelletSpeedTiles * T, Math.max(1, Math.round(dmg * mc.pelletMultiplier)), m.def.sprite);
+            projectiles.get(projectiles.size() - 1).radius *= mc.pelletRadiusScale;
+        } else if ("flame".equals(kind)) {
+            // 마족병 불기둥: 지금 용사가 있는 자리에 예고 뒤 솟는다
+            boss.circleHazard("flame", hero.x, hero.y, mc.flameRadiusTiles * T, mc.flameWarning, dmg, mc.flameMultiplier);
+        } else if ("ring".equals(kind)) {
             int n = mc.ringCount + (m.finalBoss ? 4 : 0);
             float off = random.nextFloat() * 6.283f;
             for (int i = 0; i < n; i++) shoot(m, m.x, sy, off + 6.283f * i / n, speed * 0.8f, dmg, m.def.sprite);
+        } else if ("crescent".equals(kind)) {
+            // 혈월 검기: 크고 느린 붉은 검기 여러 줄
+            int n = mc.crescentCount;
+            float spread = (float) Math.toRadians(mc.crescentSpreadDegrees) * (n - 1);
+            float cs = mc.crescentSpeedTiles * T;
+            int cd = Math.max(1, Math.round(m.attack() * mc.crescentMultiplier));
+            for (int i = 0; i < n; i++) {
+                float a = base - spread / 2f + (n > 1 ? spread * i / (n - 1) : 0);
+                shoot(m, m.x, sy, a, cs, cd, "crescent");
+                projectiles.get(projectiles.size() - 1).radius *= mc.crescentRadiusScale;
+            }
+        } else if ("homing".equals(kind)) {
+            // 유도 마탄: 느리게 날며 용사 쪽으로 방향을 튼다. 벽에 닿으면 사라진다
+            int n = mc.homingCount;
+            float spread = (float) Math.toRadians(mc.homingSpreadDegrees);
+            for (int i = 0; i < n; i++) {
+                float a = base - spread / 2f + (n > 1 ? spread * i / (n - 1) : 0);
+                shoot(m, m.x, sy, a, mc.homingSpeedTiles * T, dmg, m.def.sprite);
+                Projectile p = projectiles.get(projectiles.size() - 1);
+                p.homing = mc.homingTurn;
+                p.dodgeVanish = true;
+                p.life = mc.homingLife;
+                p.radius *= 1.2f;
+            }
+        } else if ("orb".equals(kind)) {
+            // 어둠 구체: 크고 느린 구체 하나. orbFuse 초 뒤나 벽에 닿으면 터진다
+            shoot(m, m.x, sy, base, mc.orbSpeedTiles * T, dmg, m.def.sprite);
+            Projectile p = projectiles.get(projectiles.size() - 1);
+            p.radius *= mc.orbRadiusScale;
+            p.life = mc.orbFuse;
+            p.burst = mc.orbBurst;
         } else if ("volley".equals(kind) || "tri".equals(kind)) {
             int n = "tri".equals(kind) ? 3 : mc.volleyCount;
             float spread = (float) Math.toRadians("tri".equals(kind) ? 30 : mc.volleySpreadDegrees);
@@ -380,26 +514,76 @@ public class MonsterBrain extends EnemyContext {
     }
 
     public void updateProjectiles(float dt) {
+        List<Projectile> bursts = new ArrayList<>();
         for (Projectile p : projectiles) {
             if (p.dead) continue;
             p.age += dt;
             p.life -= dt;
+            if (p.homing > 0) steerHoming(p, dt);
             p.x += p.vx * dt;
             p.y += p.vy * dt;
             if (p.life <= 0 || map.solid(tileX(p.x), tileY(p.y - 6))) {
                 p.dead = true;
+                if (p.burst > 0) burst(p, p.x - p.vx * dt, p.y - p.vy * dt, bursts);
                 continue;
             }
             float hx = hero.x - p.x, hy = hero.centerY() - p.y;
             float r = p.radius + hero.hw;
+            if (p.homing > 0) {
+                // 유도 마탄: 가까이 오면 더 꺾지 않고 곧게 날아간다 (옆으로 비키거나 굴러서 피할 수 있다)
+                float stop = balance.monster.homingStopTiles * T;
+                if (hx * hx + hy * hy < stop * stop) p.homing = 0;
+            }
             if (hx * hx + hy * hy < r * r) {
-                if (hero.rolling()) continue; // 굴러서 피한다
+                if (hero.rolling()) {
+                    // 굴러서 피한다. 유도 마탄은 한 번 피하면 사라진다
+                    if (p.dodgeVanish) p.dead = true;
+                    continue;
+                }
                 p.dead = true;
                 hitHero(p.damage, 1f, p.x - p.vx, p.y - p.vy);
                 if (g.heroJustDied()) return;
+                if (p.burst > 0) burst(p, p.x, p.y, bursts);
             }
         }
         projectiles.removeIf(p -> p.dead);
+        projectiles.addAll(bursts);
+    }
+
+    /** 어둠 구체가 터진다: 그 자리에서 작은 탄이 사방으로 퍼진다. */
+    void burst(Projectile orb, float x, float y, List<Projectile> out) {
+        Balance.MonsterCfg mc = balance.monster;
+        float speed = mc.projectileSpeedTiles * T * 0.8f;
+        int dmg = Math.max(1, Math.round(orb.damage * mc.orbShardMultiplier));
+        float off = random.nextFloat() * 6.283f;
+        for (int i = 0; i < orb.burst; i++) {
+            float a = off + 6.283f * i / orb.burst;
+            Projectile p = new Projectile();
+            p.x = x;
+            p.y = y;
+            p.vx = (float) Math.cos(a) * speed;
+            p.vy = (float) Math.sin(a) * speed;
+            p.radius = mc.projectileRadius * 1.2f;
+            p.life = 3f;
+            p.damage = dmg;
+            p.source = orb.source;
+            out.add(p);
+        }
+        events.add(GameEvent.sound("cast"));
+    }
+
+    /** 유도탄: 속도는 그대로, 방향만 용사 쪽으로 조금씩 튼다. */
+    void steerHoming(Projectile p, float dt) {
+        float sp = (float) Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        float cur = (float) Math.atan2(p.vy, p.vx);
+        float want = (float) Math.atan2(hero.centerY() - p.y, hero.x - p.x);
+        float diff = want - cur;
+        while (diff > Math.PI) diff -= (float) (2 * Math.PI);
+        while (diff < -Math.PI) diff += (float) (2 * Math.PI);
+        float step = p.homing * dt;
+        cur += Math.max(-step, Math.min(step, diff));
+        p.vx = (float) Math.cos(cur) * sp;
+        p.vy = (float) Math.sin(cur) * sp;
     }
 
     /** 몬스터끼리 겹치지 않게 살짝 민다. */
