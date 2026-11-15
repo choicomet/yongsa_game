@@ -52,7 +52,8 @@ public class TitleScreen extends MenuScreen {
             com.badlogic.gdx.scenes.scene2d.ui.Label hint = label("방향키로 이동  ·  Enter 선택", "small", HINT);
             hint.setAlignment(com.badlogic.gdx.utils.Align.center);
             col.add(hint).height(20).padTop(18).padBottom(0).row();
-            add(col).expand().bottom().padBottom(52);
+            // 그림의 제목 장식(마름모)이 화면 가운데보다 10px 왼쪽에 있어 메뉴도 그 축에 맞춘다
+            add(col).expand().bottom().padBottom(52).padRight(20);
             nav.setFocusIndex(hasSave ? 0 : 1);
         }
     }
