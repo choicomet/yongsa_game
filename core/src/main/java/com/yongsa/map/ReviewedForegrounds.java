@@ -12,13 +12,16 @@ final class ReviewedForegrounds implements Disposable {
         final Texture texture;
         final float x, y, width, height, depth;
         final boolean flip, always;
-        Front(Texture texture, float x, float y, float width, float height, float depth, boolean flip, boolean always) {
+        final int sourceX, sourceWidth;
+        Front(Texture texture, float x, float y, float width, float height, float depth, boolean flip, boolean always,
+              int sourceX, int sourceWidth) {
             this.texture=texture;this.x=x;this.y=y;this.width=width;this.height=height;
             this.depth=depth;this.flip=flip;this.always=always;
+            this.sourceX=sourceX;this.sourceWidth=sourceWidth;
         }
         void draw(SpriteBatch batch) {
             batch.setColor(Color.WHITE);
-            batch.draw(texture,x,y,width,height,0,0,texture.getWidth(),texture.getHeight(),flip,false);
+            batch.draw(texture,x,y,width,height,sourceX,0,sourceWidth,texture.getHeight(),flip,false);
         }
     }
     private static final class Placement {
@@ -34,7 +37,7 @@ final class ReviewedForegrounds implements Disposable {
             this.room=room;this.corridor=corridor;this.joint=joint;
         }
         boolean visible(float x0,float y0,float x1,float y1) {return x<x1 && x+w>x0 && y<y1 && y+h>y0;}
-        void unload() {if(fronts!=null){for(var f:fronts)f.texture.dispose();fronts=null;}}
+        void unload() {if(fronts!=null){disposeTextures(fronts);fronts=null;}}
     }
     private final ReviewedOcclusion data;
     private final WorldMap map;
@@ -88,7 +91,7 @@ final class ReviewedForegrounds implements Disposable {
                         throw new IllegalArgumentException("Reviewed mask size changed: "+piece.mask);
                     cut.setBlending(Pixmap.Blending.None);
                     for(int y=0;y<r[3];y++)for(int x=0;x<r[2];x++) {
-                        int alpha=mask.getPixel(x,y)>>>24;
+                        int alpha=maskCoverage(mask.getPixel(x,y));
                         if(alpha==0)continue;
                         int pixel=source.getPixel(r[0]+x,r[1]+y);
                         // Never repaint feathered blends: that duplicates the seam over actors.
@@ -100,14 +103,22 @@ final class ReviewedForegrounds implements Disposable {
                     }
                     Texture texture=new Texture(cut,true);
                     texture.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);
-                    fronts.add(new Front(texture,p.x+piece.left(scene.size[0],p.flip)*p.w,
-                            p.y+(1f-(r[1]+r[3])/(float)scene.size[1])*p.h,
-                            r[2]*p.w/scene.size[0],r[3]*p.h/scene.size[1],
-                            p.y+(1-piece.depth)*p.h,p.flip,piece.always()));
+                    // A diagonal railing's footing changes along its length. Sort narrow
+                    // source strips independently while retaining ONE texture per object.
+                    int step=piece.depthLine==null || piece.always()?r[2]:4;
+                    for(int sx=0;sx<r[2];sx+=step) {
+                        int sw=Math.min(step,r[2]-sx);
+                        float left=piece.left(scene.size[0],p.flip)+(p.flip?r[2]-sx-sw:sx)/(float)scene.size[0];
+                        float depth=piece.depthAt((r[0]+sx+sw*.5f)/scene.size[0]);
+                        fronts.add(new Front(texture,p.x+left*p.w,
+                                p.y+(1f-(r[1]+r[3])/(float)scene.size[1])*p.h,
+                                sw*p.w/scene.size[0],r[3]*p.h/scene.size[1],
+                                p.y+(1-depth)*p.h,p.flip,piece.always(),sx,sw));
+                    }
                 }finally{cut.dispose();mask.dispose();}
             }
             p.fronts=fronts;
-        }catch(RuntimeException e){for(var f:fronts)f.texture.dispose();throw e;}
+        }catch(RuntimeException e){disposeTextures(fronts);throw e;}
         finally{source.dispose();}
     }
 
@@ -126,5 +137,12 @@ final class ReviewedForegrounds implements Disposable {
         return true;
     }
 
+    private static void disposeTextures(List<Front> fronts) {
+        var textures=new HashSet<Texture>();
+        for(var f:fronts)if(textures.add(f.texture))f.texture.dispose();
+    }
+    /** libGDX decodes an 8-bit grayscale PNG as Alpha: RGB is white even for black
+     * mask pixels. Multiply luminance by alpha so Alpha, RGB and RGBA masks agree. */
+    static int maskCoverage(int rgba) { return ((rgba>>>24)*(rgba&255)+127)/255; }
     public void dispose(){for(var p:placements)p.unload();}
 }

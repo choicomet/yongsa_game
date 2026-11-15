@@ -74,4 +74,47 @@ class ReviewedLayerTest {
             "pieces":[{"mask":"occlusion/review/a.png","rect":[8,0,5,5],"mode":"behind","depth":0.5}]}}}
             """));
     }
+
+    @Test void separatePostsWithEqualFootDepthRemainIndependent() throws Exception {
+        var mine=data().scenes.get("rooms/mine");
+        var posts=mine.pieces.stream().filter(p->Math.abs(p.depth-.835f)<.001f).toList();
+        assertEquals(2,posts.size(),"Two posts are not one wide cutout");
+        assertNotEquals(posts.get(0).id,posts.get(1).id);
+        assertTrue(posts.get(0).rect[0]+posts.get(0).rect[2]<posts.get(1).rect[0]);
+        for(var scene:data().scenes.values()) {
+            var ids=new HashSet<String>();
+            for(var p:scene.pieces)assertTrue(p.id!=null&&ids.add(p.id),"Every object has its own stable ID");
+        }
+    }
+
+    @Test void mineAnnotationBrushDoesNotEraseHeroOnBareFloor() throws Exception {
+        var scene=data().scenes.get("passages/mine-traverse");
+        // Bare paving to the left of the rock/post, previously included by the broad brush.
+        for(float[] uv:new float[][]{{.38f,.55f},{.571f,.676f}}) {
+            int x=(int)(uv[0]*scene.size[0]),y=(int)(uv[1]*scene.size[1]);
+            for(var p:scene.pieces) {
+                int px=x-p.rect[0],py=y-p.rect[1];
+                if(px<0||py<0||px>=p.rect[2]||py>=p.rect[3])continue;
+                var mask=ImageIO.read(Path.of("assets",p.mask).toFile());
+                assertEquals(0,mask.getRGB(px,py)&255,"Floor beside prop: "+Arrays.toString(uv));
+            }
+        }
+        assertTrue(scene.pieces.stream().noneMatch(ReviewedOcclusion.Piece::always));
+    }
+
+    @Test void diagonalRailingUsesLocalFootingAndClampsAtItsEnds() throws Exception {
+        var p=data().scenes.get("passages/tower-stair-bend").pieces.stream()
+                .filter(x->"stair-parapet".equals(x.id)).findFirst().orElseThrow();
+        float left=p.depthLine[0],right=p.depthLine[2];
+        assertFalse(p.always());
+        assertTrue(p.depthAt(left)<p.depthAt(right));
+        assertEquals((p.depthLine[1]+p.depthLine[3])/2,p.depthAt((left+right)/2),.000001f);
+        assertEquals(p.depthLine[1],p.depthAt(-1));
+        assertEquals(p.depthLine[3],p.depthAt(2));
+        var malformed=new ReviewedOcclusion();malformed.version=1;
+        var scene=data().scenes.get("passages/tower-stair-bend");malformed.scenes.put("passages/test",scene);
+        p=scene.pieces.stream().filter(x->x.depthLine!=null).findFirst().orElseThrow();
+        p.depthLine=new float[]{.8f,.4f,.2f,.5f};
+        assertThrows(IllegalArgumentException.class,()->ReviewedOcclusion.parse(new com.google.gson.Gson().toJson(malformed)));
+    }
 }

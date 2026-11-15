@@ -41,6 +41,7 @@ def stroke(size, s):
 def compile_review():
     feedback = json.loads((REVIEW / 'feedback.json').read_text(encoding='utf8'))
     refine = json.loads((REVIEW / 'refinements.json').read_text(encoding='utf8'))
+    objects = json.loads((REVIEW / 'objects.json').read_text(encoding='utf8'))['scenes']
     world = json.loads((ASSETS / 'data/map.json').read_text(encoding='utf8'))
     rooms = json.loads((ASSETS / 'data/natural-room-scenes.json').read_text(encoding='utf8'))['scenes']
     occlusion = json.loads((ASSETS / 'data/scene-occlusion.json').read_text(encoding='utf8'))['scenes']
@@ -84,7 +85,7 @@ def compile_review():
             floor.convert('1', dither=Image.Dither.NONE).save(ASSETS / art['mask'], optimize=True)
 
         layers = review['layers']
-        if not layers['done'] or not (layers['strokes'] or layers['overrides']):
+        if key not in objects and (not layers['done'] or not (layers['strokes'] or layers['overrides'])):
             continue
         definition = feedback['layerDefinitions'][key]
         pieces = []
@@ -101,7 +102,7 @@ def compile_review():
                 mask = Image.open(ASSETS / region['image']).convert('RGBA').getchannel('A')
                 if region.get('exclude'):
                     mask = ImageChops.subtract(mask, polygon(size, region['exclude']))
-            pieces.append([region['mode'], region['depth'], mask])
+            pieces.append([region['mode'], region['depth'], mask, original['id']])
         for i, original in enumerate(layers['strokes']):
             s = {**original, **edits.get('layers', {}).get(str(i), {})}
             if s.get('disabled'):
@@ -111,23 +112,32 @@ def compile_review():
                 for piece in pieces:
                     piece[2] = ImageChops.subtract(piece[2], mask)
             else:
-                pieces.append([s['mode'], s['depth'], mask])
-        # Same-depth regions can share a texture. Ordered erases were resolved first.
-        grouped = {}
-        for mode, depth, mask in pieces:
-            group = (mode, depth if mode == 'behind' else 1)
-            grouped[group] = ImageChops.lighter(grouped[group], mask) if group in grouped else mask
+                pieces.append([s['mode'], s['depth'], mask, f'stroke-{i:02d}'])
+        if key in objects:
+            # These are traced silhouettes, not annotation brush bounds. Keep every
+            # prop independent even when two objects happen to share a foot depth.
+            pieces = []
+            for obj in objects[key]:
+                mask = Image.new('L', size)
+                for poly in obj['polygons']:
+                    mask = ImageChops.lighter(mask, polygon(size, poly))
+                for hole in obj.get('holes', []):
+                    mask = ImageChops.subtract(mask, polygon(size, hole))
+                pieces.append([obj['mode'], obj['depth'], mask, obj['id']])
         record = {'image': art['image'], 'size': list(size), 'pieces': []}
-        for (mode, depth), mask in grouped.items():
+        for mode, depth, mask, object_id in pieces:
             box = mask.getbbox()
             if box is None:
                 continue
-            relative = f'occlusion/review/{key}/{len(record["pieces"]):02d}.png'
+            relative = f'occlusion/review/{key}/{object_id}.png'
             destination = ASSETS / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             mask.crop(box).save(destination, optimize=True)
-            record['pieces'].append({'mask': relative, 'rect': [box[0], box[1], box[2]-box[0], box[3]-box[1]],
+            record['pieces'].append({'id': object_id, 'mask': relative, 'rect': [box[0], box[1], box[2]-box[0], box[3]-box[1]],
                                      'mode': mode, 'depth': depth})
+            definition = next((o for o in objects.get(key, []) if o['id'] == object_id), {})
+            if 'depthLine' in definition:
+                record['pieces'][-1]['depthLine'] = definition['depthLine']
         manifest['scenes'][key] = record
         stats.append((key, len(record['pieces'])))
     (ASSETS / 'data/reviewed-occlusion.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+'\n', encoding='utf8')

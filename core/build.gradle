@@ -9,6 +9,8 @@ dependencies {
     testImplementation platform("org.junit:junit-bom:$junitVersion")
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Exercise libGDX's real PNG decoder (grayscale PNGs become Alpha pixmaps).
+    testRuntimeOnly "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
 }
 
 // 테스트에서 assets/data/balance.json 을 읽을 수 있게 작업 폴더를 프로젝트 루트로 둔다

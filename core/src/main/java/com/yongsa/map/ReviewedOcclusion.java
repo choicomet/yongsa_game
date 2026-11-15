@@ -17,10 +17,24 @@ public final class ReviewedOcclusion {
     }
 
     public static final class Piece {
-        public String mask, mode;
+        /** Stable source object; separate props never merge just because their depth matches. */
+        public String id, mask, mode;
         /** Original-image pixel rectangle, top-left origin. Never scaled during import. */
         public int[] rect;
         public float depth;
+        /** Optional sloping footing, original-image (u,v) pairs from left to right. */
+        public float[] depthLine;
+        public float depthAt(float u) {
+            if (depthLine == null) return depth;
+            if (u <= depthLine[0]) return depthLine[1];
+            for (int i=2;i<depthLine.length;i+=2) {
+                if (u <= depthLine[i]) {
+                    float t=(u-depthLine[i-2])/(depthLine[i]-depthLine[i-2]);
+                    return depthLine[i-1]+t*(depthLine[i+1]-depthLine[i-1]);
+                }
+            }
+            return depthLine[depthLine.length-1];
+        }
         public boolean always() { return "always".equals(mode); }
         public float left(int imageWidth, boolean flip) {
             return flip ? 1f - (rect[0] + rect[2]) / (float) imageWidth : rect[0] / (float) imageWidth;
@@ -38,6 +52,14 @@ public final class ReviewedOcclusion {
                     || s.size[0] <= 0 || s.size[1] <= 0 || s.pieces == null)
                 throw new IllegalArgumentException("Invalid reviewed scene: " + entry.getKey());
             for (var p : s.pieces) {
+                if (p != null && p.depthLine != null) {
+                    if (p.depthLine.length < 4 || p.depthLine.length % 2 != 0)
+                        throw new IllegalArgumentException("Invalid footing: " + entry.getKey());
+                    for (int i=0;i<p.depthLine.length;i++)
+                        if (!Float.isFinite(p.depthLine[i]) || p.depthLine[i]<0 || p.depthLine[i]>1
+                                || (i%2==0 && i>0 && p.depthLine[i]<=p.depthLine[i-2]))
+                            throw new IllegalArgumentException("Invalid footing: " + entry.getKey());
+                }
                 if (p == null || p.mask == null || !p.mask.startsWith("occlusion/review/")
                         || p.mask.contains("..") || p.rect == null || p.rect.length != 4
                         || !("always".equals(p.mode) || "behind".equals(p.mode))

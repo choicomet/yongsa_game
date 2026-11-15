@@ -9,7 +9,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/central-camp/00.png",
+          "id": "anvil",
+          "mask": "occlusion/review/rooms/central-camp/anvil.png",
           "rect": [
             464,
             300,
@@ -20,18 +21,32 @@
           "depth": 0.397
         },
         {
-          "mask": "occlusion/review/rooms/central-camp/01.png",
+          "id": "front-left",
+          "mask": "occlusion/review/rooms/central-camp/front-left.png",
           "rect": [
             41,
             521,
-            1591,
+            720,
             402
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.98
         },
         {
-          "mask": "occlusion/review/rooms/central-camp/02.png",
+          "id": "front-right",
+          "mask": "occlusion/review/rooms/central-camp/front-right.png",
+          "rect": [
+            939,
+            566,
+            693,
+            357
+          ],
+          "mode": "always",
+          "depth": 0.98
+        },
+        {
+          "id": "entrance-blue-arch",
+          "mask": "occlusion/review/rooms/central-camp/entrance-blue-arch.png",
           "rect": [
             0,
             197,
@@ -42,7 +57,8 @@
           "depth": 0.5
         },
         {
-          "mask": "occlusion/review/rooms/central-camp/03.png",
+          "id": "entrance-red-arch",
+          "mask": "occlusion/review/rooms/central-camp/entrance-red-arch.png",
           "rect": [
             1471,
             272,
@@ -53,7 +69,8 @@
           "depth": 0.63
         },
         {
-          "mask": "occlusion/review/rooms/central-camp/04.png",
+          "id": "entrance-purple-arch",
+          "mask": "occlusion/review/rooms/central-camp/entrance-purple-arch.png",
           "rect": [
             745,
             9,
@@ -73,7 +90,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/mine/00.png",
+          "id": "existing-front",
+          "mask": "occlusion/review/rooms/mine/existing-front.png",
           "rect": [
             0,
             135,
@@ -84,7 +102,8 @@
           "depth": 1
         },
         {
-          "mask": "occlusion/review/rooms/mine/01.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/rooms/mine/stroke-00.png",
           "rect": [
             255,
             444,
@@ -95,11 +114,24 @@
           "depth": 0.603
         },
         {
-          "mask": "occlusion/review/rooms/mine/02.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/rooms/mine/stroke-01.png",
           "rect": [
             682,
             701,
-            333,
+            74,
+            81
+          ],
+          "mode": "behind",
+          "depth": 0.835
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/rooms/mine/stroke-02.png",
+          "rect": [
+            941,
+            701,
+            74,
             81
           ],
           "mode": "behind",
@@ -115,7 +147,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/citadel-mob-b/00.png",
+          "id": "front-citadel-wall",
+          "mask": "occlusion/review/rooms/citadel-mob-b/front-citadel-wall.png",
           "rect": [
             18,
             277,
@@ -123,7 +156,7 @@
             655
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.99
         }
       ]
     },
@@ -135,7 +168,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/citadel-mob-c/00.png",
+          "id": "broken-inner-wall",
+          "mask": "occlusion/review/rooms/citadel-mob-c/broken-inner-wall.png",
           "rect": [
             404,
             184,
@@ -146,15 +180,28 @@
           "depth": 0.388
         },
         {
-          "mask": "occlusion/review/rooms/citadel-mob-c/01.png",
+          "id": "front-left-wall",
+          "mask": "occlusion/review/rooms/citadel-mob-c/front-left-wall.png",
           "rect": [
             20,
+            494,
+            771,
+            438
+          ],
+          "mode": "always",
+          "depth": 0.99
+        },
+        {
+          "id": "front-right-wall",
+          "mask": "occlusion/review/rooms/citadel-mob-c/front-right-wall.png",
+          "rect": [
+            881,
             489,
-            1616,
+            755,
             443
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.99
         }
       ]
     },
@@ -166,15 +213,28 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/citadel-ore-a/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/rooms/citadel-ore-a/stroke-00.png",
           "rect": [
             635,
             644,
-            427,
+            68,
             74
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.762
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/rooms/citadel-ore-a/stroke-01.png",
+          "rect": [
+            994,
+            649,
+            68,
+            69
+          ],
+          "mode": "always",
+          "depth": 0.762
         }
       ]
     },
@@ -186,7 +246,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/citadel-ore-b/00.png",
+          "id": "front-left-wall",
+          "mask": "occlusion/review/rooms/citadel-ore-b/front-left-wall.png",
           "rect": [
             25,
             407,
@@ -194,10 +255,11 @@
             525
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.99
         },
         {
-          "mask": "occlusion/review/rooms/citadel-ore-b/01.png",
+          "id": "front-right-stair-wall",
+          "mask": "occlusion/review/rooms/citadel-ore-b/front-right-stair-wall.png",
           "rect": [
             1441,
             490,
@@ -217,15 +279,40 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/tower-mob-c/00.png",
+          "id": "front-left-parapet",
+          "mask": "occlusion/review/rooms/tower-mob-c/front-left-parapet.png",
           "rect": [
             25,
             366,
-            1624,
+            711,
             566
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.99
+        },
+        {
+          "id": "front-right-parapet",
+          "mask": "occlusion/review/rooms/tower-mob-c/front-right-parapet.png",
+          "rect": [
+            1021,
+            458,
+            628,
+            474
+          ],
+          "mode": "always",
+          "depth": 0.99
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/rooms/tower-mob-c/stroke-01.png",
+          "rect": [
+            1250,
+            440,
+            80,
+            102
+          ],
+          "mode": "always",
+          "depth": 0.575
         }
       ]
     },
@@ -237,7 +324,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/village/00.png",
+          "id": "house-left",
+          "mask": "occlusion/review/rooms/village/house-left.png",
           "rect": [
             37,
             54,
@@ -248,18 +336,32 @@
           "depth": 0.268
         },
         {
-          "mask": "occlusion/review/rooms/village/01.png",
+          "id": "house-mid-left",
+          "mask": "occlusion/review/rooms/village/house-mid-left.png",
           "rect": [
             266,
             58,
-            805,
+            202,
+            256
+          ],
+          "mode": "behind",
+          "depth": 0.267
+        },
+        {
+          "id": "house-mid-right",
+          "mask": "occlusion/review/rooms/village/house-mid-right.png",
+          "rect": [
+            868,
+            58,
+            203,
             258
           ],
           "mode": "behind",
           "depth": 0.267
         },
         {
-          "mask": "occlusion/review/rooms/village/02.png",
+          "id": "house-right",
+          "mask": "occlusion/review/rooms/village/house-right.png",
           "rect": [
             1102,
             55,
@@ -270,7 +372,8 @@
           "depth": 0.265
         },
         {
-          "mask": "occlusion/review/rooms/village/03.png",
+          "id": "market-stall",
+          "mask": "occlusion/review/rooms/village/market-stall.png",
           "rect": [
             143,
             594,
@@ -281,18 +384,20 @@
           "depth": 0.611
         },
         {
-          "mask": "occlusion/review/rooms/village/04.png",
+          "id": "well",
+          "mask": "occlusion/review/rooms/village/well.png",
           "rect": [
-            87,
+            588,
             572,
-            661,
+            160,
             122
           ],
           "mode": "behind",
           "depth": 0.59
         },
         {
-          "mask": "occlusion/review/rooms/village/05.png",
+          "id": "bell-tower",
+          "mask": "occlusion/review/rooms/village/bell-tower.png",
           "rect": [
             1133,
             481,
@@ -303,18 +408,32 @@
           "depth": 0.661
         },
         {
-          "mask": "occlusion/review/rooms/village/06.png",
+          "id": "lamp-upper-left",
+          "mask": "occlusion/review/rooms/village/lamp-upper-left.png",
           "rect": [
             485,
             329,
-            354,
+            35,
             115
           ],
           "mode": "behind",
           "depth": 0.376
         },
         {
-          "mask": "occlusion/review/rooms/village/07.png",
+          "id": "lamp-upper-right",
+          "mask": "occlusion/review/rooms/village/lamp-upper-right.png",
+          "rect": [
+            804,
+            329,
+            35,
+            115
+          ],
+          "mode": "behind",
+          "depth": 0.376
+        },
+        {
+          "id": "lamp-lower-left",
+          "mask": "occlusion/review/rooms/village/lamp-lower-left.png",
           "rect": [
             440,
             840,
@@ -325,7 +444,8 @@
           "depth": 0.821
         },
         {
-          "mask": "occlusion/review/rooms/village/08.png",
+          "id": "lamp-lower-right",
+          "mask": "occlusion/review/rooms/village/lamp-lower-right.png",
           "rect": [
             848,
             840,
@@ -336,7 +456,8 @@
           "depth": 0.823
         },
         {
-          "mask": "occlusion/review/rooms/village/09.png",
+          "id": "pine-lower-left",
+          "mask": "occlusion/review/rooms/village/pine-lower-left.png",
           "rect": [
             158,
             996,
@@ -347,7 +468,8 @@
           "depth": 0.962
         },
         {
-          "mask": "occlusion/review/rooms/village/10.png",
+          "id": "pine-right",
+          "mask": "occlusion/review/rooms/village/pine-right.png",
           "rect": [
             1239,
             375,
@@ -358,7 +480,20 @@
           "depth": 0.464
         },
         {
-          "mask": "occlusion/review/rooms/village/11.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/rooms/village/stroke-00.png",
+          "rect": [
+            87,
+            616,
+            50,
+            75
+          ],
+          "mode": "behind",
+          "depth": 0.59
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/rooms/village/stroke-01.png",
           "rect": [
             1078,
             980,
@@ -378,7 +513,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/mine-antechamber/00.png",
+          "id": "front-rock-rim",
+          "mask": "occlusion/review/rooms/mine-antechamber/front-rock-rim.png",
           "rect": [
             25,
             506,
@@ -386,7 +522,7 @@
             426
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.99
         }
       ]
     },
@@ -398,7 +534,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/citadel-ore-north/00.png",
+          "id": "front-wall-and-gate",
+          "mask": "occlusion/review/rooms/citadel-ore-north/front-wall-and-gate.png",
           "rect": [
             20,
             422,
@@ -406,7 +543,7 @@
             510
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.99
         }
       ]
     },
@@ -418,7 +555,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/rooms/cave-mine/00.png",
+          "id": "near-rock-rim",
+          "mask": "occlusion/review/rooms/cave-mine/near-rock-rim.png",
           "rect": [
             0,
             481,
@@ -427,6 +565,18 @@
           ],
           "mode": "always",
           "depth": 1
+        },
+        {
+          "id": "stroke-00",
+          "mask": "occlusion/review/rooms/cave-mine/stroke-00.png",
+          "rect": [
+            327,
+            517,
+            38,
+            57
+          ],
+          "mode": "always",
+          "depth": 0.56
         }
       ]
     },
@@ -438,15 +588,172 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/passages/citadel-crossing/00.png",
+          "id": "west-square-pier",
+          "mask": "occlusion/review/passages/citadel-crossing/west-square-pier.png",
+          "rect": [
+            99,
+            231,
+            46,
+            77
+          ],
+          "mode": "behind",
+          "depth": 0.324895
+        },
+        {
+          "id": "west-thin-post",
+          "mask": "occlusion/review/passages/citadel-crossing/west-thin-post.png",
+          "rect": [
+            16,
+            213,
+            23,
+            67
+          ],
+          "mode": "behind",
+          "depth": 0.295359
+        },
+        {
+          "id": "west-rail-course",
+          "mask": "occlusion/review/passages/citadel-crossing/west-rail-course.png",
           "rect": [
             0,
-            189,
-            1467,
-            570
+            265,
+            104,
+            70
           ],
-          "mode": "always",
-          "depth": 1
+          "mode": "behind",
+          "depth": 0.355485,
+          "depthLine": [
+            0.0,
+            0.31962,
+            0.062086,
+            0.355485
+          ]
+        },
+        {
+          "id": "west-inner-pier",
+          "mask": "occlusion/review/passages/citadel-crossing/west-inner-pier.png",
+          "rect": [
+            261,
+            313,
+            55,
+            81
+          ],
+          "mode": "behind",
+          "depth": 0.415612
+        },
+        {
+          "id": "west-east-pier",
+          "mask": "occlusion/review/passages/citadel-crossing/west-east-pier.png",
+          "rect": [
+            385,
+            366,
+            50,
+            85
+          ],
+          "mode": "behind",
+          "depth": 0.475738
+        },
+        {
+          "id": "west-rail-link",
+          "mask": "occlusion/review/passages/citadel-crossing/west-rail-link.png",
+          "rect": [
+            143,
+            295,
+            121,
+            75
+          ],
+          "mode": "behind",
+          "depth": 0.394515,
+          "depthLine": [
+            0.086197,
+            0.335443,
+            0.159132,
+            0.394515
+          ]
+        },
+        {
+          "id": "east-start-pier",
+          "mask": "occlusion/review/passages/citadel-crossing/east-start-pier.png",
+          "rect": [
+            1000,
+            532,
+            47,
+            79
+          ],
+          "mode": "behind",
+          "depth": 0.64557
+        },
+        {
+          "id": "east-middle-pier",
+          "mask": "occlusion/review/passages/citadel-crossing/east-middle-pier.png",
+          "rect": [
+            1185,
+            550,
+            53,
+            84
+          ],
+          "mode": "behind",
+          "depth": 0.669831
+        },
+        {
+          "id": "east-low-pier",
+          "mask": "occlusion/review/passages/citadel-crossing/east-low-pier.png",
+          "rect": [
+            1290,
+            625,
+            46,
+            84
+          ],
+          "mode": "behind",
+          "depth": 0.748945
+        },
+        {
+          "id": "east-end-pier",
+          "mask": "occlusion/review/passages/citadel-crossing/east-end-pier.png",
+          "rect": [
+            1344,
+            662,
+            52,
+            80
+          ],
+          "mode": "behind",
+          "depth": 0.783755
+        },
+        {
+          "id": "east-rail-course-a",
+          "mask": "occlusion/review/passages/citadel-crossing/east-rail-course-a.png",
+          "rect": [
+            1046,
+            580,
+            140,
+            78
+          ],
+          "mode": "behind",
+          "depth": 0.695148,
+          "depthLine": [
+            0.631706,
+            0.657173,
+            0.714888,
+            0.695148
+          ]
+        },
+        {
+          "id": "east-rail-course-b",
+          "mask": "occlusion/review/passages/citadel-crossing/east-rail-course-b.png",
+          "rect": [
+            1234,
+            614,
+            61,
+            68
+          ],
+          "mode": "behind",
+          "depth": 0.722574,
+          "depthLine": [
+            0.743822,
+            0.691983,
+            0.779988,
+            0.722574
+          ]
         }
       ]
     },
@@ -458,15 +765,88 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/passages/mine-traverse/00.png",
+          "id": "west-post",
+          "mask": "occlusion/review/passages/mine-traverse/west-post.png",
           "rect": [
-            149,
-            341,
-            1369,
-            361
+            148,
+            346,
+            31,
+            96
           ],
-          "mode": "always",
-          "depth": 1
+          "mode": "behind",
+          "depth": 0.4673
+        },
+        {
+          "id": "west-middle-post",
+          "mask": "occlusion/review/passages/mine-traverse/west-middle-post.png",
+          "rect": [
+            244,
+            400,
+            30,
+            90
+          ],
+          "mode": "behind",
+          "depth": 0.516878
+        },
+        {
+          "id": "near-rock-spire",
+          "mask": "occlusion/review/passages/mine-traverse/near-rock-spire.png",
+          "rect": [
+            621,
+            524,
+            51,
+            98
+          ],
+          "mode": "behind",
+          "depth": 0.659283
+        },
+        {
+          "id": "southwest-post",
+          "mask": "occlusion/review/passages/mine-traverse/southwest-post.png",
+          "rect": [
+            810,
+            607,
+            33,
+            88
+          ],
+          "mode": "behind",
+          "depth": 0.733122
+        },
+        {
+          "id": "southeast-post",
+          "mask": "occlusion/review/passages/mine-traverse/southeast-post.png",
+          "rect": [
+            940,
+            673,
+            34,
+            87
+          ],
+          "mode": "behind",
+          "depth": 0.800633
+        },
+        {
+          "id": "east-post",
+          "mask": "occlusion/review/passages/mine-traverse/east-post.png",
+          "rect": [
+            1499,
+            518,
+            30,
+            89
+          ],
+          "mode": "behind",
+          "depth": 0.640295
+        },
+        {
+          "id": "ore-cart",
+          "mask": "occlusion/review/passages/mine-traverse/ore-cart.png",
+          "rect": [
+            872,
+            198,
+            117,
+            104
+          ],
+          "mode": "behind",
+          "depth": 0.317511
         }
       ]
     },
@@ -478,15 +858,40 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/passages/mine-rail-bend/00.png",
+          "id": "ridge-west-cap",
+          "mask": "occlusion/review/passages/mine-rail-bend/ridge-west-cap.png",
           "rect": [
-            531,
-            364,
-            847,
-            528
+            528,
+            367,
+            65,
+            70
           ],
-          "mode": "always",
-          "depth": 1
+          "mode": "behind",
+          "depth": 0.464135
+        },
+        {
+          "id": "ridge-middle-cap",
+          "mask": "occlusion/review/passages/mine-rail-bend/ridge-middle-cap.png",
+          "rect": [
+            708,
+            410,
+            84,
+            103
+          ],
+          "mode": "behind",
+          "depth": 0.543249
+        },
+        {
+          "id": "ridge-east-cap",
+          "mask": "occlusion/review/passages/mine-rail-bend/ridge-east-cap.png",
+          "rect": [
+            1271,
+            815,
+            82,
+            116
+          ],
+          "mode": "behind",
+          "depth": 0.981013
         }
       ]
     },
@@ -498,15 +903,94 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/passages/tower-bridge/00.png",
+          "id": "front-pier-0",
+          "mask": "occlusion/review/passages/tower-bridge/front-pier-0.png",
+          "rect": [
+            464,
+            479,
+            59,
+            87
+          ],
+          "mode": "behind",
+          "depth": 0.605
+        },
+        {
+          "id": "front-pier-1",
+          "mask": "occlusion/review/passages/tower-bridge/front-pier-1.png",
+          "rect": [
+            592,
+            517,
+            62,
+            86
+          ],
+          "mode": "behind",
+          "depth": 0.645
+        },
+        {
+          "id": "front-pier-2",
+          "mask": "occlusion/review/passages/tower-bridge/front-pier-2.png",
+          "rect": [
+            998,
+            521,
+            64,
+            87
+          ],
+          "mode": "behind",
+          "depth": 0.65
+        },
+        {
+          "id": "front-pier-3",
+          "mask": "occlusion/review/passages/tower-bridge/front-pier-3.png",
+          "rect": [
+            1134,
+            481,
+            59,
+            88
+          ],
+          "mode": "behind",
+          "depth": 0.605
+        },
+        {
+          "id": "west-parapet",
+          "mask": "occlusion/review/passages/tower-bridge/west-parapet.png",
           "rect": [
             358,
-            479,
-            835,
-            152
+            512,
+            102,
+            52
           ],
-          "mode": "always",
-          "depth": 1
+          "mode": "behind",
+          "depth": 0.6,
+          "depthLine": [
+            0.215793,
+            0.561181,
+            0.277275,
+            0.593882
+          ]
+        },
+        {
+          "id": "west-brazier",
+          "mask": "occlusion/review/passages/tower-bridge/west-brazier.png",
+          "rect": [
+            658,
+            565,
+            28,
+            56
+          ],
+          "mode": "behind",
+          "depth": 0.657173
+        },
+        {
+          "id": "east-brazier",
+          "mask": "occlusion/review/passages/tower-bridge/east-brazier.png",
+          "rect": [
+            978,
+            572,
+            24,
+            57
+          ],
+          "mode": "behind",
+          "depth": 0.664557
         }
       ]
     },
@@ -518,7 +1002,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/passages/tower-ascent/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/passages/tower-ascent/stroke-00.png",
           "rect": [
             614,
             1267,
@@ -529,7 +1014,8 @@
           "depth": 0.888
         },
         {
-          "mask": "occlusion/review/passages/tower-ascent/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/passages/tower-ascent/stroke-01.png",
           "rect": [
             514,
             1006,
@@ -540,7 +1026,8 @@
           "depth": 0.704
         },
         {
-          "mask": "occlusion/review/passages/tower-ascent/02.png",
+          "id": "stroke-02",
+          "mask": "occlusion/review/passages/tower-ascent/stroke-02.png",
           "rect": [
             440,
             402,
@@ -560,15 +1047,136 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/passages/tower-stair-bend/00.png",
+          "id": "upper-west-pier",
+          "mask": "occlusion/review/passages/tower-stair-bend/upper-west-pier.png",
+          "rect": [
+            164,
+            204,
+            53,
+            79
+          ],
+          "mode": "behind",
+          "depth": 0.300633
+        },
+        {
+          "id": "upper-south-pier",
+          "mask": "occlusion/review/passages/tower-stair-bend/upper-south-pier.png",
+          "rect": [
+            314,
+            316,
+            59,
+            90
+          ],
+          "mode": "behind",
+          "depth": 0.43038
+        },
+        {
+          "id": "stair-upper-pier",
+          "mask": "occlusion/review/passages/tower-stair-bend/stair-upper-pier.png",
+          "rect": [
+            540,
+            375,
+            63,
+            103
+          ],
+          "mode": "behind",
+          "depth": 0.506329
+        },
+        {
+          "id": "stair-lower-pier",
+          "mask": "occlusion/review/passages/tower-stair-bend/stair-lower-pier.png",
+          "rect": [
+            995,
+            733,
+            67,
+            99
+          ],
+          "mode": "behind",
+          "depth": 0.879747
+        },
+        {
+          "id": "upper-west-parapet",
+          "mask": "occlusion/review/passages/tower-stair-bend/upper-west-parapet.png",
           "rect": [
             0,
-            189,
-            1088,
-            665
+            187,
+            165,
+            63
           ],
-          "mode": "always",
-          "depth": 1
+          "mode": "behind",
+          "depth": 0.265823,
+          "depthLine": [
+            0.0,
+            0.226793,
+            0.098855,
+            0.265823
+          ]
+        },
+        {
+          "id": "diagonal-upper-parapet",
+          "mask": "occlusion/review/passages/tower-stair-bend/diagonal-upper-parapet.png",
+          "rect": [
+            215,
+            279,
+            100,
+            85
+          ],
+          "mode": "behind",
+          "depth": 0.387131,
+          "depthLine": [
+            0.129596,
+            0.317511,
+            0.189271,
+            0.387131
+          ]
+        },
+        {
+          "id": "landing-parapet",
+          "mask": "occlusion/review/passages/tower-stair-bend/landing-parapet.png",
+          "rect": [
+            373,
+            375,
+            167,
+            70
+          ],
+          "mode": "behind",
+          "depth": 0.471519,
+          "depthLine": [
+            0.225437,
+            0.432489,
+            0.324895,
+            0.471519
+          ]
+        },
+        {
+          "id": "stair-parapet",
+          "mask": "occlusion/review/passages/tower-stair-bend/stair-parapet.png",
+          "rect": [
+            829,
+            611,
+            166,
+            113
+          ],
+          "mode": "behind",
+          "depth": 0.766878,
+          "depthLine": [
+            0.500301,
+            0.684599,
+            0.599156,
+            0.766878
+          ]
+        },
+        {
+          "id": "lower-lamp",
+          "mask": "occlusion/review/passages/tower-stair-bend/lower-lamp.png",
+          "rect": [
+            1063,
+            782,
+            26,
+            61
+          ],
+          "mode": "behind",
+          "depth": 0.890295
         }
       ]
     },
@@ -580,15 +1188,82 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/mine-side/00.png",
+          "id": "rail-cart",
+          "mask": "occlusion/review/joints/mine-side/rail-cart.png",
           "rect": [
-            303,
-            796,
-            793,
-            456
+            872,
+            899,
+            204,
+            184
+          ],
+          "mode": "behind",
+          "depth": 0.864434
+        },
+        {
+          "id": "bridge-west-post",
+          "mask": "occlusion/review/joints/mine-side/bridge-west-post.png",
+          "rect": [
+            417,
+            807,
+            59,
+            184
+          ],
+          "mode": "behind",
+          "depth": 0.789474
+        },
+        {
+          "id": "bridge-west-beam",
+          "mask": "occlusion/review/joints/mine-side/bridge-west-beam.png",
+          "rect": [
+            472,
+            812,
+            69,
+            63
+          ],
+          "mode": "behind",
+          "depth": 0.789474,
+          "depthLine": [
+            0.376396,
+            0.789474,
+            0.431419,
+            0.749601
+          ]
+        },
+        {
+          "id": "west-rock-spire",
+          "mask": "occlusion/review/joints/mine-side/west-rock-spire.png",
+          "rect": [
+            258,
+            883,
+            164,
+            371
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 1.0
+        },
+        {
+          "id": "middle-rock-slab",
+          "mask": "occlusion/review/joints/mine-side/middle-rock-slab.png",
+          "rect": [
+            464,
+            843,
+            271,
+            411
+          ],
+          "mode": "always",
+          "depth": 1.0
+        },
+        {
+          "id": "east-rock-spire",
+          "mask": "occlusion/review/joints/mine-side/east-rock-spire.png",
+          "rect": [
+            705,
+            1033,
+            146,
+            221
+          ],
+          "mode": "always",
+          "depth": 1.0
         }
       ]
     },
@@ -600,7 +1275,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-L1-L2/00.png",
+          "id": "winch",
+          "mask": "occlusion/review/joints/exit-L1-L2/winch.png",
           "rect": [
             213,
             0,
@@ -611,7 +1287,8 @@
           "depth": 0.25
         },
         {
-          "mask": "occlusion/review/joints/exit-L1-L2/01.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-L1-L2/stroke-00.png",
           "rect": [
             376,
             403,
@@ -622,7 +1299,8 @@
           "depth": 0.42
         },
         {
-          "mask": "occlusion/review/joints/exit-L1-L2/02.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-L1-L2/stroke-01.png",
           "rect": [
             431,
             495,
@@ -633,7 +1311,8 @@
           "depth": 0.56
         },
         {
-          "mask": "occlusion/review/joints/exit-L1-L2/03.png",
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-L1-L2/stroke-02.png",
           "rect": [
             465,
             550,
@@ -644,12 +1323,25 @@
           "depth": 0.58
         },
         {
-          "mask": "occlusion/review/joints/exit-L1-L2/04.png",
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/exit-L1-L2/stroke-03.png",
           "rect": [
             576,
+            289,
+            35,
+            89
+          ],
+          "mode": "behind",
+          "depth": 0.31
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/exit-L1-L2/stroke-04.png",
+          "rect": [
+            643,
             214,
-            112,
-            164
+            45,
+            158
           ],
           "mode": "behind",
           "depth": 0.31
@@ -664,7 +1356,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-L3-L4/00.png",
+          "id": "mine-cart",
+          "mask": "occlusion/review/joints/entry-L3-L4/mine-cart.png",
           "rect": [
             652,
             965,
@@ -684,7 +1377,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-L3-L4/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-L3-L4/stroke-00.png",
           "rect": [
             376,
             326,
@@ -695,12 +1389,25 @@
           "depth": 0.43
         },
         {
-          "mask": "occlusion/review/joints/exit-L3-L4/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-L3-L4/stroke-01.png",
           "rect": [
             752,
+            326,
+            64,
+            214
+          ],
+          "mode": "behind",
+          "depth": 0.435
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-L3-L4/stroke-02.png",
+          "rect": [
+            815,
             238,
-            120,
-            302
+            57,
+            214
           ],
           "mode": "behind",
           "depth": 0.435
@@ -715,7 +1422,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-L5-L7/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-L5-L7/stroke-00.png",
           "rect": [
             413,
             802,
@@ -723,7 +1431,7 @@
             101
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.72
         }
       ]
     },
@@ -735,26 +1443,88 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-L5-L7/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-L5-L7/stroke-00.png",
           "rect": [
-            307,
+            357,
             300,
-            164,
-            328
+            76,
+            227
           ],
           "mode": "behind",
           "depth": 0.5
         },
         {
-          "mask": "occlusion/review/joints/exit-L5-L7/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-L5-L7/stroke-01.png",
+          "rect": [
+            307,
+            501,
+            164,
+            127
+          ],
+          "mode": "behind",
+          "depth": 0.5
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-L5-L7/stroke-02.png",
           "rect": [
             626,
             727,
-            565,
-            402
+            142,
+            126
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.68
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/exit-L5-L7/stroke-03.png",
+          "rect": [
+            815,
+            827,
+            73,
+            127
+          ],
+          "mode": "always",
+          "depth": 0.76
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/exit-L5-L7/stroke-04.png",
+          "rect": [
+            884,
+            890,
+            43,
+            89
+          ],
+          "mode": "always",
+          "depth": 0.78
+        },
+        {
+          "id": "stroke-05",
+          "mask": "occlusion/review/joints/exit-L5-L7/stroke-05.png",
+          "rect": [
+            986,
+            940,
+            79,
+            126
+          ],
+          "mode": "always",
+          "depth": 0.85
+        },
+        {
+          "id": "stroke-06",
+          "mask": "occlusion/review/joints/exit-L5-L7/stroke-06.png",
+          "rect": [
+            1136,
+            1040,
+            55,
+            89
+          ],
+          "mode": "always",
+          "depth": 0.9
         }
       ]
     },
@@ -766,7 +1536,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-R1-R2/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-R1-R2/stroke-00.png",
           "rect": [
             551,
             652,
@@ -774,7 +1545,7 @@
             540
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.95
         }
       ]
     },
@@ -786,7 +1557,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-R2-R7/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-R2-R7/stroke-00.png",
           "rect": [
             206,
             200,
@@ -797,7 +1569,8 @@
           "depth": 0.36
         },
         {
-          "mask": "occlusion/review/joints/entry-R2-R7/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/entry-R2-R7/stroke-01.png",
           "rect": [
             670,
             169,
@@ -808,7 +1581,8 @@
           "depth": 0.4
         },
         {
-          "mask": "occlusion/review/joints/entry-R2-R7/02.png",
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/entry-R2-R7/stroke-02.png",
           "rect": [
             391,
             1047,
@@ -828,7 +1602,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-R2-R7/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-R2-R7/stroke-00.png",
           "rect": [
             808,
             244,
@@ -848,15 +1623,76 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-R7-R3/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-R7-R3/stroke-00.png",
           "rect": [
-            156,
-            714,
-            762,
-            390
+            558,
+            802,
+            113,
+            202
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.8
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/entry-R7-R3/stroke-01.png",
+          "rect": [
+            658,
+            714,
+            81,
+            189
+          ],
+          "mode": "always",
+          "depth": 0.72
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/entry-R7-R3/stroke-02.png",
+          "rect": [
+            764,
+            752,
+            134,
+            126
+          ],
+          "mode": "always",
+          "depth": 0.7
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/entry-R7-R3/stroke-03.png",
+          "rect": [
+            892,
+            727,
+            26,
+            126
+          ],
+          "mode": "always",
+          "depth": 0.68
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/entry-R7-R3/stroke-04.png",
+          "rect": [
+            382,
+            865,
+            183,
+            214
+          ],
+          "mode": "always",
+          "depth": 0.86
+        },
+        {
+          "id": "stroke-05",
+          "mask": "occlusion/review/joints/entry-R7-R3/stroke-05.png",
+          "rect": [
+            156,
+            965,
+            158,
+            139
+          ],
+          "mode": "always",
+          "depth": 0.88
         }
       ]
     },
@@ -868,15 +1704,100 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-R7-R3/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-R7-R3/stroke-00.png",
           "rect": [
             50,
             438,
-            942,
-            679
+            97,
+            127
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.45
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-R7-R3/stroke-01.png",
+          "rect": [
+            150,
+            501,
+            119,
+            126
+          ],
+          "mode": "always",
+          "depth": 0.5
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-R7-R3/stroke-02.png",
+          "rect": [
+            338,
+            627,
+            61,
+            126
+          ],
+          "mode": "always",
+          "depth": 0.6
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/exit-R7-R3/stroke-03.png",
+          "rect": [
+            413,
+            664,
+            106,
+            164
+          ],
+          "mode": "always",
+          "depth": 0.66
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/exit-R7-R3/stroke-04.png",
+          "rect": [
+            514,
+            714,
+            105,
+            189
+          ],
+          "mode": "always",
+          "depth": 0.72
+        },
+        {
+          "id": "stroke-05",
+          "mask": "occlusion/review/joints/exit-R7-R3/stroke-05.png",
+          "rect": [
+            634,
+            790,
+            138,
+            214
+          ],
+          "mode": "always",
+          "depth": 0.8
+        },
+        {
+          "id": "stroke-06",
+          "mask": "occlusion/review/joints/exit-R7-R3/stroke-06.png",
+          "rect": [
+            777,
+            940,
+            147,
+            139
+          ],
+          "mode": "always",
+          "depth": 0.86
+        },
+        {
+          "id": "stroke-07",
+          "mask": "occlusion/review/joints/exit-R7-R3/stroke-07.png",
+          "rect": [
+            901,
+            1003,
+            91,
+            114
+          ],
+          "mode": "always",
+          "depth": 0.89
         }
       ]
     },
@@ -888,7 +1809,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-R3-R4/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-R3-R4/stroke-00.png",
           "rect": [
             1084,
             175,
@@ -899,7 +1821,8 @@
           "depth": 0.42
         },
         {
-          "mask": "occlusion/review/joints/entry-R3-R4/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/entry-R3-R4/stroke-01.png",
           "rect": [
             904,
             338,
@@ -910,7 +1833,8 @@
           "depth": 0.46
         },
         {
-          "mask": "occlusion/review/joints/entry-R3-R4/02.png",
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/entry-R3-R4/stroke-02.png",
           "rect": [
             652,
             1166,
@@ -930,15 +1854,88 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-R3-R5/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-R3-R5/stroke-00.png",
           "rect": [
-            0,
-            695,
-            1113,
-            422
+            246,
+            752,
+            168,
+            252
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.8
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/entry-R3-R5/stroke-01.png",
+          "rect": [
+            404,
+            752,
+            141,
+            151
+          ],
+          "mode": "always",
+          "depth": 0.72
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/entry-R3-R5/stroke-02.png",
+          "rect": [
+            559,
+            695,
+            136,
+            108
+          ],
+          "mode": "always",
+          "depth": 0.64
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/entry-R3-R5/stroke-03.png",
+          "rect": [
+            727,
+            695,
+            75,
+            83
+          ],
+          "mode": "always",
+          "depth": 0.62
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/entry-R3-R5/stroke-04.png",
+          "rect": [
+            852,
+            727,
+            86,
+            101
+          ],
+          "mode": "always",
+          "depth": 0.66
+        },
+        {
+          "id": "stroke-05",
+          "mask": "occlusion/review/joints/entry-R3-R5/stroke-05.png",
+          "rect": [
+            932,
+            777,
+            181,
+            151
+          ],
+          "mode": "always",
+          "depth": 0.74
+        },
+        {
+          "id": "stroke-06",
+          "mask": "occlusion/review/joints/entry-R3-R5/stroke-06.png",
+          "rect": [
+            0,
+            877,
+            122,
+            240
+          ],
+          "mode": "always",
+          "depth": 0.89
         }
       ]
     },
@@ -950,15 +1947,112 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-R3-R5/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-R3-R5/stroke-00.png",
           "rect": [
             50,
             438,
-            1204,
-            691
+            97,
+            127
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.45
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-R3-R5/stroke-01.png",
+          "rect": [
+            150,
+            501,
+            119,
+            126
+          ],
+          "mode": "always",
+          "depth": 0.5
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-R3-R5/stroke-02.png",
+          "rect": [
+            338,
+            626,
+            75,
+            127
+          ],
+          "mode": "always",
+          "depth": 0.6
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/exit-R3-R5/stroke-03.png",
+          "rect": [
+            413,
+            664,
+            106,
+            164
+          ],
+          "mode": "always",
+          "depth": 0.66
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/exit-R3-R5/stroke-04.png",
+          "rect": [
+            514,
+            752,
+            104,
+            139
+          ],
+          "mode": "always",
+          "depth": 0.71
+        },
+        {
+          "id": "stroke-05",
+          "mask": "occlusion/review/joints/exit-R3-R5/stroke-05.png",
+          "rect": [
+            752,
+            790,
+            116,
+            214
+          ],
+          "mode": "always",
+          "depth": 0.8
+        },
+        {
+          "id": "stroke-06",
+          "mask": "occlusion/review/joints/exit-R3-R5/stroke-06.png",
+          "rect": [
+            840,
+            865,
+            153,
+            189
+          ],
+          "mode": "always",
+          "depth": 0.84
+        },
+        {
+          "id": "stroke-07",
+          "mask": "occlusion/review/joints/exit-R3-R5/stroke-07.png",
+          "rect": [
+            978,
+            840,
+            146,
+            289
+          ],
+          "mode": "always",
+          "depth": 0.9
+        },
+        {
+          "id": "stroke-08",
+          "mask": "occlusion/review/joints/exit-R3-R5/stroke-08.png",
+          "rect": [
+            1116,
+            953,
+            138,
+            164
+          ],
+          "mode": "always",
+          "depth": 0.89
         }
       ]
     },
@@ -970,7 +2064,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-R5-R6/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-R5-R6/stroke-00.png",
           "rect": [
             699,
             927,
@@ -990,15 +2085,52 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-R5-R6/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-R5-R6/stroke-00.png",
           "rect": [
             25,
+            263,
+            264,
+            114
+          ],
+          "mode": "always",
+          "depth": 0.3
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-R5-R6/stroke-01.png",
+          "rect": [
+            294,
             213,
-            1219,
+            106,
             176
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.31
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-R5-R6/stroke-02.png",
+          "rect": [
+            852,
+            213,
+            108,
+            164
+          ],
+          "mode": "always",
+          "depth": 0.3
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/exit-R5-R6/stroke-03.png",
+          "rect": [
+            953,
+            238,
+            291,
+            114
+          ],
+          "mode": "always",
+          "depth": 0.28
         }
       ]
     },
@@ -1010,7 +2142,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-T1-T2/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-T1-T2/stroke-00.png",
           "rect": [
             50,
             595,
@@ -1030,7 +2163,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-T1-T2/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-T1-T2/stroke-00.png",
           "rect": [
             767,
             652,
@@ -1041,15 +2175,28 @@
           "depth": 0.6
         },
         {
-          "mask": "occlusion/review/joints/exit-T1-T2/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-T1-T2/stroke-01.png",
           "rect": [
             940,
             777,
-            314,
-            277
+            120,
+            164
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.75
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-T1-T2/stroke-02.png",
+          "rect": [
+            1164,
+            902,
+            90,
+            152
+          ],
+          "mode": "always",
+          "depth": 0.84
         }
       ]
     },
@@ -1061,7 +2208,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-T2-T3/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-T2-T3/stroke-00.png",
           "rect": [
             551,
             62,
@@ -1081,15 +2229,28 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-T2-T3/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-T2-T3/stroke-00.png",
           "rect": [
             282,
             351,
-            722,
-            113
+            104,
+            101
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.36
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-T2-T3/stroke-01.png",
+          "rect": [
+            911,
+            357,
+            93,
+            107
+          ],
+          "mode": "always",
+          "depth": 0.37
         }
       ]
     },
@@ -1101,7 +2262,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-T3-T4/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-T3-T4/stroke-00.png",
           "rect": [
             551,
             62,
@@ -1121,15 +2283,100 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-T3-T4/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-T3-T4/stroke-00.png",
           "rect": [
-            25,
-            144,
-            1161,
-            258
+            137,
+            163,
+            102,
+            164
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.26
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-T3-T4/stroke-01.png",
+          "rect": [
+            275,
+            225,
+            145,
+            152
+          ],
+          "mode": "always",
+          "depth": 0.3
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-T3-T4/stroke-02.png",
+          "rect": [
+            413,
+            313,
+            60,
+            89
+          ],
+          "mode": "always",
+          "depth": 0.32
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/exit-T3-T4/stroke-03.png",
+          "rect": [
+            785,
+            313,
+            56,
+            76
+          ],
+          "mode": "always",
+          "depth": 0.31
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/exit-T3-T4/stroke-04.png",
+          "rect": [
+            821,
+            225,
+            145,
+            152
+          ],
+          "mode": "always",
+          "depth": 0.3
+        },
+        {
+          "id": "stroke-05",
+          "mask": "occlusion/review/joints/exit-T3-T4/stroke-05.png",
+          "rect": [
+            989,
+            163,
+            102,
+            138
+          ],
+          "mode": "always",
+          "depth": 0.24
+        },
+        {
+          "id": "stroke-06",
+          "mask": "occlusion/review/joints/exit-T3-T4/stroke-06.png",
+          "rect": [
+            25,
+            150,
+            44,
+            114
+          ],
+          "mode": "always",
+          "depth": 0.21
+        },
+        {
+          "id": "stroke-07",
+          "mask": "occlusion/review/joints/exit-T3-T4/stroke-07.png",
+          "rect": [
+            1129,
+            144,
+            57,
+            95
+          ],
+          "mode": "always",
+          "depth": 0.19
         }
       ]
     },
@@ -1141,7 +2388,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-T3-T5/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-T3-T5/stroke-00.png",
           "rect": [
             1028,
             1065,
@@ -1152,15 +2400,52 @@
           "depth": 0.95
         },
         {
-          "mask": "occlusion/review/joints/entry-T3-T5/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/entry-T3-T5/stroke-01.png",
           "rect": [
             37,
             175,
-            888,
-            979
+            99,
+            126
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.24
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/entry-T3-T5/stroke-02.png",
+          "rect": [
+            275,
+            376,
+            158,
+            189
+          ],
+          "mode": "always",
+          "depth": 0.45
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/entry-T3-T5/stroke-03.png",
+          "rect": [
+            733,
+            902,
+            60,
+            127
+          ],
+          "mode": "always",
+          "depth": 0.82
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/entry-T3-T5/stroke-04.png",
+          "rect": [
+            835,
+            1003,
+            90,
+            151
+          ],
+          "mode": "always",
+          "depth": 0.92
         }
       ]
     },
@@ -1172,7 +2457,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-T3-T5/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-T3-T5/stroke-00.png",
           "rect": [
             314,
             338,
@@ -1183,15 +2469,52 @@
           "depth": 0.44
         },
         {
-          "mask": "occlusion/review/joints/exit-T3-T5/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-T3-T5/stroke-01.png",
           "rect": [
-            378,
+            589,
             677,
-            831,
-            327
+            123,
+            126
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.64
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-T3-T5/stroke-02.png",
+          "rect": [
+            827,
+            752,
+            119,
+            151
+          ],
+          "mode": "always",
+          "depth": 0.72
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/exit-T3-T5/stroke-03.png",
+          "rect": [
+            1090,
+            852,
+            119,
+            152
+          ],
+          "mode": "always",
+          "depth": 0.8
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/exit-T3-T5/stroke-04.png",
+          "rect": [
+            378,
+            733,
+            94,
+            120
+          ],
+          "mode": "always",
+          "depth": 0.68
         }
       ]
     },
@@ -1203,7 +2526,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-T5-T7/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-T5-T7/stroke-00.png",
           "rect": [
             909,
             313,
@@ -1214,7 +2538,8 @@
           "depth": 0.42
         },
         {
-          "mask": "occlusion/review/joints/entry-T5-T7/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/entry-T5-T7/stroke-01.png",
           "rect": [
             955,
             376,
@@ -1225,15 +2550,52 @@
           "depth": 0.41
         },
         {
-          "mask": "occlusion/review/joints/entry-T5-T7/02.png",
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/entry-T5-T7/stroke-02.png",
           "rect": [
             752,
             689,
-            400,
-            252
+            116,
+            139
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.66
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/entry-T5-T7/stroke-03.png",
+          "rect": [
+            927,
+            727,
+            87,
+            151
+          ],
+          "mode": "always",
+          "depth": 0.7
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/entry-T5-T7/stroke-04.png",
+          "rect": [
+            1015,
+            790,
+            51,
+            113
+          ],
+          "mode": "always",
+          "depth": 0.72
+        },
+        {
+          "id": "stroke-05",
+          "mask": "occlusion/review/joints/entry-T5-T7/stroke-05.png",
+          "rect": [
+            1090,
+            827,
+            62,
+            114
+          ],
+          "mode": "always",
+          "depth": 0.75
         }
       ]
     },
@@ -1245,7 +2607,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-T5-T7/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-T5-T7/stroke-00.png",
           "rect": [
             376,
             388,
@@ -1256,15 +2619,76 @@
           "depth": 0.46
         },
         {
-          "mask": "occlusion/review/joints/exit-T5-T7/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-T5-T7/stroke-01.png",
           "rect": [
-            79,
-            677,
-            880,
-            352
+            254,
+            752,
+            123,
+            151
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.72
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-T5-T7/stroke-02.png",
+          "rect": [
+            376,
+            739,
+            139,
+            139
+          ],
+          "mode": "always",
+          "depth": 0.7
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/exit-T5-T7/stroke-03.png",
+          "rect": [
+            576,
+            677,
+            123,
+            226
+          ],
+          "mode": "always",
+          "depth": 0.72
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/exit-T5-T7/stroke-04.png",
+          "rect": [
+            214,
+            815,
+            56,
+            113
+          ],
+          "mode": "always",
+          "depth": 0.74
+        },
+        {
+          "id": "stroke-05",
+          "mask": "occlusion/review/joints/exit-T5-T7/stroke-05.png",
+          "rect": [
+            79,
+            927,
+            122,
+            102
+          ],
+          "mode": "always",
+          "depth": 0.82
+        },
+        {
+          "id": "stroke-06",
+          "mask": "occlusion/review/joints/exit-T5-T7/stroke-06.png",
+          "rect": [
+            684,
+            840,
+            275,
+            189
+          ],
+          "mode": "always",
+          "depth": 0.82
         }
       ]
     },
@@ -1276,7 +2700,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-T7-T6/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-T7-T6/stroke-00.png",
           "rect": [
             652,
             37,
@@ -1296,15 +2721,100 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/exit-T7-T6/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/exit-T7-T6/stroke-00.png",
           "rect": [
-            75,
+            181,
             150,
-            1129,
-            854
+            133,
+            177
           ],
           "mode": "always",
-          "depth": 1
+          "depth": 0.26
+        },
+        {
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/exit-T7-T6/stroke-01.png",
+          "rect": [
+            326,
+            225,
+            107,
+            152
+          ],
+          "mode": "always",
+          "depth": 0.3
+        },
+        {
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/exit-T7-T6/stroke-02.png",
+          "rect": [
+            807,
+            250,
+            142,
+            127
+          ],
+          "mode": "always",
+          "depth": 0.3
+        },
+        {
+          "id": "stroke-03",
+          "mask": "occlusion/review/joints/exit-T7-T6/stroke-03.png",
+          "rect": [
+            931,
+            150,
+            142,
+            189
+          ],
+          "mode": "always",
+          "depth": 0.27
+        },
+        {
+          "id": "stroke-04",
+          "mask": "occlusion/review/joints/exit-T7-T6/stroke-04.png",
+          "rect": [
+            75,
+            225,
+            101,
+            89
+          ],
+          "mode": "always",
+          "depth": 0.25
+        },
+        {
+          "id": "stroke-05",
+          "mask": "occlusion/review/joints/exit-T7-T6/stroke-05.png",
+          "rect": [
+            1083,
+            213,
+            121,
+            88
+          ],
+          "mode": "always",
+          "depth": 0.24
+        },
+        {
+          "id": "stroke-06",
+          "mask": "occlusion/review/joints/exit-T7-T6/stroke-06.png",
+          "rect": [
+            438,
+            689,
+            117,
+            139
+          ],
+          "mode": "always",
+          "depth": 0.66
+        },
+        {
+          "id": "stroke-07",
+          "mask": "occlusion/review/joints/exit-T7-T6/stroke-07.png",
+          "rect": [
+            665,
+            852,
+            114,
+            152
+          ],
+          "mode": "always",
+          "depth": 0.8
         }
       ]
     },
@@ -1316,7 +2826,8 @@
       ],
       "pieces": [
         {
-          "mask": "occlusion/review/joints/entry-CAMP-V/00.png",
+          "id": "stroke-00",
+          "mask": "occlusion/review/joints/entry-CAMP-V/stroke-00.png",
           "rect": [
             476,
             501,
@@ -1327,7 +2838,8 @@
           "depth": 0.46
         },
         {
-          "mask": "occlusion/review/joints/entry-CAMP-V/01.png",
+          "id": "stroke-01",
+          "mask": "occlusion/review/joints/entry-CAMP-V/stroke-01.png",
           "rect": [
             739,
             501,
@@ -1338,7 +2850,8 @@
           "depth": 0.45
         },
         {
-          "mask": "occlusion/review/joints/entry-CAMP-V/02.png",
+          "id": "stroke-02",
+          "mask": "occlusion/review/joints/entry-CAMP-V/stroke-02.png",
           "rect": [
             821,
             388,

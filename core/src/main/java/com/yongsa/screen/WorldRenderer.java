@@ -545,6 +545,9 @@ public class WorldRenderer implements Disposable {
         mapPainter.drawGround(tx0, ty0, tx1, ty1);
         batch.end();
 
+        // F1 marks floor, not actors: keep the hero legible while inspecting masks.
+        if (showWalkable) mapPainter.drawWalkable();
+
         enemyPainter.drawGroundEffects();
 
         batch.begin();
@@ -565,7 +568,6 @@ public class WorldRenderer implements Disposable {
         shapes.setProjectionMatrix(cam.combined);
         drawGlow();
         enemyPainter.drawHpBars();
-        if (showWalkable) mapPainter.drawWalkable();
 
         batch.setProjectionMatrix(screenProj);
         batch.begin();
