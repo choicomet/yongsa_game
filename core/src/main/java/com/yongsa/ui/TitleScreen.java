@@ -1,6 +1,8 @@
 package com.yongsa.ui;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.yongsa.YongsaGame;
@@ -15,7 +17,7 @@ import com.yongsa.ui.SettingsWindow;
 import com.yongsa.ui.Ui;
 import com.yongsa.screen.GameScreen;
 
-/** 타이틀 (UI-01): 이어하기, 새 게임, 설정, 조작 키, 종료. */
+/** 타이틀 (UI-01): 이어하기, 시작하기, 설정(조작 키 포함), 종료하기. 배경은 제목이 그려진 키 아트(title_keyart). */
 public class TitleScreen extends MenuScreen {
 
     public TitleScreen(YongsaGame game) {
@@ -35,23 +37,44 @@ public class TitleScreen extends MenuScreen {
 
         @Override
         public void build() {
+            // 제목은 배경 그림에 들어 있다. 메뉴는 그 아래 가운데에 둔다.
+            nav.style = "titleMenu";
             Table col = new Table();
-            col.defaults().left();
-            col.add(label("THE HERO DOES IT ALL", "small", Ui.GOLD)).padBottom(18).row();
-            col.add(label("용사가 다한다", "title", Ui.TEXT)).padBottom(18).row();
-            col.add(label("검을 벼리고, 던전을 넘어, 봉인을 깨워라.", "small", Ui.DIM)).padBottom(38).row();
+            col.defaults().width(260).height(42).padBottom(8);
             boolean hasSave = game.saves.hasSave();
             TextButton cont = nav.add("이어하기", TitleScreen.this::continueGame);
             cont.setDisabled(!hasSave);
-            col.add(cont).width(310).height(52).padBottom(8).row();
-            col.add(nav.add("새 게임", TitleScreen.this::newGame)).width(310).height(52).padBottom(8).row();
-            col.add(nav.add("설정", () -> modals.push(new SettingsWindow(game)))).width(310).height(46).padBottom(8).row();
-            col.add(nav.add("조작 키", () -> modals.push(new ControlsWindow(game, null)))).width(310).height(46).padBottom(8).row();
-            col.add(nav.add("종료", () -> Gdx.app.exit())).width(310).height(46).row();
-            col.add(label("방향키로 이동  ·  Enter 선택", "small", Ui.DIM)).padTop(24).row();
-            add(col).expand().left().padLeft(80).padBottom(12);
+            col.add(cont).row();
+            col.add(nav.add("시작하기", TitleScreen.this::newGame)).row();
+            col.add(nav.add("설정", () -> modals.push(new SettingsWindow(game,
+                    () -> modals.push(new ControlsWindow(game, null)))))).row();
+            col.add(nav.add("종료하기", () -> Gdx.app.exit())).padBottom(0).row();
+            com.badlogic.gdx.scenes.scene2d.ui.Label hint = label("방향키로 이동  ·  Enter 선택", "small", HINT);
+            hint.setAlignment(com.badlogic.gdx.utils.Align.center);
+            col.add(hint).height(20).padTop(18).padBottom(0).row();
+            add(col).expand().bottom().padBottom(52);
             nav.setFocusIndex(hasSave ? 0 : 1);
         }
+    }
+
+    private static final Color HINT = new Color(0xa89cb0cc);
+
+    @Override
+    protected void drawBackground(SpriteBatch b) {
+        if (!game.art.hasHd("title_keyart")) {
+            super.drawBackground(b);
+            return;
+        }
+        float W = com.yongsa.YongsaGame.WIDTH;
+        b.setColor(Color.WHITE);
+        b.draw(game.art.get("title_keyart"), 0, 0, W, com.yongsa.YongsaGame.HEIGHT);
+        // 메뉴 뒤 바닥만 살짝 어둡게 (위로 갈수록 옅어진다)
+        for (int y = 0; y < 300; y += 3) {
+            float a = 0.5f * (1f - y / 300f);
+            b.setColor(0.04f, 0.03f, 0.06f, a * a * 2f);
+            b.draw(game.art.white(), 0, y, W, 3);
+        }
+        b.setColor(Color.WHITE);
     }
 
     private void continueGame() {
