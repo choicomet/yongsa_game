@@ -8,7 +8,7 @@ import com.yongsa.YongsaGame;
 import com.yongsa.combat.Facing;
 import com.yongsa.model.*;
 import com.yongsa.screen.WorldRenderer;
-import com.yongsa.world.*;
+import com.yongsa.map.*;
 import java.util.*;
 
 /** Real-renderer captures at fixed 60Hz; separate QA saves, no player save access. */

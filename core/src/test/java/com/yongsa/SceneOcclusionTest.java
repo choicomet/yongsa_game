@@ -1,6 +1,6 @@
 package com.yongsa;
 
-import com.yongsa.world.SceneOcclusion;
+import com.yongsa.map.SceneOcclusion;
 import java.nio.file.*;
 import java.util.*;
 import org.junit.jupiter.api.Test;

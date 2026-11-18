@@ -6,11 +6,11 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.yongsa.YongsaGame;
-import com.yongsa.combat.Monster;
+import com.yongsa.enemy.Monster;
 import com.yongsa.model.*;
 import com.yongsa.screen.WorldRenderer;
 import com.yongsa.ui.Hud;
-import com.yongsa.world.*;
+import com.yongsa.map.*;
 import java.util.*;
 
 /** Actual renderer and atlas QA. Hidden window, isolated saves, no player data. */

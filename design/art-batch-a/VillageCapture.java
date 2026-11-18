@@ -6,7 +6,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.yongsa.YongsaGame;
 import com.yongsa.model.*;
 import com.yongsa.screen.*;
-import com.yongsa.world.*;
+import com.yongsa.map.*;
 import java.util.*;
 
 /** External QA helper; does not modify the game or production save files. */

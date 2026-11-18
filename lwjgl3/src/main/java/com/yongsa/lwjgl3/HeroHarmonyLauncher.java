@@ -63,7 +63,7 @@ public final class HeroHarmonyLauncher {
             var state = NewGame.create(balance);
             state.bossesDefeated.addAll(java.util.List.of("LEFT","RIGHT","TOP"));
             var map = newMap(); var room = map.room(rooms[scene]);
-            state.mapVersion = com.yongsa.world.WorldMap.VERSION;
+            state.mapVersion = com.yongsa.map.WorldMap.VERSION;
             state.resumeX = room.spawnX(balance.tileSize); state.resumeY = room.spawnY(balance.tileSize);
             session = new GameSession(balance, map, state, 42);
             renderer = new WorldRenderer(session, art, fonts, batch, shapes);

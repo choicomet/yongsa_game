@@ -2,7 +2,7 @@ package com.yongsa;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.yongsa.world.WalkMask;
+import com.yongsa.map.WalkMask;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -22,7 +22,7 @@ class WalkMaskReviewTest {
 
     @Test void reviewCoversEveryRuntimePaintingAtItsOriginalResolution() throws Exception {
         Map<String, String> expected = new HashMap<>();
-        var map = com.yongsa.world.MapDef.parse(Files.readString(Path.of("assets/data/map.json")));
+        var map = com.yongsa.map.MapDef.parse(Files.readString(Path.of("assets/data/map.json")));
         var scenes = JsonParser.parseString(Files.readString(Path.of("assets/data/natural-room-scenes.json")))
                 .getAsJsonObject().getAsJsonArray("scenes");
         for (var value : scenes) {

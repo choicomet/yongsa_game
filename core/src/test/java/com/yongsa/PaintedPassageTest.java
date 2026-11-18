@@ -3,8 +3,8 @@ package com.yongsa;
 import com.yongsa.model.GameSession;
 import com.yongsa.model.GameState;
 import com.yongsa.model.NewGame;
-import com.yongsa.world.Corridor;
-import com.yongsa.world.WorldMap;
+import com.yongsa.map.Corridor;
+import com.yongsa.map.WorldMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

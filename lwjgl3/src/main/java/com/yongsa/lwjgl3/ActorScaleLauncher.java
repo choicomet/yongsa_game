@@ -8,7 +8,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.yongsa.YongsaGame;
 import com.yongsa.combat.Facing;
-import com.yongsa.combat.Monster;
+import com.yongsa.enemy.Monster;
 import com.yongsa.model.*;
 import com.yongsa.screen.WorldRenderer;
 
@@ -44,7 +44,7 @@ public final class ActorScaleLauncher {
             if (scene >= 13) id = scene == 14 ? "R6" : scene == 15 ? "T6" : scene == 16 || scene >= 20 ? "F" : "L6";
             var room = map.room(id);
             state.bossesDefeated.addAll(java.util.List.of("LEFT", "RIGHT", "TOP"));
-            state.mapVersion = com.yongsa.world.WorldMap.VERSION;
+            state.mapVersion = com.yongsa.map.WorldMap.VERSION;
             state.resumeX = room.spawnX(balance.tileSize); state.resumeY = room.spawnY(balance.tileSize);
             session = new GameSession(balance, map, state, 42);
             session.monsters.clear();

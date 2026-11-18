@@ -51,6 +51,31 @@ public class DevMenu extends Modal {
             screen.game.saveSettings();
             rebuild();
         })).width(260).height(46).left().padBottom(16).row();
+        // 강화 숙련도 (발표·테스트용): 한 단계씩 올리거나 마스터로, 0 으로 되돌린다
+        com.yongsa.model.EnhanceService es = g.enhance;
+        p.add(label("강화 숙련도", "default", Ui.DIM)).left().padRight(24);
+        Table mastery = new Table();
+        mastery.add(label("Lv " + s.masteryLevel + (es.masteryMaxed(s) ? " (마스터)" : ""), "default", Ui.GOLD)).width(110).left();
+        TextButton up = nav.add("+1", () -> {
+            es.addMasteryExp(s, es.masteryNeed(s.masteryLevel) - s.masteryExp);
+            screen.save(false);
+            rebuild();
+        });
+        up.setDisabled(es.masteryMaxed(s));
+        mastery.add(up).width(70).height(42).padRight(6);
+        mastery.add(nav.add("마스터", () -> {
+            s.masteryLevel = es.masteryMaxLevel();
+            s.masteryExp = 0;
+            screen.save(false);
+            rebuild();
+        })).width(90).height(42).padRight(6);
+        mastery.add(nav.add("0", () -> {
+            s.masteryLevel = 0;
+            s.masteryExp = 0;
+            screen.save(false);
+            rebuild();
+        })).width(60).height(42);
+        p.add(mastery).colspan(2).left().padBottom(16).row();
 
         p.add(label("보스 부활 · 바로 가기", "default", Ui.GOLD)).colspan(3).left().padBottom(4).row();
         p.add(label("흡수한 힘과 열린 길은 그대로. 보스방 입구로 가서 걸어 들어가면 싸운다.", "small", Ui.DIM)).colspan(3).left().padBottom(10).row();

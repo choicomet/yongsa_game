@@ -27,7 +27,7 @@ public class BagWindow extends Modal {
             detailPane.updateVisualScroll();
             return true;
         }
-        if (keycode == com.badlogic.gdx.Input.Keys.B) {
+        if (screen.game.settings.keys().is(com.yongsa.save.KeyBindings.Action.BAG, keycode)) {
             close();
             return true;
         }
@@ -97,7 +97,7 @@ public class BagWindow extends Modal {
             any = true;
             String how = k.learned ? "흡수해서 익힘 · 어떤 검이든" : i == com.yongsa.model.Rules.HOLY_SLOT ? "깨어난 성검을 들면"
                     : g.balance.weapon(k.weaponId).name + "을 들면";
-            side.add(wrapped(GameSession.SKILL_KEYS[i] + "  " + k.def.name + (k.awakened ? " (각성)" : "") + "\n   " + how,
+            side.add(wrapped(g.skillKeys[i] + "  " + k.def.name + (k.awakened ? " (각성)" : "") + "\n   " + how,
                     k.usable ? Ui.GOLD : Ui.DIM)).width(280).left().colspan(2).padBottom(8).row();
         }
         if (!any) side.add(wrapped("검을 +" + g.balance.enhance.skillUnlockLevel + " 까지 강화하면 스킬 칸이 열린다", Ui.DIM))

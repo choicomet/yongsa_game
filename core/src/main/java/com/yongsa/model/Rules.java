@@ -114,6 +114,21 @@ public final class Rules {
         return out;
     }
 
+    /**
+     * 조작 키 창에 보일 스킬 칸 이름 (0=스킬 1 … 3=성검 스킬). 지금 쓸 수 있는 칸만 이름이 있고
+     * (그 검을 들고 있거나 흡수해서 익혔을 때), 나머지는 null 이라 창에서 그 줄을 감춘다.
+     * 2026-11-10 피드백: 검을 안 들었거나 흡수하지 않아 스킬을 못 쓸 때는 보이지 않아야 한다.
+     */
+    public String[] skillKeyNames(GameState s) {
+        String[] out = new String[SKILL_SLOTS];
+        SkillSlot[] slots = skillSlots(s);
+        for (int i = 0; i < SKILL_SLOTS; i++) {
+            if (slots[i] == null || slots[i].def == null || !slots[i].usable) continue;
+            out[i] = (i == HOLY_SLOT ? "성검 스킬" : "스킬 " + (i + 1)) + " · " + slots[i].def.name;
+        }
+        return out;
+    }
+
     public String weaponName(Weapon w) {
         WeaponDef d = b.weapon(w.defId);
         String name = w.awakened && d.awakenedName != null ? d.awakenedName : d.name;

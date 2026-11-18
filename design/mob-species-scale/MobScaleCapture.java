@@ -6,7 +6,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.yongsa.YongsaGame;
 import com.yongsa.model.*;
-import com.yongsa.combat.Monster;
+import com.yongsa.enemy.Monster;
 import com.yongsa.screen.WorldRenderer;
 
 /** External deterministic visual QA; isolated save directory, unchanged game sources. */

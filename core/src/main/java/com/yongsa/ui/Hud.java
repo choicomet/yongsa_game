@@ -9,7 +9,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
-import com.yongsa.combat.Monster;
+import com.yongsa.enemy.Monster;
 import com.yongsa.gfx.Art;
 import com.yongsa.gfx.Fonts;
 import com.yongsa.model.GameSession;
@@ -17,11 +17,11 @@ import com.yongsa.model.GameState;
 import com.yongsa.model.OreType;
 import com.yongsa.model.Vein;
 import com.yongsa.model.Weapon;
-import com.yongsa.world.Door;
-import com.yongsa.world.Corridor;
-import com.yongsa.world.Link;
-import com.yongsa.world.Room;
-import com.yongsa.world.RoomType;
+import com.yongsa.map.Door;
+import com.yongsa.map.Corridor;
+import com.yongsa.map.Link;
+import com.yongsa.map.Room;
+import com.yongsa.map.RoomType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +33,8 @@ import java.util.List;
  */
 public class Hud {
     private final GameSession g;
+    /** 칸 위에 적는 키 이름 (사용자가 조작 키를 바꾸면 GameScreen 이 바꿔 준다). */
+    public String attackKey = "J", rollKey = "K", mapKey = "M", bagKey = "B", moveKeys = "W A S D";
     private final Art art;
     private final Fonts fonts;
     private final SpriteBatch batch;
@@ -210,7 +212,7 @@ public class Hud {
             text(fonts.small, String.valueOf(s.ore(type)), ox + 43, h - 49, Ui.TEXT);
             ox += 94;
         }
-        text(fonts.small, "B  가방     M  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
+        text(fonts.small, bagKey + "  가방     " + mapKey + "  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
         if (showWalkMasks) {
             float my = 130;
             for (String m : g.map.walkMasksAt(g.hero.x, g.hero.y)) {
@@ -251,7 +253,7 @@ public class Hud {
         text(fonts.small, "다음 여정", 42, 95, Ui.GOLD);
         fonts.normal.setColor(Ui.TEXT);
         fonts.normal.draw(batch, g.nextTask(), 42, 69, 586, com.badlogic.gdx.utils.Align.left, true);
-        text(fonts.small, "W A S D  이동    ·    E  상호작용", 24, 136, Ui.DIM);
+        text(fonts.small, moveKeys + "  이동    ·    " + g.interactKey + "  상호작용", 24, 136, Ui.DIM);
 
         float[] left = cooldowns();
         com.yongsa.model.Rules.SkillSlot[] skills = g.rules.skillSlots(g.state);
@@ -284,7 +286,7 @@ public class Hud {
                 else batch.draw(art.sword(sk.weaponId, sk.awakened), x + 35, 47, 58, 58);
                 batch.setColor(Color.WHITE);
             }
-            String key = i == 0 ? "J" : i == 1 ? "K" : com.yongsa.model.GameSession.SKILL_KEYS[i - 2];
+            String key = i == 0 ? attackKey : i == 1 ? rollKey : g.skillKeys[i - 2];
             String name = i == 0 ? "베기" : i == 1 ? "구르기" : sk.def.name;
             text(fonts.small, key, x + 10, 100, Ui.GOLD);
             if (sk != null && sk.learned) text(fonts.small, "익힘", x + 62, 100, Ui.PURPLE);
@@ -493,8 +495,8 @@ public class Hud {
         fonts.large.setColor(1f, 0.85f, 0.4f, a);
         fonts.large.draw(batch, "지도", px + 30, py + ph - 20);
         fonts.small.setColor(Ui.DIM.r, Ui.DIM.g, Ui.DIM.b, a);
-        layout.setText(fonts.small, "M  닫기");
-        fonts.small.draw(batch, "M  닫기", px + pw - 30 - layout.width, py + ph - 26);
+        layout.setText(fonts.small, mapKey + "  닫기");
+        fonts.small.draw(batch, mapKey + "  닫기", px + pw - 30 - layout.width, py + ph - 26);
         // 던전 이름
         String[] ids = {"LEFT", "RIGHT", "TOP"};
         for (String id : ids) {

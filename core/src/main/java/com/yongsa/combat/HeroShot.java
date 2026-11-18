@@ -1,5 +1,7 @@
 package com.yongsa.combat;
 
+import com.yongsa.enemy.Monster;
+
 import java.util.HashSet;
 import java.util.Set;
 
