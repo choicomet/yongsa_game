@@ -530,6 +530,7 @@ public class WorldRenderer implements Disposable {
 
     /** 개발용 (F1): 용사 발이 설 수 있는 곳을 초록으로 덮는다. 그림은 바닥인데 초록이 없으면 막힌 곳이다. */
     public boolean showWalkable;
+    public boolean showLayers;
 
     public void render(OrthographicCamera cam) {
         computeView(cam);
@@ -545,6 +546,7 @@ public class WorldRenderer implements Disposable {
         mapPainter.drawGround(tx0, ty0, tx1, ty1);
         batch.end();
 
+        if (showWalkable) mapPainter.drawWalkable();
         enemyPainter.drawGroundEffects();
 
         batch.begin();
@@ -565,7 +567,7 @@ public class WorldRenderer implements Disposable {
         shapes.setProjectionMatrix(cam.combined);
         drawGlow();
         enemyPainter.drawHpBars();
-        if (showWalkable) mapPainter.drawWalkable();
+        if (showLayers) mapPainter.drawLayerDebug();
 
         batch.setProjectionMatrix(screenProj);
         batch.begin();
@@ -617,6 +619,8 @@ public class WorldRenderer implements Disposable {
             if (!inView(pd[0], pd[1])) continue;
             list.add(new Sorted(pd[1], () -> drawPotionDrop(pd[0], pd[1])));
         }
+        for (HeroShot shot : g.shots) if (!shot.dead && !shot.strike())
+            list.add(new Sorted(shot.y, () -> drawSkillShot(shot)));
         HeroActor h = g.hero;
         list.add(new Sorted(h.y, this::drawHero));
         enemyPainter.collect((y, draw) -> list.add(new Sorted(y, draw::run)));
@@ -1051,23 +1055,8 @@ public class WorldRenderer implements Disposable {
                         h.radius * 2, h.radius * 1.2f);
                 continue;
             }
-            float speed = (float) Math.hypot(h.vx, h.vy);
-            float ux = speed > 0.001f ? h.vx / speed : 1f;
-            float uy = speed > 0.001f ? h.vy / speed : 0f;
-            float angle = MathUtils.atan2(uy, ux) * MathUtils.radDeg;
-            TextureRegion sprite = art.world("skill_" + h.kind);
-            boolean ground = "cleave".equals(h.kind);
-            float height = h.radius * (ground ? 1.1f : 2.2f);
-            float width = height * sprite.getRegionWidth() / sprite.getRegionHeight();
-            float alpha = Math.min(1f, h.age / 0.035f) * Math.min(1f, Math.max(0f, h.life) / 0.08f);
-            // Trails never extend behind the position where the shot was born.
-            for (int k = 2; k >= 1; k--) {
-                float distance = Math.min(speed * h.age, h.radius * 0.32f * k);
-                drawSkillSprite(sprite, h.x - ux * distance, h.y - uy * distance,
-                        width, height, angle, alpha * (k == 1 ? 0.16f : 0.07f));
-            }
-            drawSkillSprite(sprite, h.x, h.y, width, height, angle, alpha);
         }
+
         TextureRegion lightning = art.world("skill_strike");
         for (float[] b : bolts) {
             float alpha = Math.max(0f, 1f - b[2] / 0.3f);
@@ -1079,6 +1068,27 @@ public class WorldRenderer implements Disposable {
         }
         batch.setColor(Color.WHITE);
         Particles.additive(batch);
+    }
+
+    private void drawSkillShot(HeroShot h) {
+        Particles.normal(batch);
+        float speed = (float) Math.hypot(h.vx, h.vy);
+        float ux = speed > 0.001f ? h.vx / speed : 1f;
+        float uy = speed > 0.001f ? h.vy / speed : 0f;
+        float angle = MathUtils.atan2(uy, ux) * MathUtils.radDeg;
+        TextureRegion sprite = art.world("skill_" + h.kind);
+        boolean ground = "cleave".equals(h.kind);
+        float height = h.radius * (ground ? 1.1f : 2.2f);
+        float width = height * sprite.getRegionWidth() / sprite.getRegionHeight();
+        float alpha = Math.min(1f, h.age / 0.035f) * Math.min(1f, Math.max(0f, h.life) / 0.08f);
+        // Trails never extend behind the position where the shot was born.
+        for (int k = 2; k >= 1; k--) {
+            float distance = Math.min(speed * h.age, h.radius * 0.32f * k);
+            drawSkillSprite(sprite, h.x - ux * distance, h.y - uy * distance,
+                    width, height, angle, alpha * (k == 1 ? 0.16f : 0.07f));
+        }
+        drawSkillSprite(sprite, h.x, h.y, width, height, angle, alpha);
+        batch.setColor(Color.WHITE);
     }
 
     private void drawSkillSprite(TextureRegion sprite, float x, float y, float width, float height,

@@ -320,13 +320,15 @@ class PassagePainter implements Disposable {
 
     /** Keep floor exits and their masonry opaque; only the surrounding rock fades.
      * Fading all four edges also faded the entrance stairs/torches into the bedrock. */
-    private static Pixmap featherPassage(Pixmap source, Corridor c) {
+    static Pixmap featherPassage(Pixmap source, Corridor c) {
         Pixmap p = rgba(source);
         int w = p.getWidth(), h = p.getHeight();
         float fade = Math.min(w, h) * .08f;
         ByteBuffer pixels = p.getPixels();
         float[][] ends = {c.scene.path.get(0), c.scene.path.get(c.scene.path.size() - 1)};
         for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) {
+            int idx = (y * w + x) * 4 + 3;
+            if (pixels.get(idx) == 0 || (x >= fade && x < w - fade && y >= fade && y < h - fade)) continue;
             float left = smooth((x + .5f) / fade), right = smooth((w - x - .5f) / fade);
             float top = smooth((y + .5f) / fade), bottom = smooth((h - y - .5f) / fade);
             for (float[] end : ends) {
@@ -337,7 +339,6 @@ class PassagePainter implements Disposable {
                 if (end[1] < .06f) top += (1 - top) * protectX;
                 if (end[1] > .94f) bottom += (1 - bottom) * protectX;
             }
-            int idx = (y * w + x) * 4 + 3;
             pixels.put(idx, (byte) Math.round((pixels.get(idx) & 255) * left * right * top * bottom));
         }
         return p;

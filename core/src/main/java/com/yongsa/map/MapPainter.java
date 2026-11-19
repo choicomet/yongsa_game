@@ -57,6 +57,7 @@ public class MapPainter implements Disposable {
     private final Map<String, Texture> frontTex = new HashMap<>();
 
     private final SceneForegrounds sceneForegrounds;
+    private final SceneLayerPainter sceneLayers;
 
     private final BossReturnDoors returnDoors;
 
@@ -245,6 +246,7 @@ public class MapPainter implements Disposable {
         for (Room r : map.rooms) {
             if (r.scene == null) continue;
             if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            if(sceneLayers.has("rooms/"+r.scene.id))continue;
             Texture tex = frontTexture(r);
             if (tex == null) continue;
             batch.setColor(Color.WHITE);
@@ -475,6 +477,7 @@ public class MapPainter implements Disposable {
         }
         passages = new PassagePainter(map, T);
         sceneForegrounds = new SceneForegrounds(passages);
+        sceneLayers = new SceneLayerPainter(map, passages);
         returnDoors = new BossReturnDoors(g);
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
@@ -528,9 +531,11 @@ public class MapPainter implements Disposable {
 
     /** 깊이 정렬에 끼는 맵 조각: 앞쪽 바위·기둥, 이음매 앞면, 문짝, 보스방 귀환 문. */
     public void collect(DepthSink out) {
+        sceneLayers.collect(out,batch,viewX0,viewY0,viewX1,viewY1);
         for (Room r : map.rooms) {
             if (r.scene == null || r.originX > viewX1 || r.originX + r.widthPx < viewX0
                     || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            if(sceneLayers.has("rooms/"+r.scene.id))continue;
             for (SceneForegrounds.Piece piece : sceneForegrounds.pieces(r, time)) {
                 out.add(r.sceneY(piece.depth), () -> sceneForegrounds.draw(batch, r, piece));
             }
@@ -545,8 +550,11 @@ public class MapPainter implements Disposable {
     }
 
     /** 앞쪽 가림 레이어 (깊이 정렬한 것들 다음에 그린다). */
+    public void drawLayerDebug() { sceneLayers.drawDebug(shapes); }
+
     public void drawFronts() {
         drawSceneFronts();
+        sceneLayers.drawFronts(batch);
     }
 
     /** 맵의 불빛: 횃불, 모닥불, 화로, 봉인석, 던전 입구 봉인. */
@@ -648,6 +656,7 @@ public class MapPainter implements Disposable {
         for (Texture[] ts : corridorSkin.values()) for (Texture t : ts) t.dispose();
         for (Texture t : gateTex.values()) if (t != null) t.dispose();
         sceneForegrounds.dispose();
+        sceneLayers.dispose();
         returnDoors.dispose();
         if (roomGates != null) roomGates.dispose();
         passages.dispose();

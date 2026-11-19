@@ -1,0 +1,1111 @@
+{
+  "version": 1,
+  "scenes": {
+    "passages/mine-traverse": {
+      "objects": [
+        {
+          "id": "west-post",
+          "foot": 0.4673,
+          "block": [
+            0.09379126,
+            0.4533,
+            0.10391774000000001,
+            0.4703
+          ],
+          "image": "layers/passages/mine-traverse/west-post.png"
+        },
+        {
+          "id": "west-middle-post",
+          "foot": 0.516878,
+          "block": [
+            0.15139216,
+            0.5028779999999999,
+            0.16084384000000002,
+            0.519878
+          ],
+          "image": "layers/passages/mine-traverse/west-middle-post.png"
+        },
+        {
+          "id": "near-rock-spire",
+          "foot": 0.659283,
+          "block": [
+            0.38108502,
+            0.6452829999999999,
+            0.39829998,
+            0.662283
+          ],
+          "image": "layers/passages/mine-traverse/near-rock-spire.png"
+        },
+        {
+          "id": "southwest-post",
+          "foot": 0.733122,
+          "block": [
+            0.49262202,
+            0.719122,
+            0.5037609799999999,
+            0.736122
+          ],
+          "image": "layers/passages/mine-traverse/southwest-post.png"
+        },
+        {
+          "id": "southeast-post",
+          "foot": 0.800633,
+          "block": [
+            0.57145258,
+            0.786633,
+            0.5822544199999999,
+            0.803633
+          ],
+          "image": "layers/passages/mine-traverse/southeast-post.png"
+        },
+        {
+          "id": "east-post",
+          "foot": 0.640295,
+          "block": [
+            0.90787216,
+            0.6262949999999999,
+            0.91732384,
+            0.643295
+          ],
+          "image": "layers/passages/mine-traverse/east-post.png"
+        },
+        {
+          "id": "ore-cart",
+          "foot": 0.317511,
+          "block": [
+            0.54113328,
+            0.303511,
+            0.5806267199999999,
+            0.320511
+          ],
+          "image": "layers/passages/mine-traverse/ore-cart.png"
+        }
+      ],
+      "front": "layers/passages/mine-traverse/front.png"
+    },
+    "joints/mine-side": {
+      "objects": [
+        {
+          "id": "rail-cart",
+          "foot": 0.864434,
+          "block": [
+            0.73116438,
+            0.850434,
+            0.82226462,
+            0.867434
+          ],
+          "image": "layers/joints/mine-side/rail-cart.png"
+        },
+        {
+          "id": "bridge-west-post",
+          "foot": 0.789474,
+          "block": [
+            0.34288678,
+            0.775474,
+            0.36923422,
+            0.792474
+          ],
+          "image": "layers/joints/mine-side/bridge-west-post.png"
+        },
+        {
+          "id": "bridge-west-beam",
+          "foot": 0.789474,
+          "block": [
+            0.38850106,
+            0.775474,
+            0.41931394,
+            0.792474
+          ],
+          "image": "layers/joints/mine-side/bridge-west-beam.png"
+        }
+      ],
+      "front": "layers/joints/mine-side/front.png"
+    },
+    "passages/mine-rail-bend": {
+      "objects": [
+        {
+          "id": "ridge-west-cap",
+          "foot": 0.464135,
+          "image": "layers/passages/mine-rail-bend/ridge-west-cap.png"
+        },
+        {
+          "id": "ridge-middle-cap",
+          "foot": 0.543249,
+          "image": "layers/passages/mine-rail-bend/ridge-middle-cap.png"
+        },
+        {
+          "id": "ridge-east-cap",
+          "foot": 0.981013,
+          "image": "layers/passages/mine-rail-bend/ridge-east-cap.png"
+        }
+      ],
+      "front": "layers/passages/mine-rail-bend/front.png"
+    },
+    "passages/citadel-crossing": {
+      "objects": [
+        {
+          "id": "west-square-pier",
+          "foot": 0.324895,
+          "block": [
+            0.0662445,
+            0.310895,
+            0.08143449999999999,
+            0.327895
+          ],
+          "image": "layers/passages/citadel-crossing/west-square-pier.png"
+        },
+        {
+          "id": "west-thin-post",
+          "foot": 0.295359,
+          "block": [
+            0.01316442,
+            0.28135899999999997,
+            0.02059058,
+            0.298359
+          ],
+          "image": "layers/passages/citadel-crossing/west-thin-post.png"
+        },
+        {
+          "id": "west-inner-pier",
+          "foot": 0.415612,
+          "block": [
+            0.16461744,
+            0.40161199999999997,
+            0.18318256,
+            0.418612
+          ],
+          "image": "layers/passages/citadel-crossing/west-inner-pier.png"
+        },
+        {
+          "id": "west-east-pier",
+          "foot": 0.475738,
+          "block": [
+            0.23869836,
+            0.461738,
+            0.25557564,
+            0.478738
+          ],
+          "image": "layers/passages/citadel-crossing/west-east-pier.png"
+        },
+        {
+          "id": "east-start-pier",
+          "foot": 0.64557,
+          "block": [
+            0.6090056,
+            0.63157,
+            0.6248703999999999,
+            0.64857
+          ],
+          "image": "layers/passages/citadel-crossing/east-start-pier.png"
+        },
+        {
+          "id": "east-middle-pier",
+          "foot": 0.669831,
+          "block": [
+            0.7211816799999999,
+            0.6558309999999999,
+            0.73873432,
+            0.672831
+          ],
+          "image": "layers/passages/citadel-crossing/east-middle-pier.png"
+        },
+        {
+          "id": "east-low-pier",
+          "foot": 0.748945,
+          "block": [
+            0.7835445,
+            0.734945,
+            0.7987345,
+            0.751945
+          ],
+          "image": "layers/passages/citadel-crossing/east-low-pier.png"
+        },
+        {
+          "id": "east-end-pier",
+          "foot": 0.783755,
+          "block": [
+            0.81689002,
+            0.769755,
+            0.83410498,
+            0.786755
+          ],
+          "image": "layers/passages/citadel-crossing/east-end-pier.png"
+        },
+        {
+          "id": "iron-post-0",
+          "foot": 0.2972973,
+          "block": [
+            0.0136364,
+            0.281399,
+            0.02,
+            0.2988871
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-0.png"
+        },
+        {
+          "id": "iron-post-1",
+          "foot": 0.3370429,
+          "block": [
+            0.0463636,
+            0.3211447,
+            0.0527273,
+            0.3386328
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-1.png"
+        },
+        {
+          "id": "iron-post-2",
+          "foot": 0.3338633,
+          "block": [
+            0.1209091,
+            0.317965,
+            0.1272727,
+            0.3354531
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-2.png"
+        },
+        {
+          "id": "iron-post-3",
+          "foot": 0.3847377,
+          "block": [
+            0.14,
+            0.3688394,
+            0.1463636,
+            0.3863275
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-3.png"
+        },
+        {
+          "id": "iron-post-4",
+          "foot": 0.4165342,
+          "block": [
+            0.1909091,
+            0.4006359,
+            0.1972727,
+            0.418124
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-4.png"
+        },
+        {
+          "id": "iron-post-5",
+          "foot": 0.4403816,
+          "block": [
+            0.2054545,
+            0.4244833,
+            0.2118182,
+            0.4419714
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-5.png"
+        },
+        {
+          "id": "iron-post-6",
+          "foot": 0.5214626,
+          "block": [
+            0.2836364,
+            0.5055644,
+            0.29,
+            0.5230525
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-6.png"
+        },
+        {
+          "id": "iron-post-7",
+          "foot": 0.5882353,
+          "block": [
+            0.3636364,
+            0.572337,
+            0.37,
+            0.5898251
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-7.png"
+        },
+        {
+          "id": "iron-post-8",
+          "foot": 0.6263911,
+          "block": [
+            0.3945455,
+            0.6104928,
+            0.4009091,
+            0.6279809
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-8.png"
+        },
+        {
+          "id": "iron-post-9",
+          "foot": 0.6534181,
+          "block": [
+            0.6427273,
+            0.6375199,
+            0.6490909,
+            0.6550079
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-9.png"
+        },
+        {
+          "id": "iron-post-10",
+          "foot": 0.6391097,
+          "block": [
+            0.6581818,
+            0.6232114,
+            0.6645455,
+            0.6406995
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-10.png"
+        },
+        {
+          "id": "iron-post-11",
+          "foot": 0.6963434,
+          "block": [
+            0.7490909,
+            0.6804452,
+            0.7554545,
+            0.6979332
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-11.png"
+        },
+        {
+          "id": "iron-post-12",
+          "foot": 0.7758347,
+          "block": [
+            0.8336364,
+            0.7599364,
+            0.84,
+            0.7774245
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-12.png"
+        },
+        {
+          "id": "iron-post-13",
+          "foot": 0.8346582,
+          "block": [
+            0.8672727,
+            0.8187599,
+            0.8736364,
+            0.836248
+          ],
+          "image": "layers/passages/citadel-crossing/iron-post-13.png"
+        }
+      ],
+      "front": "layers/passages/citadel-crossing/front.png"
+    },
+    "passages/tower-bridge": {
+      "objects": [
+        {
+          "id": "front-pier-0",
+          "foot": 0.605,
+          "block": [
+            0.2877,
+            0.591,
+            0.3073,
+            0.608
+          ],
+          "image": "layers/passages/tower-bridge/front-pier-0.png"
+        },
+        {
+          "id": "front-pier-1",
+          "foot": 0.645,
+          "block": [
+            0.36513999999999996,
+            0.631,
+            0.38586000000000004,
+            0.648
+          ],
+          "image": "layers/passages/tower-bridge/front-pier-1.png"
+        },
+        {
+          "id": "front-pier-2",
+          "foot": 0.65,
+          "block": [
+            0.61036,
+            0.636,
+            0.63164,
+            0.653
+          ],
+          "image": "layers/passages/tower-bridge/front-pier-2.png"
+        },
+        {
+          "id": "front-pier-3",
+          "foot": 0.605,
+          "block": [
+            0.6917,
+            0.591,
+            0.7113,
+            0.608
+          ],
+          "image": "layers/passages/tower-bridge/front-pier-3.png"
+        },
+        {
+          "id": "west-brazier",
+          "foot": 0.657173,
+          "block": [
+            0.4008075,
+            0.643173,
+            0.4099215,
+            0.660173
+          ],
+          "image": "layers/passages/tower-bridge/west-brazier.png"
+        },
+        {
+          "id": "east-brazier",
+          "foot": 0.664557,
+          "block": [
+            0.59269452,
+            0.6505569999999999,
+            0.60079548,
+            0.667557
+          ],
+          "image": "layers/passages/tower-bridge/east-brazier.png"
+        }
+      ],
+      "front": "layers/passages/tower-bridge/front.png"
+    },
+    "passages/tower-stair-bend": {
+      "objects": [
+        {
+          "id": "upper-west-pier",
+          "foot": 0.300633,
+          "block": [
+            0.10575068,
+            0.28663299999999997,
+            0.12330332000000001,
+            0.303633
+          ],
+          "image": "layers/passages/tower-stair-bend/upper-west-pier.png"
+        },
+        {
+          "id": "upper-south-pier",
+          "foot": 0.43038,
+          "block": [
+            0.1969622,
+            0.41638,
+            0.2165398,
+            0.43338
+          ],
+          "image": "layers/passages/tower-stair-bend/upper-south-pier.png"
+        },
+        {
+          "id": "stair-upper-pier",
+          "foot": 0.506329,
+          "block": [
+            0.33371883999999996,
+            0.492329,
+            0.35464716,
+            0.509329
+          ],
+          "image": "layers/passages/tower-stair-bend/stair-upper-pier.png"
+        },
+        {
+          "id": "stair-lower-pier",
+          "foot": 0.879747,
+          "block": [
+            0.60851126,
+            0.8657469999999999,
+            0.6307897400000001,
+            0.882747
+          ],
+          "image": "layers/passages/tower-stair-bend/stair-lower-pier.png"
+        },
+        {
+          "id": "lower-lamp",
+          "foot": 0.890295,
+          "block": [
+            0.6440623999999999,
+            0.8762949999999999,
+            0.6525016,
+            0.893295
+          ],
+          "image": "layers/passages/tower-stair-bend/lower-lamp.png"
+        }
+      ],
+      "front": "layers/passages/tower-stair-bend/front.png"
+    },
+    "rooms/central-camp": {
+      "objects": [
+        {
+          "id": "arch-blue-west",
+          "foot": 0.5362963,
+          "block": [
+            0.0133333,
+            0.5066667,
+            0.035,
+            0.5362963
+          ],
+          "image": "layers/rooms/central-camp/arch-blue-west.png"
+        },
+        {
+          "id": "arch-blue-east",
+          "foot": 0.4814815,
+          "block": [
+            0.1341667,
+            0.4533333,
+            0.1625,
+            0.4814815
+          ],
+          "image": "layers/rooms/central-camp/arch-blue-east.png"
+        },
+        {
+          "id": "anvil",
+          "foot": 0.3985185,
+          "block": [
+            0.2908333,
+            0.3748148,
+            0.3225,
+            0.397037
+          ],
+          "image": "layers/rooms/central-camp/anvil.png"
+        },
+        {
+          "id": "arch-purple-west",
+          "foot": 0.2607407,
+          "block": [
+            0.4116667,
+            0.2266667,
+            0.4416667,
+            0.2622222
+          ],
+          "image": "layers/rooms/central-camp/arch-purple-west.png"
+        },
+        {
+          "id": "arch-purple-east",
+          "foot": 0.2577778,
+          "block": [
+            0.5891667,
+            0.2222222,
+            0.6158333,
+            0.2607407
+          ],
+          "image": "layers/rooms/central-camp/arch-purple-east.png"
+        },
+        {
+          "id": "arch-red-west",
+          "foot": 0.5348148,
+          "block": [
+            0.8566667,
+            0.4948148,
+            0.8966667,
+            0.5362963
+          ],
+          "image": "layers/rooms/central-camp/arch-red-west.png"
+        },
+        {
+          "id": "arch-red-east",
+          "foot": 0.5925926,
+          "block": [
+            0.9841667,
+            0.5540741,
+            0.9991667,
+            0.5925926
+          ],
+          "image": "layers/rooms/central-camp/arch-red-east.png"
+        },
+        {
+          "id": "southwest-west-post",
+          "foot": 0.6474074,
+          "block": [
+            0.1725,
+            0.6266667,
+            0.1841667,
+            0.6474074
+          ],
+          "image": "layers/rooms/central-camp/southwest-west-post.png"
+        },
+        {
+          "id": "southwest-east-post",
+          "foot": 0.6888889,
+          "block": [
+            0.21,
+            0.6666667,
+            0.2233333,
+            0.6888889
+          ],
+          "image": "layers/rooms/central-camp/southwest-east-post.png"
+        },
+        {
+          "id": "southwest-lantern",
+          "foot": 0.6696296,
+          "block": [
+            0.1908333,
+            0.6577778,
+            0.1966667,
+            0.6681481
+          ],
+          "image": "layers/rooms/central-camp/southwest-lantern.png"
+        },
+        {
+          "id": "southwest-rail-west",
+          "foot": 0.6355556,
+          "image": "layers/rooms/central-camp/southwest-rail-west.png"
+        },
+        {
+          "id": "southwest-rail-east",
+          "foot": 0.6637037,
+          "image": "layers/rooms/central-camp/southwest-rail-east.png"
+        },
+        {
+          "id": "southwest-small-post",
+          "foot": 0.7555556,
+          "block": [
+            0.2383333,
+            0.7303704,
+            0.2475,
+            0.7555556
+          ],
+          "image": "layers/rooms/central-camp/southwest-small-post.png"
+        },
+        {
+          "id": "stair-west-tall-post",
+          "foot": 0.8977778,
+          "block": [
+            0.35,
+            0.8651852,
+            0.3666667,
+            0.8977778
+          ],
+          "image": "layers/rooms/central-camp/stair-west-tall-post.png"
+        },
+        {
+          "id": "stair-west-lantern-post",
+          "foot": 0.8622222,
+          "block": [
+            0.375,
+            0.8414815,
+            0.3833333,
+            0.8622222
+          ],
+          "image": "layers/rooms/central-camp/stair-west-lantern-post.png"
+        },
+        {
+          "id": "stair-west-fence-post",
+          "foot": 0.9066667,
+          "block": [
+            0.45,
+            0.8874074,
+            0.4583333,
+            0.9066667
+          ],
+          "image": "layers/rooms/central-camp/stair-west-fence-post.png"
+        },
+        {
+          "id": "stair-west-mid-post",
+          "foot": 0.8874074,
+          "block": [
+            0.4141667,
+            0.8681481,
+            0.4216667,
+            0.8874074
+          ],
+          "image": "layers/rooms/central-camp/stair-west-mid-post.png"
+        },
+        {
+          "id": "stair-east-tall-post",
+          "foot": 0.8933333,
+          "block": [
+            0.605,
+            0.8637037,
+            0.6183333,
+            0.8948148
+          ],
+          "image": "layers/rooms/central-camp/stair-east-tall-post.png"
+        },
+        {
+          "id": "stair-east-lantern",
+          "foot": 0.8622222,
+          "block": [
+            0.59,
+            0.8414815,
+            0.5966667,
+            0.8622222
+          ],
+          "image": "layers/rooms/central-camp/stair-east-lantern.png"
+        },
+        {
+          "id": "stair-east-fence-post",
+          "foot": 0.9007407,
+          "block": [
+            0.5575,
+            0.8814815,
+            0.5666667,
+            0.9007407
+          ],
+          "image": "layers/rooms/central-camp/stair-east-fence-post.png"
+        },
+        {
+          "id": "stair-east-barrel",
+          "foot": 0.8948148,
+          "block": [
+            0.6358333,
+            0.8711111,
+            0.6625,
+            0.8948148
+          ],
+          "image": "layers/rooms/central-camp/stair-east-barrel.png"
+        },
+        {
+          "id": "red-arch-lantern",
+          "foot": 0.5362963,
+          "block": [
+            0.8883333,
+            0.5155556,
+            0.8975,
+            0.5362963
+          ],
+          "image": "layers/rooms/central-camp/red-arch-lantern.png"
+        }
+      ],
+      "front": "layers/rooms/central-camp/front.png"
+    },
+    "rooms/cave-mine": {
+      "objects": [
+        {
+          "id": "west-stalagmite",
+          "foot": 0.62375,
+          "block": [
+            0.2175,
+            0.60375,
+            0.2458333,
+            0.625
+          ],
+          "image": "layers/rooms/cave-mine/west-stalagmite.png"
+        },
+        {
+          "id": "west-small-stalagmite",
+          "foot": 0.6125,
+          "block": [
+            0.1866667,
+            0.5975,
+            0.2058333,
+            0.6125
+          ],
+          "image": "layers/rooms/cave-mine/west-small-stalagmite.png"
+        },
+        {
+          "id": "east-stalagmite",
+          "foot": 0.7125,
+          "block": [
+            0.6275,
+            0.6925,
+            0.6541667,
+            0.71375
+          ],
+          "image": "layers/rooms/cave-mine/east-stalagmite.png"
+        },
+        {
+          "id": "west-entry-lantern",
+          "foot": 0.3275,
+          "image": "layers/rooms/cave-mine/west-entry-lantern.png"
+        },
+        {
+          "id": "east-entry-lantern",
+          "foot": 0.4225,
+          "image": "layers/rooms/cave-mine/east-entry-lantern.png"
+        }
+      ],
+      "front": "layers/rooms/cave-mine/front.png"
+    },
+    "passages/tower-ascent": {
+      "objects": [
+        {
+          "id": "upper-lamp",
+          "foot": 0.3305882,
+          "block": [
+            0.4462081,
+            0.3176471,
+            0.4673721,
+            0.3317647
+          ],
+          "image": "layers/passages/tower-ascent/upper-lamp.png"
+        },
+        {
+          "id": "middle-lamp",
+          "foot": 0.7141176,
+          "block": [
+            0.5114638,
+            0.7011765,
+            0.5326279,
+            0.7152941
+          ],
+          "image": "layers/passages/tower-ascent/middle-lamp.png"
+        },
+        {
+          "id": "lower-lamp",
+          "foot": 0.88,
+          "block": [
+            0.6014109,
+            0.8670588,
+            0.6243386,
+            0.8811765
+          ],
+          "image": "layers/passages/tower-ascent/lower-lamp.png"
+        }
+      ],
+      "front": "layers/passages/tower-ascent/front.png"
+    },
+    "joints/entry-L3-L4": {
+      "objects": [
+        {
+          "id": "ore-cart",
+          "foot": 0.9282353,
+          "block": [
+            0.5564706,
+            0.8870588,
+            0.6811765,
+            0.9282353
+          ],
+          "image": "layers/joints/entry-L3-L4/ore-cart.png"
+        },
+        {
+          "id": "west-lamp-post",
+          "foot": 0.9588235,
+          "block": [
+            0.3141176,
+            0.9376471,
+            0.3423529,
+            0.96
+          ],
+          "image": "layers/joints/entry-L3-L4/west-lamp-post.png"
+        },
+        {
+          "id": "west-hanging-lantern",
+          "foot": 0.9388235,
+          "image": "layers/joints/entry-L3-L4/west-hanging-lantern.png"
+        }
+      ],
+      "front": "layers/joints/entry-L3-L4/front.png"
+    },
+    "joints/exit-L3-L4": {
+      "objects": [
+        {
+          "id": "west-lamp-post",
+          "foot": 0.4105882,
+          "block": [
+            0.2941176,
+            0.3894118,
+            0.3305882,
+            0.4117647
+          ],
+          "image": "layers/joints/exit-L3-L4/west-lamp-post.png"
+        },
+        {
+          "id": "west-lantern",
+          "foot": 0.3423529,
+          "image": "layers/joints/exit-L3-L4/west-lantern.png"
+        },
+        {
+          "id": "west-fence-post",
+          "foot": 0.4341176,
+          "block": [
+            0.3729412,
+            0.4176471,
+            0.3894118,
+            0.4341176
+          ],
+          "image": "layers/joints/exit-L3-L4/west-fence-post.png"
+        },
+        {
+          "id": "east-lamp-post",
+          "foot": 0.4305882,
+          "block": [
+            0.6588235,
+            0.4094118,
+            0.6917647,
+            0.4317647
+          ],
+          "image": "layers/joints/exit-L3-L4/east-lamp-post.png"
+        },
+        {
+          "id": "east-lantern",
+          "foot": 0.3376471,
+          "image": "layers/joints/exit-L3-L4/east-lantern.png"
+        },
+        {
+          "id": "east-fence-post",
+          "foot": 0.4364706,
+          "block": [
+            0.6047059,
+            0.42,
+            0.6235294,
+            0.4364706
+          ],
+          "image": "layers/joints/exit-L3-L4/east-fence-post.png"
+        },
+        {
+          "id": "west-fence-rails",
+          "foot": 0.4129412,
+          "image": "layers/joints/exit-L3-L4/west-fence-rails.png"
+        },
+        {
+          "id": "west-lower-rail",
+          "foot": 0.4129412,
+          "image": "layers/joints/exit-L3-L4/west-lower-rail.png"
+        },
+        {
+          "id": "east-fence-rail",
+          "foot": 0.3764706,
+          "image": "layers/joints/exit-L3-L4/east-fence-rail.png"
+        },
+        {
+          "id": "east-lower-rail",
+          "foot": 0.4152941,
+          "image": "layers/joints/exit-L3-L4/east-lower-rail.png"
+        }
+      ]
+    },
+    "joints/exit-L1-L2": {
+      "objects": [
+        {
+          "id": "fork-north-post",
+          "foot": 0.4070588,
+          "block": [
+            0.2976471,
+            0.3894118,
+            0.3176471,
+            0.4082353
+          ],
+          "image": "layers/joints/exit-L1-L2/fork-north-post.png"
+        },
+        {
+          "id": "fork-south-post",
+          "foot": 0.5282353,
+          "block": [
+            0.3482353,
+            0.5070588,
+            0.3717647,
+            0.5282353
+          ],
+          "image": "layers/joints/exit-L1-L2/fork-south-post.png"
+        },
+        {
+          "id": "fork-crossbar",
+          "foot": 0.4905882,
+          "image": "layers/joints/exit-L1-L2/fork-crossbar.png"
+        },
+        {
+          "id": "fork-low-rail",
+          "foot": 0.5105882,
+          "image": "layers/joints/exit-L1-L2/fork-low-rail.png"
+        },
+        {
+          "id": "fork-rock",
+          "foot": 0.5329412,
+          "block": [
+            0.4070588,
+            0.5141176,
+            0.4482353,
+            0.5329412
+          ],
+          "image": "layers/joints/exit-L1-L2/fork-rock.png"
+        },
+        {
+          "id": "upper-right-tilted-post",
+          "foot": 0.2964706,
+          "block": [
+            0.5070588,
+            0.2764706,
+            0.5294118,
+            0.2976471
+          ],
+          "image": "layers/joints/exit-L1-L2/upper-right-tilted-post.png"
+        },
+        {
+          "id": "winch",
+          "foot": 0.2129412,
+          "block": [
+            0.2070588,
+            0.1705882,
+            0.3529412,
+            0.2117647
+          ],
+          "image": "layers/joints/exit-L1-L2/winch.png"
+        }
+      ],
+      "front": "layers/joints/exit-L1-L2/front.png"
+    },
+    "joints/exit-L5-L7": {
+      "objects": [
+        {
+          "id": "upper-lamp-post",
+          "foot": 0.3705882,
+          "block": [
+            0.2905882,
+            0.3494118,
+            0.3129412,
+            0.3705882
+          ],
+          "image": "layers/joints/exit-L5-L7/upper-lamp-post.png"
+        },
+        {
+          "id": "upper-lantern",
+          "foot": 0.3305882,
+          "image": "layers/joints/exit-L5-L7/upper-lantern.png"
+        },
+        {
+          "id": "upper-lamp-rock",
+          "foot": 0.4941176,
+          "block": [
+            0.2435294,
+            0.4611765,
+            0.2847059,
+            0.4917647
+          ],
+          "image": "layers/joints/exit-L5-L7/upper-lamp-rock.png"
+        },
+        {
+          "id": "south-post-0",
+          "foot": 0.6729412,
+          "block": [
+            0.5941176,
+            0.6529412,
+            0.6152941,
+            0.6741176
+          ],
+          "image": "layers/joints/exit-L5-L7/south-post-0.png"
+        },
+        {
+          "id": "south-post-1",
+          "foot": 0.8,
+          "block": [
+            0.6611765,
+            0.7752941,
+            0.6917647,
+            0.8
+          ],
+          "image": "layers/joints/exit-L5-L7/south-post-1.png"
+        },
+        {
+          "id": "south-post-2",
+          "foot": 0.8576471,
+          "block": [
+            0.8070588,
+            0.8376471,
+            0.8270588,
+            0.86
+          ],
+          "image": "layers/joints/exit-L5-L7/south-post-2.png"
+        },
+        {
+          "id": "south-post-3",
+          "foot": 0.9211765,
+          "block": [
+            0.9235294,
+            0.9023529,
+            0.9458824,
+            0.9235294
+          ],
+          "image": "layers/joints/exit-L5-L7/south-post-3.png"
+        },
+        {
+          "id": "south-rock",
+          "foot": 0.68,
+          "block": [
+            0.52,
+            0.6623529,
+            0.5729412,
+            0.6823529
+          ],
+          "image": "layers/joints/exit-L5-L7/south-rock.png"
+        }
+      ],
+      "front": "layers/joints/exit-L5-L7/front.png"
+    }
+  }
+}
