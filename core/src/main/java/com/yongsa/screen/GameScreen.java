@@ -190,6 +190,7 @@ public class GameScreen extends ScreenAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         worldViewport.apply();
         renderer.showWalkable = game.settings.devShowWalkable;
+        renderer.showLayers = game.settings.devShowLayers;
         renderer.render(worldCam);
         stage.getViewport().apply();
         hud.showWalkMasks = game.settings.devShowWalkable;

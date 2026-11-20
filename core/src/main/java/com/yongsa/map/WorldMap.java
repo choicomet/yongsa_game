@@ -34,6 +34,7 @@ public class WorldMap {
     /** Session-owned availability; geometry stays independent of rendering. */
     public java.util.function.Predicate<Room> returnDoorOpen = r -> false;
     public final List<Room> rooms = new ArrayList<>();
+    public final SceneLayerPlacements sceneLayers;
     public final List<Link> links = new ArrayList<>();
     public final List<Prop> props = new ArrayList<>();
     public final List<Corridor> corridors = new ArrayList<>();
@@ -64,6 +65,7 @@ public class WorldMap {
         for (LinkDef ld : def.links) buildLink(ld);
         buildCorridors();
         buildPaintedJoints();
+        sceneLayers = new SceneLayerPlacements(this, SceneLayers.load());
         alignPaintedArrivals();
         buildCampProps();
     }
@@ -750,6 +752,7 @@ public class WorldMap {
      */
     public boolean free(float x, float y, float hw, float hh) {
         if (!Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(hw) || !Float.isFinite(hh) || hw < 0 || hh < 0) return false;
+        if (sceneLayers != null && sceneLayers.blocks(x,y,hw,hh)) return false;
         Room doorRoom = roomAt((int)Math.floor(x / tileSize), (int)Math.floor(y / tileSize));
         if (doorRoom != null && doorRoom.scene != null && doorRoom.scene.returnDoor != null) {
             float dx = Math.abs(x - doorRoom.sceneX(doorRoom.scene.returnDoor[0]));

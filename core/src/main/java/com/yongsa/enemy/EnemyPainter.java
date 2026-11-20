@@ -245,6 +245,7 @@ public class EnemyPainter {
 
     /** 깊이 정렬에 끼는 것: 마왕의 눈, 몬스터, 쓰러지는 몬스터. */
     public void collect(DepthSink out) {
+        for (Projectile p : g.projectiles) if (!p.dead) out.add(p.y, () -> drawProjectile(p));
         for (Hazard h : g.hazards) {
             if (h.kind != Hazard.Kind.EYE || h.dead || !inView(h.x, h.y)) continue;
             // The fully-open frame is reserved for the actual trigger, not the warning.
@@ -334,24 +335,27 @@ public class EnemyPainter {
                 }
             }
         }
-        for (Projectile p : g.projectiles) {
-            if ("crescent".equals(p.source) && drawCrescent(p)) continue;
-            Color c = projectileColor(p.source);
-            float r = p.radius;
-            float pulse = 1f + 0.15f * MathUtils.sin(time * 25f + p.x);
-            batch.setColor(c.r, c.g, c.b, 0.75f);
-            batch.draw(art.glow, p.x - r * 3.2f * pulse, p.y - r * 3.2f * pulse, r * 6.4f * pulse, r * 6.4f * pulse);
-            // 꼬리
-            float vl = (float) Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-            for (int k = 1; k <= 3; k++) {
-                float tx = p.x - p.vx / vl * r * 1.4f * k, ty = p.y - p.vy / vl * r * 1.4f * k;
-                float ts = r * (2.2f - k * 0.45f);
-                batch.setColor(c.r, c.g, c.b, 0.45f - k * 0.1f);
-                batch.draw(art.glow, tx - ts, ty - ts, ts * 2, ts * 2);
-            }
-            batch.setColor(1f, 0.95f, 0.85f, 1f);
-            batch.draw(art.glow, p.x - r, p.y - r, r * 2, r * 2);
+    }
+
+    private void drawProjectile(Projectile p) {
+        Particles.normal(batch);
+        if ("crescent".equals(p.source) && drawCrescent(p)) return;
+        Color c = projectileColor(p.source);
+        float r = p.radius;
+        float pulse = 1f + 0.15f * MathUtils.sin(time * 25f + p.x);
+        batch.setColor(c.r, c.g, c.b, 0.75f);
+        batch.draw(art.glow, p.x - r * 3.2f * pulse, p.y - r * 3.2f * pulse, r * 6.4f * pulse, r * 6.4f * pulse);
+        // 꼬리
+        float vl = Math.max(.001f, (float) Math.hypot(p.vx, p.vy));
+        for (int k = 1; k <= 3; k++) {
+            float tx = p.x - p.vx / vl * r * 1.4f * k, ty = p.y - p.vy / vl * r * 1.4f * k;
+            float ts = r * (2.2f - k * 0.45f);
+            batch.setColor(c.r, c.g, c.b, 0.45f - k * 0.1f);
+            batch.draw(art.glow, tx - ts, ty - ts, ts * 2, ts * 2);
         }
+        batch.setColor(1f, 0.95f, 0.85f, 1f);
+        batch.draw(art.glow, p.x - r, p.y - r, r * 2, r * 2);
+        batch.setColor(Color.WHITE);
     }
 
     private static final float DEFAULT_MOB_SCALE = 1.25f;
