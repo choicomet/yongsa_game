@@ -31,6 +31,8 @@ public class Nav {
     private final List<Entry> entries = new ArrayList<>();
     private int focus;
     public Runnable onMove;
+    /** 버튼 모양 이름. null 이면 "default"/"focused", 값이 있으면 그 이름과 이름+"Focused" (타이틀 메뉴용). */
+    public String style;
 
     public Nav(Skin skin) {
         this.skin = skin;
@@ -88,8 +90,9 @@ public class Nav {
         for (int i = 0; i < entries.size(); i++) {
             Entry e = entries.get(i);
             boolean f = i == focus;
-            String style = e.danger ? (f ? "dangerFocused" : "danger") : (f ? "focused" : "default");
-            e.button.setStyle(skin.get(style, TextButton.TextButtonStyle.class));
+            String name = e.danger ? (f ? "dangerFocused" : "danger")
+                    : style != null ? (f ? style + "Focused" : style) : (f ? "focused" : "default");
+            e.button.setStyle(skin.get(name, TextButton.TextButtonStyle.class));
             if (f) keepVisible(e.button);
         }
     }
