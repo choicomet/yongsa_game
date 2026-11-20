@@ -290,7 +290,7 @@ public class GameSession {
             float left = Math.max(0, hero.rollT - dt);
             float a = Math.max(0, 1f - hero.rollT / total), z = 1f - left / total;
             float distance = balance.attack.rollDistanceTiles * T * ((2*z-z*z) - (2*a-a*a));
-            Physics.move(map, hero, hero.rollX * distance, hero.rollY * distance, T);
+            Physics.walk(map, hero, hero.rollX * distance, hero.rollY * distance, T);
             hero.rollT = left;
             hero.moving = false;
             return;
@@ -314,7 +314,7 @@ public class GameSession {
             hero.facing = Facing.of(mx, my);
             float speed = balance.hero.moveSpeedTiles * T * (hero.slowT > 0 ? 1f - balance.monster.slowRatio : 1f);
             float oldX = hero.x, oldY = hero.y;
-            Physics.move(map, hero, mx * speed * dt, my * speed * dt, T);
+            Physics.walk(map, hero, mx * speed * dt, my * speed * dt, T);
             float dx = hero.x - oldX, dy = hero.y - oldY;
             float travelled = (float) Math.sqrt(dx * dx + dy * dy);
             hero.moving = travelled > .001f;
