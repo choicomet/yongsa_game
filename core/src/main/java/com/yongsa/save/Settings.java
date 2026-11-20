@@ -8,6 +8,8 @@ public class Settings {
     public float effectSpeed = 1f;
     /** 타격·보스 공격 때 화면 흔들림. */
     public boolean screenShake = true;
+    /** 맞았을 때·체력이 낮을 때 화면 가장자리가 붉게 번쩍이는 효과. 눈이 피로하면 끌 수 있다. */
+    public boolean screenFlash = true;
     /** 화면 배율 (기존 화면 대비 %). 휠이나 +/- 로 바꾸며, 보스방은 따로 기억한다. */
     public int zoomNormal = 115;
     public int zoomBoss = 100;

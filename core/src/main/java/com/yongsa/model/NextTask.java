@@ -13,6 +13,11 @@ public final class NextTask {
     }
 
     public static String describe(GameState s, Balance b, boolean leftDungeonVisited) {
+        return describe(s, b, leftDungeonVisited, "B");
+    }
+
+    /** bagKey: 가방 키 이름 (조작 키를 바꾸면 그 이름으로 안내한다). */
+    public static String describe(GameState s, Balance b, boolean leftDungeonVisited, String bagKey) {
         if (s.finalBossDefeated) return "자유롭게 던전을 돌며 무기를 키워 보세요";
         if (s.unsealed) return "캠프의 문양에서 심연으로 내려가 마왕 쓰러뜨리기";
         if (new AbsorbService(b).canUnseal(s)) return "캠프 바닥의 문양에서 성검의 봉인 풀기";
@@ -31,7 +36,7 @@ public final class NextTask {
                         + s.ore(ore) + "/" + wd.craftCost;
             }
             if (s.equippedUid != owned.uid && rules.attack(s, owned) > rules.attack(s)) {
-                return "가방(B)에서 " + wd.name + " 장착";
+                return "가방(" + bagKey + ")에서 " + wd.name + " 장착";
             }
             return where + " 던전 보스 잡기 (" + d.boss.name + ")";
         }

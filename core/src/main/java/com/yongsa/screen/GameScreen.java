@@ -100,6 +100,12 @@ public class GameScreen extends ScreenAdapter {
                     return true;
                 }
                 if (endingDelay >= 0) return true;
+                // 지도가 열려 있으면 Esc 는 지도부터 닫는다 (메뉴 스택처럼 위에 열린 것이 먼저)
+                if (keycode == Input.Keys.ESCAPE && hud.mapOpen()) {
+                    hud.closeMap();
+                    game.sfx.play("select");
+                    return true;
+                }
                 if (keycode == Input.Keys.ESCAPE) {
                     openPause();
                     return true;
@@ -139,7 +145,8 @@ public class GameScreen extends ScreenAdapter {
     @Override
     public void render(float delta) {
         float dt = Math.min(delta, 1 / 20f);
-        boolean paused = !modals.isEmpty() || endingDelay >= 0 || warping;
+        // 지도를 보는 동안에도 게임 시간은 멈춘다 (몬스터가 지도 뒤에서 때리지 않게)
+        boolean paused = !modals.isEmpty() || endingDelay >= 0 || warping || hud.mapOpen();
         boolean frozen = hitStop > 0;
         hitStop -= dt;
         session.devGodMode = game.settings.devGodMode;
@@ -193,6 +200,8 @@ public class GameScreen extends ScreenAdapter {
         renderer.render(worldCam);
         stage.getViewport().apply();
         hud.showWalkMasks = game.settings.devShowWalkable;
+        hud.flashEnabled = game.settings.screenFlash;
+        if (!modals.isEmpty()) hud.closeMap(); // 창이 뜨면 지도는 접는다
         hud.render(stage.getCamera().combined, YongsaGame.WIDTH, YongsaGame.HEIGHT);
         hud.renderFade(fade);
         stage.act(delta);
@@ -293,6 +302,7 @@ public class GameScreen extends ScreenAdapter {
         hud.rollKey = keys.primaryShort(KeyBindings.Action.ROLL);
         hud.mapKey = keys.primaryName(KeyBindings.Action.MAP);
         hud.bagKey = keys.primaryName(KeyBindings.Action.BAG);
+        session.bagKey = hud.bagKey;
         hud.moveKeys = keys.primaryShort(KeyBindings.Action.MOVE_UP) + " " + keys.primaryShort(KeyBindings.Action.MOVE_LEFT) + " "
                 + keys.primaryShort(KeyBindings.Action.MOVE_DOWN) + " " + keys.primaryShort(KeyBindings.Action.MOVE_RIGHT);
     }
@@ -476,10 +486,12 @@ public class GameScreen extends ScreenAdapter {
     }
 
     public void openPause() {
+        hud.closeMap();
         modals.push(new PauseMenu(this));
     }
 
     public void openBag() {
+        hud.closeMap();
         modals.push(new BagWindow(this));
     }
 

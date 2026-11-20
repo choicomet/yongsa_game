@@ -46,8 +46,16 @@ public class SettingsWindow extends Modal {
         })).width(220).height(46).left().padBottom(10).row();
 
         p.add(label("화면 흔들림", "default", Ui.DIM)).left().padRight(24);
-        p.add(nav.add(game.settings.screenShake ? "켜기" : "끄기", () -> {
+        // 버튼 글자는 지금 상태 (“켜기”는 누르면 켠다는 뜻으로 읽혀서 “켜짐/꺼짐”으로)
+        p.add(nav.add(game.settings.screenShake ? "켜짐" : "꺼짐", () -> {
             game.settings.screenShake = !game.settings.screenShake;
+            game.saveSettings();
+            rebuild();
+        })).width(220).height(46).left().padBottom(10).row();
+
+        p.add(label("화면 번쩍임", "default", Ui.DIM)).left().padRight(24);
+        p.add(nav.add(game.settings.screenFlash ? "켜짐" : "꺼짐", () -> {
+            game.settings.screenFlash = !game.settings.screenFlash;
             game.saveSettings();
             rebuild();
         })).width(220).height(46).left().padBottom(10).row();
@@ -58,6 +66,19 @@ public class SettingsWindow extends Modal {
         }
 
         p.add(nav.add("닫기", this::close)).colspan(2).width(200).height(50).padTop(14);
+    }
+
+    /** 소리 크기 줄(−, + 버튼)에 포커스가 있으면 왼쪽/오른쪽 키로 바로 줄이고 키운다. */
+    @Override
+    public boolean keyDown(int keycode) {
+        boolean onVolume = nav.focusIndex() <= 1;
+        if (onVolume && (keycode == com.badlogic.gdx.Input.Keys.LEFT || keycode == com.badlogic.gdx.Input.Keys.RIGHT)) {
+            int f = nav.focusIndex();
+            setVolume(game.settings.volume + (keycode == com.badlogic.gdx.Input.Keys.RIGHT ? 0.1f : -0.1f));
+            nav.setFocusIndex(f);
+            return true;
+        }
+        return super.keyDown(keycode);
     }
 
     private void setVolume(float v) {

@@ -134,7 +134,11 @@ public class ForgeWindow extends Modal {
             nav.setFocusIndex(t.ordinal());
         });
         b.setDisabled(motion.busy());
-        if (tab == t) b.getLabel().setColor(Ui.GOLD);
+        if (tab == t) {
+            // 지금 탭은 tabOn 배경으로 (포커스의 금색 테두리와 구분)
+            nav.markSelected(b);
+            b.getLabel().setColor(Ui.GOLD);
+        }
         head.add(b).width(120).height(46).padRight(8);
     }
 
@@ -276,7 +280,7 @@ public class ForgeWindow extends Modal {
             boolean risk = es.canDestroy(s, w);
             String riskText = risk ? "파괴 시 검 소멸 · " + ore.displayName + " " + es.destroyRefund(w) + "개 반환"
                     : es.canDestroy(w) ? "숙련도 덕분에 파괴되지 않습니다."
-                    : "+6부터 파괴될 수 있습니다.";
+                    : "+" + firstDestroyLevel() + "부터 파괴될 수 있습니다.";
             right.add(wrapped(riskText, "small", risk ? Ui.RED : es.canDestroy(w) ? Ui.GOLD : Ui.DIM))
                     .width(276).left().padBottom(10).row();
             TextButton enhance = nav.add(risk ? "강화하기 · 파괴 위험" : "강화하기", () -> {
@@ -309,6 +313,12 @@ public class ForgeWindow extends Modal {
         if (!s.enhanceLog.isEmpty())
             right.add(wrapped("최근 · " + s.enhanceLog.get(0), "small", Ui.DIM)).width(276).left().row();
         body.add(right).width(304).height(470).top();
+    }
+
+    /** 파괴 확률이 처음 0보다 커지는 단계 (balance.json 강화표에서 계산). */
+    private int firstDestroyLevel() {
+        for (int lv = 0; lv < g.balance.enhance.maxLevel; lv++) if (g.enhance.odds(lv).destroy > 0) return lv;
+        return g.balance.enhance.maxLevel;
     }
 
     private void confirmRisk(Weapon w) {
@@ -403,8 +413,10 @@ public class ForgeWindow extends Modal {
             body.add(new Image(art.sword(w.defId, w.awakened))).size(48).padRight(12);
             body.add(label(g.rules.weaponName(w) + "  →  " + ore.displayName + " " + g.balance.enhance.dismantleRefund + "개"))
                     .width(520).left();
-            body.add(nav.add("분해", () -> screen.modals.push(ConfirmDialog.simple(skin, "분해",
-                    g.rules.weaponName(w) + "을 분해합니다. 되돌릴 수 없습니다.", "분해하기", () -> {
+            // 분해는 되돌릴 수 없으므로 흡수·파괴 위험과 같은 빨간 확인창
+            body.add(nav.add("분해", () -> screen.modals.push(new ConfirmDialog(skin, "분해",
+                    new ConfirmDialog.Line[]{new ConfirmDialog.Line(g.rules.weaponName(w) + "을 분해합니다. 되돌릴 수 없습니다.", null)},
+                    "분해하기", true, () -> {
                         int n = g.forge.dismantle(s, w);
                         resultText = ore.displayName + " " + n + "개를 돌려받았다";
                         resultColor = Ui.BLUE;

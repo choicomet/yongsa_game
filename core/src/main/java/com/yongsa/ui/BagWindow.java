@@ -81,7 +81,7 @@ public class BagWindow extends Modal {
             side.add(Ui.artImage(screen.game.art.gem(t))).size(42).padRight(8);
             side.add(label(t.displayName + "  " + s.ore(t) + "개")).left().padBottom(6).row();
         }
-        side.add(label("용사에게 흡수된 힘", "default", Ui.DIM)).left().colspan(2).padTop(18).padBottom(8).row();
+        side.add(label("흡수한 보스 힘 " + s.bossesDefeated.size() + "/3", "default", Ui.DIM)).left().colspan(2).padTop(18).padBottom(8).row();
         if (s.bossesDefeated.isEmpty()) {
             side.add(label("아직 없다", "small", Ui.DIM)).left().colspan(2).row();
         }
@@ -107,7 +107,7 @@ public class BagWindow extends Modal {
         detailPane = details;
         p.add(details).top().width(330).height(354).row();
         p.add(nav.add("닫기", this::close)).colspan(3).width(200).height(46).padTop(24).row();
-        p.add(label("방향키 / Tab  무기 선택   ·   PgUp / PgDn  흡수한 힘 목록", "small", Ui.DIM)).colspan(3).padTop(12);
+        p.add(label("방향키 / Tab  무기 선택   ·   PgUp / PgDn  오른쪽 정보 넘기기", "small", Ui.DIM)).colspan(3).padTop(12);
         nav.setFocusIndex(Math.max(0, s.weapons.indexOf(s.equipped())));
     }
 

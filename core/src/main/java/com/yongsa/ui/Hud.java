@@ -54,9 +54,11 @@ public class Hud {
     /** 공격 J, 구르기 K, 스킬 칸 넷 (L, U, I, O). 스킬 칸은 열렸을 때만 보인다. */
     private static final int SLOTS = 2 + com.yongsa.model.Rules.SKILL_SLOTS;
     private final float[] readyFlash = new float[SLOTS];
-    private final boolean[] wasReady = {true, true, true, true, true, true};
+    private final boolean[] wasReady = new boolean[SLOTS];
     private Matrix4 projection;
     private float w, h;
+
+    private static final int MAX_TOASTS = 3;
 
     private static class Toast {
         String text;
@@ -64,6 +66,7 @@ public class Hud {
     }
 
     public Hud(GameSession g, Art art, Fonts fonts, SpriteBatch batch, ShapeRenderer shapes) {
+        java.util.Arrays.fill(wasReady, true);
         this.g = g;
         this.art = art;
         this.fonts = fonts;
@@ -79,7 +82,8 @@ public class Hud {
         Toast t = new Toast();
         t.text = text;
         toasts.add(t);
-        if (toasts.size() > 1) toasts.remove(0);
+        // 연달아 뜬 안내가 바로 지워지지 않게 셋까지 쌓는다 (예: 침대에서 잔 뒤 두 줄)
+        if (toasts.size() > MAX_TOASTS) toasts.remove(0);
     }
 
     public void banner(String text) {
@@ -89,6 +93,10 @@ public class Hud {
 
     public void toggleMap() {
         mapOpen = !mapOpen;
+    }
+
+    public void closeMap() {
+        mapOpen = false;
     }
 
     public boolean mapOpen() {
@@ -169,6 +177,8 @@ public class Hud {
 
     /** 개발용 (F1 이동 영역 보기): 용사 발밑을 덮는 마스크 파일을 화면 아래에 적는다. */
     public boolean showWalkMasks;
+    /** 설정 “화면 번쩍임”: 끄면 피격·저체력 붉은 테두리를 그리지 않는다. */
+    public boolean flashEnabled = true;
 
     public void render(Matrix4 projection, float w, float h) {
         this.projection = projection;
@@ -185,7 +195,7 @@ public class Hud {
         batch.draw(art.vignette, 0, 0, w, h);
         float low = s.hp < maxHp * 0.3f ? 0.22f + 0.12f * MathUtils.sin(time * 6f) : 0f;
         float red = Math.max(low, Math.max(0, hurtT) / 0.35f * 0.65f);
-        if (red > 0) {
+        if (red > 0 && flashEnabled) {
             batch.setColor(0.8f, 0.05f, 0.05f, red);
             batch.draw(art.vignette, 0, 0, w, h);
         }
@@ -201,7 +211,10 @@ public class Hud {
         rect(88, h - 67, 242 * MathUtils.clamp(shownHp / maxHp, 0, 1), 9, new Color(0xd65958ff));
         if (weapon != null) {
             text(fonts.small, g.rules.weaponName(weapon), 88, h - 79, Ui.TEXT);
-            text(fonts.small, "공격력 " + g.rules.attack(s) + "  ·  보스의 힘 " + s.bossesDefeated.size() + "/3", 88, h - 101, Ui.DIM);
+            // 2026-11-21: “보스의 힘 3/3”은 뜻이 안 보여서, 무엇을 모으는지(흡수한 보스 힘)와 다 모으면 무엇이 되는지를 적는다
+            String power = s.unsealed ? "성검 해방" : "흡수한 보스 힘 " + s.bossesDefeated.size() + "/3";
+            text(fonts.small, "공격력 " + g.rules.attack(s) + "  ·  " + power, 88, h - 101,
+                    !s.unsealed && s.bossesDefeated.size() >= 3 ? Ui.GOLD : Ui.DIM);
         }
 
         card(w - 320, h - 88, 296, 64);
@@ -212,7 +225,8 @@ public class Hud {
             text(fonts.small, String.valueOf(s.ore(type)), ox + 43, h - 49, Ui.TEXT);
             ox += 94;
         }
-        text(fonts.small, bagKey + "  가방     " + mapKey + "  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
+        // 패널 밖 글자라 밝은 바닥 위에서도 읽히게 그림자를 깐다
+        shadowed(fonts.small, bagKey + "  가방     " + mapKey + "  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
         if (showWalkMasks) {
             float my = 130;
             for (String m : g.map.walkMasksAt(g.hero.x, g.hero.y)) {
@@ -248,12 +262,16 @@ public class Hud {
                     : boss.hp + " / " + boss.maxHp, w / 2, h - 80, Ui.DIM);
         }
 
-        card(24, 24, 624, 88);
+        // 다음 여정: 글 길이에 맞춘 폭 (최대 TASK_MAX_W). 스킬 칸이 6개(성검 해방 뒤)여도 겹치지 않는다
+        String task = g.nextTask();
+        layout.setText(fonts.normal, task);
+        float taskW = MathUtils.clamp(layout.width + 38, TASK_MIN_W, TASK_MAX_W);
+        card(24, 24, taskW, 88);
         rect(24, 24, 3, 88, Ui.GOLD);
         text(fonts.small, "다음 여정", 42, 95, Ui.GOLD);
         fonts.normal.setColor(Ui.TEXT);
-        fonts.normal.draw(batch, g.nextTask(), 42, 69, 586, com.badlogic.gdx.utils.Align.left, true);
-        text(fonts.small, moveKeys + "  이동    ·    " + g.interactKey + "  상호작용", 24, 136, Ui.DIM);
+        fonts.normal.draw(batch, task, 42, 69, taskW - 38, com.badlogic.gdx.utils.Align.left, true);
+        shadowed(fonts.small, moveKeys + "  이동    ·    " + g.interactKey + "  상호작용", 24, 136, Ui.DIM);
 
         float[] left = cooldowns();
         com.yongsa.model.Rules.SkillSlot[] skills = g.rules.skillSlots(g.state);
@@ -265,41 +283,52 @@ public class Hud {
             int i = shown.get(k);
             float x = w - 132 - (shown.size() - 1 - k) * 120;
             com.yongsa.model.Rules.SkillSlot sk = i >= 2 ? skills[i - 2] : null;
+            // 스킬 칸 108×88 을 세 줄로 나눈다: 위 = 키·상태, 가운데 = 아이콘(44px), 아래 = 이름.
+            // (2026-11-21 UI 검사: 상태 글자와 키가 64px 아이콘 위에 겹치던 것을 고침)
             card(x, 24, 108, 88);
-            if (readyFlash[i] > 0) rect(x, 111, 108, 2, Ui.GOLD);
+            if (readyFlash[i] > 0) rect(x, 109, 108, 3, Ui.GOLD);
             float total = i == 0 ? g.balance.attack.basicCooldown : i == 1 ? g.balance.attack.rollTime + g.balance.attack.rollCooldown
                     : sk.def.cooldown;
-            if (left[i] > 0) rect(x + 1, 25, 106, 86 * Math.min(1, left[i] / total), new Color(0, 0, 0, 0.5f));
+            if (left[i] > 0) rect(x + 1, 25, 106, 86 * Math.min(1, left[i] / total), COOL_SHADE);
+            float ix = x + 32, iy = 45, is = 44; // 아이콘 칸
             batch.setColor(Color.WHITE);
-            if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
-            if (i == 1) batch.draw(art.get("hero_side_walk"), x + 48, 51, 34, 48);
+            if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), ix, iy, is, is);
+            if (i == 1) batch.draw(art.get("hero_side_walk"), ix + 8, iy + 2, 28, 40);
             if (sk != null) {
-                // 스킬 칸: 스킬 아이콘(sprites/skill/icon_<kind>.png, 없으면 그 검 그림) 뒤로 빛, 지금 못 쓰면 어둡게
+                // 스킬 아이콘(sprites/skill/icon_<kind>.png, 없으면 그 검 그림) 뒤로 빛, 지금 못 쓰면 어둡게
                 if (sk.usable) {
                     batch.setColor(sk.awakened ? new Color(0.85f, 0.6f, 1f, 0.55f + 0.2f * MathUtils.sin(time * 4f))
                             : new Color(1f, 0.85f, 0.5f, 0.5f + 0.2f * MathUtils.sin(time * 4f)));
-                    batch.draw(art.glow, x + 24, 38, 72, 72);
+                    batch.draw(art.glow, ix - 10, iy - 10, is + 20, is + 20);
                 }
-                batch.setColor(sk.usable ? Color.WHITE : new Color(0.35f, 0.35f, 0.4f, 1f));
+                batch.setColor(sk.usable ? Color.WHITE : SKILL_LOCKED);
                 com.badlogic.gdx.graphics.Texture icon = skillIcon(sk.def.kind);
-                if (icon != null) batch.draw(icon, x + 32, 44, 64, 64);
-                else batch.draw(art.sword(sk.weaponId, sk.awakened), x + 35, 47, 58, 58);
+                if (icon != null) batch.draw(icon, ix, iy, is, is);
+                else batch.draw(art.sword(sk.weaponId, sk.awakened), ix, iy, is, is);
                 batch.setColor(Color.WHITE);
             }
             String key = i == 0 ? attackKey : i == 1 ? rollKey : g.skillKeys[i - 2];
             String name = i == 0 ? "베기" : i == 1 ? "구르기" : sk.def.name;
-            text(fonts.small, key, x + 10, 100, Ui.GOLD);
-            if (sk != null && sk.learned) text(fonts.small, "익힘", x + 62, 100, Ui.PURPLE);
-            else if (sk != null && !sk.usable) text(fonts.small, "검 필요", x + 50, 100, Ui.DIM);
-            text(fonts.small, name, x + 12, 47, sk != null && !sk.usable ? Ui.DIM : Ui.DIM);
-            if (i >= 1 && left[i] > 0.1f) centered(fonts.small, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 71, 77, Ui.TEXT);
+            boolean locked = sk != null && !sk.usable;
+            text(fonts.small, key, x + 8, 106, Ui.GOLD);
+            // 상태는 위 줄 오른쪽 끝에 맞춘다 (아이콘 위로 내려오지 않게)
+            String status = sk != null && sk.learned ? "익힘" : locked ? "검 필요" : null;
+            if (status != null) {
+                layout.setText(fonts.small, status);
+                text(fonts.small, status, x + 100 - layout.width, 106, sk.learned ? Ui.PURPLE : Ui.DIM);
+            }
+            centered(fonts.small, name, x + 54, 40, locked ? Ui.DIM : Ui.TEXT);
+            if (i >= 1 && left[i] > 0.1f) centered(fonts.small, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 54, 74, Ui.TEXT);
         }
-        for (Toast toast : toasts) {
+        // 가장 새 안내가 아래, 먼저 뜬 안내는 그 위로 쌓인다
+        for (int ti = 0; ti < toasts.size(); ti++) {
+            Toast toast = toasts.get(ti);
             float alpha = Math.min(1, (3.2f - toast.t) / 0.5f);
+            float ty = 162 + (toasts.size() - 1 - ti) * 52;
             layout.setText(fonts.small, toast.text);
             float tw = Math.min(800, layout.width + 40);
-            card((w - tw) / 2, 162, tw, 44);
-            centered(fonts.small, toast.text, w / 2, 190, new Color(1, 1, 1, alpha));
+            card((w - tw) / 2, ty, tw, 44);
+            centered(fonts.small, toast.text, w / 2, ty + 28, new Color(1, 1, 1, alpha));
         }
         batch.setColor(Color.WHITE);
         batch.end();
@@ -313,10 +342,15 @@ public class Hud {
         batch.draw(art.white(), x, y, width, height);
     }
 
+    // 매 프레임 new Color 를 만들지 않도록 HUD 색은 상수로 둔다
+    private static final Color CARD_BG = new Color(0x101820ed), CARD_TOP = new Color(0x806c4bca), CARD_BOTTOM = new Color(0x39454fca);
+    private static final Color COOL_SHADE = new Color(0, 0, 0, 0.5f), SKILL_LOCKED = new Color(0.35f, 0.35f, 0.4f, 1f);
+    private static final float TASK_MIN_W = 260, TASK_MAX_W = 480;
+
     private void card(float x, float y, float width, float height) {
-        rect(x, y, width, height, new Color(0x101820ed));
-        rect(x, y + height - 1, width, 1, new Color(0x806c4bca));
-        rect(x, y, width, 1, new Color(0x39454fca));
+        rect(x, y, width, height, CARD_BG);
+        rect(x, y + height - 1, width, 1, CARD_TOP);
+        rect(x, y, width, 1, CARD_BOTTOM);
     }
 
     private void text(BitmapFont font, String value, float x, float y, Color color) {
