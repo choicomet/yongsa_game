@@ -37,3 +37,6 @@ tasks.register('dist', Jar) {
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
+
+// Windows users can also double-click the launcher in the extracted distribution.
+distributions.main.contents.from(rootProject.file('용사가 다한다.exe'))
