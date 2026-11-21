@@ -199,74 +199,84 @@ public class Hud {
             batch.setColor(0.8f, 0.05f, 0.05f, red);
             batch.draw(art.vignette, 0, 0, w, h);
         }
-        // ───── 왼쪽 위 프로필 (2026-11-22 시안: 원형 초상화 + 금테 판 + 칼 칸)
-        float px0 = 24, py0 = h - 128, pw0 = PROFILE_W, ph0 = 104;
-        frames.frame(batch, HudFrames.Tone.GOLD, px0 + 40, py0, pw0 - 40, ph0);
-        float pcx = px0 + 50, pcy = py0 + ph0 / 2f, pr = 50; // 초상화 원
+        // ───── 왼쪽 위 프로필 (시안: 원형 초상화 + 은테 판 + 칼 칸)
+        float pcx = 59, pcy = h - 56; // 초상화 원 가운데
+        float ph0 = frames.panelHeight(HudFrames.Panel.PROFILE), py0 = h - 9 - ph0;
         batch.setColor(Color.WHITE);
-        batch.draw(frames.badge, pcx - pr + 4, pcy - pr + 4, (pr - 4) * 2, (pr - 4) * 2);
-        batch.draw(art.get("hero_down"), pcx - 24, pcy - 38, 48, 72);
-        batch.draw(frames.ring, pcx - pr, pcy - pr, pr * 2, pr * 2);
-        float tx = pcx + pr + 12; // 글자·체력바 시작
-        float right = px0 + pw0 - 18;
-        text(fonts.normal, "용사", tx, h - 36, Ui.GOLD);
+        frames.panel(batch, HudFrames.Panel.PROFILE, pcx, py0, 24 + PROFILE_W - pcx);
+        batch.draw(frames.portraitDisc, pcx - 36, pcy - 36, 72, 72);
+        // 시안처럼 원 안에 상반신: 용사 그림 위쪽 62% 만 잘라 크게 (아래 잘린 모서리는 고리 밑에 숨는다)
+        com.badlogic.gdx.graphics.g2d.TextureRegion hero = art.get("hero_down");
+        if (portraitBust == null || portraitSrc != hero) {
+            portraitSrc = hero;
+            portraitBust = new com.badlogic.gdx.graphics.g2d.TextureRegion(hero, 0, 0, hero.getRegionWidth(), Math.round(hero.getRegionHeight() * 0.62f));
+        }
+        float bustW = 70, bustH = bustW * portraitBust.getRegionHeight() / portraitBust.getRegionWidth();
+        batch.draw(portraitBust, pcx - bustW / 2f, pcy - 37, bustW, bustH);
+        batch.draw(frames.portraitRing, pcx - 43, pcy - 43, 86, 86);
+        float tx = 111; // 글자·체력바 시작
+        float right = 24 + PROFILE_W - 26;
+        text(fonts.normal, "용사", tx, h - 29, Ui.GOLD);
         String hp = Math.max(0, s.hp) + " / " + maxHp;
         layout.setText(fonts.normal, hp);
-        text(fonts.normal, hp, right - layout.width, h - 36, Ui.TEXT);
-        float barW = right - tx;
-        rect(tx - 1, h - 66, barW + 2, 12, HP_EDGE);
-        rect(tx, h - 65, barW, 10, HP_BG);
-        rect(tx, h - 65, barW * MathUtils.clamp(trailHp / maxHp, 0, 1), 10, Ui.GOLD);
-        rect(tx, h - 65, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 10, HP_FILL);
-        rect(tx, h - 57, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 2, HP_SHINE);
+        text(fonts.normal, hp, right - layout.width, h - 29, Ui.TEXT);
+        float barW = right - tx, hpY = h - 54;
+        rect(tx - 1, hpY - 1, barW + 2, 11, HP_EDGE);
+        rect(tx, hpY, barW, 9, HP_BG);
+        rect(tx, hpY, barW * MathUtils.clamp(trailHp / maxHp, 0, 1), 9, Ui.GOLD);
+        rect(tx, hpY, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 9, HP_FILL);
+        rect(tx, hpY + 6, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 2, HP_SHINE);
         if (weapon != null) {
             boolean awakened = weapon.awakened;
-            float ss = 48, sx = tx, sy = py0 + 10; // 칼 칸
+            float ss = 42, sx = tx - 2, sy = h - 103; // 칼 칸
             if (awakened) {
                 batch.setColor(0.85f, 0.6f, 1f, 0.45f + 0.2f * MathUtils.sin(time * 3f));
                 batch.draw(art.glow, sx - 10, sy - 10, ss + 20, ss + 20);
             }
-            frames.frame(batch, awakened ? HudFrames.Tone.PURPLE : HudFrames.Tone.GOLD, sx, sy, ss, ss);
+            batch.setColor(awakened ? AWAKE_TINT : Color.WHITE);
+            batch.draw(frames.itemSlot, sx, sy, ss + 1, ss);
             batch.setColor(Color.WHITE);
-            batch.draw(art.sword(weapon.defId, awakened), sx + 6, sy + 6, ss - 12, ss - 12);
-            float wx = sx + ss + 10;
-            text(fonts.small, g.rules.weaponName(weapon), wx, sy + 44, awakened ? Ui.PURPLE : Ui.TEXT);
+            batch.draw(art.sword(weapon.defId, awakened), sx + 5, sy + 5, ss - 10, ss - 10);
+            float wx = sx + ss + 9;
+            text(fonts.small, g.rules.weaponName(weapon), wx, sy + 40, awakened ? Ui.PURPLE : Ui.TEXT);
             // “보스의 힘 3/3” 대신 무엇을 모으는지(흡수한 보스 힘), 다 모으면 무엇이 되는지
             String atk = "공격력 " + g.rules.attack(s);
             layout.setText(fonts.small, atk);
             float atkEnd = wx + layout.width;
-            text(fonts.small, atk, wx, sy + 20, Ui.DIM);
+            text(fonts.small, atk, wx, sy + 17, STAT);
             if (s.unsealed) {
                 layout.setText(fonts.small, "성검 해방");
-                text(fonts.small, "성검 해방", right - layout.width, sy + 20, Ui.PURPLE);
+                text(fonts.small, "성검 해방", right - layout.width, sy + 17, Ui.PURPLE);
             } else {
                 // 흡수한 보스 힘: 마름모 셋 (채운 것 = 쓰러뜨린 보스). 다 모이면 금색 글자
                 int got = s.bossesDefeated.size();
-                float pip = 24, pipsW = 3 * pip - 12;
+                float pip = 22, pipsW = 3 * pip - 10;
                 batch.setColor(Color.WHITE);
                 for (int k = 0; k < 3; k++)
-                    batch.draw(k < got ? frames.diamond : frames.diamondOutline, right - pipsW - 6 + k * (pip - 6), sy + 1, pip, pip);
+                    batch.draw(k < got ? frames.diamond : frames.diamondOutline, right - pipsW + k * (pip - 5), sy, pip, pip);
                 layout.setText(fonts.small, "보스 힘");
                 // 이름은 늘 적는다. 공격력 글자와 8px 안쪽으로 붙으면 짧게 “힘”
-                String powLabel = right - pipsW - 6 - layout.width >= atkEnd + 8 ? "보스 힘" : "힘";
+                String powLabel = right - pipsW - 4 - layout.width >= atkEnd + 8 ? "보스 힘" : "힘";
                 layout.setText(fonts.small, powLabel);
-                text(fonts.small, powLabel, right - pipsW - 6 - layout.width, sy + 20, got >= 3 ? Ui.GOLD : Ui.DIM);
+                text(fonts.small, powLabel, right - pipsW - 4 - layout.width, sy + 17, got >= 3 ? Ui.GOLD : Ui.DIM);
             }
         }
 
         // ───── 오른쪽 위 광물 + 키 안내 알약
-        frames.frame(batch, HudFrames.Tone.GOLD, w - 330, h - 94, 306, 70);
-        float ox = w - 314;
+        float oreH = frames.panelHeight(HudFrames.Panel.ORE);
+        batch.setColor(Color.WHITE);
+        frames.panel(batch, HudFrames.Panel.ORE, w - 342, h - 15 - oreH, 327);
+        float ox = w - 316;
         for (OreType type : OreType.values()) {
             batch.setColor(Color.WHITE);
-            batch.draw(art.gem(type), ox, h - 80, 42, 42);
-            text(fonts.normal, String.valueOf(s.ore(type)), ox + 46, h - 49, Ui.TEXT);
-            ox += 98;
+            batch.draw(art.gem(type), ox, h - 64, 38, 38);
+            text(fonts.normal, String.valueOf(s.ore(type)), ox + 42, h - 36, Ui.TEXT);
+            ox += 102;
         }
-        float kx = w - 24;
-        kx = keyHintLeft(kx, h - 118, "Esc", "메뉴");
-        kx = keyHintLeft(kx - 8, h - 118, mapKey, "지도");
-        keyHintLeft(kx - 8, h - 118, bagKey, "가방");
+        float kx = w - 29;
+        kx = keyHintLeft(kx, h - 100, "Esc", "메뉴");
+        kx = keyHintLeft(kx - 7, h - 100, mapKey, "지도");
+        keyHintLeft(kx - 7, h - 100, bagKey, "가방");
         if (showWalkMasks) {
             float my = 130;
             for (String m : g.map.walkMasksAt(g.hero.x, g.hero.y)) {
@@ -294,72 +304,74 @@ public class Hud {
             layout.setText(fonts.small, sub);
             shadowed(fonts.small, sub, w / 2 - layout.width / 2, h - 60, Ui.DIM);
         } else {
-            float bw = BOSS_W, bx0 = w / 2 - bw / 2, by0 = h - 120;
-            frames.frame(batch, boss.finalBoss ? HudFrames.Tone.PURPLE : HudFrames.Tone.GOLD, bx0, by0, bw, 96);
-            frames.endCaps(batch, bx0, by0, bw, 96, 18);
-            batch.setColor(Color.WHITE);
-            batch.draw(boss.finalBoss ? frames.badgePurple : frames.badgeRed, w / 2 - 22, h - 46, 44, 44);
-            batch.draw(frames.diamond, w / 2 - 15, h - 39, 30, 30);
-            if (introT >= 0) rect(bx0 + 12, by0 + 92, (bw - 24) * Math.min(1, introT / 0.5f), 2, Ui.GOLD);
-            centered(fonts.large, boss.def.name, w / 2, h - 42, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
-            float barX = bx0 + 22, barLen = bw - 44, barY = h - 84;
+            float bh = frames.panelHeight(HudFrames.Panel.BOSS);
+            float bw = BOSS_W, bx0 = w / 2 - bw / 2, by0 = h - 19 - bh;
+            batch.setColor(boss.finalBoss ? AWAKE_TINT : Color.WHITE);
+            frames.panel(batch, HudFrames.Panel.BOSS, bx0, by0, bw);
+            batch.draw(frames.emblem, w / 2 - 19, h - 36, 38, 36);
+            if (introT >= 0) rect(bx0 + 40, by0 + 12, (bw - 80) * Math.min(1, introT / 0.5f), 2, Ui.GOLD);
+            centered(fonts.large, boss.def.name, w / 2, h - 34, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
+            float barX = bx0 + 26, barLen = bw - 52, barY = h - 74;
             rect(barX - 1, barY - 1, barLen + 2, 12, HP_EDGE);
             rect(barX, barY, barLen, 10, BOSS_BG);
             rect(barX, barY, barLen * MathUtils.clamp(bossTrail / boss.maxHp, 0, 1), 10, Ui.GOLD);
-            rect(barX, barY, barLen * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 10, boss.finalBoss ? Ui.PURPLE : Ui.RED);
+            rect(barX, barY, barLen * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 10, boss.finalBoss ? Ui.PURPLE : BOSS_FILL);
             rect(barX, barY + 7, barLen * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 2, HP_SHINE);
             if (boss.shield > 0 && boss.shieldMax > 0) {
                 // 방패: 체력바 위 밝은 막대. 다 깎기 전에는 체력이 닳지 않는다
-                rect(barX, barY + 14, barLen, 4, SHIELD_BG);
-                rect(barX, barY + 14, barLen * MathUtils.clamp((float) boss.shield / boss.shieldMax, 0, 1), 4, SHIELD_FILL);
+                rect(barX, barY + 13, barLen, 4, SHIELD_BG);
+                rect(barX, barY + 13, barLen * MathUtils.clamp((float) boss.shield / boss.shieldMax, 0, 1), 4, SHIELD_FILL);
             }
             centered(fonts.small, boss.shield > 0 ? "방패 " + boss.shield + "  ·  " + boss.hp + " / " + boss.maxHp
-                    : boss.hp + " / " + boss.maxHp, w / 2, by0 + 26, Ui.TEXT);
+                    : boss.hp + " / " + boss.maxHp, w / 2, h - 75, Ui.TEXT);
         }
 
-        // ───── 왼쪽 아래: 다음 여정 (글 길이에 맞춘 폭, 스킬 칸 6개와도 안 겹친다)
+        // ───── 왼쪽 아래: 다음 여정 (폭 고정, 긴 글은 줄바꿈. 스킬 칸 6개와도 안 겹친다)
         String task = g.nextTask();
-        layout.setText(fonts.normal, task);
-        float taskW = TASK_W; // 장면마다 폭이 바뀌지 않게 고정, 긴 글은 줄바꿈
-        frames.frame(batch, HudFrames.Tone.GOLD, 24, 24, taskW, 92);
+        float taskW = TASK_W;
         batch.setColor(Color.WHITE);
-        batch.draw(frames.headerFade, 32, 80, taskW * 0.7f, 28);
-        batch.draw(frames.badge, 30, 76, 36, 36);
-        batch.draw(frames.book, 36, 82, 24, 24);
-        text(fonts.small, "다음 여정", 74, 101, Ui.GOLD);
+        frames.panel(batch, HudFrames.Panel.QUEST, 18, 15, taskW);
+        batch.setColor(0.42f, 0.25f, 0.63f, 1f);
+        batch.draw(frames.headerFade, 44, 76, taskW * 0.72f, 24);
+        batch.setColor(Color.WHITE);
+        batch.draw(frames.keyRound, 23, 61, 50, 50);
+        batch.draw(frames.badgeBook, 26, 64, 44, 44);
+        text(fonts.small, "다음 여정", 82, 94, Ui.GOLD);
+        layout.setText(fonts.normal, task, Ui.TEXT, taskW - 60, com.badlogic.gdx.utils.Align.left, true);
         fonts.normal.setColor(Ui.TEXT);
-        fonts.normal.draw(batch, task, 40, 66, taskW - 52, com.badlogic.gdx.utils.Align.left, true);
-        float mx = 24;
-        for (String k : moveKeys.split(" ")) mx = keycapAt(mx, 134, k) + 3;
-        mx = label(mx + 8, 134, "이동") + 18;
-        mx = keycapAt(mx, 134, g.interactKey) + 8;
-        label(mx, 134, "상호작용");
+        // 한 줄이면 판 아래쪽 가운데, 두 줄이면 위로 올려 판 안에 담는다
+        float taskY = 60 + Math.max(0, layout.height - fonts.normal.getLineHeight()) / 2f;
+        fonts.normal.draw(batch, task, 40, taskY, taskW - 60, com.badlogic.gdx.utils.Align.left, true);
+        hintBand(18, 140, moveKeys, "이동", g.interactKey, "상호작용");
 
-        // ───── 오른쪽 아래: 공격·구르기·스킬 칸
+        // ───── 오른쪽 아래: 공격·구르기·스킬 칸 (시안 칸 그림 104×103, 왼쪽 위 원에 키)
         float[] left = cooldowns();
         com.yongsa.model.Rules.SkillSlot[] skills = g.rules.skillSlots(g.state);
         java.util.List<Integer> shown = new java.util.ArrayList<>();
         shown.add(0);
         shown.add(1);
         for (int i = 0; i < skills.length; i++) if (skills[i] != null) shown.add(2 + i);
+        final float SLOT = 104, SLOT_H = 103, SY = 16;
         for (int k = 0; k < shown.size(); k++) {
             int i = shown.get(k);
-            float x = w - 132 - (shown.size() - 1 - k) * 120;
+            float x = w - 24 - SLOT - (shown.size() - 1 - k) * 108;
             com.yongsa.model.Rules.SkillSlot sk = i >= 2 ? skills[i - 2] : null;
             boolean locked = sk != null && !sk.usable;
-            // 칸 108×88: 왼쪽 위 모서리에 키 배지, 가운데 아이콘(44px), 아래 이름. 스킬은 빨강(각성은 보라) 테두리
-            HudFrames.Tone tone = sk == null || locked ? HudFrames.Tone.GOLD : sk.awakened ? HudFrames.Tone.PURPLE : HudFrames.Tone.RED;
-            frames.frame(batch, tone, x, 24, 108, 88);
+            // 공격·구르기·잠긴 스킬 = 금 칸, 스킬 = 붉은 칸, 각성 스킬 = 금 칸을 보라로 물들임
+            boolean redSlot = sk != null && !locked && !sk.awakened;
+            boolean purple = sk != null && !locked && sk.awakened;
+            batch.setColor(purple ? AWAKE_TINT : Color.WHITE);
+            batch.draw(redSlot ? frames.slotRed : frames.slotGold, x, SY, SLOT, SLOT_H);
             if (readyFlash[i] > 0) {
                 batch.setColor(1f, 0.85f, 0.5f, readyFlash[i] / 0.4f * 0.8f);
-                batch.draw(art.glow, x - 10, 14, 128, 108);
+                batch.draw(art.glow, x - 10, SY - 10, SLOT + 20, SLOT_H + 20);
             }
             float total = i == 0 ? g.balance.attack.basicCooldown : i == 1 ? g.balance.attack.rollTime + g.balance.attack.rollCooldown
                     : sk.def.cooldown;
-            if (left[i] > 0) rect(x + 4, 28, 100, 80 * Math.min(1, left[i] / total), COOL_SHADE);
-            // 아이콘 칸: 그림 둘레 여백이 있어 54px 로 그리되, 위 오른쪽에 상태 글자(익힘·검 필요)가 있으면 46px 로 줄여 겹치지 않게
+            if (left[i] > 0) rect(x + 9, SY + 9, SLOT - 18, (SLOT_H - 18) * Math.min(1, left[i] / total), COOL_SHADE);
+            // 아이콘: 칸 가운데 54px, 위 오른쪽에 상태 글자(익힘·검 필요)가 있으면 46px 로 줄여 겹치지 않게
             boolean hasStatus = sk != null && (sk.learned || !sk.usable);
-            float is = hasStatus ? 46 : 54, ix = x + 54 - is / 2f, iy = hasStatus ? 44 : 46;
+            float is = hasStatus ? 42 : 54, ix = x + 54 - is / 2f, iy = SY + (hasStatus ? 49 : 32);
             batch.setColor(Color.WHITE);
             if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), ix, iy, is, is);
             if (i == 1) batch.draw(art.get("hero_side_walk"), ix + 10, iy + 2, 34, 48);
@@ -378,53 +390,59 @@ public class Hud {
             }
             String key = i == 0 ? attackKey : i == 1 ? rollKey : g.skillKeys[i - 2];
             String name = i == 0 ? "베기" : i == 1 ? "구르기" : sk.def.name;
-            // 키 배지: 칸 왼쪽 위 모서리에 걸친 원 (글자가 길면 둥근 사각)
+            // 키: 칸 그림의 왼쪽 위 원 안 (원 가운데 = 칸 왼쪽 24, 위에서 24). 긴 키 이름은 작은 글자
             layout.setText(fonts.small, key);
-            float kw = Math.max(28, layout.width + 14);
-            if (key.length() <= 1) {
+            float kcx = x + 24, kcy = SY + SLOT_H - 24;
+            if (layout.width > 26) {
                 batch.setColor(Color.WHITE);
-                batch.draw(tone == HudFrames.Tone.PURPLE ? frames.badgePurple : tone == HudFrames.Tone.RED ? frames.badgeRed : frames.badge,
-                        x - 6, 24 + 88 - 22, 28, 28);
+                frames.pill(batch, true, kcx - 14, kcy - HudFrames.PILL_H / 2f, Math.max(HudFrames.PILL_WIDE_W + 11, layout.width + 24));
+                text(fonts.small, key, kcx - 14 + 11, kcy + 7, KEY_TEXT);
             } else {
-                frames.keycap(batch, x - 6, 24 + 88 - 22, kw, 28);
+                centered(fonts.small, key, kcx, kcy + 8, KEY_TEXT);
             }
-            centered(fonts.small, key, x - 6 + (key.length() <= 1 ? 14 : kw / 2), 24 + 88 - 22 + 21, Ui.GOLD);
             String status = sk != null && sk.learned ? "익힘" : locked ? "검 필요" : null;
             if (status != null) {
                 layout.setText(fonts.small, status);
-                text(fonts.small, status, x + 100 - layout.width, 107, sk.learned ? Ui.PURPLE : Ui.DIM);
+                // 칸 위쪽 모서리 장식·키 배지와 겹치지 않게 아이콘과 이름 사이에
+                centered(fonts.small, status, x + SLOT / 2f, SY + 47, sk.learned ? Ui.PURPLE : Ui.DIM);
             }
-            centered(fonts.small, name, x + 54, 46, locked ? Ui.DIM : Ui.TEXT);
-            if (i >= 1 && left[i] > 0.1f) centered(fonts.normal, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 54, 80, Ui.TEXT);
+            centered(fonts.small, name, x + SLOT / 2f, SY + (status != null ? 29 : 30), locked ? Ui.DIM : Ui.TEXT);
+            if (i >= 1 && left[i] > 0.1f) centered(fonts.normal, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 54, SY + 66, Ui.TEXT);
         }
 
-        // ───── 안내 (토스트): 왼쪽에 아이콘 배지가 걸친 금테 판. 가장 새 안내가 아래
+        // ───── 안내 (토스트): 시안 판 그림. 스킬 안내 = 보라 판 + 스킬 배지, 경고 = 느낌표 배지, 무기 = 칼
         // 함께 떠 있는 안내는 가장 긴 것의 폭으로 맞춰 아이콘이 한 줄로 선다
-        float toastW = 400;
+        float toastW = 380;
         for (Toast t : toasts) {
             layout.setText(fonts.normal, t.text);
-            toastW = Math.max(toastW, Math.min(820, layout.width + 96));
+            toastW = Math.max(toastW, Math.min(820, layout.width + 120));
         }
         for (int ti = 0; ti < toasts.size(); ti++) {
             Toast toast = toasts.get(ti);
             float alpha = Math.min(1, (3.2f - toast.t) / 0.5f);
-            float ty = 156 + (toasts.size() - 1 - ti) * 58;
+            float cy = 188 + (toasts.size() - 1 - ti) * 52; // 판 가운데 높이
             float tw = toastW;
             float tx0 = (w - tw) / 2;
-            // 안내 종류는 글로 고른다: 스킬·봉인·숙련 = 보라, 잠김·실패·위험 = 빨강(느낌표), 나머지 = 금색
+            // 안내 종류는 글로 고른다: 스킬·봉인·숙련 = 보라, 잠김·실패·위험 = 느낌표, 나머지 = 금테
             boolean skillNote = toast.text.contains("스킬") || toast.text.contains("봉인") || toast.text.contains("숙련");
             boolean warn = !skillNote && (toast.text.contains("잠겼") || toast.text.contains("못") || toast.text.contains("위험"));
+            HudFrames.Panel kind = skillNote ? HudFrames.Panel.TOAST_SKILL : HudFrames.Panel.TOAST;
+            float th = frames.panelHeight(kind);
+            // 보라 판은 시안처럼 조금 좁게
+            float pw = skillNote ? tw - 40 : tw, px = (w - pw) / 2;
             batch.setColor(1, 1, 1, alpha);
-            HudFrames.Tone tt = warn ? HudFrames.Tone.RED : skillNote ? HudFrames.Tone.PURPLE : HudFrames.Tone.GOLD;
-            frames.frame(batch, tt, tx0, ty, tw, 46);
-            frames.endCaps(batch, tx0 + 4, ty, tw - 6, 46, 34);
-            batch.setColor(Color.WHITE);
-            batch.draw(warn ? frames.badgeRed : skillNote ? frames.badgePurple : frames.badge, tx0 - 8, ty - 1, 48, 48);
+            frames.panel(batch, kind, px, cy - th / 2f, pw);
             boolean weaponNote = !warn && !skillNote && weapon != null && (toast.text.contains("무기") || toast.text.contains("검"));
-            if (warn) batch.draw(frames.bang, tx0, ty + 7, 32, 32);
-            else if (weaponNote) batch.draw(art.sword(weapon.defId, weapon.awakened), tx0 + 2, ty + 9, 28, 28);
-            else batch.draw(frames.diamond, tx0, ty + 7, 32, 32);
-            centered(fonts.normal, toast.text, tx0 + 44 + (tw - 52) / 2f, ty + 32, new Color(1, 1, 1, alpha));
+            if (skillNote) batch.draw(frames.badgeSkill, px + 14, cy - 22, 44, 44);
+            else if (warn) batch.draw(frames.badgeWarn, tx0 + 31, cy - 18, 36, 36);
+            else {
+                // 시안처럼 아이콘은 늘 원 배지 안에
+                batch.draw(frames.keyRound, tx0 + 30, cy - 19, 38, 38);
+                if (weaponNote) batch.draw(art.sword(weapon.defId, weapon.awakened), tx0 + 35, cy - 14, 28, 28);
+                else batch.draw(frames.diamond, tx0 + 37, cy - 12, 24, 24);
+            }
+            float textL = tx0 + 74;
+            centered(fonts.normal, toast.text, textL + (tx0 + tw - 30 - textL) / 2f, cy + 9, new Color(1, 1, 1, alpha));
         }
         batch.setColor(Color.WHITE);
         batch.end();
@@ -441,43 +459,74 @@ public class Hud {
     // 매 프레임 new Color 를 만들지 않도록 HUD 색은 상수로 둔다
     private static final Color CARD_BG = new Color(0x101820ed), CARD_TOP = new Color(0x806c4bca), CARD_BOTTOM = new Color(0x39454fca);
     private static final Color COOL_SHADE = new Color(0, 0, 0, 0.5f), SKILL_LOCKED = new Color(0.35f, 0.35f, 0.4f, 1f);
-    private static final float TASK_W = 500;
-    /** 왼쪽 위 프로필 패널 폭 (칼 칸 78px 이 들어가며 326 → 384. 보스 체력 패널 왼쪽 끝 414 보다 안쪽). */
+    /** 다음 여정 판 폭 (시안은 396px 이지만 긴 안내가 두 줄로 넘치지 않게 넓힘. 스킬 칸 6개의 왼쪽 끝 606 보다 안쪽). */
+    private static final float TASK_W = 540;
+    /** 왼쪽 위 프로필 패널 오른쪽 끝 = 24 + PROFILE_W (보스 체력 판 왼쪽 끝 414 보다 안쪽). */
     private static final float PROFILE_W = 376;
-    private static final Color HP_BG = new Color(0x40232aff), HP_FILL = new Color(0xd65958ff), HP_EDGE = new Color(0x0a0810ff),
-            HP_SHINE = new Color(1f, 1f, 1f, 0.22f), BOSS_BG = new Color(0x39232aff),
+    private static final Color HP_BG = new Color(0x40232aff), HP_FILL = new Color(0xe5524fff), HP_EDGE = new Color(0x0a0810ff),
+            HP_SHINE = new Color(1f, 1f, 1f, 0.22f), BOSS_BG = new Color(0x39232aff), BOSS_FILL = new Color(0xf0504aff),
             SHIELD_BG = new Color(0x2a2418ff), SHIELD_FILL = new Color(1f, 0.82f, 0.55f, 1f);
-    /** 보스 체력 판 폭: 프로필 판 오른쪽 끝(24+PROFILE_W) 안쪽으로 들어오지 않게 정한다. */
-    private static final float BOSS_W = 444;
+    /** 각성·마지막 보스: 시안 금테 그림을 보라로 물들이는 색. */
+    private static final Color STAT = new Color(0xe0d8c8ff), KEY_TEXT = new Color(0xf0e6c8ff);
+    private static final Color AWAKE_TINT = new Color(0.82f, 0.66f, 1f, 1f);
+    private static final Color BAND = new Color(0.04f, 0.03f, 0.08f, 0.12f), BAND_LINE = new Color(0.85f, 0.7f, 0.42f, 0.1f);
+    /** 시안 보스 체력 판 폭 452. 프로필 판 오른쪽 끝(24+PROFILE_W) 안쪽으로 들어오지 않는다. */
+    private static final float BOSS_W = 452;
     private final HudFrames frames = new HudFrames();
+    private com.badlogic.gdx.graphics.g2d.TextureRegion portraitBust, portraitSrc;
 
-    /** 키 이름을 둥근 사각에 담아 (x, 가운데 y=cy) 에 그리고 오른쪽 끝 x 를 돌려준다. */
-    private float keycapAt(float x, float cy, String key) {
+    /** 시안 원형 키캡에 키 이름을 담아 (x, 가운데 y=cy) 에 그리고 오른쪽 끝 x 를 돌려준다. 긴 이름은 알약 키캡. */
+    private float keyRoundAt(float x, float cy, String key) {
         layout.setText(fonts.small, key);
-        float kw = Math.max(24, layout.width + 22);
-        frames.keycap(batch, x, cy - 12, kw, 24);
-        text(fonts.small, key, x + (kw - layout.width) / 2f, cy + 7, Ui.GOLD);
+        batch.setColor(Color.WHITE);
+        if (layout.width <= 22) {
+            batch.draw(frames.keyRound, x, cy - 18, 36, 36);
+            text(fonts.small, key, x + 18 - layout.width / 2f, cy + 8, KEY_TEXT);
+            return x + 36;
+        }
+        float kw = layout.width + 26;
+        frames.pill(batch, true, x, cy - HudFrames.PILL_H / 2f, Math.max(kw + 11, HudFrames.PILL_WIDE_W + 11));
+        text(fonts.small, key, x + (kw - layout.width) / 2f, cy + 8, KEY_TEXT);
         return x + kw;
     }
 
-    /** 그림자 깐 작은 글자를 (x, 가운데 y=cy) 에 그리고 오른쪽 끝 x 를 돌려준다. */
-    private float label(float x, float cy, String value) {
-        layout.setText(fonts.small, value);
-        float lw = layout.width;
-        shadowed(fonts.small, value, x, cy + 7, Ui.TEXT);
-        return x + lw;
+    /** 왼쪽 아래 조작 안내: 옅은 띠 위에 “[W] A S D 이동   [E] 상호작용” (시안처럼 이동 묶음은 첫 키만 원). */
+    private void hintBand(float x, float cy, String moveKeys, String moveLabel, String interactKey, String interactLabel) {
+        String[] mk = moveKeys.split(" ");
+        StringBuilder rest = new StringBuilder();
+        for (int i = 1; i < mk.length; i++) rest.append(mk[i]).append(' ');
+        String moveText = rest.length() > 0 ? rest + " " + moveLabel : moveLabel;
+        layout.setText(fonts.small, mk[0]);
+        float k1 = layout.width <= 22 ? 36 : layout.width + 26;
+        layout.setText(fonts.small, moveText);
+        float t1 = layout.width;
+        layout.setText(fonts.small, interactKey);
+        float k2 = layout.width <= 22 ? 36 : layout.width + 26;
+        layout.setText(fonts.small, interactLabel);
+        float t2 = layout.width;
+        float total = 4 + k1 + 6 + t1 + 22 + k2 + 10 + t2 + 16;
+        rect(x, cy - 17, total, 34, BAND);
+        rect(x + 18, cy + 16, total - 36, 1, BAND_LINE);
+        rect(x + 18, cy - 17, total - 36, 1, BAND_LINE);
+        float cx = keyRoundAt(x + 4, cy, mk[0]) + 6;
+        shadowed(fonts.small, moveText, cx, cy + 8, Ui.TEXT);
+        cx = keyRoundAt(cx + t1 + 22, cy, interactKey) + 10;
+        shadowed(fonts.small, interactLabel, cx, cy + 8, Ui.TEXT);
     }
 
-    /** 오른쪽 끝(rightX)에 맞춰 [키] 이름 알약을 그리고 그 왼쪽 끝 x 를 돌려준다. */
+    /** 오른쪽 끝(rightX)에 맞춰 시안 키 알약 “(키) 이름” 을 그리고 그 왼쪽 끝 x 를 돌려준다. */
     private float keyHintLeft(float rightX, float cy, String key, String name) {
         layout.setText(fonts.small, key);
-        float kw = Math.max(24, layout.width + 22);
+        float kw = layout.width;
+        boolean wide = kw > 22;
+        float keyCell = wide ? Math.max(HudFrames.PILL_WIDE_W, kw + 24) : HudFrames.PILL_KEY_W;
         layout.setText(fonts.small, name);
-        float pw = 6 + kw + 8 + layout.width + 14;
+        float pw = keyCell + 6 + layout.width + 15;
         float x = rightX - pw;
-        frames.pill(batch, x, cy - 15, pw, 30);
-        keycapAt(x + 6, cy, key);
-        text(fonts.small, name, x + 6 + kw + 8, cy + 7, Ui.TEXT);
+        batch.setColor(Color.WHITE);
+        frames.pill(batch, wide, x, cy - HudFrames.PILL_H / 2f, pw);
+        text(fonts.small, key, x + (wide ? keyCell : HudFrames.PILL_KEY_W + 2) / 2f - kw / 2f, cy + 8, KEY_TEXT);
+        text(fonts.small, name, x + keyCell + 6, cy + 8, Ui.TEXT);
         return x;
     }
 
