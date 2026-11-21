@@ -1479,10 +1479,10 @@
     "bounds": [
       780,
       477,
-      824,
+      825,
       517
     ],
-    "pixels": 729
+    "pixels": 730
   },
   {
     "scene": "joints/exit-L1-L2",
@@ -1738,5 +1738,20 @@
       1254
     ],
     "pixels": 294175
+  },
+  {
+    "scene": "rooms/mine",
+    "file": "layers/rooms/mine/southwest-rail-ledge.png",
+    "canvas": [
+      1672,
+      941
+    ],
+    "bounds": [
+      184,
+      630,
+      452,
+      754
+    ],
+    "pixels": 23606
   }
 ]

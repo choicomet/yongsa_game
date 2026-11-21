@@ -1106,6 +1106,15 @@
         }
       ],
       "front": "layers/joints/exit-L5-L7/front.png"
+    },
+    "rooms/mine": {
+      "objects": [
+        {
+          "id": "southwest-rail-ledge",
+          "foot": 0.8,
+          "image": "layers/rooms/mine/southwest-rail-ledge.png"
+        }
+      ]
     }
   }
 }
