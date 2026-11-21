@@ -14,11 +14,9 @@ uiux 팀 프로젝트 (최해성 · 박지용 · 김선우). Java 17 + libGDX 2D
 
 [자연스러운 던전 구상과 Java 미리보기](design/natural-dungeons/README.md)의 배경 그림 18장과 중앙캠프 그림은 이제 실제 방으로 쓰입니다 (`assets/scenes/natural-v1/`, 바닥 경계 `assets/data/natural-room-scenes.json`). [구상안 / Java 화면 / 경계 비교](design/natural-dungeons/index.html). 더 필요한 그림은 [그림 요청 목록](docs/ART_REQUESTS.md)에 있습니다.
 
-Windows (JDK 17 필요, `JAVA_HOME` 설정):
+Windows에서는 JDK 17을 설치하고 프로젝트 폴더의 **용사가 다한다.exe**를 더블클릭하세요. 처음 실행할 때는 Gradle과 게임 라이브러리를 내려받습니다. 다음 실행부터는 변경된 파일만 준비합니다. 바탕화면에 두려면 실행 파일을 우클릭해 **보내기 → 바탕 화면에 바로 가기 만들기**를 선택하세요.
 
-```
-.\gradlew.bat run
-```
+터미널에서 실행하려면 `.\gradlew.bat :lwjgl3:run`을 사용하세요.
 
 테스트: `.\gradlew.bat :core:test` · 실행 파일 묶기: `.\gradlew.bat :lwjgl3:dist` (lwjgl3/build/libs 에 jar 생성)
 
