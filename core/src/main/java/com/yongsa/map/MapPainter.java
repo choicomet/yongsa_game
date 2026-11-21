@@ -229,7 +229,7 @@ public class MapPainter implements Disposable {
             if (r.scene == null) continue;
             boolean camp = "central-camp".equals(r.scene.id);
             boolean towerCave="cave-tower".equals(r.scene.id);
-            float overhang=towerCave?r.widthPx*.17f:camp?r.widthPx*.09f:0;
+            float overhang=towerCave?r.widthPx*.21f:camp?r.widthPx*.09f:0;
             float top = r.originY + r.heightPx + overhang;
             if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || top < viewY0) continue;
             if (camp) doorways.drawCrown(batch, r);
@@ -257,10 +257,10 @@ public class MapPainter implements Disposable {
             TextureRegion mouth=art.cell("world/portals/tower-cave-mouth.png",1,1,0);
             // Register the throat to the actual transition. The roof extends
             // beyond the room painting, so bedrock cannot cut a flat cap across it.
-            float w=room.widthPx*.51f, h=w*mouth.getRegionHeight()/mouth.getRegionWidth();
+            float w=door.halfWidth*4f, h=w*mouth.getRegionHeight()/mouth.getRegionWidth();
             float y=door.footY+door.dirY*door.triggerDepth;
             batch.setColor(.93f,.91f,.96f,1);
-            batch.draw(mouth,door.gateX()-w*.5f,y-h*.48f,w,h);
+            batch.draw(mouth,door.gateX()-w*.5f,y-h*.265f,w,h);
             batch.setColor(Color.WHITE);
         }
     }
