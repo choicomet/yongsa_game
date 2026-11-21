@@ -518,5 +518,6 @@ public class GameScreen extends ScreenAdapter {
     public void dispose() {
         stage.dispose();
         renderer.dispose();
+        hud.dispose();
     }
 }
