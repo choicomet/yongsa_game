@@ -199,21 +199,42 @@ public class Hud {
             batch.setColor(0.8f, 0.05f, 0.05f, red);
             batch.draw(art.vignette, 0, 0, w, h);
         }
-        card(24, h - 122, 326, 98);
+        // 왼쪽 위: 용사 그림 + 지금 든 칼 그림 칸 (2026-11-21 지용 요청: 어떤 칼인지 글이 아니라 그림으로)
+        card(24, h - 122, PROFILE_W, 98);
         batch.setColor(Color.WHITE);
         batch.draw(art.get("hero_down"), 30, h - 113, 53, 80);
-        text(fonts.small, "용사", 88, h - 40, Ui.GOLD);
+        float tx = 88; // 글자·체력바 시작
+        if (weapon != null) {
+            float sx = 88, sy = h - 112, ss = 78; // 칼 칸 (78×78)
+            boolean awakened = weapon.awakened;
+            rect(sx, sy, ss, ss, SWORD_BG);
+            if (awakened) {
+                // 각성한 칼: 보랏빛이 숨 쉬듯 번진다
+                batch.setColor(0.85f, 0.6f, 1f, 0.45f + 0.2f * MathUtils.sin(time * 3f));
+                batch.draw(art.glow, sx - 6, sy - 6, ss + 12, ss + 12);
+            }
+            Color edge = awakened ? Ui.PURPLE : SWORD_EDGE;
+            rect(sx, sy, ss, 1, edge);
+            rect(sx, sy + ss - 1, ss, 1, edge);
+            rect(sx, sy, 1, ss, edge);
+            rect(sx + ss - 1, sy, 1, ss, edge);
+            batch.setColor(Color.WHITE);
+            batch.draw(art.sword(weapon.defId, awakened), sx + 5, sy + 5, ss - 10, ss - 10);
+            tx = sx + ss + 10;
+        }
+        float barW = 24 + PROFILE_W - 20 - tx;
+        text(fonts.small, "용사", tx, h - 40, Ui.GOLD);
         String hp = Math.max(0, s.hp) + " / " + maxHp;
         layout.setText(fonts.small, hp);
-        text(fonts.small, hp, 330 - layout.width, h - 40, Ui.TEXT);
-        rect(88, h - 67, 242, 9, new Color(0x40232aff));
-        rect(88, h - 67, 242 * MathUtils.clamp(trailHp / maxHp, 0, 1), 9, Ui.GOLD);
-        rect(88, h - 67, 242 * MathUtils.clamp(shownHp / maxHp, 0, 1), 9, new Color(0xd65958ff));
+        text(fonts.small, hp, tx + barW - layout.width, h - 40, Ui.TEXT);
+        rect(tx, h - 67, barW, 9, HP_BG);
+        rect(tx, h - 67, barW * MathUtils.clamp(trailHp / maxHp, 0, 1), 9, Ui.GOLD);
+        rect(tx, h - 67, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 9, HP_FILL);
         if (weapon != null) {
-            text(fonts.small, g.rules.weaponName(weapon), 88, h - 79, Ui.TEXT);
+            text(fonts.small, g.rules.weaponName(weapon), tx, h - 79, weapon.awakened ? Ui.PURPLE : Ui.TEXT);
             // 2026-11-21: “보스의 힘 3/3”은 뜻이 안 보여서, 무엇을 모으는지(흡수한 보스 힘)와 다 모으면 무엇이 되는지를 적는다
             String power = s.unsealed ? "성검 해방" : "흡수한 보스 힘 " + s.bossesDefeated.size() + "/3";
-            text(fonts.small, "공격력 " + g.rules.attack(s) + "  ·  " + power, 88, h - 101,
+            text(fonts.small, "공격력 " + g.rules.attack(s) + "  ·  " + power, tx, h - 101,
                     !s.unsealed && s.bossesDefeated.size() >= 3 ? Ui.GOLD : Ui.DIM);
         }
 
@@ -346,6 +367,10 @@ public class Hud {
     private static final Color CARD_BG = new Color(0x101820ed), CARD_TOP = new Color(0x806c4bca), CARD_BOTTOM = new Color(0x39454fca);
     private static final Color COOL_SHADE = new Color(0, 0, 0, 0.5f), SKILL_LOCKED = new Color(0.35f, 0.35f, 0.4f, 1f);
     private static final float TASK_MIN_W = 260, TASK_MAX_W = 480;
+    /** 왼쪽 위 프로필 패널 폭 (칼 칸 78px 이 들어가며 326 → 384. 보스 체력 패널 왼쪽 끝 414 보다 안쪽). */
+    private static final float PROFILE_W = 384;
+    private static final Color SWORD_BG = new Color(0x0a0f15ff), SWORD_EDGE = new Color(0x806c4bff);
+    private static final Color HP_BG = new Color(0x40232aff), HP_FILL = new Color(0xd65958ff);
 
     private void card(float x, float y, float width, float height) {
         rect(x, y, width, height, CARD_BG);
