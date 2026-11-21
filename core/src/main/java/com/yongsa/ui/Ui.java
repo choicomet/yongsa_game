@@ -41,12 +41,31 @@ public final class Ui {
         skin.add("dangerFocused", buttonStyle(fonts, 0xa0301fff, 0xf2c94cff, 0xb03a28ff, 0x5a160fff), TextButton.TextButtonStyle.class);
         skin.add("tab", buttonStyle(fonts, 0x2a2533ff, 0x3a3447ff, 0x3a3447ff, 0x2a2533ff), TextButton.TextButtonStyle.class);
         skin.add("tabOn", buttonStyle(fonts, 0x4d4560ff, 0xc9a45cff, 0x4d4560ff, 0x2a2533ff), TextButton.TextButtonStyle.class);
+        // 타이틀 메뉴: 그림 톤(어두운 보라 · 크림색 글씨 · 금색 테두리)에 맞춘 반투명 버튼
+        skin.add("titleMenu", titleStyle(fonts, 0x16111fb8, 0x4a3e5cff, CREAM_DIM), TextButton.TextButtonStyle.class);
+        skin.add("titleMenuFocused", titleStyle(fonts, 0x2a2138e0, 0xd8b46aff, CREAM), TextButton.TextButtonStyle.class);
 
         skin.add("default", new Label.LabelStyle(fonts.normal, TEXT));
         skin.add("small", new Label.LabelStyle(fonts.small, TEXT));
         skin.add("large", new Label.LabelStyle(fonts.large, TEXT));
         skin.add("title", new Label.LabelStyle(fonts.title, GOLD));
         return skin;
+    }
+
+    /** 타이틀 그림의 크림색 글씨. */
+    public static final Color CREAM = new Color(0xf3e6c8ff);
+    private static final Color CREAM_DIM = new Color(0xc9bba3ff);
+
+    private static TextButton.TextButtonStyle titleStyle(Fonts fonts, int bg, int border, Color text) {
+        TextButton.TextButtonStyle s = new TextButton.TextButtonStyle();
+        s.font = fonts.normal;
+        s.fontColor = text;
+        s.disabledFontColor = new Color(0x6c6276ff);
+        s.up = patch(bg, border, 1);
+        s.over = patch(0x2a2138e0, 0xd8b46aff, 1);
+        s.down = patch(0x0f0b16e0, 0xd8b46aff, 1);
+        s.disabled = patch(0x110d18a0, 0x2c2636ff, 1);
+        return s;
     }
 
     private static TextButton.TextButtonStyle buttonStyle(Fonts fonts, int bg, int border, int over, int down) {
