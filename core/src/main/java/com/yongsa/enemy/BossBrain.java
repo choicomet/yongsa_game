@@ -617,6 +617,7 @@ public class BossBrain extends EnemyContext {
                     if ("pound".equals(h.style) || "boulder".equals(h.style)) {
                         // 골렘: 무거운 한 방마다 화면이 쿵 울린다
                         GameEvent shake = GameEvent.fx(GameEvent.Type.SLAM_FX, h.x, h.y);
+                        shake.boss = true;
                         shake.size = h.radius;
                         events.add(shake);
                     }

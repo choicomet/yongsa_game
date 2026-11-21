@@ -25,6 +25,11 @@ final class BossReturnDoors implements Disposable {
             closure.put(room,before+MathUtils.clamp(target-before,-dt/.55f,dt/.35f));
         }
     }
+    float openness(Room room) {
+        float open = 1 - closure.getOrDefault(room, game.hasPortal(room) ? 0f : 1f);
+        return open * open * (3 - 2 * open);
+    }
+
     void draw(SpriteBatch batch,Room room) {
         if(arch==null){arch=new Texture(Gdx.files.internal("world/portals/return-door.png"),true);arch.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);}
         float x=game.portalX(room),y=game.portalY(room),size=180;

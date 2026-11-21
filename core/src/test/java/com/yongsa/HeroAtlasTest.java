@@ -40,6 +40,30 @@ class HeroAtlasTest {
         }
     }
 
+    @Test void rollBodyKeepsTheStandingCharactersScaleInEveryDirection() throws Exception {
+        var data = new HeroAtlasData(manifest());
+        var images = new HashMap<String, BufferedImage>();
+        for (var e : data.sources.entrySet())
+            images.put(e.getKey(), ImageIO.read(Path.of("assets",e.getValue().path()).toFile()));
+        for (int row = 0; row < 5; row++) {
+            double standing = bodyArea(data.clips.get("walk")[row][2], images);
+            for (var pose : data.clips.get("roll")[row]) {
+                double areaRatio = bodyArea(pose, images) / standing;
+                // Tucking changes the silhouette; the painted body should retain its visual mass.
+                assertTrue(areaRatio >= .64 && areaRatio <= 1.28, "Roll row " + row + " area ratio " + areaRatio);
+            }
+        }
+    }
+
+    private static double bodyArea(HeroAtlasData.Frame frame, HashMap<String, BufferedImage> images) {
+        var image = images.get(frame.source());
+        int opaquePixels = 0;
+        for (int y = frame.y(); y < frame.y() + frame.height(); y++)
+            for (int x = frame.x(); x < frame.x() + frame.width(); x++)
+                if ((image.getRGB(x,y) >>> 24) > 100) opaquePixels++;
+        return opaquePixels / (frame.pixelsPerWorld() * frame.pixelsPerWorld());
+    }
+
     @Test void noPoseCutsThroughVisibleArtOrIncludesAnEmptyCell() throws Exception {
         var data = new HeroAtlasData(manifest());
         var images = new HashMap<String, BufferedImage>();

@@ -32,10 +32,12 @@ public class EnemyPainter {
 
     private final GameSession g;
     private final Art art;
+    private final TextureRegion crescentArt;
     private final SpriteBatch batch;
     private final ShapeRenderer shapes;
     private final ActorInk actorInk;
     private final Effects fx;
+    private final BossStrikeFx strikes;
     private final Particles particles;
     private final int T;
     private float time;
@@ -44,6 +46,9 @@ public class EnemyPainter {
     public EnemyPainter(GameSession g, Art art, SpriteBatch batch, ShapeRenderer shapes, ActorInk actorInk, Effects fx) {
         this.g = g;
         this.art = art;
+        strikes = new BossStrikeFx(art);
+        String blade = "sprites/fx/crescent.png";
+        crescentArt = Gdx.files.internal(blade).exists() ? art.cell(blade,1,1,0) : strikes.crescent();
         this.batch = batch;
         this.shapes = shapes;
         this.actorInk = actorInk;
@@ -107,6 +112,7 @@ public class EnemyPainter {
                 break;
             }
             case SLAM_FX:
+                if (e.boss) break; // The companion HAZARD_FX already supplies the impact art.
                 ring(e.x, e.y, e.size * 0.3f, e.size * 1.15f, 0.45f, new Color(1f, 0.55f, 0.3f, 1f));
                 particles.debris(e.x, e.y, 18, new Color(0.45f, 0.4f, 0.38f, 1f), 260, 5);
                 particles.smoke(e.x, e.y, 14, new Color(0.4f, 0.36f, 0.34f, 0.55f), e.size * 0.8f, 18, 0.8f);
@@ -129,6 +135,7 @@ public class EnemyPainter {
                 flash(e.x, e.y, e.size * 3f, SHIELD_COLOR, 0.5f);
                 break;
             case HAZARD_FX:
+                strikes.hit(e);
                 hazardFx(e);
                 break;
             case BOSS_PHASE2:
@@ -151,6 +158,7 @@ public class EnemyPainter {
 
     /** 용사가 쓰러지면 남은 효과를 지운다. */
     public void clear() {
+        strikes.clear();
         eyeFlashes.clear();
         corpses.clear();
     }
@@ -163,6 +171,7 @@ public class EnemyPainter {
     /** 매 프레임: 눈·시체·등장 효과와 피웅덩이 거품. */
     public void update(float dt, float time) {
         this.time = time;
+        strikes.update(dt);
         for (float[] e : eyeFlashes) e[3] += dt;
         eyeFlashes.removeIf(e -> e[3] >= 0.45f);
         // 피웅덩이에서 피어오르는 거품
@@ -246,6 +255,11 @@ public class EnemyPainter {
     /** 깊이 정렬에 끼는 것: 마왕의 눈, 몬스터, 쓰러지는 몬스터. */
     public void collect(DepthSink out) {
         for (Projectile p : g.projectiles) if (!p.dead) out.add(p.y, () -> drawProjectile(p));
+        strikes.collect(batch,out);
+        for (Hazard h : g.hazards) {
+            if (!h.dead && inView(h.x,h.y) && ("boulder".equals(h.style) || "rock".equals(h.style)))
+                out.add(h.y, () -> strikes.drawCast(batch,h));
+        }
         for (Hazard h : g.hazards) {
             if (h.kind != Hazard.Kind.EYE || h.dead || !inView(h.x, h.y)) continue;
             // The fully-open frame is reserved for the actual trigger, not the warning.
@@ -339,7 +353,10 @@ public class EnemyPainter {
 
     private void drawProjectile(Projectile p) {
         Particles.normal(batch);
-        if ("crescent".equals(p.source) && drawCrescent(p)) return;
+        if ("crescent".equals(p.source)) {
+            drawCrescent(p);
+            return;
+        }
         Color c = projectileColor(p.source);
         float r = p.radius;
         float pulse = 1f + 0.15f * MathUtils.sin(time * 25f + p.x);
@@ -355,6 +372,18 @@ public class EnemyPainter {
         }
         batch.setColor(1f, 0.95f, 0.85f, 1f);
         batch.draw(art.glow, p.x - r, p.y - r, r * 2, r * 2);
+        if (p.burst>0 || p.dodgeVanish) {
+            boolean orb=p.burst>0;
+            float angle=orb?p.age*125f:MathUtils.atan2(p.vy,p.vx)*MathUtils.radiansToDegrees;
+            batch.setColor(orb?.88f:.61f,orb?.54f:.89f,1,.85f);
+            for (int side=0;side<2;side++) {
+                for (int i=0;i<5;i++) {
+                    float a=angle+side*180+55+i*18, size=r*(.55f-i*.055f);
+                    float sx=p.x+MathUtils.cosDeg(a)*r, sy=p.y+MathUtils.sinDeg(a)*r;
+                    batch.draw(art.glow,sx-size,sy-size,size*2,size*2);
+                }
+            }
+        }
         batch.setColor(Color.WHITE);
     }
 
@@ -480,6 +509,13 @@ public class EnemyPainter {
         batch.setColor(Color.WHITE);
     }
 
+    public void drawPools() {
+        for (Hazard h : g.hazards) {
+            if (!h.dead && h.kind==Hazard.Kind.POOL && h.x+h.radius>=viewX0 && h.x-h.radius<=viewX1
+                    && h.y+h.radius>=viewY0 && h.y-h.radius<=viewY1) strikes.drawCast(batch,h);
+        }
+    }
+
     public void drawGroundEffects() {
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
@@ -541,17 +577,16 @@ public class EnemyPainter {
     private void drawHazards() {
         float blink = 0.16f + 0.08f * MathUtils.sin(time * 20f);
         for (Hazard h : g.hazards) {
-            if (!inView(h.x, h.y) && h.kind != Hazard.Kind.LINE) continue;
+            if (h.kind != Hazard.Kind.LINE && (h.x+h.radius<viewX0 || h.x-h.radius>viewX1
+                    || h.y+h.radius<viewY0 || h.y-h.radius>viewY1)) continue;
             Color c = hazardColor(h.style);
             float p = h.progress();
             switch (h.kind) {
                 case POOL: {
                     float r = h.radius;
                     float fade = Math.min(1f, h.life / 0.8f) * Math.min(1f, h.age / 0.35f);
-                    shapes.setColor(0.25f, 0.02f, 0.05f, 0.75f * fade);
-                    shapes.ellipse(h.x - r, h.y - r * 0.6f, r * 2, r * 1.2f, 40);
-                    shapes.setColor(0.6f, 0.05f, 0.1f, (0.45f + 0.1f * MathUtils.sin(time * 4f + h.x)) * fade);
-                    shapes.ellipse(h.x - r * 0.8f, h.y - r * 0.48f, r * 1.6f, r * 0.96f, 40);
+                    shapes.setColor(0.25f, 0.02f, 0.05f, 0.24f * fade);
+                    shapes.circle(h.x, h.y, r, 48);
                     break;
                 }
                 case EYE: {
@@ -580,11 +615,19 @@ public class EnemyPainter {
                     break;
                 }
                 case LINE: {
+                    // Repeated cage pulses share a lane. Show the next pulse instead
+                    // of stacking later warnings on top of it and washing out the gap.
+                    if ("cage".equals(h.style) && g.hazards.stream().anyMatch(other ->
+                            "cage".equals(other.style) && other.x==h.x && other.y==h.y
+                            && other.x2==h.x2 && other.y2==h.y2 && other.delay<h.delay)) continue;
                     float w = h.radius * 2f;
-                    shapes.setColor(c.r * 0.9f, c.g * 0.3f, c.b * 0.3f, blink + 0.05f);
+                    shapes.setColor(c.r, c.g, c.b, .10f+.12f*p);
                     shapes.rectLine(h.x, h.y, h.x2, h.y2, w);
-                    shapes.setColor(c.r, c.g * 0.5f, c.b * 0.5f, 0.3f);
-                    shapes.rectLine(h.x, h.y, h.x + (h.x2 - h.x) * p, h.y + (h.y2 - h.y) * p, w);
+                    // The hit test includes the round caps of the segment.
+                    shapes.circle(h.x,h.y,h.radius,24);
+                    shapes.circle(h.x2,h.y2,h.radius,24);
+                    shapes.setColor(c.r,c.g,c.b,.25f+.35f*p);
+                    shapes.rectLine(h.x, h.y, h.x + (h.x2 - h.x) * p, h.y + (h.y2 - h.y) * p, 2f + p);
                     break;
                 }
                 default: {
@@ -593,27 +636,46 @@ public class EnemyPainter {
                         // 가운데가 빈 고리 (지진 파동)
                         float mid = (r + h.innerRadius) / 2f, th = r - h.innerRadius;
                         ringBand(h.x, h.y, mid, th, c.r * 0.9f, c.g * 0.35f, c.b * 0.35f, blink);
-                        ringBand(h.x, h.y, mid, th * p, c.r, c.g * 0.6f, c.b * 0.6f, 0.32f);
+                        shapes.setColor(c.r,c.g,c.b,.45f+.4f*p);
+                        BossStrikeFx.arc(shapes,h.x,h.y,h.innerRadius+1,0,360,2);
+                        BossStrikeFx.arc(shapes,h.x,h.y,r-1,0,360,2);
                         break;
                     }
-                    shapes.setColor(c.r * 0.9f, c.g * 0.35f, c.b * 0.35f, blink);
-                    shapes.ellipse(h.x - r, h.y - r * 0.6f, r * 2, r * 1.2f, 40);
-                    shapes.setColor(c.r, c.g * 0.6f, c.b * 0.6f, 0.32f);
-                    shapes.ellipse(h.x - r * p, h.y - r * 0.6f * p, r * 2 * p, r * 1.2f * p, 40);
+                    shapes.setColor(c.r,c.g,c.b,.09f + .07f*p);
+                    shapes.circle(h.x, h.y, r, 48);
+                    shapes.setColor(c.r,c.g,c.b,.4f+.4f*p);
+                    BossStrikeFx.arc(shapes,h.x,h.y,r-1,0,360,2);
+                    // A bright arc completes at impact without obscuring overlapping attacks.
+                    shapes.setColor(1,.88f,.72f,.35f+.55f*p);
+                    BossStrikeFx.arc(shapes,h.x,h.y,Math.max(1,r-4),90,-360*p,2);
+                    if ("rock".equals(h.style) || "boulder".equals(h.style)) {
+                        // The shadow stays at the impact point while a faceted stone falls into it.
+                        float stone=r*("boulder".equals(h.style)?.40f:.27f);
+                        shapes.setColor(.10f,.07f,.06f,.30f+.36f*p);
+                        shapes.ellipse(h.x-stone,h.y-stone*.35f,stone*2,stone*.7f,20);
+                    }
+                    if ("brand".equals(h.style)) {
+                        float a=h.followT>0 ? time*65f : 45f;
+                        for(int i=0;i<4;i++) {
+                            float dx=MathUtils.cosDeg(a+90*i),dy=MathUtils.sinDeg(a+90*i);
+                            shapes.triangle(h.x+dx*10,h.y+dy*10,h.x+dx*3-dy*2,h.y+dy*3+dx*2,
+                                    h.x+dx*3+dy*2,h.y+dy*3-dx*2);
+                        }
+                    }
                 }
             }
         }
     }
 
-    /** 납작한 고리 띠: 지름 mid, 두께 th. */
+    /** Ground-space annulus, matching Hazard.covers in both axes. */
     private void ringBand(float x, float y, float mid, float th, float cr, float cg, float cb, float ca) {
         if (th <= 0.5f) return;
         shapes.setColor(cr, cg, cb, ca);
         int n = 40;
         for (int i = 0; i < n; i++) {
             float a0 = MathUtils.PI2 * i / n, a1 = MathUtils.PI2 * (i + 1) / n;
-            shapes.rectLine(x + MathUtils.cos(a0) * mid, y + MathUtils.sin(a0) * mid * 0.6f,
-                    x + MathUtils.cos(a1) * mid, y + MathUtils.sin(a1) * mid * 0.6f, th * 0.8f);
+            shapes.rectLine(x + MathUtils.cos(a0) * mid, y + MathUtils.sin(a0) * mid,
+                    x + MathUtils.cos(a1) * mid, y + MathUtils.sin(a1) * mid, th);
         }
     }
 
@@ -628,30 +690,37 @@ public class EnemyPainter {
                     particles.burst(e.x + MathUtils.random(-6f, 6f), y, 3, c, 60, 0.25f, 2, true);
                 }
                 particles.burst(e.x, e.y, 22, Color.WHITE, 260, 0.35f, 3, true);
-                ring(e.x, e.y, e.size * 0.3f, e.size * 1.1f, 0.35f, c);
                 flash(e.x, e.y + 60, e.size * 4f, c, 0.25f);
+                break;
+            case "spin": case "leap": case "brand":
+                particles.burst(e.x,e.y+5,12,c,135,.32f,2,true);
+                flash(e.x,e.y,e.size*1.5f,c,.16f);
                 break;
             case "tentacle":
                 particles.debris(e.x, e.y, 14, new Color(0.35f, 0.12f, 0.4f, 1f), 240, 5);
                 particles.burst(e.x, e.y + 10, 18, c, 220, 0.5f, 3, true);
-                ring(e.x, e.y, e.size * 0.3f, e.size, 0.4f, c);
                 flash(e.x, e.y, e.size * 2.5f, c, 0.3f);
                 break;
             case "bone":
                 // 바닥에서 솟는 뼈 가시
                 particles.debris(e.x, e.y + 10, 14, BONE, 260, 4);
                 particles.burst(e.x, e.y + 8, 10, new Color(0.6f, 1f, 0.5f, 1f), 160, 0.4f, 3, true);
-                ring(e.x, e.y, e.size * 0.3f, e.size, 0.3f, BONE);
+                break;
+            case "quake":
+                // The expanding annulus is hollow; impact dust follows the wave front.
+                for (int i=0;i<8;i++) {
+                    float angle=i*MathUtils.PI2/8;
+                    particles.debris(e.x+MathUtils.cos(angle)*e.size,e.y+MathUtils.sin(angle)*e.size,
+                            2,c,95,3);
+                }
                 break;
             case "pound":
                 // 골렘 내려찍기: 흙과 돌이 크게 튄다
-                particles.debris(e.x, e.y + 6, 18, c, 240, 4);
-                ring(e.x, e.y, e.size * 0.2f, e.size * 1.1f, 0.35f, c);
+                particles.debris(e.x, e.y + 6, 7, new Color(.42f,.36f,.30f,1), 175, 2);
                 break;
             case "flame":
                 // 마족병 불기둥
                 particles.burst(e.x, e.y + 10, 18, c, 220, 0.5f, 3, true);
-                ring(e.x, e.y, e.size * 0.3f, e.size, 0.35f, c);
                 flash(e.x, e.y + 20, e.size * 2.5f, c, 0.3f);
                 break;
             case "eye":
@@ -673,7 +742,6 @@ public class EnemyPainter {
             default:
                 particles.debris(e.x, e.y + 30, 16, new Color(0.45f, 0.4f, 0.38f, 1f), 220, 5);
                 particles.smoke(e.x, e.y, 10, new Color(0.4f, 0.36f, 0.34f, 0.55f), e.size * 0.8f, 16, 0.7f);
-                ring(e.x, e.y, e.size * 0.3f, e.size * 1.1f, 0.4f, c);
                 flash(e.x, e.y, e.size * 2f, c, 0.25f);
         }
     }
@@ -916,15 +984,11 @@ public class EnemyPainter {
      * 혈월 검기 그림 (sprites/fx/crescent.png, 오른쪽을 보는 초승달 한 장). 그림이 아직 없으면 false 를 돌려
      * 보통 탄처럼 그린다. 그림을 넣기만 하면 날아가는 쪽으로 돌려서 그려진다.
      */
-    private boolean drawCrescent(Projectile p) {
-        String path = "sprites/fx/crescent.png";
-        if (!SHEET_EXISTS.computeIfAbsent(path, k -> Gdx.files.internal(k).exists())) return false;
-        TextureRegion t = art.cell(path, 1, 1, 0);
-        if (t == null) return false;
+    private void drawCrescent(Projectile p) {
+        TextureRegion t = crescentArt;
         float w = p.radius * 3.2f, h = w * t.getRegionHeight() / Math.max(1f, t.getRegionWidth());
         float deg = MathUtils.atan2(p.vy, p.vx) * MathUtils.radiansToDegrees;
         batch.setColor(Color.WHITE);
         batch.draw(t, p.x - w / 2f, p.y - h / 2f, w / 2f, h / 2f, w, h, 1f, 1f, deg);
-        return true;
     }
 }

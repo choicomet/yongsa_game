@@ -758,7 +758,8 @@ public class WorldMap {
             float dx = Math.abs(x - doorRoom.sceneX(doorRoom.scene.returnDoor[0]));
             float dy = y - doorRoom.sceneY(doorRoom.scene.returnDoor[1]);
             // Only stone feet and the closed barrier obstruct movement, never the tall arch silhouette.
-            if (Math.abs(dx - 55) < 15 + hw && Math.abs(dy - 12) < 8 + hh) return false;
+            if (PaintedDoorways.exitFor(doorRoom) == null
+                    && Math.abs(dx - 55) < 15 + hw && Math.abs(dy - 12) < 8 + hh) return false;
             if (!returnDoorOpen.test(doorRoom) && dx < 39 + hw && Math.abs(dy - 14) < 3 + hh) return false;
         }
         if (def.passageScenes != null && !def.passageScenes.isEmpty()) return paintedFree(x, y, hw, hh);
