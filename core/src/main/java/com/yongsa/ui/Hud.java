@@ -216,16 +216,16 @@ public class Hud {
         batch.draw(frames.portraitRing, pcx - 43, pcy - 43, 86, 86);
         float tx = 111; // 글자·체력바 시작
         float right = 24 + PROFILE_W - 26;
-        text(fonts.normal, "용사", tx, h - 29, Ui.GOLD);
+        text(fonts.normal, "용사", tx, h - 26, Ui.GOLD);
         String hp = Math.max(0, s.hp) + " / " + maxHp;
         layout.setText(fonts.normal, hp);
-        text(fonts.normal, hp, right - layout.width, h - 29, Ui.TEXT);
-        float barW = right - tx, hpY = h - 54;
-        rect(tx - 1, hpY - 1, barW + 2, 11, HP_EDGE);
-        rect(tx, hpY, barW, 9, HP_BG);
-        rect(tx, hpY, barW * MathUtils.clamp(trailHp / maxHp, 0, 1), 9, Ui.GOLD);
-        rect(tx, hpY, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 9, HP_FILL);
-        rect(tx, hpY + 6, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 2, HP_SHINE);
+        text(fonts.normal, hp, right - layout.width, h - 26, Ui.TEXT);
+        float barW = right - tx, hpY = h - 58; // 이름 글자 아래 8px 띄움
+        rect(tx - 1, hpY - 1, barW + 2, 9, HP_EDGE);
+        rect(tx, hpY, barW, 7, HP_BG);
+        rect(tx, hpY, barW * MathUtils.clamp(trailHp / maxHp, 0, 1), 7, Ui.GOLD);
+        rect(tx, hpY, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 7, HP_FILL);
+        rect(tx, hpY + 4, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 2, HP_SHINE);
         if (weapon != null) {
             boolean awakened = weapon.awakened;
             float ss = 42, sx = tx - 2, sy = h - 103; // 칼 칸
@@ -370,7 +370,7 @@ public class Hud {
                     : sk.def.cooldown;
             if (left[i] > 0) rect(x + 9, SY + 9, SLOT - 18, (SLOT_H - 18) * Math.min(1, left[i] / total), COOL_SHADE);
             // 아이콘: 칸 가운데 54px, 위 오른쪽에 상태 글자(익힘·검 필요)가 있으면 46px 로 줄여 겹치지 않게
-            boolean hasStatus = sk != null && (sk.learned || !sk.usable);
+            boolean hasStatus = sk != null && !sk.usable; // “익힘” 글자는 쓰지 않는다 (2026-11-22 지용)
             float is = hasStatus ? 42 : 54, ix = x + 54 - is / 2f, iy = SY + (hasStatus ? 49 : 32);
             batch.setColor(Color.WHITE);
             if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), ix, iy, is, is);
@@ -400,7 +400,7 @@ public class Hud {
             } else {
                 centered(fonts.small, key, kcx, kcy + 8, KEY_TEXT);
             }
-            String status = sk != null && sk.learned ? "익힘" : locked ? "검 필요" : null;
+            String status = locked ? "검 필요" : null;
             if (status != null) {
                 layout.setText(fonts.small, status);
                 // 칸 위쪽 모서리 장식·키 배지와 겹치지 않게 아이콘과 이름 사이에
