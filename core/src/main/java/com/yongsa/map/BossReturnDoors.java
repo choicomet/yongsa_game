@@ -30,18 +30,51 @@ final class BossReturnDoors implements Disposable {
         return open * open * (3 - 2 * open);
     }
 
-    void draw(SpriteBatch batch,Room room) {
-        if(arch==null){arch=new Texture(Gdx.files.internal("world/portals/return-door.png"),true);arch.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);}
-        float x=game.portalX(room),y=game.portalY(room),size=180;
+    /* The masonry belongs to the room and stays lit while the shutter travels. */
+    void drawPainted(SpriteBatch batch, Room room, PaintedDoorways.Exit exit, PaintedDoorways doorways) {
+        float x = game.portalX(room), sill = game.portalY(room) + 14;
+        if (exit == PaintedDoorways.Exit.MINE) {
+            doorways.draw(batch, room, PaintedDoorways.Inset.MINE, 1);
+            float width = room.widthPx * .082f;
+            // The mining tunnel recedes behind its stairs, up to the timber jambs.
+            drawBarrier(batch, room, room.sceneX(.5f), room.sceneY(.229f), width, room.heightPx * .131f);
+            return;
+        }
+        boolean tower = exit == PaintedDoorways.Exit.TOWER;
+        float width = room.widthPx * (tower ? .18f : .181f);
+        drawArch(batch, x, sill, width, tower);
+        if (tower) doorways.drawTowerLeaves(batch, x, sill, width*.367f, width*.49f, openness(room));
+        else drawBarrier(batch, room, x, sill, width * .37f, width * .47f);
+    }
+
+    private void drawArch(SpriteBatch batch, float x, float sill, float size, boolean tower) {
+        if (arch == null) {
+            arch = new Texture(Gdx.files.internal("world/portals/return-door.png"), true);
+            arch.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+        }
+        if (tower) batch.setColor(.75f,.68f,.93f,1);
+        else batch.setColor(.85f,.77f,.76f,1);
+        batch.draw(arch, x-size/2, sill-size*.20f, size, size);
         batch.setColor(Color.WHITE);
-        batch.draw(arch,x-size/2,y-size*.16f,size,size);
-        float close=closure.getOrDefault(room,game.hasPortal(room)?0f:1f);
-        if(close<=0)return;
-        Texture gate=gates.computeIfAbsent(room.dungeonId,key->{Texture t=new Texture(Gdx.files.internal("sprites/gate_"+key+".png"),true);t.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);return t;});
-        float width=size*.43f,height=width*gate.getHeight()/gate.getWidth();
-        float reveal=close*close*(3-2*close);
-        // Lower the existing barrier into the sill; UV clipping avoids stretching its bars.
-        batch.draw(gate,x-width/2,y+8,width,height*reveal,0,1-reveal,1,1);
+    }
+
+    void draw(SpriteBatch batch, Room room) {
+        float x = game.portalX(room), y = game.portalY(room);
+        drawArch(batch,x,y+8,180,false);
+        drawBarrier(batch,room,x,y+8,77,78);
+    }
+
+    private void drawBarrier(SpriteBatch batch, Room room, float x, float sill, float width, float height) {
+        float closed = 1 - openness(room);
+        if (closed <= 0) return;
+        Texture gate = gates.computeIfAbsent(room.dungeonId, key -> {
+            Texture t = new Texture(Gdx.files.internal("sprites/gate_"+key+".png"), true);
+            t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+            return t;
+        });
+        // The lower edge rises into the lintel. Preserve the scale of every bar as it retracts.
+        batch.setColor(Color.WHITE);
+        batch.draw(gate, x-width/2, sill+height*(1-closed), width, height*closed, 0,1,1,1-closed);
     }
     public void dispose(){if(arch!=null)arch.dispose();for(Texture t:gates.values())t.dispose();}
 }

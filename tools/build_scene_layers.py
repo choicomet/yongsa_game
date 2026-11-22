@@ -32,7 +32,7 @@ def png_bytes(image):
     return out.getvalue()
 
 
-def build(check=False):
+def build(check=False, art_only=False):
     contours = json.loads((ROOT / 'docs/scene-layers/contours.json').read_text(encoding='utf-8'))
     manifest = {'version': 1, 'scenes': {}}
     report = []
@@ -77,7 +77,7 @@ def build(check=False):
 
         # Apply local corrections on top of the team's existing movement mask.
         # Painting walkable first and solid last makes the operation idempotent.
-        if scene.get('walkBlock') or scene.get('walkOpen'):
+        if not art_only and (scene.get('walkBlock') or scene.get('walkOpen')):
             walk_path = ROOT / 'assets/walkmask' / (key + '.png')
             walk = Image.open(walk_path).convert('L')
             corrected = ImageChops.lighter(walk, raster(walk.size, scene.get('walkOpen', [])))
@@ -109,4 +109,7 @@ def build(check=False):
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
     args.add_argument('--check', action='store_true')
-    build(args.parse_args().check)
+    args.add_argument('--art-only', action='store_true',
+                      help='Build or check the artwork without replaying movement edits onto newer reviewed masks.')
+    options = args.parse_args()
+    build(options.check, options.art_only)

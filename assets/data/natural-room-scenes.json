@@ -403,7 +403,7 @@
         {
           "id": "west",
           "kind": "open-passage",
-          "foot": [0.04, 0.2],
+          "foot": [0.07, 0.25],
           "facing": "LEFT"
         },
         {

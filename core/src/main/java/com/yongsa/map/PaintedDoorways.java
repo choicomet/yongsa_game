@@ -13,8 +13,6 @@ import java.util.EnumMap;
 final class PaintedDoorways implements Disposable {
     enum Inset {
         MINE("scenes/natural-v1/mine-antechamber.png", .32f,0,.63f,.30f, .39f,.074f,.622f,.356f),
-        CITADEL("world/portals/return-door.png", .348f,.276f,.655f,.84f, .456f,.012f,.544f,.166f),
-        TOWER("scenes/natural-v1/tower-antechamber.png", .437f,.006f,.519f,.142f, .46f,-.006f,.538f,.147f),
         CAMP_SEAL("scenes/natural-v1/tower-boss-a.png", .46f,.002f,.539f,.141f, .469f,.016f,.56f,.163f);
 
         final String source;
@@ -28,12 +26,14 @@ final class PaintedDoorways implements Disposable {
     private final EnumMap<Inset,Texture> textures = new EnumMap<>(Inset.class);
     private Texture crown;
 
-    static Inset exitFor(Room room) {
+    enum Exit { MINE, CITADEL, TOWER }
+
+    static Exit exitFor(Room room) {
         if (room.scene == null || room.type != RoomType.BOSS) return null;
         return switch (room.scene.id) {
-            case "mine-boss-a" -> Inset.MINE;
-            case "citadel-boss-a" -> Inset.CITADEL;
-            case "tower-boss-a" -> Inset.TOWER;
+            case "mine-boss-a" -> Exit.MINE;
+            case "citadel-boss-a" -> Exit.CITADEL;
+            case "tower-boss-a" -> Exit.TOWER;
             default -> null;
         };
     }
@@ -64,6 +64,17 @@ final class PaintedDoorways implements Disposable {
         batch.setColor(Color.WHITE);
     }
 
+    /** The two rune-carved leaves are sampled from the original tower painting. */
+    void drawTowerLeaves(SpriteBatch batch, float x, float sill, float width, float height, float open) {
+        if (open >= 1) return;
+        Texture door = textures.computeIfAbsent(Inset.CAMP_SEAL, this::load);
+        float half = width * .5f;
+        float visible = half * (1 - open);
+        batch.setColor(Color.WHITE);
+        batch.draw(door, x-half, sill, visible, height, 0,1,.5f,0);
+        batch.draw(door, x+half-visible, sill, visible, height, .5f,1,1,0);
+    }
+
     private Texture load(Inset inset) {
         Pixmap source = new Pixmap(Gdx.files.internal(inset.source));
         int x0=Math.round(inset.u0*source.getWidth()), y0=Math.round(inset.v0*source.getHeight());
@@ -76,9 +87,6 @@ final class PaintedDoorways implements Disposable {
                 float side=Math.min(u,1-u), end=Math.min(v,1-v);
                 float fx=inset==Inset.MINE?.20f:.065f, fy=inset==Inset.MINE?.17f:.095f;
                 float alpha=smooth(side/fx)*smooth(end/fy);
-                // Match the feather of the room painting at the top of a boss arena.
-                if (inset==Inset.CITADEL || inset==Inset.TOWER)
-                    alpha*=smooth(MathUtils.lerp(inset.top,inset.bottom,v)/.08f);
                 if (inset==Inset.CAMP_SEAL) {
                     float dx=(u-.5f)*2;
                     float arch=.32f*(1-(float)Math.sqrt(Math.max(0,1-dx*dx)));

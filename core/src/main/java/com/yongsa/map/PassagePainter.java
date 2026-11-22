@@ -66,6 +66,7 @@ class PassagePainter implements Disposable {
     private final Map<String, Texture> paintings = new HashMap<>();
     private final boolean painted;
     final boolean active;
+    final boolean fullyPainted;
     final PaintedJoints joints;
 
     PassagePainter(WorldMap map, float tileSize) {
@@ -73,6 +74,7 @@ class PassagePainter implements Disposable {
         this.T = tileSize;
         joints = new PaintedJoints(map);
         painted = !map.corridors.isEmpty() && map.corridors.stream().allMatch(c -> c.scene != null);
+        fullyPainted = painted && map.rooms.stream().allMatch(room -> room.scene != null);
         if (painted) {
             active = true;
             ground = repeating(Gdx.files.internal(DIR + "terrain-bedrock.png"));

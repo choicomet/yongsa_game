@@ -1479,10 +1479,10 @@
     "bounds": [
       780,
       477,
-      825,
+      824,
       517
     ],
-    "pixels": 730
+    "pixels": 729
   },
   {
     "scene": "joints/exit-L1-L2",
@@ -1588,6 +1588,51 @@
       268
     ],
     "pixels": 40519
+  },
+  {
+    "scene": "joints/exit-L1-L2",
+    "file": "layers/joints/exit-L1-L2/alcove-lantern.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      549,
+      0,
+      594,
+      48
+    ],
+    "pixels": 1684
+  },
+  {
+    "scene": "joints/exit-L1-L2",
+    "file": "layers/joints/exit-L1-L2/alcove-left-jamb.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      607,
+      0,
+      648,
+      109
+    ],
+    "pixels": 3726
+  },
+  {
+    "scene": "joints/exit-L1-L2",
+    "file": "layers/joints/exit-L1-L2/alcove-right-jamb.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      735,
+      0,
+      773,
+      133
+    ],
+    "pixels": 3716
   },
   {
     "scene": "joints/exit-L1-L2",
@@ -1753,5 +1798,290 @@
       754
     ],
     "pixels": 23606
+  },
+  {
+    "scene": "rooms/mine-ore-b",
+    "file": "layers/rooms/mine-ore-b/upper-gallery-lintel.png",
+    "canvas": [
+      1672,
+      941
+    ],
+    "bounds": [
+      10,
+      73,
+      150,
+      145
+    ],
+    "pixels": 3533
+  },
+  {
+    "scene": "rooms/mine-ore-b",
+    "file": "layers/rooms/mine-ore-b/upper-gallery-left-jamb.png",
+    "canvas": [
+      1672,
+      941
+    ],
+    "bounds": [
+      21,
+      131,
+      43,
+      236
+    ],
+    "pixels": 1877
+  },
+  {
+    "scene": "rooms/mine-ore-b",
+    "file": "layers/rooms/mine-ore-b/upper-gallery-right-jamb.png",
+    "canvas": [
+      1672,
+      941
+    ],
+    "bounds": [
+      120,
+      94,
+      142,
+      213
+    ],
+    "pixels": 2051
+  },
+  {
+    "scene": "rooms/mine-ore-b",
+    "file": "layers/rooms/mine-ore-b/winch-drum.png",
+    "canvas": [
+      1672,
+      941
+    ],
+    "bounds": [
+      230,
+      159,
+      429,
+      349
+    ],
+    "pixels": 23823
+  },
+  {
+    "scene": "rooms/mine-mob-b",
+    "file": "layers/rooms/mine-mob-b/rail-cart.png",
+    "canvas": [
+      1672,
+      941
+    ],
+    "bounds": [
+      199,
+      586,
+      351,
+      720
+    ],
+    "pixels": 13488
+  },
+  {
+    "scene": "rooms/mine-mob-c",
+    "file": "layers/rooms/mine-mob-c/rail-cart.png",
+    "canvas": [
+      1672,
+      941
+    ],
+    "bounds": [
+      222,
+      567,
+      369,
+      660
+    ],
+    "pixels": 10293
+  },
+  {
+    "scene": "joints/exit-R1-R2",
+    "file": "layers/joints/exit-R1-R2/loaded-cart.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      860,
+      522,
+      1079,
+      704
+    ],
+    "pixels": 26172
+  },
+  {
+    "scene": "joints/entry-T2-T3",
+    "file": "layers/joints/entry-T2-T3/rune-wheel.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      918,
+      674,
+      1145,
+      885
+    ],
+    "pixels": 13198
+  },
+  {
+    "scene": "joints/entry-T2-T3",
+    "file": "layers/joints/entry-T2-T3/small-rune-wheel.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      994,
+      789,
+      1125,
+      919
+    ],
+    "pixels": 9507
+  },
+  {
+    "scene": "joints/exit-T2-T3",
+    "file": "layers/joints/exit-T2-T3/west-brazier.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      377,
+      436,
+      432,
+      555
+    ],
+    "pixels": 3538
+  },
+  {
+    "scene": "joints/exit-T2-T3",
+    "file": "layers/joints/exit-T2-T3/east-brazier.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      865,
+      436,
+      919,
+      555
+    ],
+    "pixels": 3542
+  },
+  {
+    "scene": "joints/entry-CAMP-V",
+    "file": "layers/joints/entry-CAMP-V/west-stair-post.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      223,
+      397,
+      273,
+      611
+    ],
+    "pixels": 9848
+  },
+  {
+    "scene": "joints/entry-CAMP-V",
+    "file": "layers/joints/entry-CAMP-V/east-stair-post.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      862,
+      389,
+      912,
+      594
+    ],
+    "pixels": 9384
+  },
+  {
+    "scene": "joints/entry-CAMP-V",
+    "file": "layers/joints/entry-CAMP-V/stair-lantern.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      823,
+      429,
+      861,
+      498
+    ],
+    "pixels": 1732
+  },
+  {
+    "scene": "joints/entry-CAMP-V",
+    "file": "layers/joints/entry-CAMP-V/east-barrel.png",
+    "canvas": [
+      1254,
+      1254
+    ],
+    "bounds": [
+      933,
+      492,
+      1025,
+      611
+    ],
+    "pixels": 9037
+  },
+  {
+    "scene": "passages/citadel-gallery",
+    "file": "layers/passages/citadel-gallery/west-wall-brazier.png",
+    "canvas": [
+      1536,
+      1024
+    ],
+    "bounds": [
+      295,
+      444,
+      354,
+      555
+    ],
+    "pixels": 3082
+  },
+  {
+    "scene": "passages/camp-trail",
+    "file": "layers/passages/camp-trail/west-fence-post.png",
+    "canvas": [
+      1024,
+      1536
+    ],
+    "bounds": [
+      90,
+      849,
+      115,
+      964
+    ],
+    "pixels": 2526
+  },
+  {
+    "scene": "passages/camp-trail",
+    "file": "layers/passages/camp-trail/west-low-post.png",
+    "canvas": [
+      1024,
+      1536
+    ],
+    "bounds": [
+      159,
+      939,
+      184,
+      1030
+    ],
+    "pixels": 1913
+  },
+  {
+    "scene": "passages/camp-trail",
+    "file": "layers/passages/camp-trail/west-fence-rail.png",
+    "canvas": [
+      1024,
+      1536
+    ],
+    "bounds": [
+      108,
+      921,
+      166,
+      970
+    ],
+    "pixels": 970
   }
 ]

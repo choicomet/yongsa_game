@@ -229,15 +229,15 @@ public class MapPainter implements Disposable {
             if (r.scene == null) continue;
             boolean camp = "central-camp".equals(r.scene.id);
             boolean towerCave="cave-tower".equals(r.scene.id);
-            float overhang=towerCave?r.widthPx*.21f:camp?r.widthPx*.09f:0;
+            var inset = PaintedDoorways.exitFor(r);
+            float overhang=towerCave?r.widthPx*.21f:camp?r.widthPx*.09f:inset!=null?r.widthPx*.18f:0;
             float top = r.originY + r.heightPx + overhang;
             if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || top < viewY0) continue;
             if (camp) doorways.drawCrown(batch, r);
             Texture tex = sceneTexture(r);
             batch.draw(tex, r.originX, r.originY, r.widthPx, r.heightPx, 0, 0, tex.getWidth(), tex.getHeight(), r.flip, false);
             if (towerCave) drawTowerCaveMouth(r);
-            var inset = PaintedDoorways.exitFor(r);
-            if (inset != null) doorways.draw(batch, r, inset, returnDoors.openness(r));
+            if (inset != null) returnDoors.drawPainted(batch, r, inset, doorways);
         }
         // 오래 안 보인 그림은 메모리에서 내린다
         if (sceneTex.size() > 5) {
@@ -273,7 +273,7 @@ public class MapPainter implements Disposable {
         for (Room r : map.rooms) {
             if (r.scene == null) continue;
             if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
-            if(sceneLayers.has("rooms/"+r.scene.id))continue;
+            if(sceneLayers.hasFront("rooms/"+r.scene.id))continue;
             Texture tex = frontTexture(r);
             if (tex == null) continue;
             batch.setColor(Color.WHITE);
@@ -299,7 +299,15 @@ public class MapPainter implements Disposable {
         Texture t = null;
         if (Gdx.files.internal(file).exists()) {
             com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(file));
-            eraseWalkable(p, r.scene.walkable);
+            WalkMask floor = WalkMask.get(r.scene.walkMask);
+            if (floor == null) eraseWalkable(p, r.scene.walkable);
+            else {
+                // The reviewed pixel mask is authoritative, including reopened floor beside props.
+                int w=p.getWidth(), h=p.getHeight();
+                p.setBlending(com.badlogic.gdx.graphics.Pixmap.Blending.None);
+                for (int y=0;y<h;y++) for (int x=0;x<w;x++)
+                    if ((p.getPixel(x,y)&255)!=0 && floor.floor((x+.5f)/w,(y+.5f)/h)) p.drawPixel(x,y,0);
+            }
             if (passages.active) p = passages.joinForeground(p, r);
             t = new Texture(p);
             t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
@@ -598,7 +606,9 @@ public class MapPainter implements Disposable {
             passages.drawWalls(batch, viewX0, viewY0, viewX1, viewY1);
         }
         drawScenes();
-        drawTiles(tx0, ty0, tx1, ty1);
+        // In a painted world these tiles describe collision only. Drawing a wall tile
+        // underneath a feathered joint leaves a straight masonry seam across bedrock.
+        if (!passages.fullyPainted) drawTiles(tx0, ty0, tx1, ty1);
         if (passages.active) passages.drawFloors(batch, viewX0, viewY0, viewX1, viewY1);
         passages.joints.draw(batch, viewX0, viewY0, viewX1, viewY1);
         roomGates.drawThresholds(batch, viewX0, viewY0, viewX1, viewY1);
