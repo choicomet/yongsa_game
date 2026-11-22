@@ -317,7 +317,6 @@ public class Hud {
             float bw = BOSS_W, bx0 = w / 2 - bw / 2, by0 = h - 19 - bh;
             batch.setColor(boss.finalBoss ? AWAKE_TINT : Color.WHITE);
             frames.panel(batch, HudFrames.Panel.BOSS, bx0, by0, bw);
-            batch.draw(frames.emblem, w / 2 - 19, h - 36, 38, 36);
             if (introT >= 0) rect(bx0 + 40, by0 + 12, (bw - 80) * Math.min(1, introT / 0.5f), 2, Ui.GOLD);
             centered(fonts.large, boss.def.name, w / 2, h - 34, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
             float barX = bx0 + 26, barLen = bw - 52, barY = h - 74;

@@ -25,7 +25,7 @@ public class HudFrames implements Disposable {
     private final NinePatch[] panels = new NinePatch[Panel.values().length];
     private final NinePatch pillKey, pillWide;
     public final TextureRegion portraitRing, portraitDisc, keyRound, badgeBook, badgeSkill, badgeWarn,
-            slotGold, slotRed, itemSlot, emblem;
+            slotGold, slotRed, itemSlot;
     public final TextureRegion diamond, diamondOutline, headerFade;
     /** 알약 왼쪽 키캡 칸 폭 (한 글자 키 / Esc 같은 긴 키). */
     public static final float PILL_KEY_W = 34, PILL_WIDE_W = 43, PILL_H = 33;
@@ -50,7 +50,6 @@ public class HudFrames implements Disposable {
         slotGold = region("slot_gold");
         slotRed = region("slot_red");
         itemSlot = region("item_slot");
-        emblem = region("emblem");
         diamond = diamond();
         diamondOutline = diamondOutline();
         headerFade = fade(0x6a3fa0ff);
