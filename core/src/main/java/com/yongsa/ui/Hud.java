@@ -212,7 +212,8 @@ public class Hud {
             portraitBust = new com.badlogic.gdx.graphics.g2d.TextureRegion(hero, 0, 0, hero.getRegionWidth(), Math.round(hero.getRegionHeight() * 0.62f));
         }
         float bustW = 70, bustH = bustW * portraitBust.getRegionHeight() / portraitBust.getRegionWidth();
-        batch.draw(portraitBust, pcx - bustW / 2f, pcy - 37, bustW, bustH);
+        // 그림 오른쪽으로 망토가 뻗어 몸통 가운데가 그림 가운데보다 오른쪽: 얼굴이 원 가운데 오게 5px 왼쪽으로
+        batch.draw(portraitBust, pcx - bustW / 2f - 5, pcy - 37, bustW, bustH);
         batch.draw(frames.portraitRing, pcx - 43, pcy - 43, 86, 86);
         float tx = 111; // 글자·체력바 시작
         float right = 24 + PROFILE_W - 26;
@@ -266,12 +267,22 @@ public class Hud {
         float oreH = frames.panelHeight(HudFrames.Panel.ORE);
         batch.setColor(Color.WHITE);
         frames.panel(batch, HudFrames.Panel.ORE, w - 342, h - 15 - oreH, 327);
-        float ox = w - 316;
-        for (OreType type : OreType.values()) {
+        // 광물 셋은 판 안쪽을 같은 폭 칸으로 나누고, 칸마다 [그림+숫자] 묶음을 가운데에 둔다.
+        // 숫자가 길어 칸을 넘으면 그 숫자만 글자를 줄인다 (자릿수가 늘어도 간격이 같게)
+        OreType[] ores = OreType.values();
+        float cellX = w - 342 + 22, cellW = (327 - 44) / (float) ores.length, gem = 36, gap = 4;
+        for (int k = 0; k < ores.length; k++) {
+            String n = String.valueOf(s.ore(ores[k]));
+            layout.setText(fonts.normal, n);
+            float room = cellW - gem - gap - 6, scale = Math.min(1f, room / layout.width);
+            float tw = layout.width * scale, gx = cellX + k * cellW + (cellW - gem - gap - tw) / 2f;
             batch.setColor(Color.WHITE);
-            batch.draw(art.gem(type), ox, h - 64, 38, 38);
-            text(fonts.normal, String.valueOf(s.ore(type)), ox + 42, h - 36, Ui.TEXT);
-            ox += 102;
+            batch.draw(art.gem(ores[k]), gx, h - 63, gem, gem);
+            float oldX = fonts.normal.getData().scaleX, oldY = fonts.normal.getData().scaleY;
+            fonts.normal.getData().setScale(oldX * scale, oldY * scale);
+            // 줄인 글자도 세로 가운데가 같게
+            text(fonts.normal, n, gx + gem + gap, h - 36 - (1 - scale) * fonts.normal.getCapHeight() / scale / 2f, Ui.TEXT);
+            fonts.normal.getData().setScale(oldX, oldY);
         }
         float kx = w - 29;
         kx = keyHintLeft(kx, h - 100, "Esc", "메뉴");
@@ -492,26 +503,30 @@ public class Hud {
 
     /** 왼쪽 아래 조작 안내: 옅은 띠 위에 “[W] A S D 이동   [E] 상호작용” (시안처럼 이동 묶음은 첫 키만 원). */
     private void hintBand(float x, float cy, String moveKeys, String moveLabel, String interactKey, String interactLabel) {
+        // 이동 키도 하나하나 같은 원 키캡에 담는다 (W 만 강조되어 어색하다는 2026-11-22 지용 의견)
         String[] mk = moveKeys.split(" ");
-        StringBuilder rest = new StringBuilder();
-        for (int i = 1; i < mk.length; i++) rest.append(mk[i]).append(' ');
-        String moveText = rest.length() > 0 ? rest + " " + moveLabel : moveLabel;
-        layout.setText(fonts.small, mk[0]);
-        float k1 = layout.width <= 22 ? 36 : layout.width + 26;
-        layout.setText(fonts.small, moveText);
+        float keys = 0;
+        for (String k : mk) keys += keyWidth(k) + 2;
+        layout.setText(fonts.small, moveLabel);
         float t1 = layout.width;
-        layout.setText(fonts.small, interactKey);
-        float k2 = layout.width <= 22 ? 36 : layout.width + 26;
+        float k2 = keyWidth(interactKey);
         layout.setText(fonts.small, interactLabel);
         float t2 = layout.width;
-        float total = 4 + k1 + 6 + t1 + 22 + k2 + 10 + t2 + 16;
+        float total = 4 + keys + 6 + t1 + 22 + k2 + 10 + t2 + 16;
         rect(x, cy - 17, total, 34, BAND);
         rect(x + 18, cy + 16, total - 36, 1, BAND_LINE);
         rect(x + 18, cy - 17, total - 36, 1, BAND_LINE);
-        float cx = keyRoundAt(x + 4, cy, mk[0]) + 6;
-        shadowed(fonts.small, moveText, cx, cy + 8, Ui.TEXT);
+        float cx = x + 4;
+        for (String k : mk) cx = keyRoundAt(cx, cy, k) + 2;
+        cx += 6;
+        shadowed(fonts.small, moveLabel, cx, cy + 8, Ui.TEXT);
         cx = keyRoundAt(cx + t1 + 22, cy, interactKey) + 10;
         shadowed(fonts.small, interactLabel, cx, cy + 8, Ui.TEXT);
+    }
+
+    private float keyWidth(String key) {
+        layout.setText(fonts.small, key);
+        return layout.width <= 22 ? 36 : layout.width + 26;
     }
 
     /** 오른쪽 끝(rightX)에 맞춰 시안 키 알약 “(키) 이름” 을 그리고 그 왼쪽 끝 x 를 돌려준다. */
