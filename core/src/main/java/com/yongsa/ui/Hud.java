@@ -161,7 +161,7 @@ public class Hud {
         float[] left = cooldowns();
         for (int i = 0; i < SLOTS; i++) {
             boolean ready = left[i] <= 0;
-            if (ready && !wasReady[i] && i > 0) readyFlash[i] = 0.4f;
+            if (ready && !wasReady[i] && i > 1) readyFlash[i] = 0.4f; // 공격·구르기는 빛내지 않는다 (2026-11-22 지용)
             wasReady[i] = ready;
             readyFlash[i] -= dt;
         }
@@ -209,11 +209,11 @@ public class Hud {
         com.badlogic.gdx.graphics.g2d.TextureRegion hero = art.get("hero_down");
         if (portraitBust == null || portraitSrc != hero) {
             portraitSrc = hero;
-            portraitBust = new com.badlogic.gdx.graphics.g2d.TextureRegion(hero, 0, 0, hero.getRegionWidth(), Math.round(hero.getRegionHeight() * 0.62f));
+            portraitBust = new com.badlogic.gdx.graphics.g2d.TextureRegion(hero, 0, 0, hero.getRegionWidth(), Math.round(hero.getRegionHeight() * 0.5f));
         }
-        float bustW = 70, bustH = bustW * portraitBust.getRegionHeight() / portraitBust.getRegionWidth();
+        float bustW = 88, bustH = bustW * portraitBust.getRegionHeight() / portraitBust.getRegionWidth();
         // 그림 오른쪽으로 망토가 뻗어 몸통 가운데가 그림 가운데보다 오른쪽: 얼굴이 원 가운데 오게 5px 왼쪽으로
-        batch.draw(portraitBust, pcx - bustW / 2f - 5, pcy - 37, bustW, bustH);
+        batch.draw(portraitBust, pcx - bustW / 2f - 6, pcy - 37, bustW, bustH);
         batch.draw(frames.portraitRing, pcx - 43, pcy - 43, 86, 86);
         float tx = 111; // 글자·체력바 시작
         float right = 24 + PROFILE_W - 26;
@@ -361,7 +361,8 @@ public class Hud {
         java.util.List<Integer> shown = new java.util.ArrayList<>();
         shown.add(0);
         shown.add(1);
-        for (int i = 0; i < skills.length; i++) if (skills[i] != null) shown.add(2 + i);
+        // 지금 쓸 수 있는 스킬(그 검을 들었거나 흡수해 익힌 것)만 칸을 보인다 (2026-11-10 피드백, 조작 키 창과 같은 규칙)
+        for (int i = 0; i < skills.length; i++) if (skills[i] != null && skills[i].usable) shown.add(2 + i);
         final float SLOT = 104, SLOT_H = 103, SY = 16;
         for (int k = 0; k < shown.size(); k++) {
             int i = shown.get(k);
@@ -388,11 +389,6 @@ public class Hud {
             if (i == 1) batch.draw(art.get("hero_side_walk"), ix + 10, iy + 2, 34, 48);
             if (sk != null) {
                 // 스킬 아이콘(sprites/skill/icon_<kind>.png, 없으면 그 검 그림) 뒤로 빛, 지금 못 쓰면 어둡게
-                if (sk.usable) {
-                    batch.setColor(sk.awakened ? 0.85f : 1f, sk.awakened ? 0.6f : 0.55f, sk.awakened ? 1f : 0.45f,
-                            0.45f + 0.2f * MathUtils.sin(time * 4f));
-                    batch.draw(art.glow, ix - 12, iy - 12, is + 24, is + 24);
-                }
                 batch.setColor(sk.usable ? Color.WHITE : SKILL_LOCKED);
                 com.badlogic.gdx.graphics.Texture icon = skillIcon(sk.def.kind);
                 if (icon != null) batch.draw(icon, ix, iy, is, is);
@@ -503,22 +499,23 @@ public class Hud {
 
     /** 왼쪽 아래 조작 안내: 옅은 띠 위에 “[W] A S D 이동   [E] 상호작용” (시안처럼 이동 묶음은 첫 키만 원). */
     private void hintBand(float x, float cy, String moveKeys, String moveLabel, String interactKey, String interactLabel) {
-        // 이동 키도 하나하나 같은 원 키캡에 담는다 (W 만 강조되어 어색하다는 2026-11-22 지용 의견)
+        // 이동 키는 글자만, 상호작용 키는 원 키캡
         String[] mk = moveKeys.split(" ");
         float keys = 0;
-        for (String k : mk) keys += keyWidth(k) + 2;
+        layout.setText(fonts.small, String.join(" ", mk));
+        keys = layout.width + 8;
         layout.setText(fonts.small, moveLabel);
         float t1 = layout.width;
         float k2 = keyWidth(interactKey);
         layout.setText(fonts.small, interactLabel);
         float t2 = layout.width;
-        float total = 4 + keys + 6 + t1 + 22 + k2 + 10 + t2 + 16;
+        float total = 4 + keys + 10 + t1 + 22 + k2 + 10 + t2 + 16;
         rect(x, cy - 17, total, 34, BAND);
         rect(x + 18, cy + 16, total - 36, 1, BAND_LINE);
         rect(x + 18, cy - 17, total - 36, 1, BAND_LINE);
         float cx = x + 4;
-        for (String k : mk) cx = keyRoundAt(cx, cy, k) + 2;
-        cx += 6;
+        shadowed(fonts.small, String.join(" ", mk), cx + 6, cy + 8, KEY_TEXT); // 이동 키는 원 키캡 없이 글자만 (2026-11-22 지용)
+        cx += keys + 10;
         shadowed(fonts.small, moveLabel, cx, cy + 8, Ui.TEXT);
         cx = keyRoundAt(cx + t1 + 22, cy, interactKey) + 10;
         shadowed(fonts.small, interactLabel, cx, cy + 8, Ui.TEXT);
