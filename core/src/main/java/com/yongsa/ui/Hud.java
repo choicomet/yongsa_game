@@ -205,15 +205,13 @@ public class Hud {
         batch.setColor(Color.WHITE);
         frames.panel(batch, HudFrames.Panel.PROFILE, pcx, py0, 24 + PROFILE_W - pcx);
         batch.draw(frames.portraitDisc, pcx - 36, pcy - 36, 72, 72);
-        // 시안처럼 원 안에 상반신: 용사 그림 위쪽 62% 만 잘라 크게 (아래 잘린 모서리는 고리 밑에 숨는다)
+        // 시안처럼 원 안에 상반신: 용사 그림 위쪽 절반을 크게, 원 밖으로 나가는 부분(망토)은 잘라 낸 그림
         com.badlogic.gdx.graphics.g2d.TextureRegion hero = art.get("hero_down");
         if (portraitBust == null || portraitSrc != hero) {
             portraitSrc = hero;
-            portraitBust = new com.badlogic.gdx.graphics.g2d.TextureRegion(hero, 0, 0, hero.getRegionWidth(), Math.round(hero.getRegionHeight() * 0.5f));
+            portraitBust = circleBust(hero);
         }
-        float bustW = 88, bustH = bustW * portraitBust.getRegionHeight() / portraitBust.getRegionWidth();
-        // 그림 오른쪽으로 망토가 뻗어 몸통 가운데가 그림 가운데보다 오른쪽: 얼굴이 원 가운데 오게 5px 왼쪽으로
-        batch.draw(portraitBust, pcx - bustW / 2f - 6, pcy - 37, bustW, bustH);
+        batch.draw(portraitBust, pcx - BUST_W / 2f - BUST_SHIFT, pcy - 37, BUST_W, BUST_W * portraitBust.getRegionHeight() / portraitBust.getRegionWidth());
         batch.draw(frames.portraitRing, pcx - 43, pcy - 43, 86, 86);
         float tx = 111; // 글자·체력바 시작
         float right = 24 + PROFILE_W - 26;
@@ -481,6 +479,46 @@ public class Hud {
     private static final float BOSS_W = 452;
     private final HudFrames frames = new HudFrames();
     private com.badlogic.gdx.graphics.g2d.TextureRegion portraitBust, portraitSrc;
+    private com.badlogic.gdx.graphics.Texture portraitTex;
+    /** 초상화 상반신 그리는 폭, 왼쪽으로 미는 양(망토가 오른쪽으로 뻗어 얼굴이 원 가운데 오게), 보이는 원 반지름. */
+    private static final float BUST_W = 88, BUST_SHIFT = 6, BUST_R = 36;
+
+    /**
+     * 용사 그림 위쪽 절반을 잘라, 화면에서 초상화 원(반지름 BUST_R) 밖에 놓일 픽셀을 투명하게 만든 그림.
+     * 그림 파일을 다시 읽어 한 번만 만든다. 읽을 수 없으면 자르지 않은 위쪽 절반을 쓴다.
+     */
+    private com.badlogic.gdx.graphics.g2d.TextureRegion circleBust(com.badlogic.gdx.graphics.g2d.TextureRegion hero) {
+        int rw = hero.getRegionWidth(), rh = Math.round(hero.getRegionHeight() * 0.5f);
+        com.badlogic.gdx.graphics.g2d.TextureRegion plain = new com.badlogic.gdx.graphics.g2d.TextureRegion(hero, 0, 0, rw, rh);
+        try {
+            com.badlogic.gdx.graphics.TextureData td = hero.getTexture().getTextureData();
+            if (!td.isPrepared()) td.prepare();
+            com.badlogic.gdx.graphics.Pixmap src = td.consumePixmap();
+            com.badlogic.gdx.graphics.Pixmap out = new com.badlogic.gdx.graphics.Pixmap(rw, rh, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+            out.setBlending(com.badlogic.gdx.graphics.Pixmap.Blending.None);
+            float k = BUST_W / rw; // 그림 1px 이 화면에서 차지하는 크기
+            float bustH = rh * k;
+            for (int y = 0; y < rh; y++) {
+                for (int x = 0; x < rw; x++) {
+                    // 화면에서 원 가운데 기준 위치: 그림 왼쪽 끝 = -BUST_W/2 - BUST_SHIFT, 그림 아래 끝 = -37
+                    float sx = -BUST_W / 2f - BUST_SHIFT + (x + 0.5f) * k, sy = -37 + bustH - (y + 0.5f) * k;
+                    float edge = BUST_R - (float) Math.sqrt(sx * sx + sy * sy);
+                    if (edge <= 0) continue;
+                    int c = src.getPixel(hero.getRegionX() + x, hero.getRegionY() + y);
+                    int a = Math.round((c & 0xff) * Math.min(1f, edge));
+                    out.drawPixel(x, y, (c & 0xffffff00) | a);
+                }
+            }
+            if (td.disposePixmap()) src.dispose();
+            if (portraitTex != null) portraitTex.dispose();
+            portraitTex = new com.badlogic.gdx.graphics.Texture(out);
+            portraitTex.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.Linear, com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
+            out.dispose();
+            return new com.badlogic.gdx.graphics.g2d.TextureRegion(portraitTex);
+        } catch (RuntimeException e) {
+            return plain;
+        }
+    }
 
     /** 시안 원형 키캡에 키 이름을 담아 (x, 가운데 y=cy) 에 그리고 오른쪽 끝 x 를 돌려준다. 긴 이름은 알약 키캡. */
     private float keyRoundAt(float x, float cy, String key) {
@@ -544,6 +582,7 @@ public class Hud {
 
     public void dispose() {
         frames.dispose();
+        if (portraitTex != null) portraitTex.dispose();
     }
 
     private void card(float x, float y, float width, float height) {
