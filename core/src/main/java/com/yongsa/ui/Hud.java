@@ -54,9 +54,11 @@ public class Hud {
     /** 공격 J, 구르기 K, 스킬 칸 넷 (L, U, I, O). 스킬 칸은 열렸을 때만 보인다. */
     private static final int SLOTS = 2 + com.yongsa.model.Rules.SKILL_SLOTS;
     private final float[] readyFlash = new float[SLOTS];
-    private final boolean[] wasReady = {true, true, true, true, true, true};
+    private final boolean[] wasReady = new boolean[SLOTS];
     private Matrix4 projection;
     private float w, h;
+
+    private static final int MAX_TOASTS = 3;
 
     private static class Toast {
         String text;
@@ -64,6 +66,7 @@ public class Hud {
     }
 
     public Hud(GameSession g, Art art, Fonts fonts, SpriteBatch batch, ShapeRenderer shapes) {
+        java.util.Arrays.fill(wasReady, true);
         this.g = g;
         this.art = art;
         this.fonts = fonts;
@@ -79,7 +82,8 @@ public class Hud {
         Toast t = new Toast();
         t.text = text;
         toasts.add(t);
-        if (toasts.size() > 1) toasts.remove(0);
+        // 연달아 뜬 안내가 바로 지워지지 않게 셋까지 쌓는다 (예: 침대에서 잔 뒤 두 줄)
+        if (toasts.size() > MAX_TOASTS) toasts.remove(0);
     }
 
     public void banner(String text) {
@@ -89,6 +93,10 @@ public class Hud {
 
     public void toggleMap() {
         mapOpen = !mapOpen;
+    }
+
+    public void closeMap() {
+        mapOpen = false;
     }
 
     public boolean mapOpen() {
@@ -153,7 +161,7 @@ public class Hud {
         float[] left = cooldowns();
         for (int i = 0; i < SLOTS; i++) {
             boolean ready = left[i] <= 0;
-            if (ready && !wasReady[i] && i > 0) readyFlash[i] = 0.4f;
+            if (ready && !wasReady[i] && i > 1) readyFlash[i] = 0.4f; // 공격·구르기는 빛내지 않는다 (2026-11-22 지용)
             wasReady[i] = ready;
             readyFlash[i] -= dt;
         }
@@ -169,6 +177,8 @@ public class Hud {
 
     /** 개발용 (F1 이동 영역 보기): 용사 발밑을 덮는 마스크 파일을 화면 아래에 적는다. */
     public boolean showWalkMasks;
+    /** 설정 “화면 번쩍임”: 끄면 피격·저체력 붉은 테두리를 그리지 않는다. */
+    public boolean flashEnabled = true;
 
     public void render(Matrix4 projection, float w, float h) {
         this.projection = projection;
@@ -185,34 +195,97 @@ public class Hud {
         batch.draw(art.vignette, 0, 0, w, h);
         float low = s.hp < maxHp * 0.3f ? 0.22f + 0.12f * MathUtils.sin(time * 6f) : 0f;
         float red = Math.max(low, Math.max(0, hurtT) / 0.35f * 0.65f);
-        if (red > 0) {
+        if (red > 0 && flashEnabled) {
             batch.setColor(0.8f, 0.05f, 0.05f, red);
             batch.draw(art.vignette, 0, 0, w, h);
         }
-        card(24, h - 122, 326, 98);
+        // ───── 왼쪽 위 프로필 (시안: 원형 초상화 + 은테 판 + 칼 칸)
+        float pcx = 59, pcy = h - 56; // 초상화 원 가운데
+        float ph0 = frames.panelHeight(HudFrames.Panel.PROFILE), py0 = h - 9 - ph0;
         batch.setColor(Color.WHITE);
-        batch.draw(art.get("hero_down"), 30, h - 113, 53, 80);
-        text(fonts.small, "용사", 88, h - 40, Ui.GOLD);
+        frames.panel(batch, HudFrames.Panel.PROFILE, pcx, py0, 24 + PROFILE_W - pcx);
+        batch.draw(frames.portraitDisc, pcx - 36, pcy - 36, 72, 72);
+        // 시안처럼 원 안에 상반신: 용사 그림 위쪽 절반을 크게, 원 밖으로 나가는 부분(망토)은 잘라 낸 그림
+        com.badlogic.gdx.graphics.g2d.TextureRegion hero = art.get("hero_down");
+        if (portraitBust == null || portraitSrc != hero) {
+            portraitSrc = hero;
+            portraitBust = circleBust(hero);
+        }
+        batch.draw(portraitBust, pcx - BUST_W / 2f - BUST_SHIFT, pcy - 37, BUST_W, BUST_W * portraitBust.getRegionHeight() / portraitBust.getRegionWidth());
+        batch.draw(frames.portraitRing, pcx - 43, pcy - 43, 86, 86);
+        float tx = 111; // 글자·체력바 시작
+        float right = 24 + PROFILE_W - 26;
+        text(fonts.normal, "용사", tx, h - 26, Ui.GOLD);
         String hp = Math.max(0, s.hp) + " / " + maxHp;
-        layout.setText(fonts.small, hp);
-        text(fonts.small, hp, 330 - layout.width, h - 40, Ui.TEXT);
-        rect(88, h - 67, 242, 9, new Color(0x40232aff));
-        rect(88, h - 67, 242 * MathUtils.clamp(trailHp / maxHp, 0, 1), 9, Ui.GOLD);
-        rect(88, h - 67, 242 * MathUtils.clamp(shownHp / maxHp, 0, 1), 9, new Color(0xd65958ff));
+        layout.setText(fonts.normal, hp);
+        text(fonts.normal, hp, right - layout.width, h - 26, Ui.TEXT);
+        float barW = right - tx, hpY = h - 58; // 이름 글자 아래 8px 띄움
+        rect(tx - 1, hpY - 1, barW + 2, 9, HP_EDGE);
+        rect(tx, hpY, barW, 7, HP_BG);
+        rect(tx, hpY, barW * MathUtils.clamp(trailHp / maxHp, 0, 1), 7, Ui.GOLD);
+        rect(tx, hpY, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 7, HP_FILL);
+        rect(tx, hpY + 4, barW * MathUtils.clamp(shownHp / maxHp, 0, 1), 2, HP_SHINE);
         if (weapon != null) {
-            text(fonts.small, g.rules.weaponName(weapon), 88, h - 79, Ui.TEXT);
-            text(fonts.small, "공격력 " + g.rules.attack(s) + "  ·  보스의 힘 " + s.bossesDefeated.size() + "/3", 88, h - 101, Ui.DIM);
+            boolean awakened = weapon.awakened;
+            float ss = 42, sx = tx - 2, sy = h - 103; // 칼 칸
+            if (awakened) {
+                batch.setColor(0.85f, 0.6f, 1f, 0.45f + 0.2f * MathUtils.sin(time * 3f));
+                batch.draw(art.glow, sx - 10, sy - 10, ss + 20, ss + 20);
+            }
+            batch.setColor(awakened ? AWAKE_TINT : Color.WHITE);
+            batch.draw(frames.itemSlot, sx, sy, ss + 1, ss);
+            batch.setColor(Color.WHITE);
+            batch.draw(art.sword(weapon.defId, awakened), sx + 5, sy + 5, ss - 10, ss - 10);
+            float wx = sx + ss + 9;
+            text(fonts.small, g.rules.weaponName(weapon), wx, sy + 40, awakened ? Ui.PURPLE : Ui.TEXT);
+            // “보스의 힘 3/3” 대신 무엇을 모으는지(흡수한 보스 힘), 다 모으면 무엇이 되는지
+            String atk = "공격력 " + g.rules.attack(s);
+            layout.setText(fonts.small, atk);
+            float atkEnd = wx + layout.width;
+            text(fonts.small, atk, wx, sy + 17, STAT);
+            if (s.unsealed) {
+                layout.setText(fonts.small, "성검 해방");
+                text(fonts.small, "성검 해방", right - layout.width, sy + 17, Ui.PURPLE);
+            } else {
+                // 흡수한 보스 힘: 마름모 셋 (채운 것 = 쓰러뜨린 보스). 다 모이면 금색 글자
+                int got = s.bossesDefeated.size();
+                float pip = 22, pipsW = 3 * pip - 10;
+                batch.setColor(Color.WHITE);
+                for (int k = 0; k < 3; k++)
+                    batch.draw(k < got ? frames.diamond : frames.diamondOutline, right - pipsW + k * (pip - 5), sy, pip, pip);
+                layout.setText(fonts.small, "보스 힘");
+                // 이름은 늘 적는다. 공격력 글자와 8px 안쪽으로 붙으면 짧게 “힘”
+                String powLabel = right - pipsW - 4 - layout.width >= atkEnd + 8 ? "보스 힘" : "힘";
+                layout.setText(fonts.small, powLabel);
+                text(fonts.small, powLabel, right - pipsW - 4 - layout.width, sy + 17, got >= 3 ? Ui.GOLD : Ui.DIM);
+            }
         }
 
-        card(w - 320, h - 88, 296, 64);
-        float ox = w - 306;
-        for (OreType type : OreType.values()) {
+        // ───── 오른쪽 위 광물 + 키 안내 알약
+        float oreH = frames.panelHeight(HudFrames.Panel.ORE);
+        batch.setColor(Color.WHITE);
+        frames.panel(batch, HudFrames.Panel.ORE, w - 342, h - 15 - oreH, 327);
+        // 광물 셋은 판 안쪽을 같은 폭 칸으로 나누고, 칸마다 [그림+숫자] 묶음을 가운데에 둔다.
+        // 숫자가 길어 칸을 넘으면 그 숫자만 글자를 줄인다 (자릿수가 늘어도 간격이 같게)
+        OreType[] ores = OreType.values();
+        float cellX = w - 342 + 22, cellW = (327 - 44) / (float) ores.length, gem = 36, gap = 4;
+        for (int k = 0; k < ores.length; k++) {
+            String n = String.valueOf(s.ore(ores[k]));
+            layout.setText(fonts.normal, n);
+            float room = cellW - gem - gap - 6, scale = Math.min(1f, room / layout.width);
+            float tw = layout.width * scale, gx = cellX + k * cellW + (cellW - gem - gap - tw) / 2f;
             batch.setColor(Color.WHITE);
-            batch.draw(art.gem(type), ox, h - 76, 40, 40);
-            text(fonts.small, String.valueOf(s.ore(type)), ox + 43, h - 49, Ui.TEXT);
-            ox += 94;
+            batch.draw(art.gem(ores[k]), gx, h - 63, gem, gem);
+            float oldX = fonts.normal.getData().scaleX, oldY = fonts.normal.getData().scaleY;
+            fonts.normal.getData().setScale(oldX * scale, oldY * scale);
+            // 줄인 글자도 세로 가운데가 같게
+            text(fonts.normal, n, gx + gem + gap, h - 36 - (1 - scale) * fonts.normal.getCapHeight() / scale / 2f, Ui.TEXT);
+            fonts.normal.getData().setScale(oldX, oldY);
         }
-        text(fonts.small, bagKey + "  가방     " + mapKey + "  지도     Esc  메뉴", w - 306, h - 103, Ui.DIM);
+        float kx = w - 29;
+        kx = keyHintLeft(kx, h - 100, "Esc", "메뉴");
+        kx = keyHintLeft(kx - 7, h - 100, mapKey, "지도");
+        keyHintLeft(kx - 7, h - 100, bagKey, "가방");
         if (showWalkMasks) {
             float my = 130;
             for (String m : g.map.walkMasksAt(g.hero.x, g.hero.y)) {
@@ -221,85 +294,159 @@ public class Hud {
             }
         }
 
+        // ───── 가운데 위: 구역 이름 또는 보스 체력
         Room room = g.heroRoom();
         boolean village = room != null && room.type == RoomType.VILLAGE;
         String zone = room == null ? corridorZone() : village ? g.balance.village.name
                 : room.dungeonId == null ? "용사의 캠프" : g.balance.dungeon(room.dungeonId).name;
         if (boss == null) {
-            centered(fonts.small, banner == null ? zone : banner, w / 2, h - 35, Ui.GOLD);
+            String title = banner == null ? zone : banner;
+            layout.setText(fonts.normal, title);
+            float zw = layout.width;
+            shadowed(fonts.normal, title, w / 2 - zw / 2, h - 30, Ui.GOLD);
+            batch.setColor(Color.WHITE);
+            batch.draw(frames.diamond, w / 2 - zw / 2 - 26, h - 50, 16, 16);
+            batch.draw(frames.diamond, w / 2 + zw / 2 + 10, h - 50, 16, 16);
             String sub = village ? (g.villagersFree() ? "모두가 돌아왔다" : "던전 밖 · 모두 수정 속에 잠들어 있다")
                     : g.inCamp() ? "정비하고, 다음 여정을 준비하세요"
                     : room != null && room.type == RoomType.TUNNEL ? "어두운 동굴 통로" : room == null ? "통로" : "탐험 중";
-            centered(fonts.small, sub, w / 2, h - 59, Ui.DIM);
+            layout.setText(fonts.small, sub);
+            shadowed(fonts.small, sub, w / 2 - layout.width / 2, h - 60, Ui.DIM);
         } else {
-            float bx = w / 2 - 210;
-            card(bx - 16, h - 100, 452, 76);
-            if (introT >= 0) rect(bx - 16, h - 25, 452 * Math.min(1, introT / 0.5f), 1, Ui.GOLD);
-            centered(fonts.normal, boss.def.name, w / 2, h - 38, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
-            rect(bx, h - 73, 420, 9, new Color(0x39232aff));
-            rect(bx, h - 73, 420 * MathUtils.clamp(bossTrail / boss.maxHp, 0, 1), 9, Ui.GOLD);
-            rect(bx, h - 73, 420 * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 9, boss.finalBoss ? Ui.PURPLE : Ui.RED);
+            float bh = frames.panelHeight(HudFrames.Panel.BOSS);
+            float bw = BOSS_W, bx0 = w / 2 - bw / 2, by0 = h - 19 - bh;
+            batch.setColor(boss.finalBoss ? AWAKE_TINT : Color.WHITE);
+            frames.panel(batch, HudFrames.Panel.BOSS, bx0, by0, bw);
+            if (introT >= 0) rect(bx0 + 40, by0 + 12, (bw - 80) * Math.min(1, introT / 0.5f), 2, Ui.GOLD);
+            centered(fonts.large, boss.def.name, w / 2, h - 34, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
+            float barX = bx0 + 26, barLen = bw - 52, barY = h - 74;
+            rect(barX - 1, barY - 1, barLen + 2, 12, HP_EDGE);
+            rect(barX, barY, barLen, 10, BOSS_BG);
+            rect(barX, barY, barLen * MathUtils.clamp(bossTrail / boss.maxHp, 0, 1), 10, Ui.GOLD);
+            rect(barX, barY, barLen * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 10, boss.finalBoss ? Ui.PURPLE : BOSS_FILL);
+            rect(barX, barY + 7, barLen * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 2, HP_SHINE);
             if (boss.shield > 0 && boss.shieldMax > 0) {
                 // 방패: 체력바 위 밝은 막대. 다 깎기 전에는 체력이 닳지 않는다
-                rect(bx, h - 61, 420, 4, new Color(0x2a2418ff));
-                rect(bx, h - 61, 420 * MathUtils.clamp((float) boss.shield / boss.shieldMax, 0, 1), 4, new Color(1f, 0.82f, 0.55f, 1f));
+                rect(barX, barY + 13, barLen, 4, SHIELD_BG);
+                rect(barX, barY + 13, barLen * MathUtils.clamp((float) boss.shield / boss.shieldMax, 0, 1), 4, SHIELD_FILL);
             }
             centered(fonts.small, boss.shield > 0 ? "방패 " + boss.shield + "  ·  " + boss.hp + " / " + boss.maxHp
-                    : boss.hp + " / " + boss.maxHp, w / 2, h - 80, Ui.DIM);
+                    : boss.hp + " / " + boss.maxHp, w / 2, h - 75, Ui.TEXT);
         }
 
-        card(24, 24, 624, 88);
-        rect(24, 24, 3, 88, Ui.GOLD);
-        text(fonts.small, "다음 여정", 42, 95, Ui.GOLD);
+        // ───── 왼쪽 아래: 다음 여정 (폭 고정, 긴 글은 줄바꿈. 스킬 칸 6개와도 안 겹친다)
+        String task = g.nextTask();
+        float taskW = TASK_W;
+        batch.setColor(Color.WHITE);
+        frames.panel(batch, HudFrames.Panel.QUEST, 18, 15, taskW);
+        batch.setColor(0.42f, 0.25f, 0.63f, 1f);
+        batch.draw(frames.headerFade, 44, 76, taskW * 0.72f, 24);
+        batch.setColor(Color.WHITE);
+        batch.draw(frames.keyRound, 23, 61, 50, 50);
+        batch.draw(frames.badgeBook, 26, 64, 44, 44);
+        text(fonts.small, "다음 여정", 82, 94, Ui.GOLD);
+        layout.setText(fonts.normal, task, Ui.TEXT, taskW - 60, com.badlogic.gdx.utils.Align.left, true);
         fonts.normal.setColor(Ui.TEXT);
-        fonts.normal.draw(batch, g.nextTask(), 42, 69, 586, com.badlogic.gdx.utils.Align.left, true);
-        text(fonts.small, moveKeys + "  이동    ·    " + g.interactKey + "  상호작용", 24, 136, Ui.DIM);
+        // 한 줄이면 판 아래쪽 가운데, 두 줄이면 위로 올려 판 안에 담는다
+        float taskY = 60 + Math.max(0, layout.height - fonts.normal.getLineHeight()) / 2f;
+        fonts.normal.draw(batch, task, 40, taskY, taskW - 60, com.badlogic.gdx.utils.Align.left, true);
+        hintBand(18, 140, moveKeys, "이동", g.interactKey, "상호작용");
 
+        // ───── 오른쪽 아래: 공격·구르기·스킬 칸 (시안 칸 그림 104×103, 왼쪽 위 원에 키)
         float[] left = cooldowns();
         com.yongsa.model.Rules.SkillSlot[] skills = g.rules.skillSlots(g.state);
         java.util.List<Integer> shown = new java.util.ArrayList<>();
         shown.add(0);
         shown.add(1);
-        for (int i = 0; i < skills.length; i++) if (skills[i] != null) shown.add(2 + i);
+        // 지금 쓸 수 있는 스킬(그 검을 들었거나 흡수해 익힌 것)만 칸을 보인다 (2026-11-10 피드백, 조작 키 창과 같은 규칙)
+        for (int i = 0; i < skills.length; i++) if (skills[i] != null && skills[i].usable) shown.add(2 + i);
+        final float SLOT = 104, SLOT_H = 103, SY = 16;
         for (int k = 0; k < shown.size(); k++) {
             int i = shown.get(k);
-            float x = w - 132 - (shown.size() - 1 - k) * 120;
+            float x = w - 24 - SLOT - (shown.size() - 1 - k) * 108;
             com.yongsa.model.Rules.SkillSlot sk = i >= 2 ? skills[i - 2] : null;
-            card(x, 24, 108, 88);
-            if (readyFlash[i] > 0) rect(x, 111, 108, 2, Ui.GOLD);
+            boolean locked = sk != null && !sk.usable;
+            // 공격·구르기·잠긴 스킬 = 금 칸, 스킬 = 붉은 칸, 각성 스킬 = 금 칸을 보라로 물들임
+            boolean redSlot = sk != null && !locked && !sk.awakened;
+            boolean purple = sk != null && !locked && sk.awakened;
+            batch.setColor(purple ? AWAKE_TINT : Color.WHITE);
+            batch.draw(redSlot ? frames.slotRed : frames.slotGold, x, SY, SLOT, SLOT_H);
+            if (readyFlash[i] > 0) {
+                batch.setColor(1f, 0.85f, 0.5f, readyFlash[i] / 0.4f * 0.8f);
+                batch.draw(art.glow, x - 10, SY - 10, SLOT + 20, SLOT_H + 20);
+            }
             float total = i == 0 ? g.balance.attack.basicCooldown : i == 1 ? g.balance.attack.rollTime + g.balance.attack.rollCooldown
                     : sk.def.cooldown;
-            if (left[i] > 0) rect(x + 1, 25, 106, 86 * Math.min(1, left[i] / total), new Color(0, 0, 0, 0.5f));
+            if (left[i] > 0) rect(x + 9, SY + 9, SLOT - 18, (SLOT_H - 18) * Math.min(1, left[i] / total), COOL_SHADE);
+            // 아이콘: 칸 가운데 54px, 위 오른쪽에 상태 글자(익힘·검 필요)가 있으면 46px 로 줄여 겹치지 않게
+            boolean hasStatus = sk != null && !sk.usable; // “익힘” 글자는 쓰지 않는다 (2026-11-22 지용)
+            float is = hasStatus ? 42 : 54, ix = x + 54 - is / 2f, iy = SY + (hasStatus ? 49 : 32);
             batch.setColor(Color.WHITE);
-            if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), x + 35, 47, 58, 58);
-            if (i == 1) batch.draw(art.get("hero_side_walk"), x + 48, 51, 34, 48);
+            if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), ix, iy, is, is);
+            if (i == 1) batch.draw(art.get("hero_side_walk"), ix + 10, iy + 2, 34, 48);
             if (sk != null) {
-                // 스킬 칸: 스킬 아이콘(sprites/skill/icon_<kind>.png, 없으면 그 검 그림) 뒤로 빛, 지금 못 쓰면 어둡게
-                if (sk.usable) {
-                    batch.setColor(sk.awakened ? new Color(0.85f, 0.6f, 1f, 0.55f + 0.2f * MathUtils.sin(time * 4f))
-                            : new Color(1f, 0.85f, 0.5f, 0.5f + 0.2f * MathUtils.sin(time * 4f)));
-                    batch.draw(art.glow, x + 24, 38, 72, 72);
-                }
-                batch.setColor(sk.usable ? Color.WHITE : new Color(0.35f, 0.35f, 0.4f, 1f));
+                // 스킬 아이콘(sprites/skill/icon_<kind>.png, 없으면 그 검 그림) 뒤로 빛, 지금 못 쓰면 어둡게
+                batch.setColor(sk.usable ? Color.WHITE : SKILL_LOCKED);
                 com.badlogic.gdx.graphics.Texture icon = skillIcon(sk.def.kind);
-                if (icon != null) batch.draw(icon, x + 32, 44, 64, 64);
-                else batch.draw(art.sword(sk.weaponId, sk.awakened), x + 35, 47, 58, 58);
+                if (icon != null) batch.draw(icon, ix, iy, is, is);
+                else batch.draw(art.sword(sk.weaponId, sk.awakened), ix, iy, is, is);
                 batch.setColor(Color.WHITE);
             }
             String key = i == 0 ? attackKey : i == 1 ? rollKey : g.skillKeys[i - 2];
             String name = i == 0 ? "베기" : i == 1 ? "구르기" : sk.def.name;
-            text(fonts.small, key, x + 10, 100, Ui.GOLD);
-            if (sk != null && sk.learned) text(fonts.small, "익힘", x + 62, 100, Ui.PURPLE);
-            else if (sk != null && !sk.usable) text(fonts.small, "검 필요", x + 50, 100, Ui.DIM);
-            text(fonts.small, name, x + 12, 47, sk != null && !sk.usable ? Ui.DIM : Ui.DIM);
-            if (i >= 1 && left[i] > 0.1f) centered(fonts.small, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 71, 77, Ui.TEXT);
+            // 키: 칸 그림의 왼쪽 위 원 안 (원 가운데 = 칸 왼쪽 24, 위에서 24). 긴 키 이름은 작은 글자
+            layout.setText(fonts.small, key);
+            float kcx = x + 24, kcy = SY + SLOT_H - 24;
+            if (layout.width > 26) {
+                batch.setColor(Color.WHITE);
+                frames.pill(batch, true, kcx - 14, kcy - HudFrames.PILL_H / 2f, Math.max(HudFrames.PILL_WIDE_W + 11, layout.width + 24));
+                text(fonts.small, key, kcx - 14 + 11, kcy + 7, KEY_TEXT);
+            } else {
+                centered(fonts.small, key, kcx, kcy + 8, KEY_TEXT);
+            }
+            String status = locked ? "검 필요" : null;
+            if (status != null) {
+                layout.setText(fonts.small, status);
+                // 칸 위쪽 모서리 장식·키 배지와 겹치지 않게 아이콘과 이름 사이에
+                centered(fonts.small, status, x + SLOT / 2f, SY + 47, sk.learned ? Ui.PURPLE : Ui.DIM);
+            }
+            centered(fonts.small, name, x + SLOT / 2f, SY + (status != null ? 29 : 30), locked ? Ui.DIM : Ui.TEXT);
+            if (i >= 1 && left[i] > 0.1f) centered(fonts.normal, String.format(java.util.Locale.ROOT, "%.1f", left[i]), x + 54, SY + 66, Ui.TEXT);
         }
-        for (Toast toast : toasts) {
+
+        // ───── 안내 (토스트): 시안 판 그림. 스킬 안내 = 보라 판 + 스킬 배지, 경고 = 느낌표 배지, 무기 = 칼
+        // 함께 떠 있는 안내는 가장 긴 것의 폭으로 맞춰 아이콘이 한 줄로 선다
+        float toastW = 380;
+        for (Toast t : toasts) {
+            layout.setText(fonts.normal, t.text);
+            toastW = Math.max(toastW, Math.min(820, layout.width + 120));
+        }
+        for (int ti = 0; ti < toasts.size(); ti++) {
+            Toast toast = toasts.get(ti);
             float alpha = Math.min(1, (3.2f - toast.t) / 0.5f);
-            layout.setText(fonts.small, toast.text);
-            float tw = Math.min(800, layout.width + 40);
-            card((w - tw) / 2, 162, tw, 44);
-            centered(fonts.small, toast.text, w / 2, 190, new Color(1, 1, 1, alpha));
+            float cy = 188 + (toasts.size() - 1 - ti) * 52; // 판 가운데 높이
+            float tw = toastW;
+            float tx0 = (w - tw) / 2;
+            // 안내 종류는 글로 고른다: 스킬·봉인·숙련 = 보라, 잠김·실패·위험 = 느낌표, 나머지 = 금테
+            boolean skillNote = toast.text.contains("스킬") || toast.text.contains("봉인") || toast.text.contains("숙련");
+            boolean warn = !skillNote && (toast.text.contains("잠겼") || toast.text.contains("못") || toast.text.contains("위험"));
+            HudFrames.Panel kind = skillNote ? HudFrames.Panel.TOAST_SKILL : HudFrames.Panel.TOAST;
+            float th = frames.panelHeight(kind);
+            // 보라 판은 시안처럼 조금 좁게
+            float pw = skillNote ? tw - 40 : tw, px = (w - pw) / 2;
+            batch.setColor(1, 1, 1, alpha);
+            frames.panel(batch, kind, px, cy - th / 2f, pw);
+            boolean weaponNote = !warn && !skillNote && weapon != null && (toast.text.contains("무기") || toast.text.contains("검"));
+            if (skillNote) batch.draw(frames.badgeSkill, px + 14, cy - 22, 44, 44);
+            else if (warn) batch.draw(frames.badgeWarn, tx0 + 31, cy - 18, 36, 36);
+            else {
+                // 시안처럼 아이콘은 늘 원 배지 안에
+                batch.draw(frames.keyRound, tx0 + 30, cy - 19, 38, 38);
+                if (weaponNote) batch.draw(art.sword(weapon.defId, weapon.awakened), tx0 + 35, cy - 14, 28, 28);
+                else batch.draw(frames.diamond, tx0 + 37, cy - 12, 24, 24);
+            }
+            float textL = tx0 + 74;
+            centered(fonts.normal, toast.text, textL + (tx0 + tw - 30 - textL) / 2f, cy + 9, new Color(1, 1, 1, alpha));
         }
         batch.setColor(Color.WHITE);
         batch.end();
@@ -313,10 +460,134 @@ public class Hud {
         batch.draw(art.white(), x, y, width, height);
     }
 
+    // 매 프레임 new Color 를 만들지 않도록 HUD 색은 상수로 둔다
+    private static final Color CARD_BG = new Color(0x101820ed), CARD_TOP = new Color(0x806c4bca), CARD_BOTTOM = new Color(0x39454fca);
+    private static final Color COOL_SHADE = new Color(0, 0, 0, 0.5f), SKILL_LOCKED = new Color(0.35f, 0.35f, 0.4f, 1f);
+    /** 다음 여정 판 폭 (시안은 396px 이지만 긴 안내가 두 줄로 넘치지 않게 넓힘. 스킬 칸 6개의 왼쪽 끝 606 보다 안쪽). */
+    private static final float TASK_W = 540;
+    /** 왼쪽 위 프로필 패널 오른쪽 끝 = 24 + PROFILE_W (보스 체력 판 왼쪽 끝 414 보다 안쪽). */
+    private static final float PROFILE_W = 376;
+    private static final Color HP_BG = new Color(0x40232aff), HP_FILL = new Color(0xe5524fff), HP_EDGE = new Color(0x0a0810ff),
+            HP_SHINE = new Color(1f, 1f, 1f, 0.22f), BOSS_BG = new Color(0x39232aff), BOSS_FILL = new Color(0xf0504aff),
+            SHIELD_BG = new Color(0x2a2418ff), SHIELD_FILL = new Color(1f, 0.82f, 0.55f, 1f);
+    /** 각성·마지막 보스: 시안 금테 그림을 보라로 물들이는 색. */
+    private static final Color STAT = new Color(0xe0d8c8ff), KEY_TEXT = new Color(0xf0e6c8ff);
+    private static final Color AWAKE_TINT = new Color(0.82f, 0.66f, 1f, 1f);
+    private static final Color BAND = new Color(0.04f, 0.03f, 0.08f, 0.12f), BAND_LINE = new Color(0.85f, 0.7f, 0.42f, 0.1f);
+    /** 시안 보스 체력 판 폭 452. 프로필 판 오른쪽 끝(24+PROFILE_W) 안쪽으로 들어오지 않는다. */
+    private static final float BOSS_W = 452;
+    private final HudFrames frames = new HudFrames();
+    private com.badlogic.gdx.graphics.g2d.TextureRegion portraitBust, portraitSrc;
+    private com.badlogic.gdx.graphics.Texture portraitTex;
+    /** 초상화 상반신 그리는 폭, 왼쪽으로 미는 양(망토가 오른쪽으로 뻗어 얼굴이 원 가운데 오게), 보이는 원 반지름. */
+    private static final float BUST_W = 88, BUST_SHIFT = 6, BUST_R = 36;
+
+    /**
+     * 용사 그림 위쪽 절반을 잘라, 화면에서 초상화 원(반지름 BUST_R) 밖에 놓일 픽셀을 투명하게 만든 그림.
+     * 그림 파일을 다시 읽어 한 번만 만든다. 읽을 수 없으면 자르지 않은 위쪽 절반을 쓴다.
+     */
+    private com.badlogic.gdx.graphics.g2d.TextureRegion circleBust(com.badlogic.gdx.graphics.g2d.TextureRegion hero) {
+        int rw = hero.getRegionWidth(), rh = Math.round(hero.getRegionHeight() * 0.5f);
+        com.badlogic.gdx.graphics.g2d.TextureRegion plain = new com.badlogic.gdx.graphics.g2d.TextureRegion(hero, 0, 0, rw, rh);
+        try {
+            com.badlogic.gdx.graphics.TextureData td = hero.getTexture().getTextureData();
+            if (!td.isPrepared()) td.prepare();
+            com.badlogic.gdx.graphics.Pixmap src = td.consumePixmap();
+            com.badlogic.gdx.graphics.Pixmap out = new com.badlogic.gdx.graphics.Pixmap(rw, rh, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+            out.setBlending(com.badlogic.gdx.graphics.Pixmap.Blending.None);
+            float k = BUST_W / rw; // 그림 1px 이 화면에서 차지하는 크기
+            float bustH = rh * k;
+            for (int y = 0; y < rh; y++) {
+                for (int x = 0; x < rw; x++) {
+                    // 화면에서 원 가운데 기준 위치: 그림 왼쪽 끝 = -BUST_W/2 - BUST_SHIFT, 그림 아래 끝 = -37
+                    float sx = -BUST_W / 2f - BUST_SHIFT + (x + 0.5f) * k, sy = -37 + bustH - (y + 0.5f) * k;
+                    float edge = BUST_R - (float) Math.sqrt(sx * sx + sy * sy);
+                    if (edge <= 0) continue;
+                    int c = src.getPixel(hero.getRegionX() + x, hero.getRegionY() + y);
+                    int a = Math.round((c & 0xff) * Math.min(1f, edge));
+                    out.drawPixel(x, y, (c & 0xffffff00) | a);
+                }
+            }
+            if (td.disposePixmap()) src.dispose();
+            if (portraitTex != null) portraitTex.dispose();
+            portraitTex = new com.badlogic.gdx.graphics.Texture(out);
+            portraitTex.setFilter(com.badlogic.gdx.graphics.Texture.TextureFilter.Linear, com.badlogic.gdx.graphics.Texture.TextureFilter.Linear);
+            out.dispose();
+            return new com.badlogic.gdx.graphics.g2d.TextureRegion(portraitTex);
+        } catch (RuntimeException e) {
+            return plain;
+        }
+    }
+
+    /** 시안 원형 키캡에 키 이름을 담아 (x, 가운데 y=cy) 에 그리고 오른쪽 끝 x 를 돌려준다. 긴 이름은 알약 키캡. */
+    private float keyRoundAt(float x, float cy, String key) {
+        layout.setText(fonts.small, key);
+        batch.setColor(Color.WHITE);
+        if (layout.width <= 22) {
+            batch.draw(frames.keyRound, x, cy - 18, 36, 36);
+            text(fonts.small, key, x + 18 - layout.width / 2f, cy + 8, KEY_TEXT);
+            return x + 36;
+        }
+        float kw = layout.width + 26;
+        frames.pill(batch, true, x, cy - HudFrames.PILL_H / 2f, Math.max(kw + 11, HudFrames.PILL_WIDE_W + 11));
+        text(fonts.small, key, x + (kw - layout.width) / 2f, cy + 8, KEY_TEXT);
+        return x + kw;
+    }
+
+    /** 왼쪽 아래 조작 안내: 옅은 띠 위에 “[W] A S D 이동   [E] 상호작용” (시안처럼 이동 묶음은 첫 키만 원). */
+    private void hintBand(float x, float cy, String moveKeys, String moveLabel, String interactKey, String interactLabel) {
+        // 이동 키는 글자만, 상호작용 키는 원 키캡
+        String[] mk = moveKeys.split(" ");
+        float keys = 0;
+        layout.setText(fonts.small, String.join(" ", mk));
+        keys = layout.width + 8;
+        layout.setText(fonts.small, moveLabel);
+        float t1 = layout.width;
+        float k2 = keyWidth(interactKey);
+        layout.setText(fonts.small, interactLabel);
+        float t2 = layout.width;
+        float total = 4 + keys + 10 + t1 + 22 + k2 + 10 + t2 + 16;
+        rect(x, cy - 17, total, 34, BAND);
+        rect(x + 18, cy + 16, total - 36, 1, BAND_LINE);
+        rect(x + 18, cy - 17, total - 36, 1, BAND_LINE);
+        float cx = x + 4;
+        shadowed(fonts.small, String.join(" ", mk), cx + 6, cy + 8, KEY_TEXT); // 이동 키는 원 키캡 없이 글자만 (2026-11-22 지용)
+        cx += keys + 10;
+        shadowed(fonts.small, moveLabel, cx, cy + 8, Ui.TEXT);
+        cx = keyRoundAt(cx + t1 + 22, cy, interactKey) + 10;
+        shadowed(fonts.small, interactLabel, cx, cy + 8, Ui.TEXT);
+    }
+
+    private float keyWidth(String key) {
+        layout.setText(fonts.small, key);
+        return layout.width <= 22 ? 36 : layout.width + 26;
+    }
+
+    /** 오른쪽 끝(rightX)에 맞춰 시안 키 알약 “(키) 이름” 을 그리고 그 왼쪽 끝 x 를 돌려준다. */
+    private float keyHintLeft(float rightX, float cy, String key, String name) {
+        layout.setText(fonts.small, key);
+        float kw = layout.width;
+        boolean wide = kw > 22;
+        float keyCell = wide ? Math.max(HudFrames.PILL_WIDE_W, kw + 24) : HudFrames.PILL_KEY_W;
+        layout.setText(fonts.small, name);
+        float pw = keyCell + 6 + layout.width + 15;
+        float x = rightX - pw;
+        batch.setColor(Color.WHITE);
+        frames.pill(batch, wide, x, cy - HudFrames.PILL_H / 2f, pw);
+        text(fonts.small, key, x + (wide ? keyCell : HudFrames.PILL_KEY_W + 2) / 2f - kw / 2f, cy + 8, KEY_TEXT);
+        text(fonts.small, name, x + keyCell + 6, cy + 8, Ui.TEXT);
+        return x;
+    }
+
+    public void dispose() {
+        frames.dispose();
+        if (portraitTex != null) portraitTex.dispose();
+    }
+
     private void card(float x, float y, float width, float height) {
-        rect(x, y, width, height, new Color(0x101820ed));
-        rect(x, y + height - 1, width, 1, new Color(0x806c4bca));
-        rect(x, y, width, 1, new Color(0x39454fca));
+        rect(x, y, width, height, CARD_BG);
+        rect(x, y + height - 1, width, 1, CARD_TOP);
+        rect(x, y, width, 1, CARD_BOTTOM);
     }
 
     private void text(BitmapFont font, String value, float x, float y, Color color) {
