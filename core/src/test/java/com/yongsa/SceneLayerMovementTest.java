@@ -6,6 +6,14 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SceneLayerMovementTest {
+    @Test void lanternAndDirtUseDifferentFootprintsAtTheMirroredMineEntrance() {
+        var map = TestData.map();
+        for (var link : map.links) link.gateClosed = false;
+        var joint = map.paintedJoints.stream().filter(j -> j.id.equals("exit-L1-L2")).findFirst().orElseThrow();
+        assertFalse(map.free(joint.x(250 / 512f), joint.y(38 / 512f), 9, 6), "Timber below the lantern");
+        assertTrue(map.free(joint.x(275 / 512f), joint.y(60 / 512f), 9, 6), "Dirt between the uprights");
+    }
+
     @Test void heroCrossesRearSleepersBetweenBothCaveMouths() {
         var map = TestData.map();
         for (var link : map.links) link.gateClosed = false;

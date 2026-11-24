@@ -13,6 +13,8 @@ public class Lwjgl3Launcher {
         }
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setTitle("용사가 다한다");
+        config.setWindowIcon("launcher/hero-256.png", "launcher/hero-128.png", "launcher/hero-48.png",
+                "launcher/hero-32.png", "launcher/hero-16.png");
         config.setWindowedMode(YongsaGame.WIDTH, YongsaGame.HEIGHT);
         config.setForegroundFPS(60);
         config.useVsync(true);

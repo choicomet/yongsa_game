@@ -21,6 +21,24 @@ class SceneOcclusionTest {
     }
 
     @Test
+    void oreYardApronIsReachableAndDoesNotDrawTheParapetOverTheHero() throws Exception {
+        var map=TestData.map();
+        for (var link:map.links) link.gateClosed=false;
+        var room=map.room("T2");
+        var data=SceneOcclusion.parse(Files.readString(Path.of("assets/data/scene-occlusion.json")));
+        var masks=data.scenes.get(room.scene.id);
+        for (float[] p:new float[][]{{640,325},{648,330},{660,339}}) {
+            float u=p[0]/840f,v=p[1]/473f;
+            assertTrue(map.free(room.sceneX(u),room.sceneY(v),9,6));
+            assertFalse(masks.stream().anyMatch(mask->mask.contains(u,v)), "Open paving must remain visible");
+        }
+        for (float[] p:new float[][]{{551,299},{680,333},{705,341}}) {
+            float u=p[0]/840f,v=p[1]/473f;
+            assertFalse(map.free(room.sceneX(u),room.sceneY(v),9,6), "Pier and crate bases are solid");
+        }
+    }
+
+    @Test
     void concaveMasksKeepAnExitCutoutOpen() {
         SceneOcclusion data=SceneOcclusion.parse("{\"version\":1,\"scenes\":{\"room\":[{\"id\":\"rim\",\"depth\":1,\"polygon\":[0,0.5,0.3,0.5,0.3,0.9,0.7,0.9,0.7,0.5,1,0.5,1,1,0,1]}]}}");
         var mask=data.scenes.get("room").get(0);

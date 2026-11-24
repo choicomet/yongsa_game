@@ -936,6 +936,15 @@
       "drawWidth": 1280,
       "drawHeight": 720
     },
+    "title_keyart": {
+      "sheet": "hd/title_keyart.png",
+      "x": 0,
+      "y": 0,
+      "width": 1672,
+      "height": 941,
+      "drawWidth": 1280,
+      "drawHeight": 720
+    },
     "world_hero_down": {
       "sheet": "world/hero-harmony-v1.png",
       "x": 95,

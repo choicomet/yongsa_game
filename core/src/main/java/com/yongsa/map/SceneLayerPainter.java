@@ -25,6 +25,10 @@ final class SceneLayerPainter implements Disposable {
         passages.joints.setLayerScenes(layout.data.scenes.keySet());
     }
     boolean has(String key){return layout.has(key);}
+    boolean hasFront(String key) {
+        SceneLayers.Scene scene = layout.data.scenes.get(key);
+        return scene != null && scene.front != null;
+    }
     void collect(DepthSink out,SpriteBatch batch,float x0,float y0,float x1,float y1) {
         visible.clear();
         var it=cache.entrySet().iterator();

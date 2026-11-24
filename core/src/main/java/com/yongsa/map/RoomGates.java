@@ -3,10 +3,8 @@ package com.yongsa.map;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.EarClippingTriangulator;
+import com.yongsa.gfx.Art;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Disposable;
 import com.yongsa.map.*;
@@ -15,21 +13,35 @@ import java.util.*;
 /** Painted architecture and the sill mark open rooms; the complete barrier rises in combat. */
 final class RoomGates implements Disposable {
     record Part(float depth, Runnable draw) {}
+    private static final float[] CRYSTAL_EDGES={0,.18f,.385f,.61f,.82f,1};
     private final WorldMap map;
+    private final Art art;
     private final Map<String, Texture> textures = new HashMap<>();
     private final Map<Door, Float> closure = new IdentityHashMap<>();
-    private Texture thresholdTexture;
-    private TextureRegion threshold;
+    private record SideSill(float nearX,float nearY,float farX,float farY) {}
+    private final Map<Door,SideSill> sideSills=new IdentityHashMap<>();
+    private final Map<Door,SideSill> paintedSills=new IdentityHashMap<>();
 
-    RoomGates(WorldMap map) {
+    private final PaintedDoorways doorways;
+
+    RoomGates(WorldMap map, PaintedDoorways doorways, Art art) {
+        this.art=art;
+        this.doorways=doorways;
         this.map=map;
         for(var r:map.rooms)for(var d:r.doors)closure.put(d,d.isClosed()?1f:0f);
+        for (var joint:map.paintedJoints) {
+            if (joint.gateSill==null) continue;
+            var feet=joint.gateSill;
+            for (var door:map.room(joint.room).doors)
+                if (Math.abs(joint.door[0]-door.footX)<.02f && Math.abs(joint.door[1]-door.footY)<.02f)
+                    paintedSills.put(door,new SideSill(joint.x(feet[0]),joint.y(feet[1]),joint.x(feet[2]),joint.y(feet[3])));
+        }
     }
 
     void update(float dt) {
         for(var r:map.rooms)for(var d:r.doors) {
             float old=closure.getOrDefault(d,d.isClosed()?1f:0f),target=d.isClosed()?1:0;
-            float duration=target>old?.28f:.36f;
+            float duration=target>old?.42f:.38f;
             closure.put(d,MathUtils.clamp(old+Math.signum(target-old)*Math.min(Math.abs(target-old),Math.max(0,dt)/duration),0,1));
         }
     }
@@ -39,44 +51,89 @@ final class RoomGates implements Disposable {
         String theme=d.room.dungeonId;
         if(d.room.type==RoomType.CAMP)theme=d.link.other(d.room).dungeonId;
         if(theme==null || !List.of("LEFT","RIGHT","TOP").contains(theme))return null;
-        return "sprites/gate_"+theme+(d.horizontal()?"":"_side")+".png";
+        return "sprites/room-gate-"+theme.toLowerCase(Locale.ROOT)+".png";
+    }
+
+    // The dungeon ends of cave transitions are painted as frontal arches even when
+    // walking through them changes the hero's horizontal map coordinate.
+    private static boolean frontFacing(Door d) {
+        return d.horizontal() || (d.link != null && d.link.transition);
+    }
+
+    private static boolean timberMouth(Door d) {
+        return "mine-mob-c".equals(d.room.scene.id) && "east".equals(d.name) && d.link.transition;
+    }
+
+    private static float span(Door d,float extra) {
+        return (d.halfWidth*2+extra)*(timberMouth(d)?1.52f:1f);
+    }
+
+    private static float centerX(Door d) {
+        if (timberMouth(d)) return d.gateX() - d.dirX*29;
+        return d.gateX() + (!d.horizontal() && frontFacing(d) ? d.dirX * d.halfWidth * .28f : 0);
+    }
+
+    private static float sillY(Door d) {
+        if (timberMouth(d)) return d.gateY()-5;
+        return d.gateY() + (d.horizontal() ? -10f : frontFacing(d) ? 5f : 0f);
+    }
+
+    private SideSill measureSide(Door d) {
+        float preferred = d.dirX < 0 ? -.95f : .95f;
+        for (var joint : map.paintedJoints) {
+            if (!joint.room.equals(d.room.id) || Math.abs(joint.door[0]-d.footX) > .02f
+                    || Math.abs(joint.door[1]-d.footY) > .02f) continue;
+            if (!joint.allowsFoot(d.gateX(),d.gateY(),0)) break;
+            SideSill first = traceSill(d,joint,preferred);
+            SideSill opposite = traceSill(d,joint,-preferred);
+            if (first == null && opposite == null) break;
+            if (first == null) return opposite;
+            if (opposite == null) return first;
+            // Cross the lane between its banks; do not point the gate along a staircase.
+            return opposite.farY-opposite.nearY < .90f*(first.farY-first.nearY) ? opposite : first;
+        }
+        return new SideSill(d.gateX()-preferred*d.halfWidth,d.gateY()-d.halfWidth,
+                d.gateX()+preferred*d.halfWidth,d.gateY()+d.halfWidth);
+    }
+
+    private SideSill traceSill(Door d, PaintedJointLayout.Joint joint, float tilt) {
+        float[] ends = new float[2];
+        float limit = 2*d.halfWidth+map.tileSize;
+        for (int i=0; i<2; i++) {
+            int sign=i==0?-1:1;
+            for (float step=2; step<=limit; step+=2) {
+                float off=sign*step, x=d.gateX()+tilt*off, y=d.gateY()+off;
+                if (!joint.owns(x,y) || !joint.allowsFoot(x,y,0)) break;
+                ends[i]=off;
+            }
+            if (Math.abs(ends[i])<6 || Math.abs(ends[i])+2>=limit) return null;
+        }
+        return new SideSill(d.gateX()+tilt*ends[0],d.gateY()+ends[0],d.gateX()+tilt*ends[1],d.gateY()+ends[1]);
     }
 
     boolean supports(Door d) {return key(d)!=null;}
 
     /** A shallow permanent sill, drawn underneath actors and both gate states. */
     void drawThresholds(SpriteBatch batch,float x0,float y0,float x1,float y1) {
-        if(threshold==null) {
-            Pixmap p=new Pixmap(Gdx.files.internal("sprites/room-threshold.png"));
-            int left=p.getWidth(),top=p.getHeight(),right=0,bottom=0;
-            for(int y=0;y<p.getHeight();y++)for(int x=0;x<p.getWidth();x++)
-                if((p.getPixel(x,y)&255)>16){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
-            thresholdTexture=new Texture(p,true);p.dispose();
-            thresholdTexture.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);
-            threshold=new TextureRegion(thresholdTexture,left,top,right-left+1,bottom-top+1);
-        }
-        batch.setColor(.78f,.76f,.71f,.65f);
-        for(var r:map.rooms)for(var d:r.doors) {
-            if(!supports(d)||r.type==RoomType.CAMP||d.footX<x0-256||d.footX>x1+256||d.footY<y0-256||d.footY>y1+256)continue;
-            float width=d.halfWidth*2,height=Math.min(4,width*threshold.getRegionHeight()/threshold.getRegionWidth());
-            if(d.horizontal())batch.draw(threshold,d.gateX()-width/2,d.gateY()-height/2,width,height);
-            else {
-                // A 90-degree rotated stone strip reads as an upright column.
-                // Project a thin sill diagonally across the floor, like the gate's foot line.
-                float lean=Math.min(30,width*.18f)*(d.dirX<0?1:-1);
-                float ax=d.gateX()+lean,ay=d.gateY()-width/2;
-                float bx=d.gateX()-lean,by=d.gateY()+width/2;
-                float length=(float)Math.hypot(bx-ax,by-ay);
-                float nx=-(by-ay)/length*height/2,ny=(bx-ax)/length*height/2;
-                float color=batch.getPackedColor();
-                batch.draw(thresholdTexture,new float[]{
-                    ax-nx,ay-ny,color,threshold.getU(),threshold.getV2(),
-                    ax+nx,ay+ny,color,threshold.getU(),threshold.getV(),
-                    bx+nx,by+ny,color,threshold.getU2(),threshold.getV(),
-                    bx-nx,by-ny,color,threshold.getU2(),threshold.getV2()},0,20);
+        for (var room:map.rooms) for (var d:room.doors) {
+            if (!supports(d) || room.type==RoomType.CAMP || d.footX<x0-256 || d.footX>x1+256
+                    || d.footY<y0-256 || d.footY>y1+256) continue;
+            SideSill sill = sill(d);
+            batch.setColor(.07f,.045f,.055f,.52f);
+            for (int end=0;end<2;end++) {
+                float x=end==0?sill.nearX:sill.farX, y=end==0?sill.nearY:sill.farY;
+                batch.draw(art.glow,x-14,y-4,28,9);
             }
         }
         batch.setColor(Color.WHITE);
+    }
+
+    private SideSill sill(Door d) {
+        if (paintedSills.containsKey(d)) return paintedSills.get(d);
+        if (!frontFacing(d)) return sideSills.computeIfAbsent(d,this::measureSide);
+        float reach=span(d,map.tileSize*.35f)*.42f, cx=centerX(d), cy=sillY(d);
+        float slope=timberMouth(d)?-d.dirX*.47f:0;
+        return new SideSill(cx-reach,cy-reach*slope,cx+reach,cy+reach*slope);
     }
 
     List<Part> parts(SpriteBatch batch,float x0,float y0,float x1,float y1) {
@@ -84,49 +141,79 @@ final class RoomGates implements Disposable {
         for(var r:map.rooms)for(var d:r.doors) {
             if(d.footX<x0-256 || d.footX>x1+256 || d.footY<y0-256 || d.footY>y1+256)continue;
             String key=key(d);if(key==null)continue;
-            // Closed-gate art is not an open-frame atlas. Cropping its ends leaves
-            // slices of bars/magic floating beside the already-painted piers.
             float close=closure.getOrDefault(d,d.isClosed()?1f:0f);
-            if(close<=0)continue;
+            if (PaintedDoorways.isCampSeal(d)) {
+                if (close>0) parts.add(new Part(d.gateY(), () -> doorways.draw(batch,r,PaintedDoorways.Inset.CAMP_SEAL,close)));
+                continue;
+            }
+            if (r.type==RoomType.CAMP && close<=0) continue;
             Texture texture=textures.computeIfAbsent(key,k->{
                 Texture t=new Texture(Gdx.files.internal(k),true);
                 t.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);return t;
             });
-            boolean side=!d.horizontal(),flip=side&&d.dirX<0;
-            float span=d.halfWidth*2+map.tileSize*.5f;
-            // Extend the gap between side posts, not the height of the posts themselves.
-            float h=side?Math.min(180,span/.57f):span*texture.getHeight()/texture.getWidth();
-            float w=side?h*texture.getWidth()/texture.getHeight():span;
-            float stretch=side?Math.max(0,span-h*.57f):0;
-            float x=d.gateX()-w/2,y=side?d.gateY()-span/2:d.gateY()-map.tileSize*.35f;
-            if(close>0) {
-                float amount=close*close*(3-2*close);
-                parts.add(new Part(d.gateY(),()->{
-                    batch.setColor(Color.WHITE);
-                    // Reveal the existing artwork from the floor; no rescaling or new art swap.
-                    for(float[] band:new float[][]{{0,.38f},{.38f,.70f},{.70f,1}})
-                        drawPolygon(batch,texture,x,y,w,h,flip,stretch,
-                                new float[]{band[0],1-amount,band[1],1-amount,band[1],1,band[0],1});
-                }));
+            boolean side=!frontFacing(d), tower=key.endsWith("top.png"), iron=key.endsWith("right.png");
+            float width=span(d,map.tileSize*.35f);
+            float height=MathUtils.clamp(width*(tower?.30f:.34f),28,52);
+            SideSill sill=sill(d);
+            float sign=Math.signum(sill.farX-sill.nearX);
+            float jamb=tower?.18f:iron?.165f:.15f;
+            float post=Math.min(Math.abs(sill.farX-sill.nearX)*.25f,side?13:19);
+            float lx=sill.nearX+sign*post/2, rx=sill.farX-sign*post/2, ly=sill.nearY, ry=sill.farY;
+            parts.add(new Part(ly,()->panel(batch,texture,lx-sign*post,ly,lx,ly,height,0,jamb,0,1,0,1)));
+            parts.add(new Part(ry,()->panel(batch,texture,rx,ry,rx+sign*post,ry,height,1-jamb,1,0,1,0,1)));
+            float amount=close*close*(3-2*close);
+            if (tower) {
+                // The five crystals are separate solids. Each rises vertically from its own socket.
+                float[] cuts=CRYSTAL_EDGES;
+                for(int i=1;i<cuts.length;i++) {
+                    float a=cuts[i-1], b=cuts[i], mid=(a+b)*.5f;
+                    float xA=MathUtils.lerp(lx,rx,a), xB=MathUtils.lerp(lx,rx,b);
+                    float yA=MathUtils.lerp(ly,ry,a), yB=MathUtils.lerp(ly,ry,b), foot=(yA+yB)*.5f;
+                    float srcA=MathUtils.lerp(jamb,1-jamb,a), srcB=MathUtils.lerp(jamb,1-jamb,b);
+                    // Keep each socket level with its crystal even on a steeply projected bridge.
+                    float center=(xA+xB)*.5f, base=(xB-xA)*.49f;
+                    parts.add(new Part(foot,()->panel(batch,texture,center-base,foot,center+base,foot,height,
+                            srcA,srcB,.90f,1,-.03f,.075f)));
+                    float rise=MathUtils.clamp((amount-.19f*Math.abs(2*mid-1))/.84f,0,1);
+                    float radius=(xB-xA)*.44f;
+                    if(rise>0) parts.add(new Part(foot,()->panel(batch,texture,center-radius,foot,center+radius,foot,
+                            height,srcA,srcB,0,.925f*rise,.075f,.075f+.925f*rise)));
+                }
+                continue;
+            }
+            int slices=side || timberMouth(d)?16:2;
+            for(int i=0;i<slices;i++) {
+                float u=i/(float)slices, v=(i+1f)/slices;
+                float ax=MathUtils.lerp(lx,rx,u), bx=MathUtils.lerp(lx,rx,v);
+                float ay=MathUtils.lerp(ly,ry,u), by=MathUtils.lerp(ly,ry,v);
+                float srcA=MathUtils.lerp(jamb,1-jamb,u), srcB=MathUtils.lerp(jamb,1-jamb,v);
+                float depth=(ay+by)/2;
+                if (iron) {
+                    // The guide stays attached to both piers. Only the iron teeth travel.
+                    parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,srcA,srcB,0,.211f,.789f,1)));
+                    if (amount>0) parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,
+                            srcA,srcB,1-.789f*amount,1,.789f*(1-amount),.789f)));
+                } else if (amount>0) {
+                    float hinge=u<.5f?0:1, angle=(1-amount)*MathUtils.PI/2;
+                    float scale=MathUtils.cos(angle), fold=MathUtils.sin(angle)*width*.28f;
+                    float a=MathUtils.lerp(hinge,u,scale), b=MathUtils.lerp(hinge,v,scale);
+                    float xA=MathUtils.lerp(lx,rx,a), xB=MathUtils.lerp(lx,rx,b);
+                    float yA=MathUtils.lerp(ly,ry,a)+Math.abs(u-hinge)*fold;
+                    float yB=MathUtils.lerp(ly,ry,b)+Math.abs(v-hinge)*fold;
+                    parts.add(new Part((yA+yB)/2,()->panel(batch,texture,xA,yA,xB,yB,height,srcA,srcB,0,1,0,1)));
+                }
             }
         }
         return parts;
     }
 
-    private static void drawPolygon(SpriteBatch batch,Texture t,float x,float y,float w,float h,boolean flip,float stretch,float[] polygon) {
-        short[] indices=new EarClippingTriangulator().computeTriangles(polygon).toArray();
-        float[] vertices=new float[20];
-        for(int i=0;i<indices.length;i+=3) {
-            for(int n=0;n<4;n++) {
-                int index=indices[i+Math.min(n,2)]*2,j=n*5;
-                float u=polygon[index],v=polygon[index+1];
-                vertices[j]=x+(flip?1-u:u)*w;
-                vertices[j+1]=y+(1-v)*h+MathUtils.clamp((u-.38f)/.32f,0,1)*stretch;
-                vertices[j+2]=Color.WHITE_FLOAT_BITS;vertices[j+3]=u;vertices[j+4]=v;
-            }
-            batch.draw(t,vertices,0,20);
-        }
+    private static void panel(SpriteBatch batch,Texture texture,float ax,float ay,float bx,float by,
+                              float height,float u0,float u1,float top,float bottom,float low,float high) {
+        float color=Color.toFloatBits(.91f,.87f,.84f,1);
+        float[] quad={ax,ay+low*height,color,u0,bottom, ax,ay+high*height,color,u0,top,
+                bx,by+high*height,color,u1,top, bx,by+low*height,color,u1,bottom};
+        batch.draw(texture,quad,0,quad.length);
     }
 
-    public void dispose() {for(var t:textures.values())t.dispose();textures.clear();if(thresholdTexture!=null)thresholdTexture.dispose();}
+    public void dispose() {for(var t:textures.values())t.dispose();textures.clear();}
 }

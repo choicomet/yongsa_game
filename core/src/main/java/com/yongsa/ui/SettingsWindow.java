@@ -3,13 +3,20 @@ package com.yongsa.ui;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.yongsa.YongsaGame;
 
-/** 설정 (UI-10): 소리 크기, 창 모드, 연출 속도. 바로 적용되고 저장된다. */
+/** 설정 (UI-10): 소리 크기, 창 모드, 연출 속도. 바로 적용되고 저장된다. 타이틀에서 열면 조작 키도 여기서 본다. */
 public class SettingsWindow extends Modal {
     private final YongsaGame game;
+    /** 조작 키 창을 여는 일. null 이면 줄을 감춘다 (게임 중에는 Esc 메뉴에 따로 있다). */
+    private final Runnable openControls;
 
     public SettingsWindow(YongsaGame game) {
+        this(game, null);
+    }
+
+    public SettingsWindow(YongsaGame game, Runnable openControls) {
         super(game.skin);
         this.game = game;
+        this.openControls = openControls;
     }
 
     @Override
@@ -44,6 +51,11 @@ public class SettingsWindow extends Modal {
             game.saveSettings();
             rebuild();
         })).width(220).height(46).left().padBottom(10).row();
+
+        if (openControls != null) {
+            p.add(label("조작 키", "default", Ui.DIM)).left().padRight(24);
+            p.add(nav.add("보기 · 바꾸기", openControls)).width(220).height(46).left().padBottom(10).row();
+        }
 
         p.add(nav.add("닫기", this::close)).colspan(2).width(200).height(50).padTop(14);
     }

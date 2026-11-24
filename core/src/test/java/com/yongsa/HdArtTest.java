@@ -82,7 +82,7 @@ class HdArtTest {
         var sprites = new Gson().fromJson(Files.readString(Path.of("assets/data/hd-art.json")), HdArt.Manifest.class).sprites;
         for (var item : sprites.entrySet()) {
             String key = item.getKey();
-            if (key.startsWith("world_") || key.equals("title_background")) continue;
+            if (key.startsWith("world_") || key.startsWith("title_")) continue;
             var world = sprites.get("world_" + key);
             assertNotNull(world, "Missing gameplay version: " + key);
             assertTrue(world.sheet.startsWith("world/"), key);

@@ -1016,6 +1016,21 @@
             0.2117647
           ],
           "image": "layers/joints/exit-L1-L2/winch.png"
+        },
+        {
+          "id": "alcove-lantern",
+          "foot": 0.1015625,
+          "image": "layers/joints/exit-L1-L2/alcove-lantern.png"
+        },
+        {
+          "id": "alcove-left-jamb",
+          "foot": 0.0859375,
+          "image": "layers/joints/exit-L1-L2/alcove-left-jamb.png"
+        },
+        {
+          "id": "alcove-right-jamb",
+          "foot": 0.1035156,
+          "image": "layers/joints/exit-L1-L2/alcove-right-jamb.png"
         }
       ],
       "front": "layers/joints/exit-L1-L2/front.png"
@@ -1106,6 +1121,226 @@
         }
       ],
       "front": "layers/joints/exit-L5-L7/front.png"
+    },
+    "rooms/mine": {
+      "objects": [
+        {
+          "id": "southwest-rail-ledge",
+          "foot": 0.8,
+          "image": "layers/rooms/mine/southwest-rail-ledge.png"
+        }
+      ]
+    },
+    "rooms/mine-ore-b": {
+      "objects": [
+        {
+          "id": "upper-gallery-lintel",
+          "foot": 0.225,
+          "footLine": [
+            [
+              0.0078125,
+              0.2472222
+            ],
+            [
+              0.0859375,
+              0.2222222
+            ]
+          ],
+          "image": "layers/rooms/mine-ore-b/upper-gallery-lintel.png"
+        },
+        {
+          "id": "upper-gallery-left-jamb",
+          "foot": 0.2472222,
+          "image": "layers/rooms/mine-ore-b/upper-gallery-left-jamb.png"
+        },
+        {
+          "id": "upper-gallery-right-jamb",
+          "foot": 0.2222222,
+          "image": "layers/rooms/mine-ore-b/upper-gallery-right-jamb.png"
+        },
+        {
+          "id": "winch-drum",
+          "foot": 0.3611111,
+          "footLine": [
+            [
+              0.140625,
+              0.3194444
+            ],
+            [
+              0.2,
+              0.3638889
+            ],
+            [
+              0.23125,
+              0.3666667
+            ],
+            [
+              0.253125,
+              0.3361111
+            ]
+          ],
+          "image": "layers/rooms/mine-ore-b/winch-drum.png"
+        }
+      ]
+    },
+    "rooms/mine-mob-b": {
+      "objects": [
+        {
+          "id": "rail-cart",
+          "foot": 0.7638889,
+          "footLine": [
+            [
+              0.121875,
+              0.7138889
+            ],
+            [
+              0.175,
+              0.7611111
+            ],
+            [
+              0.20625,
+              0.7138889
+            ]
+          ],
+          "image": "layers/rooms/mine-mob-b/rail-cart.png"
+        }
+      ]
+    },
+    "rooms/mine-mob-c": {
+      "objects": [
+        {
+          "id": "rail-cart",
+          "foot": 0.6944444,
+          "footLine": [
+            [
+              0.1328125,
+              0.6611111
+            ],
+            [
+              0.1921875,
+              0.6972222
+            ],
+            [
+              0.21875,
+              0.6805556
+            ]
+          ],
+          "image": "layers/rooms/mine-mob-c/rail-cart.png"
+        }
+      ]
+    },
+    "joints/exit-R1-R2": {
+      "objects": [
+        {
+          "id": "loaded-cart",
+          "foot": 0.5605469,
+          "footLine": [
+            [
+              0.6875,
+              0.5078125
+            ],
+            [
+              0.78125,
+              0.5605469
+            ],
+            [
+              0.8515625,
+              0.5195312
+            ]
+          ],
+          "image": "layers/joints/exit-R1-R2/loaded-cart.png"
+        }
+      ]
+    },
+    "joints/entry-T2-T3": {
+      "objects": [
+        {
+          "id": "rune-wheel",
+          "foot": 0.7207031,
+          "image": "layers/joints/entry-T2-T3/rune-wheel.png"
+        },
+        {
+          "id": "small-rune-wheel",
+          "foot": 0.7324219,
+          "image": "layers/joints/entry-T2-T3/small-rune-wheel.png"
+        }
+      ]
+    },
+    "joints/exit-T2-T3": {
+      "objects": [
+        {
+          "id": "west-brazier",
+          "foot": 0.4394531,
+          "image": "layers/joints/exit-T2-T3/west-brazier.png"
+        },
+        {
+          "id": "east-brazier",
+          "foot": 0.4394531,
+          "image": "layers/joints/exit-T2-T3/east-brazier.png"
+        }
+      ]
+    },
+    "joints/entry-CAMP-V": {
+      "objects": [
+        {
+          "id": "west-stair-post",
+          "foot": 0.484375,
+          "image": "layers/joints/entry-CAMP-V/west-stair-post.png"
+        },
+        {
+          "id": "east-stair-post",
+          "foot": 0.4707031,
+          "image": "layers/joints/entry-CAMP-V/east-stair-post.png"
+        },
+        {
+          "id": "stair-lantern",
+          "foot": 0.4003906,
+          "image": "layers/joints/entry-CAMP-V/stair-lantern.png"
+        },
+        {
+          "id": "east-barrel",
+          "foot": 0.484375,
+          "image": "layers/joints/entry-CAMP-V/east-barrel.png"
+        }
+      ]
+    },
+    "passages/citadel-gallery": {
+      "objects": [
+        {
+          "id": "west-wall-brazier",
+          "foot": 0.5433255,
+          "image": "layers/passages/citadel-gallery/west-wall-brazier.png"
+        }
+      ]
+    },
+    "passages/camp-trail": {
+      "objects": [
+        {
+          "id": "west-fence-post",
+          "foot": 0.6269531,
+          "image": "layers/passages/camp-trail/west-fence-post.png"
+        },
+        {
+          "id": "west-low-post",
+          "foot": 0.6699219,
+          "image": "layers/passages/camp-trail/west-low-post.png"
+        },
+        {
+          "id": "west-fence-rail",
+          "foot": 0.6464844,
+          "footLine": [
+            [
+              0.1055718,
+              0.6191406
+            ],
+            [
+              0.1612903,
+              0.6503906
+            ]
+          ],
+          "image": "layers/passages/camp-trail/west-fence-rail.png"
+        }
+      ]
     }
   }
 }

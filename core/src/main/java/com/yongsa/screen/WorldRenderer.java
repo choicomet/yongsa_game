@@ -550,6 +550,7 @@ public class WorldRenderer implements Disposable {
         enemyPainter.drawGroundEffects();
 
         batch.begin();
+        enemyPainter.drawPools();
         drawGhosts();
         List<Sorted> list = new ArrayList<>();
         collect(list, tx0, ty0, tx1, ty1);
@@ -913,7 +914,10 @@ public class WorldRenderer implements Disposable {
         float x = h.x + (flip ? w / 2 : -w / 2), signedW = flip ? -w : w;
         float y = h.y - HeroMotion.FOOT_OFFSET;
         batch.setColor(Color.WHITE);
-        actorInk.draw(batch, upright, r, weight, x, y, signedW, height);
+        // Each authored roll starts crouched and ends standing. A crossfade with idle
+        // paints two heads at different heights over these already complete poses.
+        if (r instanceof HeroPose) actorInk.draw(batch, r, x, y, signedW, height);
+        else actorInk.draw(batch, upright, r, weight, x, y, signedW, height);
         // Hands are tucked/occluded during a roll; don't attach a sword to the walking pose.
         batch.setColor(Color.WHITE);
     }
