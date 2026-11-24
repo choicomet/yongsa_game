@@ -77,6 +77,21 @@ class DungeonWalkabilityTest {
         }
     }
 
+    @Test void flatStonesInTheMiddleOfTheVillageTrailCanBeCrossed() {
+        var map=unlocked();
+        var trail=map.corridors.stream().filter(c->c.scene.id.equals("camp-trail")).findFirst().orElseThrow();
+        float cx=trail.sceneX(539/1024f), cy=trail.sceneY(405/1536f);
+        var hero=new com.yongsa.combat.HeroActor();
+        for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) {
+            if (dx==0 && dy==0) continue;
+            hero.x=cx-15*dx;
+            hero.y=cy-15*dy;
+            assertFalse(com.yongsa.combat.Physics.walk(map,hero,30*dx,30*dy,map.tileSize));
+            assertEquals(cx+15*dx,hero.x,.02f);
+            assertEquals(cy+15*dy,hero.y,.02f);
+        }
+    }
+
     @Test void everyRoomFloorAndActiveArrivalRemainReachable() {
         var map=unlocked(); int checked=0;
         for(var room:map.rooms) {
