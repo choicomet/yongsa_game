@@ -76,9 +76,9 @@ final class SceneLayerPainter implements Disposable {
             for(int y=0;y<h;y++)for(int x=0;x<w;x++) {
                 int rgba=source.getPixel(x,y);
                 if((rgba&255)==0)continue;
-                // Respect the ground compositor: never repaint another scene's floor
-                // or a feathered joint blend on top of actors.
-                if((p.corridor!=null&&(rgba&255)!=255)||!layout.owns(p,p.worldX((x+.5f)/w),p.worldY((y+.5f)/h),false)) {
+                // Keep the passage edge opacity already present in the cut. Discarding every
+                // partially transparent pixel slices canopies at the feather boundary.
+                if(!layout.owns(p,p.worldX((x+.5f)/w),p.worldY((y+.5f)/h),false)) {
                     source.drawPixel(x,y,0);continue;
                 }
                 x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x+1);y1=Math.max(y1,y+1);
