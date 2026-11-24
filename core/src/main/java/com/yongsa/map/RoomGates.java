@@ -143,6 +143,14 @@ final class RoomGates implements Disposable {
         return new SideSill(cx-reach,cy-reach*slope,cx+reach,cy+reach*slope);
     }
 
+    private Texture texture(String path) {
+        return textures.computeIfAbsent(path,k->{
+            Texture t=new Texture(Gdx.files.internal(k),true);
+            t.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);
+            return t;
+        });
+    }
+
     List<Part> parts(SpriteBatch batch,float x0,float y0,float x1,float y1) {
         var parts=new ArrayList<Part>();
         for(var r:map.rooms)for(var d:r.doors) {
@@ -154,19 +162,17 @@ final class RoomGates implements Disposable {
                 continue;
             }
             if (r.type==RoomType.CAMP && close<=0) continue;
-            Texture texture=textures.computeIfAbsent(key,k->{
-                Texture t=new Texture(Gdx.files.internal(k),true);
-                t.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);return t;
-            });
+            boolean side=!frontFacing(d), tower=key.endsWith("top.png"), iron=key.endsWith("right.png");
+            Texture leaf=iron ? texture("sprites/citadel-portcullis.png") : null;
             var opening=grilleOpenings.get(d);
-            if (opening!=null) {
+            if (opening!=null && iron) {
                 if (close>0) {
                     float depth=r.sceneY((opening[0][2]+opening[opening.length-1][2])*.5f);
-                    parts.add(new Part(depth,()->drawInsetGrille(batch,texture,r,opening,close)));
+                    parts.add(new Part(depth,()->drawInsetGrille(batch,leaf,r,opening,close)));
                 }
                 continue;
             }
-            boolean side=!frontFacing(d), tower=key.endsWith("top.png"), iron=key.endsWith("right.png");
+            Texture texture=texture(key);
             float width=span(d,map.tileSize*.35f);
             float height=MathUtils.clamp(width*(tower?.30f:.34f),28,52);
             SideSill sill=sill(d);
@@ -205,9 +211,9 @@ final class RoomGates implements Disposable {
                 float depth=(ay+by)/2;
                 if (iron) {
                     // The guide stays attached to both piers. Only the iron teeth travel.
-                    parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,srcA,srcB,0,.211f,.789f,1)));
-                    if (amount>0) parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,
-                            srcA,srcB,1-.789f*amount,1,.789f*(1-amount),.789f)));
+                    parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,srcA,srcB,0,.211f,.89f,1)));
+                    if (amount>0) parts.add(new Part(depth,()->panel(batch,leaf,ax,ay,bx,by,height,
+                            u,v,1-amount,1,.89f*(1-amount),.89f)));
                 } else if (amount>0) {
                     float hinge=u<.5f?0:1, angle=(1-amount)*MathUtils.PI/2;
                     float scale=MathUtils.cos(angle), fold=MathUtils.sin(angle)*width*.28f;
@@ -222,7 +228,7 @@ final class RoomGates implements Disposable {
         return parts;
     }
 
-    /** Slide the original ironwork behind the painted arch, clipping at the inner stones. */
+    /** Slide the ironwork behind the painted arch, clipping at the inner stones. */
     private void drawInsetGrille(SpriteBatch batch,Texture texture,Room room,float[][] outline,float close) {
         float crown=outline[0][1], floor=outline[0][2];
         for (float[] column : outline) {
@@ -250,7 +256,7 @@ final class RoomGates implements Disposable {
         float u=MathUtils.lerp(a[0],b[0],t);
         float top=MathUtils.lerp(a[1],b[1],t), bottom=MathUtils.lerp(a[2],b[2],t)-lift;
         // The masonry jambs are already in the painting. Only sample the iron grille.
-        float x=room.sceneX(u), texU=.19f+.62f*(u-left)/width;
+        float x=room.sceneX(u), texU=(u-left)/width;
         grilleVertex(bottomVertex,x,room.sceneY(bottom),color,texU,(bottom+lift-crown)/height);
         grilleVertex(topVertex,x,room.sceneY(top),color,texU,(top+lift-crown)/height);
     }
