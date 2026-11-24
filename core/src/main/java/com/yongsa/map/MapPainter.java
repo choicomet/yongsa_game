@@ -54,6 +54,8 @@ public class MapPainter implements Disposable {
     private final PaintedDoorways doorways = new PaintedDoorways();
 
     /** 던전 방 배경 그림 (보이는 방만 읽어 두고, 오래 안 쓴 것은 버린다). */
+    /** 다가가는 방 그림을 미리 계산해 두는 일꾼 (렉 줄이기). */
+    private final MapLoader loader = new MapLoader();
     private final Map<String, Texture> sceneTex = new HashMap<>();
 
     private final Map<String, Float> sceneUsed = new HashMap<>();
@@ -290,13 +292,22 @@ public class MapPainter implements Disposable {
     }
 
     private Texture frontTexture(Room r) {
-        String file = r.scene.image.replace(".png", "-front.png");
-        String key = r.id + ":" + file; // 출구 혼합 마스크는 방 배치마다 다르다.
+        String key = frontKey(r); // 출구 혼합 마스크는 방 배치마다 다르다.
         if (frontTex.containsKey(key)) {
             sceneUsed.put(key, time);
             return frontTex.get(key);
         }
-        Texture t = null;
+        return uploadFront(r, key, loader.take("front:" + key, () -> bakeFront(r)));
+    }
+
+    private static String frontKey(Room r) {
+        return r.id + ":" + r.scene.image.replace(".png", "-front.png");
+    }
+
+    /** 다른 스레드에서 해도 되는 계산: 앞쪽 가림 그림을 읽고 바닥 자리를 지우고 가장자리를 흐린다. 그림이 없으면 main 이 null. */
+    private Baked bakeFront(Room r) {
+        Baked b = new Baked();
+        String file = r.scene.image.replace(".png", "-front.png");
         if (Gdx.files.internal(file).exists()) {
             com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(file));
             WalkMask floor = WalkMask.get(r.scene.walkMask);
@@ -309,10 +320,20 @@ public class MapPainter implements Disposable {
                     if ((p.getPixel(x,y)&255)!=0 && floor.floor((x+.5f)/w,(y+.5f)/h)) p.drawPixel(x,y,0);
             }
             if (passages.active) p = passages.joinForeground(p, r);
-            t = new Texture(p);
-            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-            p.dispose();
+            b.main = p;
         }
+        return b;
+    }
+
+    private Texture uploadFront(Room r, String key, Baked b) {
+        Texture t = null;
+        try {
+            if (b.main != null) {
+                BakeDigest.add("front:" + key, b.main);
+                t = new Texture(b.main);
+                t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            }
+        } finally { b.dispose(); }
         frontTex.put(key, t);
         sceneUsed.put(key, time);
         return t;
@@ -347,20 +368,114 @@ public class MapPainter implements Disposable {
         String key = r.id + ":" + file;
         sceneUsed.put(key, time);
         Texture t = sceneTex.get(key);
-        if (t == null) {
-            if (passages.active) {
-                // 방 그림 가장자리를 흐려서 둘레의 땅·길 그림과 이어지게 한다
-                com.badlogic.gdx.graphics.Pixmap p = passages.joinRoom(new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(file)), r);
-                t = new Texture(p, true);
-                p.dispose();
-            } else {
-                t = new Texture(Gdx.files.internal(file), true);
-            }
-            t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
-            sceneTex.put(key, t);
-        }
+        if (t == null) t = uploadScene(key, loader.take("scene:" + key, () -> bakeScene(r)));
         return t;
     }
+
+    /** 다른 스레드에서 해도 되는 계산: 방 그림을 읽고 가장자리를 흐려서 둘레의 땅·길 그림과 이어지게 한다. */
+    private Baked bakeScene(Room r) {
+        Baked b = new Baked();
+        com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(r.scene.image));
+        b.main = passages.active ? passages.joinRoom(p, r) : p;
+        return b;
+    }
+
+    private Texture uploadScene(String key, Baked b) {
+        Texture t;
+        try {
+            BakeDigest.add("scene:" + key, b.main);
+            t = new Texture(b.main, true);
+        } finally { b.dispose(); }
+        t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+        sceneTex.put(key, t);
+        sceneUsed.put(key, time);
+        return t;
+    }
+
+    /**
+     * 렉 줄이기: 화면 둘레(near)에 들어온 방·길목·이음 그림은 미리 계산을 맡기고, 다 된 것은 한 프레임에 한 장씩 올린다.
+     * 그래서 방에 들어설 때 그 자리에서 큰 그림을 계산하느라 멈추지 않는다.
+     * 더 넓은 keep 범위 안의 그림은 내리지 않고, 그 밖으로 멀어진 미리 계산은 버린다.
+     */
+    private final java.util.List<Room> order = new java.util.ArrayList<>();
+    private final PrefetchZones zones = new PrefetchZones();
+    private final Map<Room, String[]> prefetchKeys = new HashMap<>();
+
+    private void prefetch() {
+        loader.newFrame(1);
+        // near: 화면 밖 화면 폭의 0.6배까지 (걸어서 몇 초 거리) / keep: 1.25배까지는 내리지 않는다 (그래픽 메모리 절약)
+        float w = viewX1 - viewX0, h = viewY1 - viewY0, m = Math.max(w, h), n = .6f * m, k = 1.25f * m;
+        zones.clear();
+        zones.addNear(viewX0 - n, viewY0 - n, viewX1 + n, viewY1 + n);
+        zones.addKeep(viewX0 - k, viewY0 - k, viewX1 + k, viewY1 + k);
+        // 순간이동 문(동굴 입구 등) 너머 방: 그 문이 near 안에 있으면 건너편 방도 미리 준비한다.
+        for (Room r : map.rooms) for (Door d : r.doors) {
+            if (d.link == null || !(d.link.transition || d.link.oneWay)) continue;
+            if (d.footX < viewX0 - n || d.footX > viewX1 + n || d.footY < viewY0 - n || d.footY > viewY1 + n) continue;
+            Door to = d.partner();
+            if (to == null) continue;
+            zones.addNear(to.arriveX - n / 2, to.arriveY - n / 2, to.arriveX + n / 2, to.arriveY + n / 2);
+        }
+        // 가까운 방부터 (화면 가운데에서 가까운 순)
+        float cx = (viewX0 + viewX1) / 2f, cy = (viewY0 + viewY1) / 2f;
+        order.clear();
+        for (Room r : map.rooms) if (r.scene != null) order.add(r);
+        order.sort(java.util.Comparator.comparingDouble(r -> Math.abs(r.originX + r.widthPx / 2f - cx) + Math.abs(r.originY + r.heightPx / 2f - cy)));
+        for (Room r : order) {
+            String[] keys = prefetchKeys.computeIfAbsent(r, q -> new String[]{q.id + ":" + q.scene.image, frontKey(q),
+                    "scene:" + q.id + ":" + q.scene.image, "front:" + frontKey(q), "rooms/" + q.scene.id});
+            String sceneKey = keys[0], fKey = keys[1], sceneJob = keys[2], frontJob = keys[3], layerKey = keys[4];
+            // 캠프는 귀환문으로 순간이동해 오는 곳이라 미리 다가갈 수 없다: 늘 준비해 둔다.
+            boolean near = r.type == RoomType.CAMP || zones.near(r.originX, r.originY, r.originX + r.widthPx, r.originY + r.heightPx);
+            if (near) {
+                if (!sceneTex.containsKey(sceneKey)) {
+                    loader.request(sceneJob, () -> bakeScene(r));
+                    if (loader.ready(sceneJob) && loader.spendUpload())
+                        uploadScene(sceneKey, loader.take(sceneJob, () -> bakeScene(r)));
+                } else sceneUsed.put(sceneKey, time);
+                boolean layered = sceneLayers.has(layerKey);
+                if (sceneLayers.hasFront(layerKey)) {
+                    // 레이어 그림이 앞쪽을 대신 그리는 방: 옛 앞쪽 그림은 쓰지 않는다.
+                } else if (!frontTex.containsKey(fKey)) {
+                    loader.request(frontJob, () -> bakeFront(r));
+                    if (loader.ready(frontJob) && loader.spendUpload())
+                        uploadFront(r, fKey, loader.take(frontJob, () -> bakeFront(r)));
+                } else sceneUsed.put(fKey, time);
+                if (!layered) sceneForegrounds.prefetch(r, time);
+            } else if (zones.keep(r.originX, r.originY, r.originX + r.widthPx, r.originY + r.heightPx)) {
+                if (sceneTex.containsKey(sceneKey)) sceneUsed.put(sceneKey, time);
+                if (frontTex.containsKey(fKey)) sceneUsed.put(fKey, time);
+                sceneForegrounds.touch(r, time);
+            } else {
+                loader.drop(sceneJob);
+                loader.drop(frontJob);
+                sceneForegrounds.forget(r);
+            }
+        }
+        passages.prefetch(zones);
+        sceneLayers.prefetch(zones);
+    }
+
+    /** 이동 마스크를 용사 자리에서 가까운 것부터 미리 읽어 둔다 (처음 밟는 순간 멈칫하지 않게). */
+    private void preloadWalkMasks() {
+        float hx = g.hero.x, hy = g.hero.y;
+        java.util.List<Object[]> items = new java.util.ArrayList<>();
+        for (Room r : map.rooms) if (r.scene != null)
+            items.add(new Object[]{r.scene.walkMask, dist(hx, hy, r.originX + r.widthPx / 2f, r.originY + r.heightPx / 2f)});
+        for (Corridor c : map.corridors) if (c.scene != null)
+            items.add(new Object[]{c.scene.walkMask, dist(hx, hy, c.originX + c.widthPx / 2f, c.originY + c.heightPx / 2f)});
+        for (var j : map.paintedJoints)
+            items.add(new Object[]{j.walkMask, dist(hx, hy, j.rect[0] + j.rect[2] / 2f, j.rect[1] + j.rect[3] / 2f)});
+        items.sort(java.util.Comparator.comparingDouble(o -> (Float) o[1]));
+        java.util.List<String> paths = new java.util.ArrayList<>();
+        for (Object[] o : items) paths.add((String) o[0]);
+        WalkMask.preloadInBackground(paths);
+    }
+
+    private static float dist(float ax, float ay, float bx, float by) {
+        return Math.abs(ax - bx) + Math.abs(ay - by);
+    }
+
 
     /** 그림 방의 출구: 잠기면 창살, 이어진 곳이 없으면 어둠으로 막혀 있다. */
     private void drawSceneDoors() {
@@ -560,9 +675,10 @@ public class MapPainter implements Disposable {
                     torches.add(new float[]{x * T + T / 2f, y * T, MathUtils.random(10f), 1f});
             }
         }
-        passages = new PassagePainter(map, T);
-        sceneForegrounds = new SceneForegrounds(passages);
-        sceneLayers = new SceneLayerPainter(map, passages);
+        passages = new PassagePainter(map, T, loader);
+        sceneForegrounds = new SceneForegrounds(passages, loader);
+        sceneLayers = new SceneLayerPainter(map, passages, loader);
+        preloadWalkMasks();
         returnDoors = new BossReturnDoors(g);
         roomGates = new RoomGates(map, doorways, art);
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
@@ -593,6 +709,7 @@ public class MapPainter implements Disposable {
         viewY0 = y0;
         viewX1 = x1;
         viewY1 = y1;
+        prefetch();
     }
 
     private boolean inView(float x, float y) {
@@ -750,5 +867,6 @@ public class MapPainter implements Disposable {
         doorways.dispose();
         if (approachStones!=null) approachStones.dispose();
         passages.dispose();
+        loader.dispose();
     }
 }

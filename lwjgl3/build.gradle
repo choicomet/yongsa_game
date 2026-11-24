@@ -40,3 +40,14 @@ tasks.register('dist', Jar) {
 
 // Windows users can also double-click the launcher in the extracted distribution.
 distributions.main.contents.from(rootProject.file('용사가 다한다.exe'))
+
+// 개발용 렉 측정: gradlew lwjgl3:perf (맵 전체를 두 바퀴 돌며 프레임 시간을 잰다)
+tasks.register('perf', JavaExec) {
+    group = 'verification'
+    description = '맵 전체를 돌며 프레임 시간을 잰다'
+    mainClass = 'com.yongsa.lwjgl3.PerfLauncher'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = rootProject.projectDir
+    jvmArgs = ['-Dfile.encoding=UTF-8'] + (project.findProperty('perfJvm') ?: '').tokenize(' ')
+    args = (project.findProperty('laps') ?: '2').tokenize(' ')
+}
