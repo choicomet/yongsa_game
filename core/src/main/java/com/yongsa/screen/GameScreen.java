@@ -378,7 +378,8 @@ public class GameScreen extends ScreenAdapter {
                     hud.toast("문이 잠겼다! 몬스터를 모두 쓰러뜨리자");
                     break;
                 case ROOM_CLEARED:
-                    if (!e.boss) hud.toast("방을 정리했다 · 길이 다시 열렸다");
+                    // 안내 글은 GameSession 이 “방을 비웠다! 문이 열렸다/보물상자가 나타났다”로 따로 띄운다.
+                    // 여기서도 띄우면 같은 뜻의 안내가 두 줄 연달아 떴다.
                     break;
                 case OPEN_FORGE:
                     modals.push(new ForgeWindow(this));

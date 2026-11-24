@@ -28,9 +28,14 @@ public abstract class Modal extends Table {
 
     /** 어둡게 깐 배경 위 가운데 판. */
     protected Table panel() {
+        return panel("panel");
+    }
+
+    /** panel() 과 같되 판 그림을 고른다 (예: 모서리가 둥근 "panelRound"). */
+    protected Table panel(String background) {
         setBackground(skin.getDrawable("dim"));
         Table p = new Table(skin);
-        p.setBackground(skin.getDrawable("panel"));
+        p.setBackground(skin.getDrawable(background));
         p.pad(22, 28, 22, 28);
         add(p).center();
         return p;

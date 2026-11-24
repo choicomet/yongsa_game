@@ -34,11 +34,16 @@ public final class Ui {
         skin.add("panel", patch(0x141b22fa, 0x75624aff, 1), Drawable.class);
         skin.add("panelDark", patch(0x0c1219ef, 0x35414aff, 1), Drawable.class);
         skin.add("dim", new TextureRegionDrawable(art.white()).tint(new Color(0, 0, 0, 0.55f)), Drawable.class);
+        // 일시정지 · 설정 창: 모서리가 둥근 판과 버튼, 제목 아래 옅은 금색 줄
+        skin.add("panelRound", rounded(0x121820f5, 0x8a7350ff, 2, 20, 14, 10), Drawable.class);
+        skin.add("divider", new TextureRegionDrawable(art.white()).tint(new Color(0xe3b87559)), Drawable.class);
 
         skin.add("default", buttonStyle(fonts, 0x202a33ff, 0x45515bff, 0x303d48ff, 0x131c25ff), TextButton.TextButtonStyle.class);
         skin.add("focused", buttonStyle(fonts, 0x3d352bff, 0xe3b875ff, 0x504431ff, 0x29241eff), TextButton.TextButtonStyle.class);
         skin.add("danger", buttonStyle(fonts, 0x7a2219ff, 0xc0392bff, 0x8e2a20ff, 0x5a160fff), TextButton.TextButtonStyle.class);
         skin.add("dangerFocused", buttonStyle(fonts, 0xa0301fff, 0xf2c94cff, 0xb03a28ff, 0x5a160fff), TextButton.TextButtonStyle.class);
+        skin.add("round", roundStyle(fonts, 0x1d2730ff, 0x3c4852ff, 0x283440ff, 0x141c24ff, TEXT), TextButton.TextButtonStyle.class);
+        skin.add("roundFocused", roundStyle(fonts, 0x3a3226ff, 0xe3b875ff, 0x463b2bff, 0x29231cff, CREAM), TextButton.TextButtonStyle.class);
         skin.add("tab", buttonStyle(fonts, 0x2a2533ff, 0x3a3447ff, 0x3a3447ff, 0x2a2533ff), TextButton.TextButtonStyle.class);
         skin.add("tabOn", buttonStyle(fonts, 0x4d4560ff, 0xc9a45cff, 0x4d4560ff, 0x2a2533ff), TextButton.TextButtonStyle.class);
         // 타이틀 메뉴: 그림 톤(어두운 보라 · 크림색 글씨 · 금색 테두리)에 맞춘 반투명 버튼
@@ -78,6 +83,56 @@ public final class Ui {
         s.down = patch(down, border, 1);
         s.disabled = patch(0x221f29ff, 0x2f2b38ff, 2);
         return s;
+    }
+
+    private static TextButton.TextButtonStyle roundStyle(Fonts fonts, int bg, int border, int over, int down, Color text) {
+        TextButton.TextButtonStyle s = new TextButton.TextButtonStyle();
+        s.font = fonts.normal;
+        s.fontColor = text;
+        s.disabledFontColor = new Color(0x6a6575ff);
+        s.up = rounded(bg, border, 2, 12, 10, 6);
+        s.over = rounded(over, border, 2, 12, 10, 6);
+        s.down = rounded(down, border, 2, 12, 10, 6);
+        s.disabled = rounded(0x1c1a22ff, 0x2f2b38ff, 2, 12, 10, 6);
+        return s;
+    }
+
+    /**
+     * 모서리가 둥근 테두리 판 9-패치. 가장자리는 부드럽게(안티앨리어싱) 칠한다.
+     * bw 테두리 두께, radius 모서리 반지름, padX/padY 안쪽 여백.
+     */
+    public static NinePatchDrawable rounded(int bg, int border, int bw, int radius, int padX, int padY) {
+        int size = radius * 2 + 2;
+        Color cb = new Color(bg), cr = new Color(border);
+        Pixmap p = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+        p.setBlending(Pixmap.Blending.None);
+        float half = size / 2f, inner = half - radius;
+        Color c = new Color();
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                float qx = Math.abs(x + 0.5f - half) - inner, qy = Math.abs(y + 0.5f - half) - inner;
+                float ox = Math.max(qx, 0), oy = Math.max(qy, 0);
+                // 둥근 사각형 경계까지 거리 (안쪽은 음수)
+                float d = (float) Math.sqrt(ox * ox + oy * oy) + Math.min(Math.max(qx, qy), 0) - radius;
+                float outer = Math.max(0, Math.min(1, 0.5f - d));
+                float fill = Math.max(0, Math.min(1, 0.5f - (d + bw)));
+                c.set(cr).lerp(cb, fill);
+                c.a = (cr.a + (cb.a - cr.a) * fill) * outer;
+                p.drawPixel(x, y, Color.rgba8888(c));
+            }
+        }
+        Texture t = new Texture(p);
+        t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        p.dispose();
+        NinePatch np = new NinePatch(new TextureRegion(t), radius, radius, radius, radius);
+        NinePatchDrawable d = new NinePatchDrawable(np);
+        d.setLeftWidth(padX);
+        d.setRightWidth(padX);
+        d.setTopHeight(padY);
+        d.setBottomHeight(padY);
+        d.setMinWidth(size);
+        d.setMinHeight(size);
+        return d;
     }
 
     /** 테두리가 있는 단색 9-패치. */

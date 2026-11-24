@@ -6,7 +6,7 @@ import com.yongsa.YongsaGame;
 /** 설정 (UI-10): 소리 크기, 창 모드, 연출 속도. 바로 적용되고 저장된다. 타이틀에서 열면 조작 키도 여기서 본다. */
 public class SettingsWindow extends Modal {
     private final YongsaGame game;
-    /** 조작 키 창을 여는 일. null 이면 줄을 감춘다 (게임 중에는 Esc 메뉴에 따로 있다). */
+    /** 조작 키 창을 여는 일. null 이면 줄을 감춘다. 타이틀과 게임 중 Esc 메뉴 모두 넘겨 준다. */
     private final Runnable openControls;
 
     public SettingsWindow(YongsaGame game) {
@@ -21,13 +21,19 @@ public class SettingsWindow extends Modal {
 
     @Override
     public void build() {
-        Table p = panel();
-        p.add(label("설정", "large", Ui.GOLD)).colspan(3).padBottom(18).row();
+        nav.style = "round";
+        Table p = panel("panelRound");
+        p.pad(26, 36, 30, 36);
+        p.add(label("설정", "large", Ui.GOLD)).colspan(3).padBottom(10).row();
+        p.add(new com.badlogic.gdx.scenes.scene2d.ui.Image(skin.getDrawable("divider"))).colspan(3).width(300).height(1).padBottom(20).row();
 
         p.add(label("소리 크기", "default", Ui.DIM)).left().padRight(24);
         Table vol = new Table();
-        vol.add(nav.add("−", () -> setVolume(game.settings.volume - 0.1f))).width(56).height(46);
-        vol.add(label(Math.round(game.settings.volume * 100) + "%")).width(90).center();
+        // "−"(U+2212)는 글꼴에 없어 빈 칸으로 보였다: 보통 빼기 기호를 쓴다
+        vol.add(nav.add("-", () -> setVolume(game.settings.volume - 0.1f))).width(56).height(46);
+        com.badlogic.gdx.scenes.scene2d.ui.Label volText = label(Math.round(game.settings.volume * 100) + "%");
+        volText.setAlignment(com.badlogic.gdx.utils.Align.center);
+        vol.add(volText).width(108).center();
         vol.add(nav.add("+", () -> setVolume(game.settings.volume + 0.1f))).width(56).height(46);
         p.add(vol).left().padBottom(10).row();
 
