@@ -25,9 +25,9 @@ public class Bgm implements Disposable {
     private float fadeSpeed = 0f;
     /**
      * 곡 자체가 크게 마스터링돼 있어서(약 -12 LUFS) 효과음이 묻히지 않게 미리 낮춰 둔다.
-     * 설정 70% 에서 대략 -19 LUFS: 휘두르기·타격음이 음악 위로 4~6dB 정도 올라온다.
+     * 설정 70% 에서 대략 -21 LUFS. 2026-11-26 해성: 효과음을 더 크게 → 0.6 에서 0.5 로 낮춤.
      */
-    static final float MIX = 0.6f;
+    static final float MIX = 0.5f;
     /** 덕킹: 큰 효과음이 날 때 잠깐 줄이는 배율 (1 = 그대로). */
     private float duck = 1f;
     private float duckTarget = 1f;

@@ -506,10 +506,12 @@ public class GameSession {
             if (h.strike()) {
                 h.delay -= dt;
                 if (h.delay > 0) continue;
+                quietHit = true; // 낙뢰 소리(sk_strikeHit)가 타격음을 대신한다
                 for (Monster m : monsters) {
                     if (m.dead || m.state == Monster.State.SPAWN) continue;
                     if (Math.hypot(m.x - h.x, m.y - h.y) <= h.radius + m.hurtRadius) damageMonster(m, h.multiplier);
                 }
+                quietHit = false;
                 GameEvent fx = GameEvent.fx(GameEvent.Type.SKILL_HIT, h.x, h.y);
                 fx.text = h.kind;
                 fx.size = h.radius;
@@ -529,7 +531,10 @@ public class GameSession {
                 float dx = m.x - h.x, dy = m.centerY() - h.y, r = h.radius + m.hurtRadius;
                 if (dx * dx + dy * dy > r * r) continue;
                 h.hit.add(m);
+                quietHit = true; // 스킬마다 맞는 소리가 따로 있다 (sk_<kind>Hit)
                 damageMonster(m, h.multiplier);
+                quietHit = false;
+                events.add(GameEvent.sound("sk_" + h.kind + "Hit"));
                 if (h.stun > 0 && !m.dead && !m.boss) m.enter(Monster.State.STUNNED, h.stun);
                 if (h.heal > 0) {
                     int add = Math.max(1, Math.round(rules.maxHp(state) * h.heal));

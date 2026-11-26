@@ -30,7 +30,15 @@ public class Sfx implements Disposable {
 
     public Sfx() {
         try {
-            for (Map.Entry<String, float[]> e : SfxSynth.build().entrySet()) {
+            Map<String, float[]> synth = SfxSynth.build();
+            // 파일로만 있는 소리 (스킬 소리 등)
+            for (String name : SfxMix.fileOnlyBases(synth.keySet())) {
+                FileHandle file = find(name);
+                if (file == null) continue;
+                sounds.put(name, Gdx.audio.newSound(file));
+                mix.measureFile(name);
+            }
+            for (Map.Entry<String, float[]> e : synth.entrySet()) {
                 String name = e.getKey();
                 FileHandle file = find(name);
                 if (file != null) {

@@ -98,11 +98,15 @@ final class SfxMix {
         cue("step", -22f, 0.12f, 0.06f, 0);
         cue("select", -20f, 0.03f, 0f, 0);
         // ── 용사 스킬 (해성 2026-11-26: 효과음은 기본 공격·구르기 대신 스킬·보스 패턴에 쓴다)
-        cue("sk_cleave", "slam", -10f, 0.1f, 0.04f, 0.8f, 2, 0.2f, 0.2f);      // 흑철 대지 가르기: 낮고 무거운 내려찍기
-        cue("sk_crescent", "swing", -11f, 0.1f, 0.04f, 0.78f, 2, 0.12f, 0.15f); // 혈월참: 길게 끌리는 베기
-        cue("sk_strike", "cast", -13f, 0.1f, 0.04f, 0.9f, 2, 0f, 0f);          // 천공 낙뢰: 모으는 소리
-        cue("sk_strikeHit", "destroy", -11f, 0.06f, 0.08f, 1.35f, 2, 0.15f, 0.12f); // 낙뢰가 떨어지며 깨지는 소리
-        cue("sk_beam", "craft", -11f, 0.1f, 0.03f, 1.25f, 2, 0.2f, 0.2f);      // 성광 검기: 맑게 울리는 종소리
+        // 파일: assets/audio/sfx/sk_*.wav (tools/make_skill_sfx.py 로 만든 것, 크게 구움 -7dB)
+        cue("sk_cleave", "sk_cleave", -7f, 0.1f, 0.03f, 1f, 3, 0.3f, 0.35f);         // 흑철 대지 가르기: 바위가 갈라지는 내려찍기
+        cue("sk_cleaveHit", "sk_cleaveHit", -9f, 0.08f, 0.06f, 1f, 2, 0f, 0f);
+        cue("sk_crescent", "sk_crescent", -7f, 0.1f, 0.03f, 1f, 3, 0.25f, 0.3f);     // 혈월참: 휘어지는 바람 + 어두운 단조 울림
+        cue("sk_crescentHit", "sk_crescentHit", -9f, 0.06f, 0.06f, 1f, 2, 0f, 0f);
+        cue("sk_strike", "sk_strike", -8f, 0.1f, 0.02f, 1f, 2, 0.15f, 0.3f);         // 천공 낙뢰: 전기가 모이는 소리
+        cue("sk_strikeHit", "sk_strikeHit", -7f, 0.07f, 0.06f, 1f, 3, 0.35f, 0.4f);  // 번개 '딱' + 천둥
+        cue("sk_beam", "sk_beam", -7f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);                // 성광 검기: 종 + 밝은 장조 반짝임
+        cue("sk_beamHit", "sk_beamHit", -9f, 0.06f, 0.05f, 1f, 2, 0f, 0f);
         // ── 보스·몹 장판 패턴이 터질 때 (hz_<모양>). 여러 개가 한꺼번에 터져도 최소 간격으로 한 번만
         cue("hz_boulder", "destroy", -10f, 0.12f, 0.05f, 0.55f, 2, 0.25f, 0.2f); // 골렘 바위: 낮게 부서지는 소리
         cue("hz_rock", "destroy", -12f, 0.1f, 0.08f, 0.65f, 1, 0f, 0f);
@@ -165,9 +169,18 @@ final class SfxMix {
         return scale;
     }
 
-    /** 파일로 바꿔 넣은 소리. */
+    /** 파일로 바꿔 넣은 소리. 스킬 소리(sk_)는 더 크게 구워 두었다 (tools/make_skill_sfx.py LEVEL_DB). */
     void measureFile(String base) {
-        level.put(base, FILE_REFERENCE_DB);
+        level.put(base, base.startsWith("sk_") ? SKILL_FILE_DB : FILE_REFERENCE_DB);
+    }
+
+    static final float SKILL_FILE_DB = -7f;
+
+    /** 코드로 만드는 파형이 없고 파일로만 있는 소리 이름들. */
+    static java.util.Set<String> fileOnlyBases(java.util.Set<String> synth) {
+        java.util.Set<String> out = new java.util.TreeSet<>();
+        for (Cue c : CUES.values()) if (!synth.contains(c.base)) out.add(c.base);
+        return out;
     }
 
     /**

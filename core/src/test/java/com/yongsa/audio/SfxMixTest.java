@@ -16,6 +16,7 @@ class SfxMixTest {
             for (int i = 0; i < s.length; i++) s[i] *= k;
             assertTrue(peak(s) <= 0.981f, e.getKey() + " 이 깨진다");
         }
+        for (String f : SfxMix.fileOnlyBases(SfxSynth.build().keySet())) mix.measureFile(f);
         return mix;
     }
 
@@ -119,5 +120,17 @@ class SfxMixTest {
         for (String name : SfxMix.CUES.keySet()) {
             assertNotNull(mix.decide(name, 1000 + name.hashCode() % 100), name + " 이 원본 파형을 못 찾는다");
         }
+    }
+
+    @Test
+    void everyFileOnlySoundHasItsFileAndSkillsAreLoud() throws Exception {
+        for (String f : SfxMix.fileOnlyBases(SfxSynth.build().keySet())) {
+            assertTrue(java.nio.file.Files.exists(java.nio.file.Path.of("assets/audio/sfx/" + f + ".wav")), f + ".wav 가 없다");
+        }
+        for (String kind : new String[]{"cleave", "crescent", "strike", "beam"}) {
+            assertTrue(SfxMix.CUES.containsKey("sk_" + kind + "Hit"), kind + " 맞는 소리");
+        }
+        SfxMix mix = baked();
+        assertTrue(mix.decide("sk_beam", 1).gain > 0.99f, "스킬 소리는 줄이지 않고 그대로 크게");
     }
 }
