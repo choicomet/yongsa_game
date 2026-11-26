@@ -165,6 +165,7 @@ public class GameScreen extends ScreenAdapter {
             skillPressed = -1;
         }
         handleEvents();
+        updatePlaceMusic();
         game.bgm.update(delta);
         updateCampfireSound(delta);
         if (!paused) renderer.update(frozen ? dt * 0.15f : dt);
@@ -525,6 +526,20 @@ public class GameScreen extends ScreenAdapter {
         fadeTarget = 1f;
         hud.toast("캠프로 돌아간다");
         return true;
+    }
+
+    /**
+     * 장소 배경음악. 캠프에 있으면 캠프 곡(assets/audio/bgm/camp.ogg)을 2초 동안 서서히 키우며 틀고,
+     * 캠프를 나가면 1.5초 동안 줄인다. 보스 곡이 줄어드는 중(쓰러져서 캠프로 돌아올 때 등)이면 다 줄어든 뒤에 튼다.
+     */
+    private void updatePlaceMusic() {
+        String track = game.bgm.playing();
+        boolean wantCamp = session.inCamp() && endingDelay < 0;
+        if (wantCamp) {
+            if (track == null) game.bgm.play("camp", 2f);
+        } else if ("camp".equals(track)) {
+            game.bgm.fadeOut(1.5f);
+        }
     }
 
     /**
