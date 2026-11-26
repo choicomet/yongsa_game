@@ -899,6 +899,7 @@ public class GameSession {
             spawn(r, d.boss, true, false, true);
             GameEvent e = new GameEvent(GameEvent.Type.BOSS_FIGHT_START);
             e.text = d.boss.name;
+            e.dungeonId = r.dungeonId;
             events.add(e);
         } else if (r.type == RoomType.FINAL) {
             spawn(r, balance.finalBoss, true, true, true);
