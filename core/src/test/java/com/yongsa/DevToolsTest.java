@@ -88,4 +88,30 @@ class DevToolsTest {
         g.devFillOres(999);
         for (OreType t : OreType.values()) assertEquals(999, s.ore(t));
     }
+
+    @Test
+    void leavingABossFightMidwayRestartsItFromTheBeginning() {
+        GameState s = NewGame.create(b);
+        GameSession g = new GameSession(b, TestData.map(), s, 3);
+        Room boss = g.map.room("L6");
+        TestData.walkIn(g, boss);
+        assertTrue(g.fighting());
+        com.yongsa.enemy.Monster first = g.activeBoss();
+        first.hp = first.maxHp / 3;
+
+        g.devAbandonFight();
+        g.warpToCamp();
+        assertFalse(g.fighting(), "싸움을 그만두고");
+        assertTrue(g.inCamp(), "캠프로 돌아왔다");
+        assertNull(g.activeBoss());
+        assertFalse(s.room("L6").cleared, "그만둔 보스방은 정리한 방이 아니다");
+        assertFalse(s.bossDefeated("LEFT"));
+
+        assertTrue(g.devWarpToBoss("LEFT"));
+        TestData.walkIn(g, boss);
+        assertTrue(g.fighting(), "다시 들어가면 싸움이 다시 시작된다");
+        com.yongsa.enemy.Monster again = g.activeBoss();
+        assertNotSame(first, again);
+        assertEquals(again.maxHp, again.hp, "보스는 체력이 가득 찬 채로 처음부터");
+    }
 }
