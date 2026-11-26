@@ -822,10 +822,6 @@ public class WorldRenderer implements Disposable {
 
     private void drawHero() {
         HeroActor h = g.hero;
-        if (g.sleeping()) {
-            drawSleepingHero(g.sleepBed());
-            return;
-        }
         drawActorShadow(h.x, h.y, 26 * HERO_SCALE, 1, false);
         if (h.rolling()) {
             drawRoll(h);
@@ -857,34 +853,6 @@ public class WorldRenderer implements Disposable {
             Particles.normal(batch);
         }
         if (!swordBehind) drawSword(h, alpha, r, squash, bob);
-        batch.setColor(Color.WHITE);
-    }
-
-    /**
-     * 침대에 누운 용사. 그림(sprites/hero_sleep.png)이 오면 그걸 침대 가운데에 그리고,
-     * 없으면 옆모습을 눕혀 이불을 덮어 둔다 (docs/ART_REQUESTS.md).
-     */
-    private void drawSleepingHero(com.yongsa.map.Prop bed) {
-        float cx = Float.isNaN(bed.sleepX) ? bed.centerX(T) : bed.sleepX;
-        float cy = Float.isNaN(bed.sleepY) ? bed.centerY(T) : bed.sleepY;
-        if (Gdx.files.internal("sprites/hero_sleep.png").exists()) {
-            TextureRegion r = storyFrame("hero_sleep", "sprites/hero_sleep.png", 1, 0);
-            float w = 48 * HERO_SCALE, hgt = 56 * HERO_SCALE;
-            batch.setColor(Color.WHITE);
-            batch.draw(r, cx - w / 2f, cy - hgt / 2f, w, hgt);
-            return;
-        }
-        // 임시: 앞모습을 베개에 눕히고 그림 속 이불 색으로 가슴 아래를 덮는다
-        TextureRegion r = art.world("hero_down");
-        float w = art.width(r) * S * HERO_SCALE, hgt = art.height(r) * S * HERO_SCALE;
-        float breathe = 0.03f * MathUtils.sin(time * 2.4f);
-        batch.setColor(Color.WHITE);
-        batch.draw(r, cx - w / 2f, cy - hgt / 2f, w, hgt);
-        float bw = w * 1.15f, bh = hgt * (0.55f + breathe);
-        batch.setColor(62 / 255f, 88 / 255f, 172 / 255f, 1f);
-        batch.draw(art.white(), cx - bw / 2f, cy - hgt / 2f - 2, bw, bh);
-        batch.setColor(225 / 255f, 225 / 255f, 235 / 255f, 1f);
-        batch.draw(art.white(), cx - bw / 2f, cy - hgt / 2f - 2 + bh - 3, bw, 3);
         batch.setColor(Color.WHITE);
     }
 
@@ -1149,23 +1117,14 @@ public class WorldRenderer implements Disposable {
 
     // ───────────────────────── 체력 막대
 
-    /** 잠 (선우 버전): 천천히 어두워졌다가 밝아지고, 침대 위로 Zzz 가 올라간다. */
+    /** 잠: 눕는 모션 없이 화면만 천천히 어두워졌다가 (가운데에서 잠깐 완전히 깜깜) 다시 밝아진다. */
     private void drawSleepOverlay(OrthographicCamera cam) {
         float p = g.sleepProgress();
-        batch.setColor(0.01f, 0.01f, 0.04f, MathUtils.sin(p * MathUtils.PI) * 0.85f);
+        float dark = Math.min(1f, MathUtils.sin(p * MathUtils.PI) * 1.3f);
+        batch.setColor(0f, 0f, 0f, dark);
         batch.draw(art.white(), 0, 0, cam.viewportWidth, cam.viewportHeight);
         batch.setColor(Color.WHITE);
-        com.yongsa.map.Prop bed = g.sleepBed();
-        float bx = Float.isNaN(bed.sleepX) ? bed.centerX(T) : bed.sleepX;
-        float by = (Float.isNaN(bed.sleepY) ? bed.centerY(T) : bed.sleepY) + 20;
-        for (int i = 0; i < 3; i++) {
-            float ph = (p * 3 + i / 3f) % 1f;
-            BitmapFont f = i == 0 ? fonts.large : fonts.normal;
-            outlined(f, i == 0 ? "Z" : "z", sx(cam, bx + 14 + ph * 22), sy(cam, by + 10 + ph * 40), SLEEP_Z, 1f - ph);
-        }
     }
-
-    private static final Color SLEEP_Z = new Color(0.85f, 0.9f, 1f, 1f);
 
     // ───────────────────────── 글자 (화면 좌표로 그려 글자가 흐려지지 않게 한다)
 
@@ -1194,12 +1153,20 @@ public class WorldRenderer implements Disposable {
             layout.setText(font, ft.text);
             outlined(font, ft.text, sx(cam, ft.x) - layout.width / 2f, sy(cam, ft.y) + layout.height, ft.color, a);
         }
+        speechBoxes.clear();
         for (Speech sp : speeches) {
             float a = Math.min(1f, sp.t * 4f) * Math.min(1f, (3.6f - sp.t) * 2f);
             layout.setText(fonts.normal, sp.text);
             float w = layout.width + 28, hgt = layout.height + 20;
             float x = sx(cam, sp.x) - w / 2f, y = sy(cam, sp.y);
             boolean friend = sp.speaker != null; // 용사·마을 사람은 금빛 테두리와 이름
+            // 말풍선(꼬리 포함)과 그 위 왼쪽 이름표 자리: E 안내가 이 자리를 피해 간다
+            speechBoxes.add(new float[]{x, y - 8, x + w, y + hgt});
+            if (friend) {
+                layout.setText(fonts.small, sp.speaker);
+                speechBoxes.add(new float[]{x + 10, y + hgt, x + 10 + layout.width, y + hgt + 20});
+                layout.setText(fonts.normal, sp.text);
+            }
             batch.setColor(friend ? 0.05f : 0.06f, friend ? 0.04f : 0.02f, friend ? 0.07f : 0.1f, 0.85f * a);
             batch.draw(art.white(), x, y, w, hgt);
             batch.draw(art.white(), x + w / 2f - 6, y - 8, 12, 8);
@@ -1219,6 +1186,7 @@ public class WorldRenderer implements Disposable {
             layout.setText(fonts.normal, g.prompt);
             float w = layout.width + 24, hgt = layout.height + 16;
             float x = sx(cam, g.promptX) - w / 2f, y = sy(cam, g.promptY);
+            y = avoidSpeech(x, y, w, hgt);
             batch.setColor(0.05f, 0.04f, 0.07f, 0.8f);
             batch.draw(art.white(), x, y, w, hgt);
             batch.setColor(Ui.GOLD.r, Ui.GOLD.g, Ui.GOLD.b, 0.8f);
@@ -1230,6 +1198,26 @@ public class WorldRenderer implements Disposable {
         fonts.normal.setColor(Color.WHITE);
         fonts.large.setColor(Color.WHITE);
         batch.setColor(Color.WHITE);
+    }
+
+    /** 이번 프레임 말풍선 자리 (화면 좌표 x0, y0, x1, y1). */
+    private final List<float[]> speechBoxes = new ArrayList<>();
+
+    /** E 안내 상자가 말풍선과 겹치면 겹치지 않을 때까지 말풍선 위로 올린다. */
+    private float avoidSpeech(float x, float y, float w, float h) {
+        final float gap = 2; // 말풍선 이름표와 E 안내 사이 여백
+        for (int guard = 0; guard < 4; guard++) {
+            boolean moved = false;
+            for (float[] b : speechBoxes) {
+                boolean overlap = x < b[2] && x + w > b[0] && y < b[3] + gap && y + h > b[1] - gap;
+                if (overlap) {
+                    y = b[3] + gap;
+                    moved = true;
+                }
+            }
+            if (!moved) break;
+        }
+        return y;
     }
 
     private void outlined(BitmapFont font, String text, float x, float y, Color c, float a) {
