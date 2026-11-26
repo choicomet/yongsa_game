@@ -180,7 +180,10 @@ public class Nav {
             int best = -1, bestGap = Integer.MAX_VALUE;
             for (int c = 0; c < line.size(); c++) {
                 if (entries.get(line.get(c)).button.isDisabled()) continue;
-                int gap = Math.abs(c - Math.min(col, line.size() - 1));
+                // 화면에 놓였으면 가로 위치가 가장 가까운 버튼, 아니면 같은 칸 순서에 가까운 버튼
+                float cx = centerX(cur.button), tx = centerX(entries.get(line.get(c)).button);
+                int gap = !Float.isNaN(cx) && !Float.isNaN(tx) ? Math.round(Math.abs(tx - cx))
+                        : Math.abs(c - Math.min(col, line.size() - 1));
                 if (gap < bestGap) {
                     bestGap = gap;
                     best = line.get(c);
@@ -193,6 +196,12 @@ public class Nav {
         }
         refresh();
         if (onMove != null) onMove.run();
+    }
+
+    /** 버튼 가운데의 화면 x (아직 화면에 안 놓였으면 NaN). */
+    private static float centerX(TextButton b) {
+        if (b.getStage() == null) return Float.NaN;
+        return b.localToStageCoordinates(new com.badlogic.gdx.math.Vector2(b.getWidth() / 2f, 0)).x;
     }
 
     /** rows 창의 왼쪽/오른쪽: 같은 줄 안에서만 돈다. */
