@@ -858,6 +858,10 @@ public class GameSession {
             GameEvent fx = GameEvent.fx(GameEvent.Type.SLAM_FX, b.x, b.y);
             fx.size = balance.monster.bossSlamRadiusTiles * T * (b.finalBoss ? 1.3f : 1f);
             events.add(fx);
+        } else if (introStep == 1 && b.state == Monster.State.CAST_TELEGRAPH
+                && (b.finalBoss || "golem".equals(b.def.sprite))) {
+            // Advance the wind-up animation while combat AI is paused for the introduction.
+            b.stateT = Math.max(0f, b.stateT - dt);
         } else if (introStep == 2 && b.state == Monster.State.RECOVER) {
             b.stateT -= dt;
             if (b.stateT <= 0) b.enter(Monster.State.CHASE, 0f);
