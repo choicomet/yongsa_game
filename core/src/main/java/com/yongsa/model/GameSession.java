@@ -1668,6 +1668,27 @@ public class GameSession {
         return true;
     }
 
+    /**
+     * 개발용: 하던 싸움을 그만둔다. 잠긴 방은 처음 상태로 돌아가서(정리한 방으로 치지 않는다)
+     * 다시 들어가면 보스가 새로 나타나 처음부터 싸운다. 싸우는 중이 아니면 아무것도 하지 않는다.
+     */
+    public void devAbandonFight() {
+        if (fightRoom == null) return;
+        fightRoom.setFightLock(false);
+        fightRoom = null;
+        wavesLeft = 0;
+        monsters.clear();
+        projectiles.clear();
+        shots.clear();
+        hazards.clear();
+        bossIntroT = 0;
+        blindT = 0;
+        hero.stunT = 0;
+        hero.slowT = 0;
+        hero.rollT = 0;
+        hero.kbT = 0;
+    }
+
     /** 광물 무한: 모자라면 채워 둔다. */
     public void devFillOres(int amount) {
         for (OreType t : OreType.values()) if (state.ore(t) < amount) state.ores.put(t, amount);

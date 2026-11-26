@@ -21,6 +21,8 @@ public class Nav {
         final boolean danger;
         /** 지금 고른 탭처럼 “선택됨”을 따로 보여 줄 버튼 (포커스와 다른 모양). */
         boolean selected;
+        /** rows 를 켠 창에서 이 버튼이 속한 줄 (newRow 로 넘긴다). */
+        int row;
 
         Entry(TextButton button, Runnable action, boolean danger) {
             this.button = button;
@@ -37,6 +39,17 @@ public class Nav {
     public String style;
     /** 버튼이 표처럼 한 줄에 columns 개씩 놓인 창 (조작 키). 1보다 크면 위/아래는 한 줄씩, 왼쪽/오른쪽은 한 칸씩 움직인다. */
     public int columns = 1;
+    /**
+     * 줄마다 버튼 수가 다른 창 (개발용 메뉴). 켜면 위/아래는 윗줄·아랫줄로, 왼쪽/오른쪽은 같은 줄 안에서만 움직인다.
+     * 줄은 버튼을 더하기 전에 newRow() 로 나눈다.
+     */
+    public boolean rows;
+    private int rowCounter;
+
+    /** rows 를 켠 창에서 다음에 더하는 버튼부터 새 줄. */
+    public void newRow() {
+        rowCounter++;
+    }
 
     public Nav(Skin skin) {
         this.skin = skin;
@@ -49,6 +62,7 @@ public class Nav {
     public TextButton add(String text, Runnable action, boolean danger) {
         TextButton b = new TextButton(text, skin, danger ? "danger" : "default");
         Entry e = new Entry(b, action, danger);
+        e.row = rowCounter;
         entries.add(e);
         b.addListener(new ClickListener() {
             @Override
@@ -78,6 +92,7 @@ public class Nav {
     public void clear() {
         entries.clear();
         focus = 0;
+        rowCounter = 0;
     }
 
     public void setFocus(TextButton b) {
@@ -144,8 +159,64 @@ public class Nav {
         if (onMove != null) onMove.run();
     }
 
+    /** 같은 줄에 있는 버튼 번호들 (entries 순서). */
+    private List<Integer> rowOf(int row) {
+        List<Integer> out = new ArrayList<>();
+        for (int i = 0; i < entries.size(); i++) if (entries.get(i).row == row) out.add(i);
+        return out;
+    }
+
+    /** rows 창의 위/아래: 버튼이 있는 윗줄·아랫줄로 간다 (끝을 넘으면 반대쪽 끝 줄). 같은 칸 순서에 가장 가까운 버튼을 고른다. */
+    private void moveBetweenRows(int d) {
+        if (entries.isEmpty()) return;
+        Entry cur = entries.get(focus);
+        List<Integer> here = rowOf(cur.row);
+        int col = here.indexOf(focus);
+        int minRow = entries.get(0).row, maxRow = entries.get(entries.size() - 1).row;
+        int span = maxRow - minRow + 1;
+        for (int k = 1; k <= span; k++) {
+            int r = minRow + Math.floorMod(cur.row - minRow + d * k, span);
+            List<Integer> line = rowOf(r);
+            int best = -1, bestGap = Integer.MAX_VALUE;
+            for (int c = 0; c < line.size(); c++) {
+                if (entries.get(line.get(c)).button.isDisabled()) continue;
+                int gap = Math.abs(c - Math.min(col, line.size() - 1));
+                if (gap < bestGap) {
+                    bestGap = gap;
+                    best = line.get(c);
+                }
+            }
+            if (best >= 0) {
+                focus = best;
+                break;
+            }
+        }
+        refresh();
+        if (onMove != null) onMove.run();
+    }
+
+    /** rows 창의 왼쪽/오른쪽: 같은 줄 안에서만 돈다. */
+    private void moveInRow(int d) {
+        if (entries.isEmpty()) return;
+        List<Integer> line = rowOf(entries.get(focus).row);
+        int n = line.size(), at = line.indexOf(focus);
+        for (int k = 1; k < n; k++) {
+            int i = line.get(Math.floorMod(at + d * k, n));
+            if (!entries.get(i).button.isDisabled()) {
+                focus = i;
+                break;
+            }
+        }
+        refresh();
+        if (onMove != null) onMove.run();
+    }
+
     /** 표 모양 창에서 위/아래: 한 줄(columns 칸) 건너뛴다. 끝을 넘으면 맨 처음/맨 끝 버튼. */
     private void moveRow(int d) {
+        if (rows) {
+            moveBetweenRows(d);
+            return;
+        }
         if (columns <= 1) {
             move(d);
             return;
@@ -170,7 +241,8 @@ public class Nav {
                 return true;
             case Input.Keys.LEFT:
             case Input.Keys.A:
-                move(-1);
+                if (rows) moveInRow(-1);
+                else move(-1);
                 return true;
             case Input.Keys.DOWN:
             case Input.Keys.S:
@@ -178,7 +250,8 @@ public class Nav {
                 return true;
             case Input.Keys.RIGHT:
             case Input.Keys.D:
-                move(1);
+                if (rows) moveInRow(1);
+                else move(1);
                 return true;
             case Input.Keys.TAB:
                 boolean shift = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);

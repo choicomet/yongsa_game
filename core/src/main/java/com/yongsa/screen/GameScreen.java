@@ -476,16 +476,30 @@ public class GameScreen extends ScreenAdapter {
         game.sfx.play("slam");
     }
 
-    /** 개발용: 보스방(또는 심연) 입구로 바로 간다. 싸우는 중이거나 다른 이동 중이면 false. */
+    /** 개발용: 보스방(또는 심연) 입구로 바로 간다. 싸우는 중이면 싸움을 그만두고 간다. 다른 이동 중이면 false. */
     public boolean devWarpToBoss(String dungeonId) {
-        if (warping || session.fighting()) return false;
+        if (warping) return false;
+        session.devAbandonFight();
         devWarpTarget = dungeonId;
         warping = true;
         fadeTarget = 1f;
         return true;
     }
 
-    /** 개발용 메뉴 (F1): 보스 부활, 보스방 바로 가기, 광물 무한, 무적. */
+    /**
+     * 개발용: 캠프로 돌아간다. 보스와 싸우는 중이어도 싸움을 그만두고 간다 (그 보스방은 처음 상태로 돌아가서,
+     * 다시 들어가면 처음부터 싸운다). 다른 이동 중이면 false.
+     */
+    public boolean devWarpToCamp() {
+        if (warping) return false;
+        session.devAbandonFight();
+        warping = true;
+        fadeTarget = 1f;
+        hud.toast("캠프로 돌아간다");
+        return true;
+    }
+
+    /** 개발용 메뉴 (F1): 캠프로 이동, 보스 부활, 보스방 바로 가기, 광물 무한, 무적. */
     public void toggleDevMenu() {
         if (modals.top() instanceof ForgeWindow forge && forge.isWorking()) return;
         if (modals.top() instanceof DevMenu) modals.top().close();
