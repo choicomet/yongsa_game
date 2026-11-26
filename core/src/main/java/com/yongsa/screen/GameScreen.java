@@ -529,7 +529,8 @@ public class GameScreen extends ScreenAdapter {
     }
 
     /**
-     * 장소 배경음악 (assets/audio/bgm). 캠프는 camp, 마을은 마왕을 잡기 전 village_frozen, 잡은 뒤 village_free.
+     * 장소 배경음악 (assets/audio/bgm). 캠프는 camp, 마을은 마왕을 잡기 전 village_frozen, 잡은 뒤 village_free,
+     * 던전은 dungeon_mine·dungeon_citadel·dungeon_tower (심연 제외). 보스전이 시작되면 보스곡이 이 곡을 대신한다.
      * 그 장소에 들어오면 2초 동안 서서히 키우며 틀고, 나가면 1.5초 동안 줄인다.
      * 다른 곡이 줄어드는 중(쓰러져서 캠프로 돌아올 때 등)이면 다 줄어든 뒤에 튼다.
      */
@@ -539,6 +540,7 @@ public class GameScreen extends ScreenAdapter {
         if (endingDelay < 0) {
             if (session.inCamp()) want = "camp";
             else if (session.inVillage()) want = session.villagersFree() ? "village_free" : "village_frozen";
+            else if (session.inDungeon() && session.currentRoom().type != RoomType.FINAL) want = dungeonBgm(session.currentRoom().dungeonId);
         }
         if (want != null) {
             if (track == null) game.bgm.play(want, 2f);
@@ -549,7 +551,15 @@ public class GameScreen extends ScreenAdapter {
     }
 
     private static boolean isPlaceMusic(String track) {
-        return "camp".equals(track) || "village_frozen".equals(track) || "village_free".equals(track);
+        return track != null && (track.equals("camp") || track.startsWith("village_") || track.startsWith("dungeon_"));
+    }
+
+    /** 던전 탐험 곡 이름. 보스곡과 같은 조라서 보스방에서 보스곡으로 넘어갈 때 덜 튄다. */
+    private static String dungeonBgm(String dungeonId) {
+        if ("LEFT".equals(dungeonId)) return "dungeon_mine";
+        if ("RIGHT".equals(dungeonId)) return "dungeon_citadel";
+        if ("TOP".equals(dungeonId)) return "dungeon_tower";
+        return null;
     }
 
     /**
