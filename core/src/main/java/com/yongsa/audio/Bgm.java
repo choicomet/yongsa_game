@@ -31,6 +31,14 @@ public class Bgm implements Disposable {
 
     /** 이름의 곡을 fadeInSeconds 동안 서서히 키우며 반복 재생한다. */
     public void play(String name, float fadeInSeconds) {
+        play(name, fadeInSeconds, 0f);
+    }
+
+    /**
+     * 이름의 곡을 startSeconds 지점부터 fadeInSeconds 동안 키우며 튼다.
+     * 시작 지점이 있으면 곡이 끝났을 때도 처음이 아니라 그 지점으로 돌아가 반복한다.
+     */
+    public void play(String name, float fadeInSeconds, float startSeconds) {
         if (name == null) {
             stop();
             return;
@@ -42,13 +50,24 @@ public class Bgm implements Disposable {
         if (file == null) return;
         try {
             current = Gdx.audio.newMusic(file);
-            current.setLooping(true);
+            final Music m = current;
+            if (startSeconds > 0) {
+                m.setLooping(false);
+                m.setOnCompletionListener(done -> {
+                    if (current != m) return;
+                    m.play();
+                    m.setPosition(startSeconds);
+                });
+            } else {
+                m.setLooping(true);
+            }
             if (fadeInSeconds > 0) {
                 fade = 0f;
                 fadeSpeed = 1f / fadeInSeconds;
             }
             applyVolume();
             current.play();
+            if (startSeconds > 0) current.setPosition(startSeconds);
             currentName = name;
         } catch (RuntimeException e) {
             current = null;

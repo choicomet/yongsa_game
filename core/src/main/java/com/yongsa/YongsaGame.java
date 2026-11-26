@@ -65,8 +65,8 @@ public class YongsaGame extends Game {
     }
 
     public void applySettings() {
-        sfx.volume = settings.volume;
-        bgm.setVolume(settings.volume);
+        sfx.volume = settings.sfx();
+        bgm.setVolume(settings.bgm());
         if (settings.fullscreen && !Gdx.graphics.isFullscreen()) {
             Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
         } else if (!settings.fullscreen && Gdx.graphics.isFullscreen()) {

@@ -335,7 +335,8 @@ public class GameScreen extends ScreenAdapter {
                     break;
                 case BOSS_FIGHT_START:
                     game.sfx.play("roar");
-                    game.bgm.play(bossBgm(e), 0.8f);
+                    String track = bossBgm(e);
+                    game.bgm.play(track, 0.8f, bgmStart(track));
                     shake(0.5f);
                     hud.bossIntro(e.text, e.boss);
                     break;
@@ -369,7 +370,7 @@ public class GameScreen extends ScreenAdapter {
                     shake(0.9f);
                     stop(0.25f);
                     hud.banner(e.text + " · 진정한 모습");
-                    game.bgm.play("boss_demonlord2", 1.5f);
+                    game.bgm.play("boss_demonlord2", 1.5f, bgmStart("boss_demonlord2"));
                     break;
                 case TOAST:
                     hud.toast(e.text);
@@ -442,6 +443,13 @@ public class GameScreen extends ScreenAdapter {
         if ("RIGHT".equals(e.dungeonId)) return "boss_knight";
         if ("TOP".equals(e.dungeonId)) return "boss_warden";
         return null;
+    }
+
+    /** 곡 앞부분이 조용해서 중간부터 트는 곡 (초). 반복할 때도 이 지점으로 돌아간다. */
+    private static float bgmStart(String track) {
+        if ("boss_golem".equals(track)) return 37f;
+        if ("boss_demonlord2".equals(track)) return 13f;
+        return 0f;
     }
 
     private void showBossResult(GameEvent e) {
