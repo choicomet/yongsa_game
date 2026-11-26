@@ -1,5 +1,7 @@
 Ambience: CC0 1.0 Universal - https://creativecommons.org/publicdomain/zero/1.0/
 
 campfire.ogg <- "fireplace sound loop" by pagdev, OpenGameArt (https://opengameart.org/content/fireplace-sound-loop), CC0
-  fire.wav (29 s, stereo 32-bit) -> mono, +14 dB (mean about -24 dBFS), OGG Vorbis q5. Loops as-is.
+  fire.wav (29 s, stereo 32-bit) -> mono, high-pass 200 Hz x2 (removes low rumble that buzzed on small speakers),
+  low-pass 9 kHz, light compression on the loudest pops, mean about -28 dBFS / peak -3 dBFS, OGG Vorbis q5.
+  Filtered over three back-to-back copies and the middle one kept, so the loop seam stays clean.
   Without this file the game falls back to the synthesized fire in audio/FireSynth.java.
