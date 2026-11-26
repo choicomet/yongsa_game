@@ -1168,6 +1168,7 @@ public class WorldRenderer implements Disposable {
             outlined(font, ft.text, sx(cam, ft.x) - layout.width / 2f, sy(cam, ft.y) + layout.height, ft.color, a);
         }
         speechBoxes.clear();
+        float talkX = 0, talkY = 0, talkA = 0; // 이번 프레임 용사·마을 사람 말풍선의 오른쪽 위 모서리
         for (Speech sp : speeches) {
             float a = Math.min(1f, sp.t * 4f) * Math.min(1f, (3.6f - sp.t) * 2f);
             boolean friend = sp.speaker != null; // 용사·마을 사람은 금빛 테두리와 이름
@@ -1195,18 +1196,26 @@ public class WorldRenderer implements Disposable {
             batch.setColor(friend ? 0.05f : 0.06f, friend ? 0.04f : 0.02f, friend ? 0.07f : 0.1f, 0.85f * a);
             batch.draw(art.white(), x, y, w, hgt);
             batch.draw(art.white(), x + w / 2f - 6, y - 8, 12, 8);
-            Color edge = friend ? Ui.GOLD : EnemyPainter.PROJ_DARK;
+            boolean memory = GameSession.MEMORY_SPEAKER.equals(sp.speaker); // 수정에 갇힌 사람을 보며 떠올린 추억
+            Color edge = memory ? MEMORY_EDGE : friend ? Ui.GOLD : EnemyPainter.PROJ_DARK;
             batch.setColor(edge.r, edge.g, edge.b, 0.9f * a);
             batch.draw(art.white(), x, y + hgt - 2, w, 2);
             batch.setColor(Color.WHITE);
             if (friend) {
-                fonts.small.setColor(Ui.GOLD.r, Ui.GOLD.g, Ui.GOLD.b, a);
+                Color nc = memory ? MEMORY_EDGE : Ui.GOLD;
+                fonts.small.setColor(nc.r, nc.g, nc.b, a);
                 fonts.small.draw(batch, sp.speaker, x + 10, y + hgt + 20);
                 fonts.small.setColor(Color.WHITE);
+                talkX = x + w;
+                talkY = y + hgt;
+                talkA = a;
             }
             fonts.normal.draw(batch, speechLayout, x + 14, y + hgt - 10);
         }
-        if (g.prompt != null) {
+        if (g.prompt != null && g.promptTalk && talkA > 0) {
+            // 대화가 시작되면 안내 상자 대신 말풍선 오른쪽 위에 작은 E 키 배지만 띄운다 (E를 누르면 다음 대사)
+            drawKeyBadge(g.interactKey, talkX, talkY, talkA);
+        } else if (g.prompt != null) {
             layout.setText(fonts.normal, g.prompt);
             float w = layout.width + 24, hgt = layout.height + 16;
             float x = sx(cam, g.promptX) - w / 2f, y = sy(cam, g.promptY);
@@ -1222,6 +1231,39 @@ public class WorldRenderer implements Disposable {
         fonts.normal.setColor(Color.WHITE);
         fonts.large.setColor(Color.WHITE);
         batch.setColor(Color.WHITE);
+    }
+
+    /** 추억 말풍선 테두리·이름표 색 (옅은 하늘빛, 수정 느낌). */
+    private static final Color MEMORY_EDGE = new Color(0.62f, 0.82f, 1f, 1f);
+
+    /** 말풍선 모서리(cx, cy)에 걸친 작은 키캡 배지. 살짝 위아래로 통통 튄다. */
+    private void drawKeyBadge(String key, float cx, float cy, float a) {
+        layout.setText(fonts.small, key);
+        float s = Math.max(26, layout.width + 14);
+        float bob = MathUtils.sin(time * 5f) * 2f;
+        float x = cx - s * 0.6f, y = cy - s * 0.4f + bob;
+        // 그림자 → 키 아랫면(진한 금색) → 윗면(짙은 바탕) 순서로 모서리를 깎아 둥글게 보이게 그린다
+        batch.setColor(0, 0, 0, 0.45f * a);
+        roundRect(x + 1, y - 3, s, s);
+        batch.setColor(Ui.GOLD.r * 0.55f, Ui.GOLD.g * 0.5f, Ui.GOLD.b * 0.35f, a);
+        roundRect(x, y - 2, s, s);
+        batch.setColor(Ui.GOLD.r, Ui.GOLD.g, Ui.GOLD.b, a);
+        roundRect(x, y, s, s);
+        batch.setColor(0.09f, 0.07f, 0.12f, a);
+        roundRect(x + 2, y + 2, s - 4, s - 4);
+        batch.setColor(Color.WHITE);
+        fonts.small.setColor(Ui.GOLD.r, Ui.GOLD.g, Ui.GOLD.b, a);
+        fonts.small.draw(batch, key, x + (s - layout.width) / 2f, y + (s + layout.height) / 2f);
+        fonts.small.setColor(Color.WHITE);
+    }
+
+    private void roundRect(float x, float y, float w, float h) {
+        // 겹치지 않게 가로 띠로 나눠 그린다 (반투명일 때 모서리만 진해지지 않도록)
+        batch.draw(art.white(), x + 3, y, w - 6, 1);
+        batch.draw(art.white(), x + 1, y + 1, w - 2, 2);
+        batch.draw(art.white(), x, y + 3, w, h - 6);
+        batch.draw(art.white(), x + 1, y + h - 3, w - 2, 2);
+        batch.draw(art.white(), x + 3, y + h - 1, w - 6, 1);
     }
 
     /** 말풍선 대사가 이보다 넓으면 두 줄로 나눈다 (화면 픽셀). */

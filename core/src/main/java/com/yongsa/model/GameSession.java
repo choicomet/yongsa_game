@@ -82,6 +82,8 @@ public class GameSession {
     /** HUD 에 보여줄 상호작용 안내 (없으면 null). */
     public String prompt;
     public float promptX, promptY;
+    /** 지금 안내가 마을 사람 대화(살펴보기)이면 true: 대화 중엔 안내 상자 대신 말풍선 옆 E 배지를 그린다. */
+    public boolean promptTalk;
     private Prop targetProp;
     private Vein targetVein;
     private boolean targetPortal;
@@ -265,6 +267,7 @@ public class GameSession {
         }
         if (sleepTime > 0) {
             prompt = null;
+            promptTalk = false;
             return;
         }
         findInteraction();
@@ -823,6 +826,7 @@ public class GameSession {
         introSkippable = introSeen.contains(r.id);
         introStep = 0;
         prompt = null;
+        promptTalk = false;
     }
 
     private void updateBossIntro(float dt, Controls c) {
@@ -1232,6 +1236,7 @@ public class GameSession {
 
     private void findInteraction() {
         prompt = null;
+        promptTalk = false;
         targetProp = null;
         targetVein = null;
         targetPortal = false;
@@ -1250,7 +1255,8 @@ public class GameSession {
             }
             if (near != null) {
                 targetVillager = near;
-                prompt = villagersFree() ? interactKey + "  " + near.name + "와(과) 이야기하기" : interactKey + "  " + near.name + " 살펴보기";
+                prompt = villagersFree() ? interactKey + "  " + near.name + withParticle(near.name) + " 이야기하기" : interactKey + "  수정 속 " + near.name + " 살펴보기";
+                promptTalk = true;
                 promptX = villagerX(near);
                 promptY = villagerY(near) + 2.2f * T;
                 return;
@@ -1459,11 +1465,25 @@ public class GameSession {
         return true;
     }
 
+    /** 이름 끝 글자에 받침이 있으면 "과", 없으면 "와" (예: 촌장과, 산딸기 소녀와). */
+    static String withParticle(String name) {
+        char last = name.isEmpty() ? 'a' : name.charAt(name.length() - 1);
+        boolean batchim = last >= 0xAC00 && last <= 0xD7A3 && (last - 0xAC00) % 28 != 0;
+        return batchim ? "과" : "와";
+    }
+
+    /** 수정에 갇힌 사람을 보며 떠올리는 추억 말풍선의 이름표. */
+    public static final String MEMORY_SPEAKER = "용사의 기억";
+
     private void heroSpeech(String text) {
+        heroSpeech(text, "용사");
+    }
+
+    private void heroSpeech(String text, String speaker) {
         if (text == null) return;
         GameEvent e = new GameEvent(GameEvent.Type.BOSS_SPEECH);
         e.text = text;
-        e.speaker = "용사";
+        e.speaker = speaker;
         e.x = hero.x;
         e.y = hero.y + 2.4f * T;
         events.add(e);
@@ -1478,12 +1498,12 @@ public class GameSession {
             hero.aimY = dy / l;
         }
         if (!villagersFree()) {
-            if (v.trappedLines == null || v.trappedLines.isEmpty()) {
-                heroSpeech(String.format(balance.village.trappedLine, v.name));
-            } else {
-                int t = talkCount.merge("trapped:" + v.kind, 1, Integer::sum) - 1;
-                heroSpeech(v.trappedLines.get(t % v.trappedLines.size()));
-            }
+            // 처음엔 갇혀 있다는 걸 보여 주고, E를 더 누르면 용사가 그 사람과의 추억을 떠올린다
+            int memories = v.trappedLines == null ? 0 : v.trappedLines.size();
+            int t = talkCount.merge("trapped:" + v.kind, 1, Integer::sum) - 1;
+            int step = t % (memories + 1);
+            if (step == 0) heroSpeech(String.format(balance.village.trappedLine, v.name));
+            else heroSpeech(v.trappedLines.get(step - 1), MEMORY_SPEAKER);
             return;
         }
         int n = talkCount.merge(v.kind, 1, Integer::sum) - 1;

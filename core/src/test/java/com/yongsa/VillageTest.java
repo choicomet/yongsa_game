@@ -102,13 +102,17 @@ class VillageTest {
         Balance.Villager v = b.village.villagers.get(0);
         g.hero.x = g.villagerX(v);
         g.hero.y = g.villagerY(v) - 1.0f * b.tileSize;
-        for (int i = 0; i < v.trappedLines.size() + 1; i++) {
+        int cycle = v.trappedLines.size() + 1; // 갇혀 있다는 안내 1줄 + 추억들
+        for (int i = 0; i < cycle + 1; i++) {
             Controls e = new Controls();
             e.interact = true;
             List<GameEvent> ev = run(g, e, 0.1f);
-            String want = v.trappedLines.get(i % v.trappedLines.size());
+            int step = i % cycle;
+            String want = step == 0 ? String.format(b.village.trappedLine, v.name) : v.trappedLines.get(step - 1);
+            String who = step == 0 ? "용사" : GameSession.MEMORY_SPEAKER;
             assertTrue(ev.stream().anyMatch(x -> x.type == GameEvent.Type.BOSS_SPEECH
-                    && "용사".equals(x.speaker) && want.equals(x.text)), "추억 대사 " + i);
+                    && who.equals(x.speaker) && want.equals(x.text)), "수정 속 대사 " + i);
+            assertTrue(g.promptTalk, "마을 사람 앞에서는 대화 안내로 표시");
         }
     }
 }
