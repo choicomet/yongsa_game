@@ -81,7 +81,7 @@ public class EnemyPainter {
             case MONSTER_DIED: {
                 Corpse c = new Corpse();
                 c.region = art.world(e.sprite);
-                float scale = S * e.size * (e.boss ? bossScale(e.sprite) : mobScale(e.sprite));
+                float scale = S * e.size * (e.boss ? bossScale(e.sprite) * Monster.BOSS_SIZE : mobScale(e.sprite));
                 c.w = art.width(c.region) * scale;
                 c.h = art.height(c.region) * scale;
                 c.x = e.x;
@@ -269,7 +269,8 @@ public class EnemyPainter {
             if (m.dead || !m.finalBoss) continue;
             float k = (m.phase2 || m.state == Monster.State.PHASE_SHIFT ? 1.4f : 1f) * bossScale(m.def.sprite);
             batch.setColor(0.6f, 0.2f, 1f, (0.35f + 0.1f * MathUtils.sin(time * 5f)) * k);
-            batch.draw(art.glow, m.x - 90 * k, m.y - 20, 180 * k, 160 * k);
+            float gs = k * Monster.BOSS_SIZE;
+            batch.draw(art.glow, m.x - 90 * gs, m.y - 20, 180 * gs, 160 * gs);
         }
         // 방패, 긴 패턴의 기운
         for (Monster m : g.monsters) {
@@ -320,7 +321,7 @@ public class EnemyPainter {
             } else if (m.state == Monster.State.CAST_TELEGRAPH) {
                 Color c = projectileColor(m.def.sprite);
                 float p = m.progress();
-                float sz = (m.boss ? 70 * bossScale(m.def.sprite) : 34 * mobScale(m.def.sprite)) * (0.4f + p);
+                float sz = (m.boss ? 70 * bossScale(m.def.sprite) * Monster.BOSS_SIZE : 34 * mobScale(m.def.sprite)) * (0.4f + p);
                 batch.setColor(c.r, c.g, c.b, 0.35f + 0.5f * p);
                 batch.draw(art.glow, m.x - sz / 2f, m.centerY() + m.hurtRadius * 0.4f - sz / 2f, sz, sz);
             } else if (m.state == Monster.State.STUNNED) {
@@ -376,7 +377,7 @@ public class EnemyPainter {
     // 1행: 대기 4 + 피격 4 · 2행: 이동 8 · 3행: 기본 공격 8 (앞 4칸 준비) · 4행: 특수 공격 8 · 5행: 쓰러짐 8
     private static final int BOSS_CELL = 256, BOSS_FOOT = 224, BOSS_BODY = 128;
 
-    private static final float BOSS_SHEET_SCALE = 0.75f;
+    private static final float BOSS_SHEET_SCALE = 0.75f * Monster.BOSS_SIZE;
 
     private final java.util.IdentityHashMap<Monster, float[]> bossAnim = new java.util.IdentityHashMap<>();
 
@@ -717,8 +718,9 @@ public class EnemyPainter {
 
     public float monsterScale(Monster m) {
         float presence = bossScale(m.def.sprite);
-        if (m.state == Monster.State.PHASE_SHIFT) return S * (2f + .3f * m.progress()) * presence;
-        return S * (m.finalBoss ? (m.phase2 ? 2.3f : 2f) * presence : m.boss ? 1.7f * presence : mobScale(m.def.sprite));
+        if (m.state == Monster.State.PHASE_SHIFT) return S * (2f + .3f * m.progress()) * presence * Monster.BOSS_SIZE;
+        return S * (m.finalBoss ? (m.phase2 ? 2.3f : 2f) * presence * Monster.BOSS_SIZE
+                : m.boss ? 1.7f * presence * Monster.BOSS_SIZE : mobScale(m.def.sprite));
     }
 
     private float monsterBob(Monster m) {

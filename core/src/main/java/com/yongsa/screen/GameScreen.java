@@ -26,6 +26,7 @@ import com.yongsa.ui.ModalStack;
 import com.yongsa.ui.PauseMenu;
 import com.yongsa.ui.Ui;
 import com.yongsa.ui.UnsealScene;
+import com.yongsa.enemy.Monster;
 import com.yongsa.map.CameraFollow;
 import com.yongsa.map.Room;
 import com.yongsa.map.RoomType;
@@ -65,6 +66,8 @@ public class GameScreen extends ScreenAdapter {
     private String devWarpTarget;
     /** 기본 배율(100%): 한 칸의 그림 픽셀이 화면 3픽셀이 되도록 맵을 1.5배로 확대해서 본다. */
     public static final float ZOOM = 2f / 3f;
+    /** 보스 등장 연출 때 지금 배율보다 얼마나 더 당겨 보는지 (0.3 = 화면이 1.4배쯤 커 보인다). */
+    private static final float BOSS_INTRO_ZOOM_IN = 0.3f;
     /** 휠 / +,- 로 고르는 확대 단계 (기본 배율 대비 %). 일반 구간과 보스방이 따로 기억된다.
      *  1280×720 기준 100%는 그림 1픽셀 = 화면 3픽셀, 133%는 4픽셀로 딱 떨어진다 (1080p 전체화면이면 133%만 6픽셀로 딱 떨어짐). 나머지는 픽셀 크기가 조금씩 고르지 않다. */
     public static final int[] ZOOM_STEPS = {80, 90, 100, 108, 115, 125, 133, 150};
@@ -75,6 +78,7 @@ public class GameScreen extends ScreenAdapter {
         this.game = game;
         this.session = new GameSession(game.balance, game.newMap(), state, System.nanoTime());
         session.deferDoors = true;
+        session.bossIntroEnabled = true;
         this.stage = new Stage(new FitViewport(YongsaGame.WIDTH, YongsaGame.HEIGHT), game.batch);
         this.modals = new ModalStack(stage);
         this.renderer = new WorldRenderer(session, game.art, game.fonts, game.batch, game.shapes);
@@ -178,12 +182,21 @@ public class GameScreen extends ScreenAdapter {
         }
 
         int T = game.balance.tileSize;
-        float want = targetZoom();
+        // 보스 등장 연출: 카메라가 보스 쪽으로 가서 당겨 보다가 용사에게 돌아온다
+        float focus = session.bossIntroFocus();
+        Monster introBoss = focus > 0 ? session.activeBoss() : null;
+        if (introBoss == null) focus = 0;
+        float want = targetZoom() * (1f - BOSS_INTRO_ZOOM_IN * focus);
         zoom += (want - zoom) * Math.min(1f, dt * 6f);
         if (Math.abs(want - zoom) < 0.0005f) zoom = want;
         worldCam.zoom = zoom;
+        float cameraX = session.hero.x;
         float cameraY = renderer.cameraTargetY(session.hero.y + 16, worldCam.viewportHeight * zoom, zoom);
-        follow.update(session.hero.x, cameraY, dt, worldCam.viewportWidth * zoom, worldCam.viewportHeight * zoom,
+        if (introBoss != null) {
+            cameraX += (introBoss.x - cameraX) * focus;
+            cameraY += (introBoss.y + introBoss.hurtRadius * 1.5f - cameraY) * focus;
+        }
+        follow.update(cameraX, cameraY, dt, worldCam.viewportWidth * zoom, worldCam.viewportHeight * zoom,
                 session.map.width * T, session.map.height * T);
         float shake = trauma * trauma * 12f;
         float ox = shake * (MathUtils.sin(shakeTime * 47f) + MathUtils.sin(shakeTime * 83f) * 0.5f) / 1.5f;

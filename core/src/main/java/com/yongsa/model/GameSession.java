@@ -236,6 +236,12 @@ public class GameSession {
             c = new Controls();
         }
         noteOpenedSkills();
+        if (bossIntroT > 0) {
+            // 보스 등장 연출 중: 용사는 서 있고(구르던 중이면 마저 구른다) 보스만 움직인다
+            updateHero(dt, new Controls());
+            updateBossIntro(dt, c);
+            return;
+        }
         updateHero(dt, c);
         if (checkDoors()) return;
         updateRooms();
@@ -761,6 +767,93 @@ public class GameSession {
         if (fightRoom == null && heroRoom != null && heroRoom.type.hasFight()
                 && !state.room(heroRoom.id).cleared && !hasPortal(heroRoom) && steppedIn(heroRoom)) {
             startFight(heroRoom);
+            if (heroRoom.type == RoomType.BOSS || heroRoom.type == RoomType.FINAL) beginBossIntro(heroRoom);
+        }
+    }
+
+    // ───────────────────────── 보스 등장 연출 (2026-11-26 지용)
+    // 보스방에 들어서면 카메라가 보스를 당겨 보여 주고, 보스가 특수 공격 동작을 한 번 해 보인 뒤 싸움이 시작된다.
+    // 그동안 용사는 조작을 받지 않고, 보스는 공격하지 않는다 (동작만, 판정 없음).
+
+    /** 등장 연출을 쓸지. 게임 화면이 켠다 (테스트는 꺼진 채로 바로 싸운다). */
+    public boolean bossIntroEnabled;
+    /** 등장 연출 전체 길이 (초). */
+    public static final float BOSS_INTRO_SECONDS = 4.2f;
+    /** 연출 시작 뒤 보스가 힘을 모으기 시작하는 때, 내리치는 때, 카메라가 돌아오기 시작하는 때 (초). */
+    static final float INTRO_WINDUP_AT = 1.3f, INTRO_STRIKE_AT = 2.3f, INTRO_RETURN_AT = 3.3f;
+    /** 남은 등장 연출 시간. 0 이하면 연출 중이 아니다. */
+    public float bossIntroT;
+    /** 이번 판에서 이미 등장 연출을 끝까지 본 보스방 (다시 들어오면 공격·상호작용 키로 건너뛸 수 있다). */
+    private final Set<String> introSeen = new HashSet<>();
+    private boolean introSkippable;
+    private int introStep;
+
+    public boolean inBossIntro() {
+        return bossIntroT > 0;
+    }
+
+    /** 카메라가 보스 쪽으로 얼마나 가 있어야 하는지 (0 = 용사, 1 = 보스). 부드럽게 갔다가 돌아온다. */
+    public float bossIntroFocus() {
+        if (bossIntroT <= 0) return 0f;
+        float e = BOSS_INTRO_SECONDS - bossIntroT;
+        float in = Math.min(1f, e / 0.8f);
+        float out = Math.min(1f, bossIntroT / (BOSS_INTRO_SECONDS - INTRO_RETURN_AT));
+        float w = Math.min(in, out);
+        return w * w * (3f - 2f * w);
+    }
+
+    private void beginBossIntro(Room r) {
+        if (!bossIntroEnabled || activeBoss() == null) return;
+        bossIntroT = BOSS_INTRO_SECONDS;
+        introSkippable = introSeen.contains(r.id);
+        introStep = 0;
+        prompt = null;
+    }
+
+    private void updateBossIntro(float dt, Controls c) {
+        float e = BOSS_INTRO_SECONDS - bossIntroT;
+        bossIntroT -= dt;
+        Monster b = activeBoss();
+        if (b == null) {
+            bossIntroT = 0;
+            return;
+        }
+        if (introSkippable && e > 0.5f && (c.attack || c.interact)) bossIntroT = 0;
+        b.flash -= dt;
+        if (b.state == Monster.State.SPAWN) {
+            b.stateT -= dt;
+            if (b.stateT <= 0) b.enter(Monster.State.CHASE, 0f);
+        }
+        float dx = hero.x - b.x, dy = hero.y - b.y, dist = (float) Math.sqrt(dx * dx + dy * dy);
+        if (introStep == 0 && e >= INTRO_WINDUP_AT && bossIntroT > 0) {
+            introStep = 1;
+            if (dist > 0.01f) {
+                b.dirX = dx / dist;
+                b.dirY = dy / dist;
+            }
+            // 특수 공격(동작 시트 4행) 준비 자세: 힘을 모은다
+            b.enter(Monster.State.CAST_TELEGRAPH, INTRO_STRIKE_AT - INTRO_WINDUP_AT);
+            events.add(GameEvent.sound("cast"));
+        } else if (introStep == 1 && e >= INTRO_STRIKE_AT && bossIntroT > 0) {
+            introStep = 2;
+            // 내리친다: 특수 공격 뒷동작 + 충격파 (보여 주기만 하고 용사는 맞지 않는다)
+            b.enter(Monster.State.RECOVER, 0.8f);
+            events.add(GameEvent.sound("slam"));
+            events.add(GameEvent.sound("roar"));
+            GameEvent fx = GameEvent.fx(GameEvent.Type.SLAM_FX, b.x, b.y);
+            fx.size = balance.monster.bossSlamRadiusTiles * T * (b.finalBoss ? 1.3f : 1f);
+            events.add(fx);
+        } else if (introStep == 2 && b.state == Monster.State.RECOVER) {
+            b.stateT -= dt;
+            if (b.stateT <= 0) b.enter(Monster.State.CHASE, 0f);
+        }
+        if (bossIntroT <= 0) {
+            bossIntroT = 0;
+            introSeen.add(fightRoom != null ? fightRoom.id : "");
+            // 싸움 시작: 보스는 쉬던 자세에서 출발하고, 첫 패턴까지 조금 여유를 준다
+            if (b.state != Monster.State.CHASE) b.enter(Monster.State.CHASE, 0f);
+            b.attackCd = Math.max(b.attackCd, 0.8f);
+            b.patternCd = Math.max(b.patternCd, 2.5f);
         }
     }
 
