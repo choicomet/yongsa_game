@@ -27,15 +27,8 @@ public class SettingsWindow extends Modal {
         p.add(label("설정", "large", Ui.GOLD)).colspan(3).padBottom(10).row();
         p.add(new com.badlogic.gdx.scenes.scene2d.ui.Image(skin.getDrawable("divider"))).colspan(3).width(300).height(1).padBottom(20).row();
 
-        p.add(label("소리 크기", "default", Ui.DIM)).left().padRight(24);
-        Table vol = new Table();
-        // "−"(U+2212)는 글꼴에 없어 빈 칸으로 보였다: 보통 빼기 기호를 쓴다
-        vol.add(nav.add("-", () -> setVolume(game.settings.volume - 0.1f))).width(56).height(46);
-        com.badlogic.gdx.scenes.scene2d.ui.Label volText = label(Math.round(game.settings.volume * 100) + "%");
-        volText.setAlignment(com.badlogic.gdx.utils.Align.center);
-        vol.add(volText).width(108).center();
-        vol.add(nav.add("+", () -> setVolume(game.settings.volume + 0.1f))).width(56).height(46);
-        p.add(vol).left().padBottom(10).row();
+        volumeRow(p, "효과음", false);
+        volumeRow(p, "배경음악", true);
 
         p.add(label("화면", "default", Ui.DIM)).left().padRight(24);
         p.add(nav.add(game.settings.fullscreen ? "전체 화면" : "창 모드", () -> {
@@ -74,21 +67,39 @@ public class SettingsWindow extends Modal {
         p.add(nav.add("닫기", this::close)).colspan(2).width(200).height(50).padTop(14);
     }
 
-    /** 소리 크기 줄(−, + 버튼)에 포커스가 있으면 왼쪽/오른쪽 키로 바로 줄이고 키운다. */
+    /** 소리 크기 한 줄: 이름, -, 지금 크기, + (버튼 두 개가 포커스 순서에 들어간다). */
+    private void volumeRow(Table p, String name, boolean music) {
+        p.add(label(name, "default", Ui.DIM)).left().padRight(24);
+        Table vol = new Table();
+        float now = music ? game.settings.bgm() : game.settings.sfx();
+        // "−"(U+2212)는 글꼴에 없어 빈 칸으로 보였다: 보통 빼기 기호를 쓴다
+        vol.add(nav.add("-", () -> setVolume(music, now - 0.1f))).width(56).height(46);
+        com.badlogic.gdx.scenes.scene2d.ui.Label volText = label(Math.round(now * 100) + "%");
+        volText.setAlignment(com.badlogic.gdx.utils.Align.center);
+        vol.add(volText).width(108).center();
+        vol.add(nav.add("+", () -> setVolume(music, now + 0.1f))).width(56).height(46);
+        p.add(vol).left().padBottom(10).row();
+    }
+
+    /** 소리 크기 줄(−, + 버튼)에 포커스가 있으면 왼쪽/오른쪽 키로 바로 줄이고 키운다. 0·1 효과음, 2·3 배경음악. */
     @Override
     public boolean keyDown(int keycode) {
-        boolean onVolume = nav.focusIndex() <= 1;
+        int f = nav.focusIndex();
+        boolean onVolume = f >= 0 && f <= 3;
         if (onVolume && (keycode == com.badlogic.gdx.Input.Keys.LEFT || keycode == com.badlogic.gdx.Input.Keys.RIGHT)) {
-            int f = nav.focusIndex();
-            setVolume(game.settings.volume + (keycode == com.badlogic.gdx.Input.Keys.RIGHT ? 0.1f : -0.1f));
+            boolean music = f >= 2;
+            float now = music ? game.settings.bgm() : game.settings.sfx();
+            setVolume(music, now + (keycode == com.badlogic.gdx.Input.Keys.RIGHT ? 0.1f : -0.1f));
             nav.setFocusIndex(f);
             return true;
         }
         return super.keyDown(keycode);
     }
 
-    private void setVolume(float v) {
-        game.settings.volume = Math.max(0, Math.min(1, Math.round(v * 10) / 10f));
+    private void setVolume(boolean music, float v) {
+        float clamped = Math.max(0, Math.min(1, Math.round(v * 10) / 10f));
+        if (music) game.settings.bgmVolume = clamped;
+        else game.settings.sfxVolume = clamped;
         game.saveSettings();
         game.sfx.play("select");
         rebuild();

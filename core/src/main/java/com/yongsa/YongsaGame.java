@@ -51,6 +51,7 @@ public class YongsaGame extends Game {
         art = new Art();
         sfx = new Sfx();
         bgm = new Bgm();
+        sfx.setBgm(bgm);
         skin = Ui.createSkin(fonts, art);
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();
@@ -65,8 +66,8 @@ public class YongsaGame extends Game {
     }
 
     public void applySettings() {
-        sfx.volume = settings.volume;
-        bgm.setVolume(settings.volume);
+        sfx.volume = settings.sfx();
+        bgm.setVolume(settings.bgm());
         if (settings.fullscreen && !Gdx.graphics.isFullscreen()) {
             Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
         } else if (!settings.fullscreen && Gdx.graphics.isFullscreen()) {

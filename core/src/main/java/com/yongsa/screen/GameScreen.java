@@ -160,6 +160,7 @@ public class GameScreen extends ScreenAdapter {
             skillPressed = -1;
         }
         handleEvents();
+        game.bgm.update(delta);
         if (!paused) renderer.update(frozen ? dt * 0.15f : dt);
         hud.update(dt);
         updateFade(delta);
@@ -323,7 +324,7 @@ public class GameScreen extends ScreenAdapter {
                     }
                     break;
                 case MONSTER_DIED:
-                    game.sfx.play("kill");
+                    game.sfx.play(e.boss ? "bossDown" : "kill");
                     shake(e.boss ? 0.9f : 0.2f);
                     stop(e.boss ? 0.3f : 0.07f);
                     break;
@@ -334,6 +335,9 @@ public class GameScreen extends ScreenAdapter {
                     shake(0.12f);
                     break;
                 case BOSS_FIGHT_START:
+                    // 곡을 먼저 틀어야 포효가 곡을 잠깐 눌러(덕킹) 포효가 끝날 즈음 음악이 올라온다
+                    String track = bossBgm(e);
+                    game.bgm.play(track, 0.8f, bgmStart(track));
                     game.sfx.play("roar");
                     shake(0.5f);
                     hud.bossIntro(e.text, e.boss);
@@ -368,6 +372,8 @@ public class GameScreen extends ScreenAdapter {
                     shake(0.9f);
                     stop(0.25f);
                     hud.banner(e.text + " · 진정한 모습");
+                    // 변신(약 2.6초) 동안 1페이즈 곡을 거두고 포효만 남긴 뒤, 변신이 끝날 즈음 2페이즈 곡을 올린다
+                    game.bgm.playAfter("boss_demonlord2", 0.8f, 2.2f, 0.6f, bgmStart("boss_demonlord2"));
                     break;
                 case TOAST:
                     hud.toast(e.text);
@@ -393,15 +399,18 @@ public class GameScreen extends ScreenAdapter {
                     save(false);
                     break;
                 case BOSS_DEFEATED:
+                    game.bgm.fadeOut(4f);
                     showBossResult(e);
                     break;
                 case FINAL_DEFEATED:
                     hud.banner("마왕을 쓰러뜨렸다!");
+                    game.bgm.fadeOut(2.4f);
                     game.sfx.play("unseal");
                     endingDelay = 2.5f;
                     break;
                 case HERO_DIED:
                     game.sfx.play("death");
+                    game.bgm.fadeOut(1.5f);
                     follow.snap();
                     java.util.List<ConfirmDialog.Line> lines = new java.util.ArrayList<>();
                     if (e.text != null) lines.add(new ConfirmDialog.Line("마왕: “" + e.text + "”", Ui.PURPLE));
@@ -428,6 +437,22 @@ public class GameScreen extends ScreenAdapter {
                     break;
             }
         }
+    }
+
+    /** 보스방 배경음악 이름 (assets/audio/bgm). 마왕 2페이즈는 BOSS_PHASE2 에서 boss_demonlord2 로 바꾼다. */
+    private static String bossBgm(GameEvent e) {
+        if (e.boss) return "boss_demonlord1";
+        if ("LEFT".equals(e.dungeonId)) return "boss_golem";
+        if ("RIGHT".equals(e.dungeonId)) return "boss_knight";
+        if ("TOP".equals(e.dungeonId)) return "boss_warden";
+        return null;
+    }
+
+    /** 곡 앞부분이 조용해서 중간부터 트는 곡 (초). 반복할 때도 이 지점으로 돌아간다. */
+    private static float bgmStart(String track) {
+        if ("boss_golem".equals(track)) return 37f;
+        if ("boss_demonlord2".equals(track)) return 13f;
+        return 0f;
     }
 
     private void showBossResult(GameEvent e) {
@@ -518,6 +543,7 @@ public class GameScreen extends ScreenAdapter {
 
     @Override
     public void dispose() {
+        game.bgm.stop();
         stage.dispose();
         renderer.dispose();
         hud.dispose();
