@@ -98,11 +98,12 @@ final class SfxMix {
         cue("step", -22f, 0.12f, 0.06f, 0);
         cue("select", -20f, 0.03f, 0f, 0);
         // ── 용사 스킬 (해성 2026-11-26: 효과음은 기본 공격·구르기 대신 스킬·보스 패턴에 쓴다)
-        cue("sk_cleave", "slam", -10f, 0.1f, 0.04f, 0.8f, 2, 0.2f, 0.2f);      // 흑철 대지 가르기: 낮고 무거운 내려찍기
-        cue("sk_crescent", "swing", -11f, 0.1f, 0.04f, 0.78f, 2, 0.12f, 0.15f); // 혈월참: 길게 끌리는 베기
-        cue("sk_strike", "cast", -13f, 0.1f, 0.04f, 0.9f, 2, 0f, 0f);          // 천공 낙뢰: 모으는 소리
-        cue("sk_strikeHit", "destroy", -11f, 0.06f, 0.08f, 1.35f, 2, 0.15f, 0.12f); // 낙뢰가 떨어지며 깨지는 소리
-        cue("sk_beam", "craft", -11f, 0.1f, 0.03f, 1.25f, 2, 0.2f, 0.2f);      // 성광 검기: 맑게 울리는 종소리
+        // 스킬마다 전용 소리 파일 (assets/audio/sfx/sk_*.wav, 녹음을 겹쳐 만든 것). 파일이 없으면 SfxSynth 의 대신 소리
+        cue("sk_cleave", "sk_cleave", -10f, 0.1f, 0.04f, 1f, 2, 0.2f, 0.2f);        // 흑철 대지 가르기: 무거운 칼바람 → 땅 쪼개짐 + 낮은 울림
+        cue("sk_crescent", "sk_crescent", -11f, 0.1f, 0.04f, 1f, 2, 0.12f, 0.15f);  // 혈월참: 빨려드는 숨 → 두 겹 베기 + 낮게 우는 쇳소리
+        cue("sk_strike", "sk_strike", -13f, 0.1f, 0.03f, 1f, 2, 0f, 0f);            // 천공 낙뢰: 하늘로 힘이 모이는 소리
+        cue("sk_strikeHit", "sk_strikeHit", -10f, 0.06f, 0.05f, 1f, 2, 0.2f, 0.2f); // 낙뢰가 떨어짐: 전기 튐 + 깨짐 + 천둥
+        cue("sk_beam", "sk_beam", -11f, 0.1f, 0.03f, 1f, 2, 0.2f, 0.2f);            // 성광 검기: 밝은 칼바람 + 맑은 종 + 화음
         // ── 보스·몹 장판 패턴이 터질 때 (hz_<모양>). 여러 개가 한꺼번에 터져도 최소 간격으로 한 번만
         cue("hz_boulder", "destroy", -10f, 0.12f, 0.05f, 0.55f, 2, 0.25f, 0.2f); // 골렘 바위: 낮게 부서지는 소리
         cue("hz_rock", "destroy", -12f, 0.1f, 0.08f, 0.65f, 1, 0f, 0f);

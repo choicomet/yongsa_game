@@ -27,3 +27,10 @@ gateOpen_TOP.wav <- rpg-audio / doorOpen_2.ogg
 gateClose_LEFT.wav <- impact-sounds / impactMetal_heavy_001.ogg
 gateClose_RIGHT.wav <- impact-sounds / impactMetal_heavy_003.ogg
 gateClose_TOP.wav <- rpg-audio / doorClose_3.ogg
+
+Sword-skill sounds (designed by layering, pitching, filtering and adding reverb to the Kenney CC0 recordings above; same CC0 license):
+sk_cleave.wav <- knifeSlice2, impactPunch_heavy_000, impactMining_001, impactWood_heavy_002 + filtered noise rumble
+sk_crescent.wav <- knifeSlice (reversed + pitched), knifeSlice2, impactBell_heavy_002
+sk_strike.wav <- impactBell_heavy_000 (reversed), impactGlass_medium_000 (reversed) + rising tone
+sk_strikeHit.wav <- impactGlass_heavy_003, impactMetal_heavy_002 + noise crack and thunder rumble
+sk_beam.wav <- knifeSlice2, impactBell_heavy_000, glass_004 + G-major chord

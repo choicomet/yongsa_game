@@ -58,6 +58,12 @@ final class SfxSynth {
         add("gateOpen_RIGHT", mix(sweep(90, 170, .36f, .23f, 2), sweep(700, 1100, .25f, .10f, 0)));
         add("gateClose_TOP", mix(sweep(540, 190, .28f, .25f, 0), sweep(810, 285, .28f, .12f, 0)));
         add("gateOpen_TOP", mix(sweep(260, 780, .36f, .21f, 0), sweep(390, 1170, .36f, .10f, 0)));
+        // 검 스킬 전용 소리 (assets/audio/sfx/sk_*.wav 가 없을 때만 쓰는 대신 소리)
+        add("sk_cleave", mix(sweep(70, 28, 0.6f, 0.7f, 0), noise(0.5f, 0.55f, 0.1f)));
+        add("sk_crescent", mix(noise(0.3f, 0.35f, 0.3f), sweep(700, 250, 0.35f, 0.15f, 0)));
+        add("sk_strike", mix(sweep(300, 1400, 0.4f, 0.18f, 0), noise(0.3f, 0.1f, 0.6f)));
+        add("sk_strikeHit", mix(noise(0.8f, 0.6f, 0.15f), sweep(1800, 200, 0.12f, 0.3f, 1)));
+        add("sk_beam", mix(seq(new float[]{784, 988, 1175, 1568}, 0.06f, 0.25f, 0), noise(0.3f, 0.1f, 0.5f)));
     }
 
     /** wave: 0 사인, 1 톱니, 2 사각. 끝으로 갈수록 작아진다. */
