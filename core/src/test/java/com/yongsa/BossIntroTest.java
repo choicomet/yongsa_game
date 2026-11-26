@@ -17,7 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 보스 등장 연출 (카메라 줌인 + 특수 공격 동작 한 번)과 1.5배로 커진 보스가 방에 맞는지. */
+/** 보스 등장 연출 (카메라 줌인 + 특수 공격 동작 한 번)과 1.25배로 커진 보스가 방에 맞는지. */
 class BossIntroTest {
     private final Balance b = TestData.balance();
 
@@ -101,11 +101,11 @@ class BossIntroTest {
     }
 
     @Test
-    void bossesAreHalfAgainAsBig() {
+    void bossesAreAQuarterBigger() {
         GameSession g = bossFight("LEFT");
         Monster m = g.activeBoss();
-        assertEquals(12 * 2.0f * 1.5f, m.hurtRadius, 0.01f);
-        assertEquals(9 * 2.0f * 1.5f, m.hw, 0.01f);
+        assertEquals(12 * 2.0f * 1.25f, m.hurtRadius, 0.01f);
+        assertEquals(9 * 2.0f * 1.25f, m.hw, 0.01f);
     }
 
     @Test

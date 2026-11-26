@@ -88,8 +88,8 @@ public class Monster extends Actor {
     /** 마족병이 지금까지 쏜 불덩이 수 (몇 번째마다 세 갈래). */
     public int castCount;
 
-    /** 보스 몸집 배율 (2026-11-26 지용: 보스방에서 너무 작아 보여 1.5배). 그림·피격 원·발 사각형에 함께 곱한다. */
-    public static final float BOSS_SIZE = 1.5f;
+    /** 보스 몸집 배율 (2026-11-26 지용: 보스방에서 너무 작아 보여 1.25배). 그림·피격 원·발 사각형에 함께 곱한다. */
+    public static final float BOSS_SIZE = 1.25f;
 
     public Monster(MonsterDef def, boolean boss, boolean finalBoss, float tileSize) {
         this.def = def;
