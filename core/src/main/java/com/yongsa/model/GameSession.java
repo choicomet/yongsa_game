@@ -627,7 +627,7 @@ public class GameSession {
             events.add(GameEvent.sound("roar"));
         }
         events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), guarded ? GameEvent.Tone.SHIELD : GameEvent.Tone.MONSTER_HIT));
-        events.add(GameEvent.sound(guarded ? "block" : "hit"));
+        events.add(GameEvent.sound(guarded ? "block" : m.boss ? "hitBoss" : "hit"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, m.x, m.centerY());
         fx.tone = GameEvent.Tone.MONSTER_HIT;
         float ddx = m.x - hero.x, ddy = m.centerY() - hero.centerY(), dl = (float) Math.sqrt(ddx * ddx + ddy * ddy);
@@ -688,7 +688,9 @@ public class GameSession {
         hero.flash = balance.hero.invulnAfterHit;
         hero.knockback(hero.x - fromX, hero.y - fromY, balance.hero.knockbackTiles * T);
         events.add(GameEvent.floatText(hero.x, hero.y + 40, String.valueOf(dmg), GameEvent.Tone.HERO_HIT));
-        events.add(GameEvent.sound("hurt"));
+        // 체력이 30% 밑으로 떨어지면 더 낮고 큰 소리로 위험을 알린다
+        boolean low = state.hp > 0 && state.hp <= rules.maxHp(state) * 0.3f;
+        events.add(GameEvent.sound(low ? "hurtLow" : "hurt"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, hero.x, hero.centerY());
         fx.tone = GameEvent.Tone.HERO_HIT;
         events.add(fx);

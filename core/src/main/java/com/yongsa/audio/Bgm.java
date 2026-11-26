@@ -23,6 +23,20 @@ public class Bgm implements Disposable {
     private float fade = 1f;
     /** 1초에 fade 가 바뀌는 양. 0 이면 그대로, 음수면 작아지는 중 (0이 되면 멈춘다). */
     private float fadeSpeed = 0f;
+    /**
+     * 곡 자체가 크게 마스터링돼 있어서(약 -12 LUFS) 효과음이 묻히지 않게 미리 낮춰 둔다.
+     * 설정 70% 에서 대략 -19 LUFS: 휘두르기·타격음이 음악 위로 4~6dB 정도 올라온다.
+     */
+    static final float MIX = 0.6f;
+    /** 덕킹: 큰 효과음이 날 때 잠깐 줄이는 배율 (1 = 그대로). */
+    private float duck = 1f;
+    private float duckTarget = 1f;
+    private float duckHold = 0f;
+    /** 줄일 때는 빨리(0.06초), 돌아올 때는 천천히(0.6초). */
+    private static final float DUCK_ATTACK = 0.06f, DUCK_RELEASE = 0.6f;
+    /** playAfter 로 예약한 다음 곡. */
+    private String pendingName;
+    private float pendingDelay, pendingFadeIn, pendingStart;
 
     /** 이름의 곡을 반복 재생한다. 이미 그 곡이면 처음부터 다시 틀지 않는다. */
     public void play(String name) {
@@ -39,6 +53,7 @@ public class Bgm implements Disposable {
      * 시작 지점이 있으면 곡이 끝났을 때도 처음이 아니라 그 지점으로 돌아가 반복한다.
      */
     public void play(String name, float fadeInSeconds, float startSeconds) {
+        pendingName = null;
         if (name == null) {
             stop();
             return;
@@ -79,6 +94,7 @@ public class Bgm implements Disposable {
 
     /** 지금 곡을 seconds 동안 서서히 줄이다가 멈춘다. */
     public void fadeOut(float seconds) {
+        pendingName = null;
         if (current == null) return;
         if (seconds <= 0) {
             stop();
@@ -87,22 +103,71 @@ public class Bgm implements Disposable {
         fadeSpeed = -1f / seconds;
     }
 
-    /** 매 프레임 부른다 (페이드 진행). */
+    /**
+     * 지금 곡을 fadeOutSeconds 동안 줄이고, delaySeconds 뒤에 name 을 fadeInSeconds 동안 키우며 튼다.
+     * 예: 마왕 변신 중에는 1페이즈 곡을 거두고, 변신이 끝날 때 2페이즈 곡을 올린다.
+     * 그 사이 fadeOut·play·stop 을 부르면 예약은 취소된다.
+     */
+    public void playAfter(String name, float fadeOutSeconds, float delaySeconds, float fadeInSeconds, float startSeconds) {
+        fadeOut(fadeOutSeconds);
+        pendingName = name;
+        pendingDelay = delaySeconds;
+        pendingFadeIn = fadeInSeconds;
+        pendingStart = startSeconds;
+    }
+
+    /**
+     * 큰 효과음이 나는 동안 음악을 depth 만큼(0.4 면 40%) hold 초 줄였다가 천천히 되돌린다.
+     * 겹치면 더 깊고 긴 쪽을 따른다.
+     */
+    public void duck(float depth, float hold) {
+        if (current == null || depth <= 0) return;
+        duckTarget = Math.min(duckTarget, 1f - Math.min(0.9f, depth));
+        duckHold = Math.max(duckHold, hold);
+    }
+
+    /** 매 프레임 부른다 (페이드·덕킹 진행). */
     public void update(float delta) {
-        if (current == null || fadeSpeed == 0) return;
-        fade += fadeSpeed * delta;
-        if (fade <= 0) {
-            stop();
-            return;
+        if (pendingName != null) {
+            pendingDelay -= delta;
+            if (pendingDelay <= 0) {
+                String n = pendingName;
+                play(n, pendingFadeIn, pendingStart);
+                return;
+            }
         }
-        if (fade >= 1) {
-            fade = 1f;
-            fadeSpeed = 0f;
+        if (current == null) return;
+        boolean changed = false;
+        if (fadeSpeed != 0) {
+            fade += fadeSpeed * delta;
+            if (fade <= 0) {
+                stopTrack();
+                return;
+            }
+            if (fade >= 1) {
+                fade = 1f;
+                fadeSpeed = 0f;
+            }
+            changed = true;
         }
-        applyVolume();
+        if (duckHold > 0) {
+            duckHold -= delta;
+            if (duck > duckTarget) duck = Math.max(duckTarget, duck - delta / DUCK_ATTACK);
+            changed = true;
+        } else if (duck < 1f || duckTarget < 1f) {
+            duckTarget = 1f;
+            duck = Math.min(1f, duck + delta / DUCK_RELEASE);
+            changed = true;
+        }
+        if (changed) applyVolume();
     }
 
     public void stop() {
+        pendingName = null;
+        stopTrack();
+    }
+
+    private void stopTrack() {
         if (current != null) {
             current.stop();
             current.dispose();
@@ -111,6 +176,8 @@ public class Bgm implements Disposable {
         currentName = null;
         fade = 1f;
         fadeSpeed = 0f;
+        duck = duckTarget = 1f;
+        duckHold = 0f;
     }
 
     public void setVolume(float volume) {
@@ -125,7 +192,7 @@ public class Bgm implements Disposable {
 
     private void applyVolume() {
         // 귀에는 음량이 고르게 줄어드는 것처럼 들리도록 제곱으로 줄인다
-        if (current != null) current.setVolume(volume * fade * fade);
+        if (current != null) current.setVolume(volume * MIX * fade * fade * duck);
     }
 
     private static FileHandle find(String name) {
