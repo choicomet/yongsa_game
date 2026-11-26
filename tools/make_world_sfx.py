@@ -68,52 +68,58 @@ def fg_hammer():
     return reverb(anvil(), size=0.25, wet=0.12, damp=2500)
 
 
+# 결과음에는 망치 소리를 넣지 않는다: '깡'은 화면에서 망치가 내려칠 때(fg_hammer)만 난다 (해성, 2026-11-26 밤).
+
+def quench(dur=0.8):
+    """달군 쇠를 물에 담그는 '치이익'."""
+    return hp(noise(dur), 2500) * env(dur, 0.03, 2.2) * (0.8 + 0.2 * onepole_lp(noise(dur), 30) * 20).clip(0.5, 1.2)
+
+
 def fg_keep():
-    """강화 유지: 망치 한 번, 울림 없이 묵직하게 끝."""
-    return reverb(anvil(ring=0.1, weight=1.2), size=0.2, wet=0.1, damp=2000)
+    """강화 유지: 아무 일도 없음. 쇠가 식으며 '치익' 짧게."""
+    return reverb(quench(0.35) * 0.6, size=0.2, wet=0.1, damp=4000)
 
 
 def fg_success():
-    """강화 성공: 둔탁한 망치 + 쇠가 맑게 길게 울림 + 불꽃 튐."""
-    sparks = hp(crackle(0.5, 700, 9000), 2500) * env(0.5, 0.01, 3) * 0.6
-    ring = chord([523.3, 784.0, 1046.5], 1.0, detune=0.002) * env(1.0, 0.004, 2.5)
-    out = np.zeros(int(1.2 * SR))
-    place(out, anvil(weight=1.2), 0, 1.0)
-    place(out, ring, 0.01, 0.5)
-    place(out, sparks, 0.01, 1.0)
-    return reverb(out, size=0.45, wet=0.22, damp=6000)
+    """강화 성공: 불꽃이 튀고 '슈잉' 빛이 올라오며 '치이익' 담금질."""
+    sparks = hp(crackle(0.6, 900, 9000), 2500) * env(0.6, 0.01, 3) * 0.7
+    rise = bandsweep(noise(0.45), 800, 6000) * env(0.45, 0.15, 1.5) * 0.7
+    glow = onepole_lp(sine_sweep(330, 660, 0.45), 2000) * env(0.45, 0.2, 1.4) * 0.25
+    out = np.zeros(int(1.3 * SR))
+    place(out, sparks, 0, 1.0)
+    place(out, rise, 0, 1.0)
+    place(out, glow, 0, 1.0)
+    place(out, quench(0.8), 0.35, 0.8)
+    return reverb(out, size=0.4, wet=0.2, damp=6000)
 
 
 def fg_down():
-    """강화 하락: 둔탁한 망치 + 쇠가 '우웅' 내려앉는 소리."""
+    """강화 하락: 쇠가 '우웅' 내려앉는 소리."""
     groan = sine_sweep(330, 150, 0.6, vib=0.02, vib_hz=6) * env(0.6, 0.02, 2.5)
     out = np.zeros(int(0.8 * SR))
-    place(out, anvil(), 0, 1.0)
-    place(out, lp(groan, 1500), 0.05, 0.45)
+    place(out, lp(groan, 1500), 0, 1.0)
+    place(out, quench(0.4) * 0.3, 0.05, 1.0)
     return reverb(out, size=0.3, wet=0.15, damp=2500)
 
 
 def fg_destroy():
-    """검 파괴: 망치 '깡' → 쇠가 '쩡' 하고 금 가며 부러짐 → 조각이 바닥에 떨어져 짤그랑."""
+    """검 파괴: 쇠가 '쩡' 하고 금 가며 부러짐 → 조각이 바닥에 떨어져 짤그랑."""
     metal, glass = load("block"), load("destroy")
     crack = bandsweep(noise(0.06), 4000, 1200) * env(0.06, 0.0005, 5) * 1.6
-    out = np.zeros(int(1.2 * SR))
-    place(out, anvil(weight=1.3), 0, 1.0)
-    place(out, crack, 0.06, 0.8)
-    place(out, pitch(glass, 0.75), 0.06, 0.8)
-    for at, p in ((0.35, 1.3), (0.5, 1.6), (0.62, 1.15), (0.78, 1.45)):
+    out = np.zeros(int(1.1 * SR))
+    place(out, crack, 0, 1.0)
+    place(out, pitch(glass, 0.75), 0, 0.9)
+    for at, p in ((0.29, 1.3), (0.44, 1.6), (0.56, 1.15), (0.72, 1.45)):
         place(out, lp(pitch(metal, p), 5000), at, 0.25)
     return reverb(out, size=0.35, wet=0.18, damp=4000)
 
 
 def fg_craft():
-    """제작: 망치 세 번 '깡 깡 깡' → 물에 담그는 '치이익'."""
-    hiss = hp(noise(0.9), 2500) * env(0.9, 0.03, 2.2) * 0.35
-    out = np.zeros(int(1.6 * SR))
-    for at, w in ((0, 1.0), (0.22, 1.0), (0.44, 1.25)):
-        place(out, anvil(weight=w), at, 1.0)
-    place(out, hiss, 0.62, 1.0)
+    """제작: 다 두드린 검을 물에 담그는 '치이익'."""
+    out = np.zeros(int(1.0 * SR))
+    place(out, quench(0.9), 0, 1.0)
     return reverb(out, size=0.3, wet=0.14, damp=3000)
+
 
 
 # ── 보스 패턴 준비 (bs_) ──────────────────────────────
