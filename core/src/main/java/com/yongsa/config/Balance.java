@@ -73,6 +73,9 @@ public class Balance {
     public static class Villager {
         public String kind, name;
         public float[] at;
+        /** 수정에 갇혀 있을 때 살펴보면 용사가 이 사람과의 옛 추억을 떠올린다 (차례로 돌아감). */
+        public List<String> trappedLines;
+        /** 풀려난 뒤 이야기하면 용사에게 고마움을 전한다 (차례로 돌아감). */
         public List<String> freeLines;
     }
 

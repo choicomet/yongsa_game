@@ -81,4 +81,34 @@ class VillageTest {
         assertTrue(ev.stream().anyMatch(x -> x.type == GameEvent.Type.BOSS_SPEECH
                 && v.name.equals(x.speaker) && v.freeLines.contains(x.text)), "풀려난 사람과 이야기한다");
     }
+
+    @Test
+    void everyVillagerHasOwnMemoriesAndThanks() {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (Balance.Villager v : b.village.villagers) {
+            assertTrue(v.trappedLines != null && v.trappedLines.size() >= 2, v.name + " 추억 대사");
+            assertTrue(v.freeLines != null && v.freeLines.size() >= 2, v.name + " 고마움 대사");
+            assertTrue(v.trappedLines.get(0).contains(v.name), v.name + " 첫 추억 대사에 이름이 나온다");
+            for (String line : v.trappedLines) assertTrue(seen.add(line), "추억 대사가 사람마다 다르다: " + line);
+        }
+    }
+
+    @Test
+    void lookingAtTrappedVillagerCyclesThroughMemories() {
+        GameState s = NewGame.create(b);
+        s.exitRefusals = 99;
+        GameSession g = new GameSession(b, TestData.map(), s, 3);
+        assertTrue(tryLeave(g, new ArrayList<>()));
+        Balance.Villager v = b.village.villagers.get(0);
+        g.hero.x = g.villagerX(v);
+        g.hero.y = g.villagerY(v) - 1.0f * b.tileSize;
+        for (int i = 0; i < v.trappedLines.size() + 1; i++) {
+            Controls e = new Controls();
+            e.interact = true;
+            List<GameEvent> ev = run(g, e, 0.1f);
+            String want = v.trappedLines.get(i % v.trappedLines.size());
+            assertTrue(ev.stream().anyMatch(x -> x.type == GameEvent.Type.BOSS_SPEECH
+                    && "용사".equals(x.speaker) && want.equals(x.text)), "추억 대사 " + i);
+        }
+    }
 }
