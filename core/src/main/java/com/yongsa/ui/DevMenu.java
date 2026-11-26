@@ -9,7 +9,7 @@ import com.yongsa.model.GameState;
 import com.yongsa.screen.GameScreen;
 
 /**
- * 개발용 메뉴 (F1). 캠프로 돌아가고(싸우는 중에도), 보스를 다시 싸우게 되살리고, 보스방으로 바로 가고, 광물 무한·무적을 켜고 끈다.
+ * 개발용 메뉴 (F1). 캠프로 돌아가고(싸우는 중에도), 보스를 다시 싸우게 되살리고, 보스방으로 바로 가고, 광물 무한·무적·가림 층 보기를 켜고 끈다.
  * 켜고 끈 값은 설정 파일에 저장되어 다음 실행에도 유지된다.
  */
 public class DevMenu extends Modal {
@@ -43,7 +43,7 @@ public class DevMenu extends Modal {
         p.add(label("보스", "default", Ui.GOLD)).colspan(3).left().height(28).padBottom(4).row();
 
         String[] bosses = {AbsorbService.BOSS_ORDER[0], AbsorbService.BOSS_ORDER[1], AbsorbService.BOSS_ORDER[2], "FINAL"};
-        for (int row = 0; row < 5; row++) {
+        for (int row = 0; row < 6; row++) {
             nav.newRow();
             // 왼쪽: 도구 한 줄
             switch (row) {
@@ -75,6 +75,13 @@ public class DevMenu extends Modal {
                         rebuild();
                     });
                     break;
+                case 4:
+                    toolRow(p, "가림 층 보기", screen.game.settings.devShowLayers ? "켜짐" : "꺼짐", () -> {
+                        screen.game.settings.devShowLayers = !screen.game.settings.devShowLayers;
+                        screen.game.saveSettings();
+                        rebuild();
+                    });
+                    break;
                 default:
                     masteryRow(p, g, s);
             }
@@ -87,7 +94,7 @@ public class DevMenu extends Modal {
                 p.add(label(name, "default", Ui.TEXT)).width(150).left().padRight(10);
                 p.add(reviveButton(id, fin ? s.finalBossDefeated : s.bossDefeated(id), !fin && g.devRevived(id))).width(130).padRight(8);
                 p.add(warpButton(id, name)).width(120).row();
-            } else {
+            } else if (row == 4) {
                 TextButton all = nav.add("모든 보스 부활", () -> {
                     int n = 0;
                     for (String id : AbsorbService.BOSS_ORDER) if (g.devReviveBoss(id)) n++;
@@ -97,6 +104,8 @@ public class DevMenu extends Modal {
                 });
                 all.setDisabled(g.fighting());
                 p.add(all).colspan(3).fillX().row();
+            } else {
+                p.add().colspan(3).row();
             }
         }
 

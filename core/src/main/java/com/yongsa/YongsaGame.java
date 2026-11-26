@@ -51,6 +51,7 @@ public class YongsaGame extends Game {
         art = new Art();
         sfx = new Sfx();
         bgm = new Bgm();
+        sfx.setBgm(bgm);
         skin = Ui.createSkin(fonts, art);
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();

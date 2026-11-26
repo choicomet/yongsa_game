@@ -206,7 +206,7 @@ public class Hud {
         frames.panel(batch, HudFrames.Panel.PROFILE, pcx, py0, 24 + PROFILE_W - pcx);
         batch.draw(frames.portraitDisc, pcx - 36, pcy - 36, 72, 72);
         // 시안처럼 원 안에 상반신: 용사 그림 위쪽 절반을 크게, 원 밖으로 나가는 부분(망토)은 잘라 낸 그림
-        com.badlogic.gdx.graphics.g2d.TextureRegion hero = art.get("hero_down");
+        com.badlogic.gdx.graphics.g2d.TextureRegion hero = art.world("hero_down");
         if (portraitBust == null || portraitSrc != hero) {
             portraitSrc = hero;
             portraitBust = circleBust(hero);
@@ -383,7 +383,7 @@ public class Hud {
             float is = hasStatus ? 42 : 54, ix = x + 54 - is / 2f, iy = SY + (hasStatus ? 49 : 32);
             batch.setColor(Color.WHITE);
             if (i == 0 && weapon != null) batch.draw(art.sword(weapon.defId, weapon.awakened), ix, iy, is, is);
-            if (i == 1) batch.draw(art.get("hero_side_walk"), ix + 10, iy + 2, 34, 48);
+            if (i == 1) batch.draw(art.world("hero_side_walk"), ix + 10, iy + 2, 34, 48);
             if (sk != null) {
                 // 스킬 아이콘(sprites/skill/icon_<kind>.png, 없으면 그 검 그림) 뒤로 빛, 지금 못 쓰면 어둡게
                 batch.setColor(sk.usable ? Color.WHITE : SKILL_LOCKED);

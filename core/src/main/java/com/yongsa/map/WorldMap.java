@@ -34,6 +34,7 @@ public class WorldMap {
     /** Session-owned availability; geometry stays independent of rendering. */
     public java.util.function.Predicate<Room> returnDoorOpen = r -> false;
     public final List<Room> rooms = new ArrayList<>();
+    public final SceneLayerPlacements sceneLayers;
     public final List<Link> links = new ArrayList<>();
     public final List<Prop> props = new ArrayList<>();
     public final List<Corridor> corridors = new ArrayList<>();
@@ -64,6 +65,7 @@ public class WorldMap {
         for (LinkDef ld : def.links) buildLink(ld);
         buildCorridors();
         buildPaintedJoints();
+        sceneLayers = new SceneLayerPlacements(this, SceneLayers.load());
         alignPaintedArrivals();
         buildCampProps();
     }
@@ -750,12 +752,14 @@ public class WorldMap {
      */
     public boolean free(float x, float y, float hw, float hh) {
         if (!Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(hw) || !Float.isFinite(hh) || hw < 0 || hh < 0) return false;
+        if (sceneLayers != null && sceneLayers.blocks(x,y,hw,hh)) return false;
         Room doorRoom = roomAt((int)Math.floor(x / tileSize), (int)Math.floor(y / tileSize));
         if (doorRoom != null && doorRoom.scene != null && doorRoom.scene.returnDoor != null) {
             float dx = Math.abs(x - doorRoom.sceneX(doorRoom.scene.returnDoor[0]));
             float dy = y - doorRoom.sceneY(doorRoom.scene.returnDoor[1]);
             // Only stone feet and the closed barrier obstruct movement, never the tall arch silhouette.
-            if (Math.abs(dx - 55) < 15 + hw && Math.abs(dy - 12) < 8 + hh) return false;
+            if (PaintedDoorways.exitFor(doorRoom) == null
+                    && Math.abs(dx - 55) < 15 + hw && Math.abs(dy - 12) < 8 + hh) return false;
             if (!returnDoorOpen.test(doorRoom) && dx < 39 + hw && Math.abs(dy - 14) < 3 + hh) return false;
         }
         if (def.passageScenes != null && !def.passageScenes.isEmpty()) return paintedFree(x, y, hw, hh);
@@ -809,9 +813,20 @@ public class WorldMap {
             break; // Respect the uppermost visible painting, not an older floor underneath.
         }
         if (r != null && r.allowsFoot(x, y, radius)) return true;
+        // Where a passage painting's end overlaps a painted room, the room's own art
+        // (fences, rocks beside the stairs) is what the player sees: only the room's
+        // floor there may be used, never the passage mask hidden underneath.
+        boolean overRoomArt = false;
+        for (Room art : rooms) {
+            if (art.scene == null || art.type == RoomType.CAMP
+                    || x < art.originX - 16 || x > art.originX + art.widthPx + 16
+                    || y < art.originY - 16 || y > art.originY + art.heightPx + 16) continue;
+            if (!art.allowsFoot(x, y, 0) && nearDoor(art, x, y, 5 * tileSize)) { overRoomArt = true; break; }
+        }
         for (Corridor c : corridors) {
             if (x + radius < c.originX || x - radius > c.originX + c.widthPx
                     || y + radius < c.originY || y - radius > c.originY + c.heightPx || c.closed()) continue;
+            if (overRoomArt) continue;
             if (c.allowsFoot(x, y, radius)) return true;
             // At a doorway the foot straddles two polygons. Check their union only
             // in that small overlap; never let the coarse minimap cells open a wall.
@@ -825,6 +840,16 @@ public class WorldMap {
                 fits = onJoinedFloor(c, d.room, x + radius * (float) Math.cos(angle), y + radius * (float) Math.sin(angle));
             }
             if (fits) return true;
+        }
+        return false;
+    }
+
+    /** Beside a doorway's opening (fences, rocks flanking the stairs): not in the opening itself. */
+    private static boolean nearDoor(Room r, float x, float y, float distance) {
+        for (Door d : r.doors) {
+            float along = (x - d.footX) * d.dirX + (y - d.footY) * d.dirY;
+            float lateral = Math.abs((x - d.footX) * -d.dirY + (y - d.footY) * d.dirX);
+            if (Math.abs(along) < distance && lateral > 1.4f * 32 && lateral < 12 * 32) return true;
         }
         return false;
     }

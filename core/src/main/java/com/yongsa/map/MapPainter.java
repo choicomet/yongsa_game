@@ -36,6 +36,10 @@ public class MapPainter implements Disposable {
     private final WorldMap map;
     private final int T;
     private float time;
+    private float abyssOpening;
+    private Texture approachStones;
+    private static final String STAIRWELL="world/portals/abyss-stairwell.png";
+    private static final float STAIR_W=175, STAIR_H=STAIR_W*240/384;
     private float viewX0, viewY0, viewX1, viewY1;
 
     private final String[] theme;
@@ -46,9 +50,12 @@ public class MapPainter implements Disposable {
     /** GPT 길·땅 그림. 그림이 있으면 통로 타일과 통로 횃불 대신 쓴다. */
     private final PassagePainter passages;
 
-    private RoomGates roomGates;
+    private final RoomGates roomGates;
+    private final PaintedDoorways doorways = new PaintedDoorways();
 
     /** 던전 방 배경 그림 (보이는 방만 읽어 두고, 오래 안 쓴 것은 버린다). */
+    /** 다가가는 방 그림을 미리 계산해 두는 일꾼 (렉 줄이기). */
+    private final MapLoader loader = new MapLoader();
     private final Map<String, Texture> sceneTex = new HashMap<>();
 
     private final Map<String, Float> sceneUsed = new HashMap<>();
@@ -57,6 +64,7 @@ public class MapPainter implements Disposable {
     private final Map<String, Texture> frontTex = new HashMap<>();
 
     private final SceneForegrounds sceneForegrounds;
+    private final SceneLayerPainter sceneLayers;
 
     private final BossReturnDoors returnDoors;
 
@@ -221,9 +229,17 @@ public class MapPainter implements Disposable {
     private void drawScenes() {
         for (Room r : map.rooms) {
             if (r.scene == null) continue;
-            if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            boolean camp = "central-camp".equals(r.scene.id);
+            boolean towerCave="cave-tower".equals(r.scene.id);
+            var inset = PaintedDoorways.exitFor(r);
+            float overhang=towerCave?r.widthPx*.21f:camp?r.widthPx*.09f:inset!=null?r.widthPx*.18f:0;
+            float top = r.originY + r.heightPx + overhang;
+            if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || top < viewY0) continue;
+            if (camp) doorways.drawCrown(batch, r);
             Texture tex = sceneTexture(r);
             batch.draw(tex, r.originX, r.originY, r.widthPx, r.heightPx, 0, 0, tex.getWidth(), tex.getHeight(), r.flip, false);
+            if (towerCave) drawTowerCaveMouth(r);
+            if (inset != null) returnDoors.drawPainted(batch, r, inset, doorways);
         }
         // 오래 안 보인 그림은 메모리에서 내린다
         if (sceneTex.size() > 5) {
@@ -237,6 +253,20 @@ public class MapPainter implements Disposable {
         }
     }
 
+    private void drawTowerCaveMouth(Room room) {
+        for (Door door : room.doors) {
+            if (!"exit".equals(door.name)) continue;
+            TextureRegion mouth=art.cell("world/portals/tower-cave-mouth.png",1,1,0);
+            // Register the throat to the actual transition. The roof extends
+            // beyond the room painting, so bedrock cannot cut a flat cap across it.
+            float w=door.halfWidth*4f, h=w*mouth.getRegionHeight()/mouth.getRegionWidth();
+            float y=door.footY+door.dirY*door.triggerDepth;
+            batch.setColor(.93f,.91f,.96f,1);
+            batch.draw(mouth,door.gateX()-w*.5f,y-h*.265f,w,h);
+            batch.setColor(Color.WHITE);
+        }
+    }
+
     /**
      * 앞쪽 가림 레이어: 그림 아래쪽 바위 테두리·난간·기둥을 용사와 몬스터 위에 한 번 더 그린다.
      * 걸을 수 있는 바닥(계단 포함) 위의 픽셀은 불러올 때 지워서, 서 있는 자리를 가리지 않는다.
@@ -245,6 +275,7 @@ public class MapPainter implements Disposable {
         for (Room r : map.rooms) {
             if (r.scene == null) continue;
             if (r.originX > viewX1 || r.originX + r.widthPx < viewX0 || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            if(sceneLayers.hasFront("rooms/"+r.scene.id))continue;
             Texture tex = frontTexture(r);
             if (tex == null) continue;
             batch.setColor(Color.WHITE);
@@ -261,21 +292,48 @@ public class MapPainter implements Disposable {
     }
 
     private Texture frontTexture(Room r) {
-        String file = r.scene.image.replace(".png", "-front.png");
-        String key = r.id + ":" + file; // 출구 혼합 마스크는 방 배치마다 다르다.
+        String key = frontKey(r); // 출구 혼합 마스크는 방 배치마다 다르다.
         if (frontTex.containsKey(key)) {
             sceneUsed.put(key, time);
             return frontTex.get(key);
         }
-        Texture t = null;
+        return uploadFront(r, key, loader.take("front:" + key, () -> bakeFront(r)));
+    }
+
+    private static String frontKey(Room r) {
+        return r.id + ":" + r.scene.image.replace(".png", "-front.png");
+    }
+
+    /** 다른 스레드에서 해도 되는 계산: 앞쪽 가림 그림을 읽고 바닥 자리를 지우고 가장자리를 흐린다. 그림이 없으면 main 이 null. */
+    private Baked bakeFront(Room r) {
+        Baked b = new Baked();
+        String file = r.scene.image.replace(".png", "-front.png");
         if (Gdx.files.internal(file).exists()) {
             com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(file));
-            eraseWalkable(p, r.scene.walkable);
+            WalkMask floor = WalkMask.get(r.scene.walkMask);
+            if (floor == null) eraseWalkable(p, r.scene.walkable);
+            else {
+                // The reviewed pixel mask is authoritative, including reopened floor beside props.
+                int w=p.getWidth(), h=p.getHeight();
+                p.setBlending(com.badlogic.gdx.graphics.Pixmap.Blending.None);
+                for (int y=0;y<h;y++) for (int x=0;x<w;x++)
+                    if ((p.getPixel(x,y)&255)!=0 && floor.floor((x+.5f)/w,(y+.5f)/h)) p.drawPixel(x,y,0);
+            }
             if (passages.active) p = passages.joinForeground(p, r);
-            t = new Texture(p);
-            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-            p.dispose();
+            b.main = p;
         }
+        return b;
+    }
+
+    private Texture uploadFront(Room r, String key, Baked b) {
+        Texture t = null;
+        try {
+            if (b.main != null) {
+                BakeDigest.add("front:" + key, b.main);
+                t = new Texture(b.main);
+                t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            }
+        } finally { b.dispose(); }
         frontTex.put(key, t);
         sceneUsed.put(key, time);
         return t;
@@ -310,20 +368,114 @@ public class MapPainter implements Disposable {
         String key = r.id + ":" + file;
         sceneUsed.put(key, time);
         Texture t = sceneTex.get(key);
-        if (t == null) {
-            if (passages.active) {
-                // 방 그림 가장자리를 흐려서 둘레의 땅·길 그림과 이어지게 한다
-                com.badlogic.gdx.graphics.Pixmap p = passages.joinRoom(new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(file)), r);
-                t = new Texture(p, true);
-                p.dispose();
-            } else {
-                t = new Texture(Gdx.files.internal(file), true);
-            }
-            t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
-            sceneTex.put(key, t);
-        }
+        if (t == null) t = uploadScene(key, loader.take("scene:" + key, () -> bakeScene(r)));
         return t;
     }
+
+    /** 다른 스레드에서 해도 되는 계산: 방 그림을 읽고 가장자리를 흐려서 둘레의 땅·길 그림과 이어지게 한다. */
+    private Baked bakeScene(Room r) {
+        Baked b = new Baked();
+        com.badlogic.gdx.graphics.Pixmap p = new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal(r.scene.image));
+        b.main = passages.active ? passages.joinRoom(p, r) : p;
+        return b;
+    }
+
+    private Texture uploadScene(String key, Baked b) {
+        Texture t;
+        try {
+            BakeDigest.add("scene:" + key, b.main);
+            t = new Texture(b.main, true);
+        } finally { b.dispose(); }
+        t.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
+        sceneTex.put(key, t);
+        sceneUsed.put(key, time);
+        return t;
+    }
+
+    /**
+     * 렉 줄이기: 화면 둘레(near)에 들어온 방·길목·이음 그림은 미리 계산을 맡기고, 다 된 것은 한 프레임에 한 장씩 올린다.
+     * 그래서 방에 들어설 때 그 자리에서 큰 그림을 계산하느라 멈추지 않는다.
+     * 더 넓은 keep 범위 안의 그림은 내리지 않고, 그 밖으로 멀어진 미리 계산은 버린다.
+     */
+    private final java.util.List<Room> order = new java.util.ArrayList<>();
+    private final PrefetchZones zones = new PrefetchZones();
+    private final Map<Room, String[]> prefetchKeys = new HashMap<>();
+
+    private void prefetch() {
+        loader.newFrame(1);
+        // near: 화면 밖 화면 폭의 0.6배까지 (걸어서 몇 초 거리) / keep: 1.25배까지는 내리지 않는다 (그래픽 메모리 절약)
+        float w = viewX1 - viewX0, h = viewY1 - viewY0, m = Math.max(w, h), n = .6f * m, k = 1.25f * m;
+        zones.clear();
+        zones.addNear(viewX0 - n, viewY0 - n, viewX1 + n, viewY1 + n);
+        zones.addKeep(viewX0 - k, viewY0 - k, viewX1 + k, viewY1 + k);
+        // 순간이동 문(동굴 입구 등) 너머 방: 그 문이 near 안에 있으면 건너편 방도 미리 준비한다.
+        for (Room r : map.rooms) for (Door d : r.doors) {
+            if (d.link == null || !(d.link.transition || d.link.oneWay)) continue;
+            if (d.footX < viewX0 - n || d.footX > viewX1 + n || d.footY < viewY0 - n || d.footY > viewY1 + n) continue;
+            Door to = d.partner();
+            if (to == null) continue;
+            zones.addNear(to.arriveX - n / 2, to.arriveY - n / 2, to.arriveX + n / 2, to.arriveY + n / 2);
+        }
+        // 가까운 방부터 (화면 가운데에서 가까운 순)
+        float cx = (viewX0 + viewX1) / 2f, cy = (viewY0 + viewY1) / 2f;
+        order.clear();
+        for (Room r : map.rooms) if (r.scene != null) order.add(r);
+        order.sort(java.util.Comparator.comparingDouble(r -> Math.abs(r.originX + r.widthPx / 2f - cx) + Math.abs(r.originY + r.heightPx / 2f - cy)));
+        for (Room r : order) {
+            String[] keys = prefetchKeys.computeIfAbsent(r, q -> new String[]{q.id + ":" + q.scene.image, frontKey(q),
+                    "scene:" + q.id + ":" + q.scene.image, "front:" + frontKey(q), "rooms/" + q.scene.id});
+            String sceneKey = keys[0], fKey = keys[1], sceneJob = keys[2], frontJob = keys[3], layerKey = keys[4];
+            // 캠프는 귀환문으로 순간이동해 오는 곳이라 미리 다가갈 수 없다: 늘 준비해 둔다.
+            boolean near = r.type == RoomType.CAMP || zones.near(r.originX, r.originY, r.originX + r.widthPx, r.originY + r.heightPx);
+            if (near) {
+                if (!sceneTex.containsKey(sceneKey)) {
+                    loader.request(sceneJob, () -> bakeScene(r));
+                    if (loader.ready(sceneJob) && loader.spendUpload())
+                        uploadScene(sceneKey, loader.take(sceneJob, () -> bakeScene(r)));
+                } else sceneUsed.put(sceneKey, time);
+                boolean layered = sceneLayers.has(layerKey);
+                if (sceneLayers.hasFront(layerKey)) {
+                    // 레이어 그림이 앞쪽을 대신 그리는 방: 옛 앞쪽 그림은 쓰지 않는다.
+                } else if (!frontTex.containsKey(fKey)) {
+                    loader.request(frontJob, () -> bakeFront(r));
+                    if (loader.ready(frontJob) && loader.spendUpload())
+                        uploadFront(r, fKey, loader.take(frontJob, () -> bakeFront(r)));
+                } else sceneUsed.put(fKey, time);
+                if (!layered) sceneForegrounds.prefetch(r, time);
+            } else if (zones.keep(r.originX, r.originY, r.originX + r.widthPx, r.originY + r.heightPx)) {
+                if (sceneTex.containsKey(sceneKey)) sceneUsed.put(sceneKey, time);
+                if (frontTex.containsKey(fKey)) sceneUsed.put(fKey, time);
+                sceneForegrounds.touch(r, time);
+            } else {
+                loader.drop(sceneJob);
+                loader.drop(frontJob);
+                sceneForegrounds.forget(r);
+            }
+        }
+        passages.prefetch(zones);
+        sceneLayers.prefetch(zones);
+    }
+
+    /** 이동 마스크를 용사 자리에서 가까운 것부터 미리 읽어 둔다 (처음 밟는 순간 멈칫하지 않게). */
+    private void preloadWalkMasks() {
+        float hx = g.hero.x, hy = g.hero.y;
+        java.util.List<Object[]> items = new java.util.ArrayList<>();
+        for (Room r : map.rooms) if (r.scene != null)
+            items.add(new Object[]{r.scene.walkMask, dist(hx, hy, r.originX + r.widthPx / 2f, r.originY + r.heightPx / 2f)});
+        for (Corridor c : map.corridors) if (c.scene != null)
+            items.add(new Object[]{c.scene.walkMask, dist(hx, hy, c.originX + c.widthPx / 2f, c.originY + c.heightPx / 2f)});
+        for (var j : map.paintedJoints)
+            items.add(new Object[]{j.walkMask, dist(hx, hy, j.rect[0] + j.rect[2] / 2f, j.rect[1] + j.rect[3] / 2f)});
+        items.sort(java.util.Comparator.comparingDouble(o -> (Float) o[1]));
+        java.util.List<String> paths = new java.util.ArrayList<>();
+        for (Object[] o : items) paths.add((String) o[0]);
+        WalkMask.preloadInBackground(paths);
+    }
+
+    private static float dist(float ax, float ay, float bx, float by) {
+        return Math.abs(ax - bx) + Math.abs(ay - by);
+    }
+
 
     /** 그림 방의 출구: 잠기면 창살, 이어진 곳이 없으면 어둠으로 막혀 있다. */
     private void drawSceneDoors() {
@@ -331,7 +483,6 @@ public class MapPainter implements Disposable {
             if (r.scene == null) continue;
             for (Door d : r.doors) {
                 if (!inView(d.footX, d.footY)) continue;
-                if(roomGates==null)roomGates=new RoomGates(map);
                 if(roomGates.supports(d))continue;
                 float px = -d.dirY, py = d.dirX;
                 if (d.dead()) {
@@ -395,27 +546,77 @@ public class MapPainter implements Disposable {
             if (p.kind != Prop.Kind.SEAL) continue;
             float cx = p.centerX(T), cy = p.centerY(T);
             if (!inView(cx, cy)) continue;
-            TextureRegion stone = art.world(g.state.unsealed ? "abyss_open" : "abyss_sealed");
+            if (approachStones == null) approachStones = makeApproachStones();
+            // Two broken courses pick up the camp paving between the rim and the south stairs.
+            batch.setColor(.97f,.89f,.81f,.95f);
+            batch.draw(approachStones,cx-48,cy-91,84,43);
+            batch.draw(approachStones,cx+40,cy-63,-76,38);
+            batch.setColor(.13f,.085f,.095f,.68f);
+            batch.draw(art.glow,cx-83,cy-55,166,104);
+            TextureRegion closed=art.cell(STAIRWELL,2,1,0), opened=art.cell(STAIRWELL,2,1,1);
+            float a=abyssOpening*abyssOpening*(3-2*abyssOpening);
+            batch.setColor(.96f,.92f,.90f,1);
+            batch.draw(opened,cx-STAIR_W/2,cy-STAIR_H/2,STAIR_W,STAIR_H);
+            // Keep the outer masonry planted. Two stone leaves recede under the side rails.
+            if (a<1) {
+                float left=.145f, right=.855f, half=.5f-left;
+                drawCover(closed,cx,cy,left+half*a,.5f,left);
+                drawCover(closed,cx,cy,.5f,right-half*a,.5f+half*a);
+            }
+            if (a>0) {
+                // Ember tips sink toward the dark stairwell, below the hero layer.
+                for (int i=0;i<7;i++) {
+                    float t=(time*.38f+i*.38197f)%1f;
+                    float angle=i*2.4f+t*.8f;
+                    float radius=(1-t)*32;
+                    float x=cx+MathUtils.cos(angle)*radius;
+                    float y=cy+MathUtils.sin(angle)*radius*.48f+7-t*13;
+                    float pulse=MathUtils.sin(t*MathUtils.PI)*a;
+                    batch.setColor(.70f,.37f,.97f,.65f*pulse);
+                    batch.draw(art.glow,x-3,y-2,6,4);
+                    batch.setColor(.88f,.65f,1,pulse*.85f);
+                    batch.draw(art.white(),x-1,y,2,1.5f);
+                }
+            }
             batch.setColor(Color.WHITE);
-            drawGroundSprite(stone, cx, cy);
         }
     }
 
-    private void drawGroundSprite(TextureRegion sprite, float x, float y) {
-        float w = art.width(sprite), h = art.height(sprite);
-        batch.draw(sprite, x - w / 2f, y - h / 2f, w, h);
+    /** A loose cluster of flagstones sampled from the camp's own left-hand path. */
+    private static Texture makeApproachStones() {
+        var source=new com.badlogic.gdx.graphics.Pixmap(Gdx.files.internal("scenes/natural-v1/central-camp.png"));
+        int w=Math.round(source.getWidth()*.092f),h=Math.round(source.getHeight()*.076f);
+        int left=Math.round(source.getWidth()*.269f),top=Math.round(source.getHeight()*.603f);
+        var cut=new com.badlogic.gdx.graphics.Pixmap(w,h,com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+        try {
+            cut.setBlending(com.badlogic.gdx.graphics.Pixmap.Blending.None);
+            for(int y=0;y<h;y++) for(int x=0;x<w;x++) {
+                float u=2*(x+.5f)/w-1,v=2*(y+.5f)/h-1;
+                float fade=MathUtils.clamp((1-u*u-v*v)*2.6f,0,1);
+                int rgba=source.getPixel(left+x,top+y);
+                cut.drawPixel(x,y,(rgba & 0xffffff00) | Math.round((rgba & 255)*fade*fade*(3-2*fade)));
+            }
+            Texture texture=new Texture(cut,true);
+            texture.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);
+            return texture;
+        } finally {cut.dispose();source.dispose();}
     }
 
-    /** 세 보스에 대응하는 보석만 밝힌다. 좌표는 봉인석 원본 1536x1024 기준. */
+    private void drawCover(TextureRegion closed,float cx,float cy,float from,float to,float dest) {
+        float top=.157f,bottom=.76f;
+        float u=closed.getU(),du=closed.getU2()-u;
+        batch.draw(closed.getTexture(), cx+(dest-.5f)*STAIR_W, cy+(.5f-bottom)*STAIR_H,
+                (to-from)*STAIR_W,(bottom-top)*STAIR_H, u+from*du,bottom,u+to*du,top);
+    }
+
+    /** Rivet centers measured on the closed stairwell tile. */
     private void drawSealSockets(float cx, float cy, float pulse) {
-        TextureRegion stone = art.world("abyss_sealed");
-        float w = art.width(stone), h = art.height(stone);
-        float[][] sockets = {{767,257}, {459,590}, {1075,590}};
+        float[] sockets={.303f,.497f,.695f};
         Color[] colors = {new Color(.5f,.75f,1f,1f), new Color(1f,.3f,.35f,1f), new Color(.4f,.95f,1f,1f)};
         for (int i = 0; i < 3; i++) {
             if (!g.state.bossDefeated(com.yongsa.model.AbsorbService.BOSS_ORDER[i])) continue;
-            float x = cx + (sockets[i][0] / 1536f - .5f) * w;
-            float y = cy + (.5f - sockets[i][1] / 1024f) * h;
+            float x = cx + (sockets[i]-.5f)*STAIR_W;
+            float y = cy + (.5f-.432f)*STAIR_H;
             Color c = g.absorb.canUnseal(g.state) ? Ui.GOLD : colors[i];
             batch.setColor(c.r,c.g,c.b,.65f * pulse);
             batch.draw(art.glow,x-10,y-7,20,14);
@@ -452,6 +653,7 @@ public class MapPainter implements Disposable {
 
     public MapPainter(GameSession g, Art art, SpriteBatch batch, ShapeRenderer shapes) {
         this.g = g;
+        abyssOpening = g.state.unsealed ? 1 : 0;
         this.art = art;
         this.batch = batch;
         this.shapes = shapes;
@@ -473,9 +675,12 @@ public class MapPainter implements Disposable {
                     torches.add(new float[]{x * T + T / 2f, y * T, MathUtils.random(10f), 1f});
             }
         }
-        passages = new PassagePainter(map, T);
-        sceneForegrounds = new SceneForegrounds(passages);
+        passages = new PassagePainter(map, T, loader);
+        sceneForegrounds = new SceneForegrounds(passages, loader);
+        sceneLayers = new SceneLayerPainter(map, passages, loader);
+        preloadWalkMasks();
         returnDoors = new BossReturnDoors(g);
+        roomGates = new RoomGates(map, doorways, art);
         // 타일 방(캠프) 윗벽에 일정한 간격으로 횃불을 건다. 문 바로 옆은 비운다. 그림 방은 그림에 불이 있다.
         for (Room r : map.rooms) {
             if (r.scene != null) continue;
@@ -492,8 +697,9 @@ public class MapPainter implements Disposable {
     /** 매 프레임: 문 움직임과 오래 안 쓴 그림 정리. */
     public void update(float dt, float time) {
         this.time = time;
-        if (roomGates == null) roomGates = new RoomGates(map);
         roomGates.update(dt);
+        float target = g.state.unsealed ? 1 : 0;
+        abyssOpening += MathUtils.clamp(target-abyssOpening, -dt/.65f, dt/.65f);
         sceneForegrounds.expire(time);
         returnDoors.update(dt);
     }
@@ -503,6 +709,7 @@ public class MapPainter implements Disposable {
         viewY0 = y0;
         viewX1 = x1;
         viewY1 = y1;
+        prefetch();
     }
 
     private boolean inView(float x, float y) {
@@ -516,10 +723,11 @@ public class MapPainter implements Disposable {
             passages.drawWalls(batch, viewX0, viewY0, viewX1, viewY1);
         }
         drawScenes();
-        drawTiles(tx0, ty0, tx1, ty1);
+        // In a painted world these tiles describe collision only. Drawing a wall tile
+        // underneath a feathered joint leaves a straight masonry seam across bedrock.
+        if (!passages.fullyPainted) drawTiles(tx0, ty0, tx1, ty1);
         if (passages.active) passages.drawFloors(batch, viewX0, viewY0, viewX1, viewY1);
         passages.joints.draw(batch, viewX0, viewY0, viewX1, viewY1);
-        if (roomGates == null) roomGates = new RoomGates(map);
         roomGates.drawThresholds(batch, viewX0, viewY0, viewX1, viewY1);
         drawSceneDoors();
         drawFloorProps();
@@ -528,25 +736,29 @@ public class MapPainter implements Disposable {
 
     /** 깊이 정렬에 끼는 맵 조각: 앞쪽 바위·기둥, 이음매 앞면, 문짝, 보스방 귀환 문. */
     public void collect(DepthSink out) {
+        sceneLayers.collect(out,batch,viewX0,viewY0,viewX1,viewY1);
         for (Room r : map.rooms) {
             if (r.scene == null || r.originX > viewX1 || r.originX + r.widthPx < viewX0
                     || r.originY > viewY1 || r.originY + r.heightPx < viewY0) continue;
+            if(sceneLayers.has("rooms/"+r.scene.id))continue;
             for (SceneForegrounds.Piece piece : sceneForegrounds.pieces(r, time)) {
                 out.add(r.sceneY(piece.depth), () -> sceneForegrounds.draw(batch, r, piece));
             }
         }
         for (var front : passages.joints.fronts(viewX0, viewY0, viewX1, viewY1))
             out.add(front.depth, () -> front.draw(batch));
-        if (roomGates == null) roomGates = new RoomGates(map);
         for (var gate : roomGates.parts(batch, viewX0, viewY0, viewX1, viewY1))
             out.add(gate.depth(), () -> gate.draw().run());
-        for (Room r : map.rooms) if (r.type == RoomType.BOSS && inView(g.portalX(r), g.portalY(r)))
+        for (Room r : map.rooms) if (r.type == RoomType.BOSS && PaintedDoorways.exitFor(r) == null && inView(g.portalX(r), g.portalY(r)))
             out.add(g.portalY(r) + 8, () -> returnDoors.draw(batch, r));
     }
 
     /** 앞쪽 가림 레이어 (깊이 정렬한 것들 다음에 그린다). */
+    public void drawLayerDebug() { sceneLayers.drawDebug(shapes); }
+
     public void drawFronts() {
         drawSceneFronts();
+        sceneLayers.drawFronts(batch);
     }
 
     /** 맵의 불빛: 횃불, 모닥불, 화로, 봉인석, 던전 입구 봉인. */
@@ -618,6 +830,7 @@ public class MapPainter implements Disposable {
             for (Door d : new Door[]{l.doorA, l.doorB}) {
                 float cx = d.footX, cy = d.footY;
                 if (!inView(cx, cy)) continue;
+                if (roomGates.supports(d)) continue; // The painted barrier carries its own seal.
                 float pulse = 0.7f + 0.3f * MathUtils.sin(time * 3f);
                 for (int i = 0; i < d.tilesX.length; i++) {
                     float x = d.tilesX[i] * T, y = d.tilesY[i] * T;
@@ -648,8 +861,12 @@ public class MapPainter implements Disposable {
         for (Texture[] ts : corridorSkin.values()) for (Texture t : ts) t.dispose();
         for (Texture t : gateTex.values()) if (t != null) t.dispose();
         sceneForegrounds.dispose();
+        sceneLayers.dispose();
         returnDoors.dispose();
-        if (roomGates != null) roomGates.dispose();
+        roomGates.dispose();
+        doorways.dispose();
+        if (approachStones!=null) approachStones.dispose();
         passages.dispose();
+        loader.dispose();
     }
 }

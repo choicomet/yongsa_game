@@ -531,6 +531,7 @@ public class WorldRenderer implements Disposable {
 
     /** 개발용 (F1): 용사 발이 설 수 있는 곳을 초록으로 덮는다. 그림은 바닥인데 초록이 없으면 막힌 곳이다. */
     public boolean showWalkable;
+    public boolean showLayers;
 
     public void render(OrthographicCamera cam) {
         computeView(cam);
@@ -546,9 +547,11 @@ public class WorldRenderer implements Disposable {
         mapPainter.drawGround(tx0, ty0, tx1, ty1);
         batch.end();
 
+        if (showWalkable) mapPainter.drawWalkable();
         enemyPainter.drawGroundEffects();
 
         batch.begin();
+        enemyPainter.drawPools();
         drawGhosts();
         List<Sorted> list = new ArrayList<>();
         collect(list, tx0, ty0, tx1, ty1);
@@ -566,7 +569,7 @@ public class WorldRenderer implements Disposable {
         shapes.setProjectionMatrix(cam.combined);
         drawGlow();
         enemyPainter.drawHpBars();
-        if (showWalkable) mapPainter.drawWalkable();
+        if (showLayers) mapPainter.drawLayerDebug();
 
         batch.setProjectionMatrix(screenProj);
         batch.begin();
@@ -618,6 +621,8 @@ public class WorldRenderer implements Disposable {
             if (!inView(pd[0], pd[1])) continue;
             list.add(new Sorted(pd[1], () -> drawPotionDrop(pd[0], pd[1])));
         }
+        for (HeroShot shot : g.shots) if (!shot.dead && !shot.strike())
+            list.add(new Sorted(shot.y, () -> drawSkillShot(shot)));
         HeroActor h = g.hero;
         list.add(new Sorted(h.y, this::drawHero));
         enemyPainter.collect((y, draw) -> list.add(new Sorted(y, draw::run)));
@@ -878,7 +883,10 @@ public class WorldRenderer implements Disposable {
         float x = h.x + (flip ? w / 2 : -w / 2), signedW = flip ? -w : w;
         float y = h.y - HeroMotion.FOOT_OFFSET;
         batch.setColor(Color.WHITE);
-        actorInk.draw(batch, upright, r, weight, x, y, signedW, height);
+        // Each authored roll starts crouched and ends standing. A crossfade with idle
+        // paints two heads at different heights over these already complete poses.
+        if (r instanceof HeroPose) actorInk.draw(batch, r, x, y, signedW, height);
+        else actorInk.draw(batch, upright, r, weight, x, y, signedW, height);
         // Hands are tucked/occluded during a roll; don't attach a sword to the walking pose.
         batch.setColor(Color.WHITE);
     }
@@ -1007,56 +1015,61 @@ public class WorldRenderer implements Disposable {
         Particles.normal(batch);
     }
 
-    /**
-     * 검 스킬 (더하기 섞기 안에서 그린다). 지금은 빛 덩어리를 겹쳐 모양만 낸 임시 효과다.
-     * 그림이 오면 바꾼다 (docs/ART_REQUESTS.md "검 스킬 효과").
-     */
+    /** Painted skill bodies keep their color; only the surrounding light is additive. */
     private void drawSkillShots() {
+        Particles.normal(batch);
         for (HeroShot h : g.shots) {
-            Color c = skillColor(h.kind);
+            if (h.dead) continue;
             if (h.strike()) {
-                // 떨어질 자리 예고: 바닥에 납작한 빛
-                float p = Math.min(1f, h.age / Math.max(0.01f, h.age + h.delay));
+                float p = MathUtils.clamp(h.age / Math.max(0.01f, h.age + h.delay), 0, 1);
+                Color c = skillColor(h.kind);
                 batch.setColor(c.r, c.g, c.b, 0.25f + 0.35f * p);
-                batch.draw(art.glow, h.x - h.radius, h.y - h.radius * 0.6f, h.radius * 2, h.radius * 1.2f);
+                batch.draw(art.glow, h.x - h.radius, h.y - h.radius * 0.6f,
+                        h.radius * 2, h.radius * 1.2f);
                 continue;
             }
-            float vl = (float) Math.sqrt(h.vx * h.vx + h.vy * h.vy);
-            float ux = h.vx / vl, uy = h.vy / vl;
-            float r = h.radius;
-            if ("cleave".equals(h.kind)) {
-                // 땅을 가르는 충격파: 지나간 자리를 따라 흙빛 조각이 남는다
-                for (int k = 0; k < 6; k++) {
-                    float tx = h.x - ux * r * 0.7f * k, ty = h.y - uy * r * 0.7f * k - 6;
-                    float a = 0.7f - k * 0.1f;
-                    batch.setColor(c.r, c.g, c.b, a);
-                    batch.draw(art.glow, tx - r * 1.1f, ty - r * 0.5f, r * 2.2f, r);
-                }
-                if (MathUtils.random() < 0.6f) particles.debris(h.x, h.y - 8, 1, new Color(0.45f, 0.38f, 0.3f, 1f), 90, 3);
-            } else {
-                // 초승달·빛의 검기: 진행 방향에 수직으로 길쭉한 빛을 여러 겹
-                float px = -uy, py = ux;
-                int n = "beam".equals(h.kind) ? 9 : 7;
-                for (int k = 0; k < n; k++) {
-                    float t = (k - (n - 1) / 2f) / ((n - 1) / 2f);
-                    float bend = "crescent".equals(h.kind) ? (1f - t * t) * r * 0.9f : 0f;
-                    float sx = h.x + px * t * r * 1.6f + ux * bend, sy = h.y + py * t * r * 1.6f + uy * bend;
-                    float sz = r * (1.1f - 0.5f * Math.abs(t));
-                    batch.setColor(c.r, c.g, c.b, 0.75f);
-                    batch.draw(art.glow, sx - sz, sy - sz, sz * 2, sz * 2);
-                }
-                batch.setColor(1f, 1f, 1f, 0.8f);
-                batch.draw(art.glow, h.x - r * 0.6f, h.y - r * 0.6f, r * 1.2f, r * 1.2f);
-            }
         }
+
+        TextureRegion lightning = art.world("skill_strike");
         for (float[] b : bolts) {
-            float a = 1f - b[2] / 0.3f;
-            Color c = skillColor("strike");
-            batch.setColor(c.r, c.g, c.b, 0.8f * a);
-            batch.draw(art.white(), b[0] - 5, b[1], 10, 520);
-            batch.setColor(1f, 1f, 1f, a);
-            batch.draw(art.white(), b[0] - 2, b[1], 4, 520);
+            float alpha = Math.max(0f, 1f - b[2] / 0.3f);
+            float height = 300f;
+            float width = height * lightning.getRegionWidth() / lightning.getRegionHeight();
+            batch.setColor(1, 1, 1, alpha);
+            // The impact star (not the center of the tall image) is the damage position.
+            batch.draw(lightning, b[0] - width * 0.477f, b[1] - height * 0.046f, width, height);
         }
+        batch.setColor(Color.WHITE);
+        Particles.additive(batch);
+    }
+
+    private void drawSkillShot(HeroShot h) {
+        Particles.normal(batch);
+        float speed = (float) Math.hypot(h.vx, h.vy);
+        float ux = speed > 0.001f ? h.vx / speed : 1f;
+        float uy = speed > 0.001f ? h.vy / speed : 0f;
+        float angle = MathUtils.atan2(uy, ux) * MathUtils.radDeg;
+        TextureRegion sprite = art.world("skill_" + h.kind);
+        boolean ground = "cleave".equals(h.kind);
+        float height = h.radius * (ground ? 1.1f : 2.2f);
+        float width = height * sprite.getRegionWidth() / sprite.getRegionHeight();
+        float alpha = Math.min(1f, h.age / 0.035f) * Math.min(1f, Math.max(0f, h.life) / 0.08f);
+        // Trails never extend behind the position where the shot was born.
+        for (int k = 2; k >= 1; k--) {
+            float distance = Math.min(speed * h.age, h.radius * 0.32f * k);
+            drawSkillSprite(sprite, h.x - ux * distance, h.y - uy * distance,
+                    width, height, angle, alpha * (k == 1 ? 0.16f : 0.07f));
+        }
+        drawSkillSprite(sprite, h.x, h.y, width, height, angle, alpha);
+        batch.setColor(Color.WHITE);
+    }
+
+    private void drawSkillSprite(TextureRegion sprite, float x, float y, float width, float height,
+                                 float angle, float alpha) {
+        float originX = width * 0.78f, originY = height * 0.5f;
+        batch.setColor(1, 1, 1, alpha);
+        batch.draw(sprite, x - originX, y - originY, originX, originY,
+                width, height, 1, 1, angle);
     }
 
     /** 바닥에 납작하게 깔리는 고리 (세로를 줄여 비스듬히 보이게). */

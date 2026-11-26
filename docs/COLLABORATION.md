@@ -1,5 +1,7 @@
 # 브랜치와 PR로 함께 작업하기
 
+> **2026-11-26 노트북:** 실제 작업·빌드·실행은 사용자 지정 `C:\github Work\yongsa_game`의 `haeseong/game`에서 한다. 예전 Codex `work/yongsa-haeseong` 사본을 다시 만들거나 그곳에 적용하지 않는다. [최신 통합 기록](LAPTOP_SYNC_2026-11-26.md).
+
 > **2026-10-27:** [용사와 맵 조화 적용](HERO_HARMONY_INTEGRATION.md)을 `haeseong/game`에 누적한다. 클로드의 8방향 처리와 새 용사 걷기·구르기·대각선 자산을 연결했다. 중간발표 `middle-term`은 `d4444d2`로 유지한다.
 
 > **2026-10-26:** PR #16은 `main`에 병합됐다. 사용자가 중간발표용으로 요청한 `middle-term`에는 검증된 해성 게임을 통합하고 발표 기준으로 유지한다. 최종 버전용 후속 디자인은 계속 `haeseong/game`에서 진행한다. 앞으로 `design/` 작업 자료의 신규·수정 파일은 올리지 않고, 게임용 `assets/`와 코드·필요한 문서만 공유한다. 상세 기준은 [브랜치 안내](BRANCHES.md)를 따른다.

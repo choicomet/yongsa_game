@@ -37,6 +37,8 @@ public final class RoomSceneLayout {
     public static final class Portal {
         public String id, kind, facing;
         public float[] foot;
+        /** Source-image columns [u, top v, floor v] of a recessed iron grille. */
+        public float[][] grilleOpening;
     }
 
     public static final class Facility {
@@ -80,7 +82,18 @@ public final class RoomSceneLayout {
             if (returnDoor != null) point(returnDoor);
             if (enemySpawns == null || portals == null) throw new IllegalArgumentException("Missing anchors");
             for (float[] p : enemySpawns) point(p);
-            for (Portal p : portals) point(p.foot);
+            for (Portal p : portals) {
+                point(p.foot);
+                if (p.grilleOpening == null) continue;
+                if (p.grilleOpening.length < 2) throw new IllegalArgumentException("Incomplete grille: " + id);
+                float previous = -1;
+                for (float[] column : p.grilleOpening) {
+                    if (column == null || column.length != 3) throw new IllegalArgumentException("Invalid grille column: " + id);
+                    for (float n : column) normalized(n);
+                    if (column[0] <= previous || column[1] >= column[2]) throw new IllegalArgumentException("Invalid grille outline: " + id);
+                    previous = column[0];
+                }
+            }
             if (facilities == null) throw new IllegalArgumentException("Missing facilities: " + id);
             java.util.Set<Prop.Kind> kinds = new java.util.HashSet<>();
             for (Facility f : facilities) {

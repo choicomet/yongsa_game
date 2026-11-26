@@ -11,6 +11,9 @@ public final class PaintedJointLayout {
         public String id, image, room;
         /** World-space lower-left rectangle and the door this painting was authored against. */
         public float[] rect, door;
+        /** Two jamb feet, in normalized image coordinates, for oblique painted stairways. */
+        public float[] gateSill;
+        public boolean recessedGrille;
         public float feather;
         /** Normalized visible floor in the new painting, including solid prop exclusions. */
         public float[] walkable;
@@ -63,6 +66,12 @@ public final class PaintedJointLayout {
             for(float v:j.door)if(!Float.isFinite(v))throw new IllegalArgumentException(j.id);
             if(j.rect[2]<=2*j.feather || j.rect[3]<=2*j.feather || j.alpha(j.door[0],j.door[1])<1)
                 throw new IllegalArgumentException("Joint must cover its doorway: "+j.id);
+            if (j.gateSill != null) {
+                if (j.gateSill.length != 4 || j.gateSill[0] == j.gateSill[2])
+                    throw new IllegalArgumentException("Invalid gate sill: "+j.id);
+                for (float coord:j.gateSill) if (!Float.isFinite(coord) || coord<0 || coord>1)
+                    throw new IllegalArgumentException("Gate sill outside painting: "+j.id);
+            }
             polygon(j.walkable);
             for(float[] p:j.blocked)polygon(p);
             if(!j.foregrounds.isEmpty()) {

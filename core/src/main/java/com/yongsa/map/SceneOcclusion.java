@@ -11,6 +11,8 @@ public final class SceneOcclusion {
     public static final class Mask {
         public String id;
         public float depth;
+        /** Joint silhouette retained alongside separately authored object layers. */
+        public boolean supplemental;
         public float[] polygon;
         /** Region bounds stay in original image coordinates even when the room is mirrored. */
         public float minX() { float v=1; for(int i=0;i<polygon.length;i+=2)v=Math.min(v,polygon[i]); return v; }

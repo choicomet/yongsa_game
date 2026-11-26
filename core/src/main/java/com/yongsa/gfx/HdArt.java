@@ -37,7 +37,8 @@ public final class HdArt implements Disposable {
         for (Map.Entry<String, Entry> item : manifest.sprites.entrySet()) {
             Entry e = item.getValue();
             Texture texture = textures.computeIfAbsent(e.sheet, path -> {
-                boolean world = path.startsWith("world/");
+                // Floor portals sit inside the painted camp and use the same filtered detail as its masonry.
+                boolean world = path.startsWith("world/") && !path.startsWith("world/portals/");
                 Texture t = new Texture(Gdx.files.internal(path), !world || e.pixelMip);
                 t.setFilter(world ? (e.pixelMip ? Texture.TextureFilter.MipMapNearestLinear : Texture.TextureFilter.Nearest)
                                 : Texture.TextureFilter.MipMapLinearLinear,

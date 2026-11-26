@@ -613,10 +613,12 @@ public class BossBrain extends EnemyContext {
                     fx.dirX = h.x2;
                     fx.dirY = h.y2;
                     events.add(fx);
-                    events.add(GameEvent.sound("bolt".equals(h.style) ? "cast" : "slam"));
+                    // 패턴마다 다른 소리: hz_<모양> (SfxMix). 규칙이 없는 모양은 쿵 소리
+                    events.add(GameEvent.sound(com.yongsa.audio.SfxNames.hazard(h.style)));
                     if ("pound".equals(h.style) || "boulder".equals(h.style)) {
                         // 골렘: 무거운 한 방마다 화면이 쿵 울린다
                         GameEvent shake = GameEvent.fx(GameEvent.Type.SLAM_FX, h.x, h.y);
+                        shake.boss = true;
                         shake.size = h.radius;
                         events.add(shake);
                     }

@@ -296,7 +296,7 @@ public class GameSession {
             float left = Math.max(0, hero.rollT - dt);
             float a = Math.max(0, 1f - hero.rollT / total), z = 1f - left / total;
             float distance = balance.attack.rollDistanceTiles * T * ((2*z-z*z) - (2*a-a*a));
-            Physics.move(map, hero, hero.rollX * distance, hero.rollY * distance, T);
+            Physics.walk(map, hero, hero.rollX * distance, hero.rollY * distance, T);
             hero.rollT = left;
             hero.moving = false;
             return;
@@ -320,7 +320,7 @@ public class GameSession {
             hero.facing = Facing.of(mx, my);
             float speed = balance.hero.moveSpeedTiles * T * (hero.slowT > 0 ? 1f - balance.monster.slowRatio : 1f);
             float oldX = hero.x, oldY = hero.y;
-            Physics.move(map, hero, mx * speed * dt, my * speed * dt, T);
+            Physics.walk(map, hero, mx * speed * dt, my * speed * dt, T);
             float dx = hero.x - oldX, dy = hero.y - oldY;
             float travelled = (float) Math.sqrt(dx * dx + dy * dy);
             hero.moving = travelled > .001f;
@@ -375,10 +375,17 @@ public class GameSession {
                 float cos = (dx * hero.aimX + dy * hero.aimY) / dist;
                 if (Math.acos(Math.max(-1, Math.min(1, cos))) > half) continue;
             }
-            if (basicAttack.tryHit(m)) damageMonster(m, basicAttack.multiplier);
+            if (basicAttack.tryHit(m)) {
+                // 기본 공격은 소리 없이 (해성 2026-11-26): 효과음은 스킬·보스 패턴에 쓴다
+                quietHit = true;
+                damageMonster(m, basicAttack.multiplier);
+                quietHit = false;
+            }
         }
-        events.add(GameEvent.sound("swing"));
     }
+
+    /** 기본 공격으로 때리는 중: 타격음을 내지 않는다. */
+    private boolean quietHit;
 
     // ───────────────────────── 검 스킬 (L, U, I, O)
 
@@ -470,7 +477,8 @@ public class GameSession {
         e.dirX = hero.aimX;
         e.dirY = hero.aimY;
         events.add(e);
-        events.add(GameEvent.sound("strike".equals(sk.kind) ? "cast" : "slam"));
+        // 스킬마다 다른 소리: sk_cleave, sk_crescent, sk_strike, sk_beam (SfxMix)
+        events.add(GameEvent.sound("sk_" + sk.kind));
     }
 
     /** 새로 열린 검 스킬을 빈 칸에 넣고 어느 키인지 알려 준다. */
@@ -498,15 +506,17 @@ public class GameSession {
             if (h.strike()) {
                 h.delay -= dt;
                 if (h.delay > 0) continue;
+                quietHit = true; // 낙뢰 소리(sk_strikeHit)가 타격음을 대신한다
                 for (Monster m : monsters) {
                     if (m.dead || m.state == Monster.State.SPAWN) continue;
                     if (Math.hypot(m.x - h.x, m.y - h.y) <= h.radius + m.hurtRadius) damageMonster(m, h.multiplier);
                 }
+                quietHit = false;
                 GameEvent fx = GameEvent.fx(GameEvent.Type.SKILL_HIT, h.x, h.y);
                 fx.text = h.kind;
                 fx.size = h.radius;
                 events.add(fx);
-                events.add(GameEvent.sound("cast"));
+                events.add(GameEvent.sound("sk_" + h.kind + "Hit"));
                 h.dead = true;
                 continue;
             }
@@ -521,7 +531,10 @@ public class GameSession {
                 float dx = m.x - h.x, dy = m.centerY() - h.y, r = h.radius + m.hurtRadius;
                 if (dx * dx + dy * dy > r * r) continue;
                 h.hit.add(m);
+                quietHit = true; // 스킬마다 맞는 소리가 따로 있다 (sk_<kind>Hit)
                 damageMonster(m, h.multiplier);
+                quietHit = false;
+                events.add(GameEvent.sound("sk_" + h.kind + "Hit"));
                 if (h.stun > 0 && !m.dead && !m.boss) m.enter(Monster.State.STUNNED, h.stun);
                 if (h.heal > 0) {
                     int add = Math.max(1, Math.round(rules.maxHp(state) * h.heal));
@@ -563,7 +576,7 @@ public class GameSession {
         hero.invuln = Math.max(hero.invuln, balance.attack.rollInvulnTime);
         hero.swingT = 0;
         hero.mineSwingT = 0;
-        events.add(GameEvent.sound("dash"));
+        // 구르기는 소리 없이 (해성 2026-11-26)
     }
 
     private int roll(int base, float mult) {
@@ -633,7 +646,7 @@ public class GameSession {
             events.add(GameEvent.sound("roar"));
         }
         events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), guarded ? GameEvent.Tone.SHIELD : GameEvent.Tone.MONSTER_HIT));
-        events.add(GameEvent.sound(guarded ? "block" : "hit"));
+        if (!quietHit) events.add(GameEvent.sound(guarded ? "block" : m.boss ? "hitBoss" : "hit"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, m.x, m.centerY());
         fx.tone = GameEvent.Tone.MONSTER_HIT;
         float ddx = m.x - hero.x, ddy = m.centerY() - hero.centerY(), dl = (float) Math.sqrt(ddx * ddx + ddy * ddy);
@@ -694,7 +707,9 @@ public class GameSession {
         hero.flash = balance.hero.invulnAfterHit;
         hero.knockback(hero.x - fromX, hero.y - fromY, balance.hero.knockbackTiles * T);
         events.add(GameEvent.floatText(hero.x, hero.y + 40, String.valueOf(dmg), GameEvent.Tone.HERO_HIT));
-        events.add(GameEvent.sound("hurt"));
+        // 체력이 30% 밑으로 떨어지면 더 낮고 큰 소리로 위험을 알린다
+        boolean low = state.hp > 0 && state.hp <= rules.maxHp(state) * 0.3f;
+        events.add(GameEvent.sound(low ? "hurtLow" : "hurt"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, hero.x, hero.centerY());
         fx.tone = GameEvent.Tone.HERO_HIT;
         events.add(fx);

@@ -66,13 +66,18 @@ class PassagePainter implements Disposable {
     private final Map<String, Texture> paintings = new HashMap<>();
     private final boolean painted;
     final boolean active;
+    final boolean fullyPainted;
     final PaintedJoints joints;
 
-    PassagePainter(WorldMap map, float tileSize) {
+    private final MapLoader loader;
+
+    PassagePainter(WorldMap map, float tileSize, MapLoader loader) {
         this.map = map;
         this.T = tileSize;
-        joints = new PaintedJoints(map);
+        this.loader = loader;
+        joints = new PaintedJoints(map, loader);
         painted = !map.corridors.isEmpty() && map.corridors.stream().allMatch(c -> c.scene != null);
+        fullyPainted = painted && map.rooms.stream().allMatch(room -> room.scene != null);
         if (painted) {
             active = true;
             ground = repeating(Gdx.files.internal(DIR + "terrain-bedrock.png"));
@@ -291,8 +296,7 @@ class PassagePainter implements Disposable {
                 if (c.originX > x1 || c.originX + c.widthPx < x0 || c.originY > y1 || c.originY + c.heightPx < y0) continue;
                 Texture t = paintings.get(c.scene.id);
                 if (t == null) {
-                    t = texture(featherPassage(new Pixmap(Gdx.files.internal(c.scene.image)), c), false, false);
-                    paintings.put(c.scene.id, t);
+                    t = upload(c, loader.take(passageKey(c), () -> bakePassage(c)));
                 }
                 batch.draw(t, c.originX, c.originY, c.widthPx, c.heightPx, 0, 0, t.getWidth(), t.getHeight(), c.flip, false);
             }
@@ -318,15 +322,54 @@ class PassagePainter implements Disposable {
         }
     }
 
+    private static String passageKey(Corridor c) {
+        return "passage:" + c.scene.id;
+    }
+
+    /** 다른 스레드에서 해도 되는 계산: 길목 그림을 읽어 가장자리를 흐린다. */
+    private static Baked bakePassage(Corridor c) {
+        Baked b = new Baked();
+        b.main = featherPassage(new Pixmap(Gdx.files.internal(c.scene.image)), c);
+        return b;
+    }
+
+    private Texture upload(Corridor c, Baked b) {
+        BakeDigest.add(passageKey(c), b.main);
+        Texture t = texture(b.main, false, false);
+        b.main = null;
+        paintings.put(c.scene.id, t);
+        return t;
+    }
+
+    /** 가까운 길목 그림을 미리 준비한다 (near 안), 다 된 것은 한 프레임에 한 장씩 올려 둔다. */
+    void prefetch(PrefetchZones zones) {
+        if (painted) {
+            for (Corridor c : map.corridors) {
+                if (paintings.containsKey(c.scene.id)) continue;
+                String key = passageKey(c);
+                boolean near = zones.near(c.originX, c.originY, c.originX + c.widthPx, c.originY + c.heightPx);
+                if (near) {
+                    loader.request(key, () -> bakePassage(c));
+                    if (loader.ready(key) && loader.spendUpload()) upload(c, loader.take(key, () -> bakePassage(c)));
+                } else if (!zones.keep(c.originX, c.originY, c.originX + c.widthPx, c.originY + c.heightPx)) {
+                    loader.drop(key);
+                }
+            }
+        }
+        joints.prefetch(zones);
+    }
+
     /** Keep floor exits and their masonry opaque; only the surrounding rock fades.
      * Fading all four edges also faded the entrance stairs/torches into the bedrock. */
-    private static Pixmap featherPassage(Pixmap source, Corridor c) {
+    static Pixmap featherPassage(Pixmap source, Corridor c) {
         Pixmap p = rgba(source);
         int w = p.getWidth(), h = p.getHeight();
         float fade = Math.min(w, h) * .08f;
         ByteBuffer pixels = p.getPixels();
         float[][] ends = {c.scene.path.get(0), c.scene.path.get(c.scene.path.size() - 1)};
         for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) {
+            int idx = (y * w + x) * 4 + 3;
+            if (pixels.get(idx) == 0 || (x >= fade && x < w - fade && y >= fade && y < h - fade)) continue;
             float left = smooth((x + .5f) / fade), right = smooth((w - x - .5f) / fade);
             float top = smooth((y + .5f) / fade), bottom = smooth((h - y - .5f) / fade);
             for (float[] end : ends) {
@@ -337,7 +380,6 @@ class PassagePainter implements Disposable {
                 if (end[1] < .06f) top += (1 - top) * protectX;
                 if (end[1] > .94f) bottom += (1 - bottom) * protectX;
             }
-            int idx = (y * w + x) * 4 + 3;
             pixels.put(idx, (byte) Math.round((pixels.get(idx) & 255) * left * right * top * bottom));
         }
         return p;
@@ -383,14 +425,44 @@ class PassagePainter implements Disposable {
         Pixmap p = rgba(source);
         int w = p.getWidth(), h = p.getHeight();
         ByteBuffer pixels = p.getPixels();
-        RoomJoinMask mask = new RoomJoinMask(r, T);
+        JoinAlpha mask = joinAlpha(r, foreground);
         for (int py = 0; py < h; py++) for (int px = 0; px < w; px++) {
-            float alpha = mask.alpha(r.sceneX((px + .5f) / w), r.sceneY((py + .5f) / h));
-            if (foreground) alpha *= joints.originalForegroundAlpha(r.sceneX((px + .5f) / w), r.sceneY((py + .5f) / h));
             int idx = (py * w + px) * 4 + 3;
-            pixels.put(idx, (byte) Math.round((pixels.get(idx) & 255) * alpha));
+            int a = pixels.get(idx) & 255;
+            if (a == 0) continue; // 이미 투명한 곳은 계산해도 0 이다 (앞쪽 그림은 대부분 투명)
+            pixels.put(idx, (byte) Math.round(a * mask.at(px, py, w, h)));
         }
         return p;
+    }
+
+    /** 방 그림 픽셀 하나의 이음 투명도 (joinRoom 과 같은 값). 이음 그림이 없는 옛 통로 방식이면 null. */
+    JoinAlpha joinAlpha(Room r, boolean foreground) {
+        if (!painted) return null;
+        return new JoinAlpha(r, new RoomJoinMask(r, T),
+                foreground ? joints.overlapping(r.originX, r.originY, r.originX + r.widthPx, r.originY + r.heightPx) : null);
+    }
+
+    static final class JoinAlpha {
+        private final Room r;
+        private final RoomJoinMask mask;
+        private final List<PaintedJointLayout.Joint> over;
+
+        JoinAlpha(Room r, RoomJoinMask mask, List<PaintedJointLayout.Joint> over) {
+            this.r = r;
+            this.mask = mask;
+            this.over = over;
+        }
+
+        float at(int px, int py, int w, int h) {
+            float x = r.sceneX((px + .5f) / w), y = r.sceneY((py + .5f) / h);
+            float alpha = mask.alpha(x, y);
+            if (over != null) {
+                float front = 1; // 곱하는 순서도 예전과 같게 (결과 픽셀이 똑같도록)
+                for (var j : over) front *= 1 - j.alpha(x, y);
+                alpha *= front;
+            }
+            return alpha;
+        }
     }
 
     /**
