@@ -84,3 +84,16 @@
 - 스킬 소리는 다른 효과음보다 크게(-7dB) 굽고, 쓸 때 배경음악을 잠깐 줄인다.
 - 배경음악 기본 크기 0.6 → 0.5 (효과음이 더 잘 들리게).
 - 스킬이 맞힐 때는 일반 타격음 대신 그 스킬의 맞는 소리.
+
+## 2026-11-26 대장간·보스 패턴 소리 (해성 요청)
+
+`tools/make_world_sfx.py` 로 만들었다 (다시 만들려면 `python tools/make_world_sfx.py`). 천공 낙뢰·대지 가르기 소리는 그대로 둠.
+
+- **대장간** (`fg_*`): 망치(`fg_hammer`)와 강화 결과(`fg_keep` 유지, `fg_success` 성공, `fg_down` 하락, `fg_destroy` 파괴, `fg_craft` 제작)를 모루를 두드리는 둔탁한 소리로 바꾸고 전보다 크게(-7dB).
+- **보스 패턴 시작** (`bs_<패턴>`): 보스가 패턴을 시작할 때 한 번. 보스마다 재질을 맞춤.
+  - 골렘(갱도): 바위 긁힘·낮은 으르렁 (`rush` `charge` `slam` `boulder` `pound` `summon`)
+  - 기사(성채): 쇳소리·칼날·피 (`shield` `combo` `spear` `crescent` `spin`)
+  - 수문장(탑): 전기·불꽃·마법 (`lightning` `firespin` `volley` `cage` `homing` `ring`)
+  - 마왕: 거꾸로 부풀어 오르는 소리·낮은 울림·촉수·눈 (`darkorb` `brand` `tentacle` `eyes`)
+  - 이름이 다른 패턴은 `SfxNames.pattern` 에서 묶음 (예: `spearstand` → `bs_spear`, `rockfall` → `bs_boulder`). 규칙 없는 새 패턴은 `roar`.
+- **장판 터짐** (`hz_<모양>`): 전부 새로 만듦. 큰 것(`boulder` `pound` `brand`)은 곡을 살짝 줄임.
