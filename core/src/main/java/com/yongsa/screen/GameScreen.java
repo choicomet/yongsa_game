@@ -529,17 +529,27 @@ public class GameScreen extends ScreenAdapter {
     }
 
     /**
-     * 장소 배경음악. 캠프에 있으면 캠프 곡(assets/audio/bgm/camp.ogg)을 2초 동안 서서히 키우며 틀고,
-     * 캠프를 나가면 1.5초 동안 줄인다. 보스 곡이 줄어드는 중(쓰러져서 캠프로 돌아올 때 등)이면 다 줄어든 뒤에 튼다.
+     * 장소 배경음악 (assets/audio/bgm). 캠프는 camp, 마을은 마왕을 잡기 전 village_frozen, 잡은 뒤 village_free.
+     * 그 장소에 들어오면 2초 동안 서서히 키우며 틀고, 나가면 1.5초 동안 줄인다.
+     * 다른 곡이 줄어드는 중(쓰러져서 캠프로 돌아올 때 등)이면 다 줄어든 뒤에 튼다.
      */
     private void updatePlaceMusic() {
         String track = game.bgm.playing();
-        boolean wantCamp = session.inCamp() && endingDelay < 0;
-        if (wantCamp) {
-            if (track == null) game.bgm.play("camp", 2f);
-        } else if ("camp".equals(track)) {
+        String want = null;
+        if (endingDelay < 0) {
+            if (session.inCamp()) want = "camp";
+            else if (session.inVillage()) want = session.villagersFree() ? "village_free" : "village_frozen";
+        }
+        if (want != null) {
+            if (track == null) game.bgm.play(want, 2f);
+            else if (isPlaceMusic(track) && !track.equals(want)) game.bgm.fadeOut(1.5f);
+        } else if (isPlaceMusic(track)) {
             game.bgm.fadeOut(1.5f);
         }
+    }
+
+    private static boolean isPlaceMusic(String track) {
+        return "camp".equals(track) || "village_frozen".equals(track) || "village_free".equals(track);
     }
 
     /**
@@ -573,6 +583,13 @@ public class GameScreen extends ScreenAdapter {
     private Prop campfire() {
         for (Prop p : session.map.props) if (p.kind == Prop.Kind.CAMPFIRE) return p;
         return null;
+    }
+
+    /** 엔딩 결과 창에서 "마을로 가기"를 눌렀을 때: 마을 가는 길에서 시작한다. */
+    public void startOnVillageRoad() {
+        session.placeOnVillageRoad();
+        follow.snap();
+        hud.banner(game.balance.village.name + " 가는 길");
     }
 
     /** 개발용: 하던 싸움을 그만둔다. 보스전이었으면 보스 음악도 서서히 끈다 (캠프까지 따라오지 않게). */
