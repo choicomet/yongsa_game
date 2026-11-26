@@ -11,7 +11,7 @@ import java.io.FileOutputStream;
 /**
  * 배경에 깔리는 환경 소리 (지금은 캠프 모닥불). 배경음악(Bgm)과 따로 돌아서,
  * 나중에 캠프 곡이 생기면 game.bgm.play("camp") 로 곡을 틀고 장작 소리는 그 밑에 그대로 깔린다.
- * 기본 소리는 FireSynth 로 코드에서 만들고, assets/audio/ambience/campfire.ogg (또는 .wav, .mp3) 가 있으면 그 파일을 쓴다.
+ * assets/audio/ambience/campfire.ogg (OpenGameArt 의 CC0 모닥불 녹음) 를 쓰고, 파일이 없으면 FireSynth 로 코드에서 만든 소리를 대신 쓴다.
  * 음량은 설정의 배경음악 크기를 따른다. 화면이 매 프레임 setFire(크기) 와 update(delta) 를 부른다.
  */
 public class Ambience implements Disposable {
