@@ -1,6 +1,6 @@
 """대장간·보스 패턴 효과음 만들기 (2026-11-26 밤, 해성 요청).
 
-- 대장간 (fg_*): 강화·제작 소리를 더 크고, 실제 모루 망치질처럼 둔탁하게.
+- 대장간 (fg_*): 강화·제작 소리를 더 크고, 실제 모루 망치질처럼 '깡' 하고 울리게.
 - 보스 패턴 준비 (bs_*): 패턴을 시작할 때 (예고 동안) 나는 소리. 보스마다 재질이 다르다:
   골렘 = 바위·땅, 혈월의 기사 = 쇠·피, 탑의 수문장 = 번개·불·마법, 마왕 = 어둠.
 - 보스 패턴 터짐 (hz_*): 장판이 터지는 순간의 소리.
@@ -36,20 +36,25 @@ def reverse(x):
 
 # ── 대장간: 모루 위 달군 쇠를 두드리는 둔탁한 소리 ────────────
 
-def anvil(ring_hz=(420, 690, 1130), ring=0.22, weight=1.0):
-    """망치 한 번: 둔탁한 '퉁' (저중음 몸통) + 짧게 눌린 쇳소리 울림. 높은 쇳소리는 거의 없게."""
+def anvil(ring_hz=(1040, 1690, 2470, 3310), ring=0.45, weight=1.0):
+    """망치 한 번: 모루를 치는 '깡'. 짧은 딱 + 묵직한 중음 몸통 + 쇠가 울리는 배음(정수배가 아닌 모루 배음).
+    해성 요청 (2026-11-26 밤): 둔탁하되 '깡' 하고 울리는 소리, 망치질마다 계속 난다."""
     metal = load("block")
-    body = sine_sweep(180, 95, 0.16) * env(0.16, 0.001, 5)
-    thud = lp(noise(0.08), 900) * env(0.08, 0.0008, 6) * 3
+    tick = hp(noise(0.012), 2500) * env(0.012, 0.0003, 6) * 1.2
+    body = sine_sweep(420, 300, 0.12) * env(0.12, 0.0008, 5)
+    thud = lp(noise(0.05), 1200) * env(0.05, 0.0005, 6) * 2.5
     rings = np.zeros(int(ring * SR))
-    for f in ring_hz:
-        rings += np.sin(2 * np.pi * f * t(ring) + rng.uniform(0, 6)) * env(ring, 0.001, 7)
-    out = np.zeros(int(0.35 * SR))
-    place(out, thud, 0, 1.0 * weight)
-    place(out, body, 0, 0.9 * weight)
-    place(out, lp(pitch(metal, 0.55), 2200), 0, 0.7)
-    place(out, rings / len(ring_hz), 0.002, 0.45)
-    return sat(out, 1.4)
+    for i, f in enumerate(ring_hz):
+        d = ring / (1 + 0.6 * i)  # 높은 배음일수록 빨리 사라짐
+        part = np.sin(2 * np.pi * f * (1 + rng.uniform(-0.004, 0.004)) * t(d) + rng.uniform(0, 6)) * env(d, 0.0005, 4)
+        place(rings, part, 0, 1.0 / (1 + 0.5 * i))
+    out = np.zeros(int((ring + 0.05) * SR))
+    place(out, tick, 0, 1.0)
+    place(out, thud, 0, 0.8 * weight)
+    place(out, body, 0, 0.6 * weight)
+    place(out, lp(pitch(metal, 0.8), 4500), 0, 0.8)
+    place(out, rings, 0.001, 0.55)
+    return sat(out, 1.5)
 
 
 def fg_hammer():
@@ -82,7 +87,7 @@ def fg_down():
 
 
 def fg_destroy():
-    """검 파괴: 망치 '퉁' → 쇠가 '쩡' 하고 금 가며 부러짐 → 조각이 바닥에 떨어져 짤그랑."""
+    """검 파괴: 망치 '깡' → 쇠가 '쩡' 하고 금 가며 부러짐 → 조각이 바닥에 떨어져 짤그랑."""
     metal, glass = load("block"), load("destroy")
     crack = bandsweep(noise(0.06), 4000, 1200) * env(0.06, 0.0005, 5) * 1.6
     out = np.zeros(int(1.2 * SR))
@@ -95,7 +100,7 @@ def fg_destroy():
 
 
 def fg_craft():
-    """제작: 망치 세 번 '퉁 퉁 퉁' → 물에 담그는 '치이익'."""
+    """제작: 망치 세 번 '깡 깡 깡' → 물에 담그는 '치이익'."""
     hiss = hp(noise(0.9), 2500) * env(0.9, 0.03, 2.2) * 0.35
     out = np.zeros(int(1.6 * SR))
     for at, w in ((0, 1.0), (0.22, 1.0), (0.44, 1.25)):

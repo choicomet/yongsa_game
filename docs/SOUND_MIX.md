@@ -89,7 +89,7 @@
 
 `tools/make_world_sfx.py` 로 만들었다 (다시 만들려면 `python tools/make_world_sfx.py`). 천공 낙뢰·대지 가르기 소리는 그대로 둠.
 
-- **대장간** (`fg_*`): 망치(`fg_hammer`)와 강화 결과(`fg_keep` 유지, `fg_success` 성공, `fg_down` 하락, `fg_destroy` 파괴, `fg_craft` 제작)를 모루를 두드리는 둔탁한 소리로 바꾸고 전보다 크게(-7dB).
+- **대장간** (`fg_*`): 망치(`fg_hammer`)와 강화 결과(`fg_keep` 유지, `fg_success` 성공, `fg_down` 하락, `fg_destroy` 파괴, `fg_craft` 제작)를 모루를 치는 '깡' 소리(묵직한 몸통 + 모루 배음 울림)로 바꾸고 전보다 크게(-7dB). 망치질마다 한 번씩 계속 난다.
 - **보스 패턴 시작** (`bs_<패턴>`): 보스가 패턴을 시작할 때 한 번. 보스마다 재질을 맞춤.
   - 골렘(갱도): 바위 긁힘·낮은 으르렁 (`rush` `charge` `slam` `boulder` `pound` `summon`)
   - 기사(성채): 쇳소리·칼날·피 (`shield` `combo` `spear` `crescent` `spin`)
