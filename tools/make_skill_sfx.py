@@ -4,7 +4,9 @@
 재료: assets/audio/sfx 의 Kenney CC0 녹음 + 코드로 만든 층(저음, 바람, 번개, 화음, 잔향).
 결과는 assets/audio/sfx/sk_*.wav (44.1kHz 모노, 가장 큰 50ms 구간 RMS -7dB, 꼭대기 -1dB 아래).
 
-실행: python tools/make_skill_sfx.py   (numpy, ffmpeg 필요)
+실행: python tools/make_skill_sfx.py   (numpy 필요)
+2026-11-26 저녁: 해성이 천공 낙뢰(날카로운 시작 + 갈라지는 결 + 길게 구르는 꼬리)를 가장 좋아해서
+대지 가르기·혈월참·성광 검기도 같은 짜임으로 다시 만들었다. 대지 가르기는 이름처럼 지진 소리.
 """
 import os
 import subprocess
@@ -23,10 +25,29 @@ rng = np.random.default_rng(2026)
 # ── 재료 ─────────────────────────────────────────
 
 def load(name):
-    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(SFX, name + ".wav"),
-                          "-f", "f32le", "-ac", "1", "-ar", str(SR), "-"],
-                         capture_output=True, check=True).stdout
-    return np.frombuffer(raw, dtype=np.float32).astype(np.float64)
+    """16비트 WAV 는 파이썬 기본 wave 로 읽는다 (ffmpeg 가 없어도 된다)."""
+    import wave
+    with wave.open(os.path.join(SFX, name + ".wav"), "rb") as w:
+        ch, rate, width = w.getnchannels(), w.getframerate(), w.getsampwidth()
+        raw = w.readframes(w.getnframes())
+    if width != 2:
+        raise ValueError(name + ": 16비트 WAV 만 읽는다")
+    x = np.frombuffer(raw, dtype="<i2").astype(np.float64) / 32768
+    if ch > 1:
+        x = x.reshape(-1, ch).mean(axis=1)
+    if rate != SR:
+        x = pitch(x, rate / SR)
+    return x
+
+
+def write_wav(path, x):
+    import wave
+    pcm = (np.clip(x, -1, 1) * 32767).astype("<i2").tobytes()
+    with wave.open(path, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(SR)
+        w.writeframes(pcm)
 
 
 def pitch(x, ratio):
@@ -155,62 +176,92 @@ def finish(x, name, fade_out=0.08):
     if peak > 10 ** (-1 / 20):
         # 꼭대기만 부드럽게 눌러서 크기는 유지
         x = np.tanh(x / peak * 1.2) / np.tanh(1.2) * 10 ** (-1 / 20)
-    pcm = (np.clip(x, -1, 1) * 32767).astype("<i2").tobytes()
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "s16le", "-ar", str(SR), "-ac", "1", "-i", "-",
-                    os.path.join(SFX, name + ".wav")], input=pcm, check=True)
+    write_wav(os.path.join(SFX, name + ".wav"), x)
     print(f"{name}.wav  {len(x) / SR:.2f}s")
 
 
 # ── 스킬 소리 ─────────────────────────────────────
 
+def quake_roll(dur, rate=6.0):
+    """땅이 구르듯 커졌다 작아지는 느린 흔들림 (0.35~1)."""
+    slow = onepole_lp(noise(dur), rate)
+    slow = slow / (np.max(np.abs(slow)) + 1e-9)
+    return 0.35 + 0.65 * np.abs(slow)
+
+
 def cleave():
-    """흑철 · 대지 가르기: 땅을 내려찍어 갈라지는 충격파. 바위 + 자갈 + 저음 (노트북 스피커에서도 들리게 저음은 적게)."""
+    """흑철 · 대지 가르기: 지진. 땅을 내려찍는 '쾅' → 바위가 연달아 쩍쩍 갈라짐 → 길게 구르는 땅울림과 자갈.
+    천공 낙뢰처럼 날카로운 시작 + 갈라지는 결 + 길게 구르는 꼬리. 노트북 스피커에서도 들리게 150~400Hz 대역을 살린다."""
     slam, rock = load("slam"), load("destroy")
-    sub = sine_sweep(95, 32, 0.7) * env(0.7, 0.004, 4)
-    rumble = onepole_lp(noise(1.0), 180) * env(1.0, 0.02, 3) * 4
-    gravel = crackle(0.8, 900, 3500) * env(0.8, 0.05, 2.5)
-    out = mixlen(sub, rumble, gravel, pitch(slam, 0.72))
-    place(out, sub, 0, 0.4)
-    place(out, pitch(slam, 0.72), 0, 0.8)
-    place(out, pitch(rock, 0.55), 0.03, 1.0)
-    place(out, rumble, 0.01, 0.25)
-    place(out, gravel, 0.06, 0.7)
-    return reverb(sat(hp(out, 90), 1.8), size=0.35, wet=0.18, damp=1800)
+    dur = 1.7
+    crack = bandsweep(noise(0.05), 3000, 900) * env(0.05, 0.0005, 5) * 2.2
+    sub = sine_sweep(70, 28, 0.9) * env(0.9, 0.003, 3.5)
+    # 땅울림: 낮은 소음에 느린 흔들림 + 빠른 떨림(11Hz)
+    body = onepole_lp(noise(dur), 220) * 6
+    body *= quake_roll(dur, 5) * (0.75 + 0.25 * np.sin(2 * np.pi * 11 * t(dur)))
+    body *= env(dur, 0.06, 2.4)
+    growl = bandsweep(noise(dur), 420, 140) * env(dur, 0.05, 2.6) * quake_roll(dur, 7) * 1.4
+    gravel = crackle(dur, 700, 3000) * env(dur, 0.08, 2.2)
+    out = np.zeros(int((dur + 0.1) * SR))
+    place(out, crack, 0, 1.0)
+    place(out, pitch(slam, 0.6), 0, 0.9)
+    place(out, sub, 0, 0.45)
+    place(out, body, 0.02, 0.55)
+    place(out, growl, 0.03, 0.8)
+    place(out, gravel, 0.08, 0.6)
+    # 바위가 연달아 갈라지는 소리: 점점 멀어지고 작아진다
+    for i, (at, p, g) in enumerate(((0.04, 0.55, 1.0), (0.22, 0.68, 0.7), (0.41, 0.5, 0.55),
+                                    (0.63, 0.75, 0.4), (0.9, 0.6, 0.28))):
+        place(out, onepole_lp(pitch(rock, p), 4000 - 500 * i), at, g)
+    return reverb(sat(hp(out, 70), 1.8), size=0.6, wet=0.22, damp=2200)
 
 
 def cleave_hit():
+    """대지 가르기에 맞음: 발밑에서 바위가 터지는 소리 + 짧은 땅울림."""
     rock = load("destroy")
-    thump = sine_sweep(80, 40, 0.18) * env(0.18, 0.002, 5)
-    out = mixlen(pitch(rock, 0.62), thump)
-    place(out, pitch(rock, 0.62), 0, 1.0)
-    place(out, thump, 0, 0.3)
+    crack = bandsweep(noise(0.04), 2800, 900) * env(0.04, 0.0005, 5) * 1.8
+    tremor = onepole_lp(noise(0.45), 260) * 6 * env(0.45, 0.01, 3) * quake_roll(0.45, 12)
+    out = np.zeros(int(0.6 * SR))
+    place(out, crack, 0, 1.0)
+    place(out, pitch(rock, 0.6), 0.005, 0.9)
+    place(out, tremor, 0.01, 0.6)
     # 노트북 스피커는 150Hz 아래가 거의 안 나와서, 크기를 잴 때 저음이 다 먹지 않게 깎는다
-    return sat(hp(out, 140), 1.5)
+    return reverb(sat(hp(out, 120), 1.6), size=0.3, wet=0.15, damp=2500)
 
 
 def crescent():
-    """혈월 · 혈월참: 붉은 초승달 검기. 휘어지며 날아가는 바람 + 낮은 쇳소리 + 어두운 단조 울림."""
+    """혈월 · 혈월참: 붉은 초승달 검기. 날카로운 '챙' → 크게 휘어 나가는 칼바람과 핏빛 지직거림 → 어두운 단조 울림이 길게.
+    천공 낙뢰와 같은 짜임 (날카로운 시작 + 결 + 긴 꼬리)."""
     swing, metal = load("swing"), load("block")
-    whoosh = bandsweep(noise(0.55), 350, 2600) * env(0.55, 0.12, 2.5) * 0.9
-    whoosh2 = bandsweep(noise(0.45), 1800, 600) * env(0.45, 0.05, 3) * 0.6
-    # 라 단조 (A2 C3 E3) + 반음 위 긴장음, 천천히 떨림
-    drone = chord([110, 130.8, 164.8, 174.6], 0.9) * env(0.9, 0.08, 2.5)
-    drone *= 1 + 0.25 * np.sin(2 * np.pi * 7 * t(0.9))
-    out = mixlen(whoosh, drone)
-    place(out, whoosh, 0, 1.0)
-    place(out, whoosh2, 0.12, 1.0)
-    place(out, pitch(swing, 0.8), 0.02, 0.6)
-    place(out, pitch(metal, 0.62), 0.05, 0.25)
-    place(out, drone, 0.0, 0.5)
-    return reverb(out, size=0.55, wet=0.3, damp=2500)
+    shing = hp(noise(0.025), 3500) * env(0.025, 0.0005, 5) * 1.5
+    arc_up = bandsweep(noise(0.35), 400, 3200) * env(0.35, 0.06, 2.0)
+    arc_down = bandsweep(noise(0.6), 3200, 500) * env(0.6, 0.02, 3.0)
+    sizzle = hp(crackle(0.7, 900, 7000), 1800) * env(0.7, 0.02, 3.0)
+    drone = chord([110, 130.8, 164.8, 174.6], 1.3) * env(1.3, 0.05, 2.2)
+    drone *= 1 + 0.3 * np.sin(2 * np.pi * 6 * t(1.3))
+    growl = onepole_lp(noise(1.1), 300) * 5 * env(1.1, 0.05, 2.6) * quake_roll(1.1, 8)
+    out = np.zeros(int(1.45 * SR))
+    place(out, shing, 0, 1.0)
+    place(out, pitch(metal, 1.35), 0, 0.5)
+    place(out, arc_up, 0, 0.9)
+    place(out, arc_down, 0.18, 1.0)
+    place(out, pitch(swing, 0.85), 0.03, 0.6)
+    place(out, sizzle, 0.05, 0.45)
+    place(out, drone, 0.02, 0.55)
+    place(out, growl, 0.06, 0.35)
+    return reverb(sat(out, 1.4), size=0.7, wet=0.3, damp=3000)
 
 
 def crescent_hit():
+    """혈월참에 맞음: 베이는 '츠악' + 낮은 쇳소리 울림."""
     chop, metal = load("kill"), load("block")
-    out = mixlen(pitch(chop, 0.85), pitch(metal, 0.7))
-    place(out, pitch(chop, 0.85), 0, 0.9)
-    place(out, pitch(metal, 0.7), 0.01, 0.3)
-    return reverb(out, size=0.3, wet=0.2, damp=2500)
+    slice_ = bandsweep(noise(0.12), 4000, 900) * env(0.12, 0.001, 4) * 1.2
+    out = np.zeros(int(0.5 * SR))
+    place(out, slice_, 0, 1.0)
+    place(out, pitch(chop, 0.85), 0.005, 0.9)
+    place(out, pitch(metal, 0.65), 0.01, 0.35)
+    return reverb(sat(out, 1.4), size=0.35, wet=0.22, damp=3000)
+
 
 
 def strike():
@@ -238,30 +289,40 @@ def strike_hit():
 
 
 def beam():
-    """깨어난 성검 · 성광 검기: 맑은 종 + 밝은 장조 화음 반짝임 + 높은 바람."""
-    bell = load("craft")
-    # 다 장조 (C5 E5 G5 C6 E6)
-    shine = chord([523.3, 659.3, 784.0, 1046.5, 1318.5], 1.1, detune=0.006) * env(1.1, 0.03, 2.2)
-    air = bandsweep(noise(0.6), 2500, 6500) * env(0.6, 0.08, 3) * 0.5
-    sparkle = np.zeros(int(0.9 * SR))
-    for k in range(9):
-        f = rng.uniform(2500, 5000)
-        ping = np.sin(2 * np.pi * f * t(0.12)) * env(0.12, 0.002, 6)
-        place(sparkle, ping, rng.uniform(0.05, 0.75), 0.25)
-    out = mixlen(shine, sparkle)
-    place(out, pitch(bell, 1.0), 0, 0.6)
-    place(out, shine, 0.01, 0.8)
-    place(out, air, 0.0, 0.7)
-    place(out, sparkle, 0.0, 1.0)
-    return reverb(out, size=0.9, wet=0.35, damp=9000)
+    """깨어난 성검 · 성광 검기: 맑은 '찡' → 위로 솟는 빛바람과 반짝임 → 밝은 장조 화음이 길게 울림.
+    천공 낙뢰와 같은 짜임 (날카로운 시작 + 결 + 긴 꼬리)."""
+    bell, swing = load("craft"), load("swing")
+    ting = hp(noise(0.02), 5000) * env(0.02, 0.0004, 5) * 1.3
+    air = bandsweep(noise(0.8), 1500, 7500) * env(0.8, 0.04, 2.4) * 0.8
+    shine = chord([523.3, 659.3, 784.0, 1046.5, 1318.5], 1.5, detune=0.006) * env(1.5, 0.06, 2.0)
+    shine *= 1 + 0.15 * np.sin(2 * np.pi * 5 * t(1.5))
+    sparkle = hp(crackle(1.0, 1300, 12000), 4000) * env(1.0, 0.01, 2.6)
+    pings = np.zeros(int(1.2 * SR))
+    for _ in range(12):
+        f = rng.uniform(2500, 5500)
+        place(pings, np.sin(2 * np.pi * f * t(0.14)) * env(0.14, 0.002, 6), rng.uniform(0.03, 0.95), 0.22)
+    out = np.zeros(int(1.6 * SR))
+    place(out, ting, 0, 1.0)
+    place(out, pitch(bell, 1.25), 0, 0.6)
+    place(out, pitch(swing, 1.3), 0, 0.5)
+    place(out, air, 0, 0.8)
+    place(out, shine, 0.02, 0.75)
+    place(out, sparkle, 0.02, 0.5)
+    place(out, pings, 0, 1.0)
+    return reverb(sat(out, 1.3), size=0.9, wet=0.35, damp=9000)
 
 
 def beam_hit():
+    """성광 검기에 맞음: 빛이 터지는 '팡' + 맑은 화음 + 반짝임."""
     bell = load("craft")
-    ping = chord([1046.5, 1568.0, 2093.0], 0.35, detune=0.003) * env(0.35, 0.002, 4)
-    out = mixlen(pitch(bell, 1.5), ping)
+    ting = hp(noise(0.02), 4500) * env(0.02, 0.0004, 5) * 0.45
+    ping = chord([1046.5, 1568.0, 2093.0], 0.45, detune=0.003) * env(0.45, 0.002, 4)
+    sparkle = hp(crackle(0.35, 1500, 12000), 4000) * env(0.35, 0.005, 3)
+    out = np.zeros(int(0.6 * SR))
+    place(out, ting, 0, 1.0)
     place(out, pitch(bell, 1.5), 0, 0.6)
     place(out, ping, 0, 0.7)
+    place(out, sparkle, 0.01, 0.5)
     return reverb(out, size=0.5, wet=0.3, damp=9000)
 
 
@@ -270,5 +331,8 @@ if __name__ == "__main__":
                      (crescent, "sk_crescent"), (crescent_hit, "sk_crescentHit"),
                      (strike, "sk_strike"), (strike_hit, "sk_strikeHit"),
                      (beam, "sk_beam"), (beam_hit, "sk_beamHit")):
+        # 이름을 주면 그 소리만 다시 만든다: python tools/make_skill_sfx.py sk_cleave sk_beam
+        if len(sys.argv) > 1 and name not in sys.argv[1:]:
+            continue
         finish(fn(), name)
     sys.exit(0)
