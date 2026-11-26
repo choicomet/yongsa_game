@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
+import com.badlogic.gdx.utils.Timer;
 import com.yongsa.YongsaGame;
 import org.lwjgl.system.APIUtil;
 import org.lwjgl.system.JNI;
@@ -34,6 +35,14 @@ public class Lwjgl3Launcher {
             public void create() {
                 useWindowIconForTaskbar();
                 super.create();
+                // 게임을 불러오는 동안은 창이 바빠서 작업표시줄이 아이콘을 묻다가 포기하고 빈 칸을 둔다.
+                // 다 불러온 뒤 화면이 돌기 시작하면 한 번 더 알려 준다.
+                Timer.schedule(new Timer.Task() {
+                    @Override
+                    public void run() {
+                        refreshTaskbarIcon();
+                    }
+                }, 0.5f, 1.5f, 2);
             }
         }, config);
     }
@@ -52,6 +61,27 @@ public class Lwjgl3Launcher {
             long small = JNI.callPPPP(hwnd, User32.WM_GETICON, 0L /* ICON_SMALL */, 0L, sendMessage);
             if (big != 0) User32.SetClassLongPtr(hwnd, User32.GCL_HICON, big);
             if (small != 0) User32.SetClassLongPtr(hwnd, User32.GCL_HICONSM, small);
+        } catch (Throwable ignored) {
+            // 아이콘만 못 바꾼 것이니 그냥 넘어간다
+        }
+    }
+
+    /**
+     * 작업표시줄에 아이콘을 다시 그리게 한다. 아이콘을 잠깐 비웠다가 다시 넣으면 (WM_SETICON)
+     * 작업표시줄이 아이콘을 새로 읽어 간다. 시작할 때 놓쳐서 빈 칸이 된 경우를 고친다.
+     */
+    private static void refreshTaskbarIcon() {
+        if (Platform.get() != Platform.WINDOWS) return;
+        try (SharedLibrary user32 = APIUtil.apiCreateLibrary("user32")) {
+            long hwnd = GLFWNativeWin32.glfwGetWin32Window(((Lwjgl3Graphics) Gdx.graphics).getWindow().getWindowHandle());
+            long sendMessage = user32.getFunctionAddress("SendMessageW");
+            if (hwnd == 0 || sendMessage == 0) return;
+            for (long which : new long[]{1L /* ICON_BIG */, 0L /* ICON_SMALL */}) {
+                long icon = JNI.callPPPP(hwnd, User32.WM_GETICON, which, 0L, sendMessage);
+                if (icon == 0) continue;
+                JNI.callPPPP(hwnd, User32.WM_SETICON, which, 0L, sendMessage);
+                JNI.callPPPP(hwnd, User32.WM_SETICON, which, icon, sendMessage);
+            }
         } catch (Throwable ignored) {
             // 아이콘만 못 바꾼 것이니 그냥 넘어간다
         }
