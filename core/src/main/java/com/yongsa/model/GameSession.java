@@ -86,6 +86,7 @@ public class GameSession {
     private Vein targetVein;
     private boolean targetPortal;
     private boolean targetChest;
+    private float[] targetPotion;
     private Balance.Villager targetVillager;
     /** 다섯 번 되돌아선 뒤 체념하고 나가는 중 (마을에 닿으면 독백). */
     private boolean giveUpPending;
@@ -250,7 +251,6 @@ public class GameSession {
         if (!justDied) mobs.updateProjectiles(dt);
         if (!justDied) bosses.updateHazards(dt);
         if (!justDied) resolveFight();
-        if (!justDied) updatePotionDrops(dt);
         if (inCamp() || inVillage()) {
             hpAcc += rules.maxHp(state) * balance.hero.campRegenFractionPerSec * dt;
             int add = (int) hpAcc;
@@ -1155,27 +1155,16 @@ public class GameSession {
         }
     }
 
-    private float potionMsgCd;
-
-    /** 바닥의 포션 위를 지나가면 주워 바로 마신다. 체력이 가득하면 그대로 남는다. */
-    private void updatePotionDrops(float dt) {
-        potionMsgCd -= dt;
+    /** 바닥의 포션 앞에서 E 를 누르면 마신다. 체력이 가득해도 마시고, 그때는 아무 변화가 없다. */
+    private void drinkPotion(float[] p) {
+        if (!state.potionDrops.remove(p)) return;
         int max = rules.maxHp(state);
-        float reach = balance.potion.pickupRadiusTiles * T;
-        for (java.util.Iterator<float[]> it = state.potionDrops.iterator(); it.hasNext(); ) {
-            float[] p = it.next();
-            if (Math.hypot(p[0] - hero.x, p[1] - hero.y) > reach) continue;
-            if (state.hp >= max) {
-                if (potionMsgCd <= 0) events.add(GameEvent.toast("체력이 가득해서 포션은 남겨 둔다"));
-                potionMsgCd = 4f;
-                continue;
-            }
-            it.remove();
-            int heal = Math.min(max - state.hp, Math.max(1, Math.round(max * balance.potion.healRatio)));
+        int heal = Math.min(max - state.hp, Math.max(1, Math.round(max * balance.potion.healRatio)));
+        if (heal > 0) {
             state.hp += heal;
             events.add(GameEvent.floatText(hero.x, hero.y + 40, "+" + heal, GameEvent.Tone.HEAL));
-            events.add(GameEvent.sound("potion"));
         }
+        events.add(GameEvent.sound("potion"));
     }
 
     private static int indexOf(String dungeonId) {
@@ -1236,6 +1225,7 @@ public class GameSession {
         targetVein = null;
         targetPortal = false;
         targetChest = false;
+        targetPotion = null;
         targetVillager = null;
         float best = Float.MAX_VALUE;
         if (inVillage()) {
@@ -1255,6 +1245,20 @@ public class GameSession {
                 promptY = villagerY(near) + 2.2f * T;
                 return;
             }
+        }
+        float potionReach = balance.potion.pickupRadiusTiles * T, bestP = potionReach;
+        for (float[] p : state.potionDrops) {
+            float d = (float) Math.hypot(p[0] - hero.x, p[1] - hero.y);
+            if (d < bestP) {
+                bestP = d;
+                targetPotion = p;
+            }
+        }
+        if (targetPotion != null) {
+            prompt = interactKey + "  포션 마시기";
+            promptX = targetPotion[0];
+            promptY = targetPotion[1] + 1.2f * T;
+            return;
         }
         if (heroRoom != null && hasChest(heroRoom) && fightRoom == null) {
             float d = (float) Math.hypot(chestX(heroRoom) - hero.x, chestY(heroRoom) - hero.y);
@@ -1337,6 +1341,10 @@ public class GameSession {
     private void interact() {
         if (targetVillager != null) {
             talk(targetVillager);
+            return;
+        }
+        if (targetPotion != null) {
+            drinkPotion(targetPotion);
             return;
         }
         if (targetChest) {

@@ -28,8 +28,8 @@
   "reward": { "chestOreMin": 30, "chestOreMax": 40, "bossChestPotions": 1,
               "mobChestChance": 0.3, "mobChestOreMin": 3, "mobChestOreMax": 6, "mobChestPotions": 1 },
 
-  "_potion": "던전 상자를 열면 상자 앞 바닥에 회복 포션이 떨어진다. 지나가며 주우면(pickupRadiusTiles 칸 안) 바로 최대 체력의 healRatio 만큼 회복. 체력이 가득하면 줍지 않고 남는다 (들고 다니지 않는다)",
-  "potion": { "healRatio": 0.4, "pickupRadiusTiles": 0.8 },
+  "_potion": "던전 상자를 열면 상자 앞 바닥에 회복 포션이 떨어진다. 포션 앞(pickupRadiusTiles 칸 안)에서 E 를 누르면 마셔서 최대 체력의 healRatio 만큼 회복. 체력이 가득해도 마실 수 있고 그때는 변화 없음 (들고 다니지 않는다)",
+  "potion": { "healRatio": 0.4, "pickupRadiusTiles": 1.0 },
 
   "weapons": [
     { "id": "holy_sealed", "name": "봉인된 성검", "baseAttack": 10, "perLevel": 0, "craftCost": 0, "enhanceable": false, "holy": true },

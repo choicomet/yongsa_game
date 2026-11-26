@@ -49,7 +49,7 @@ class PotionChestTest {
     }
 
     @Test
-    void chestDropsPotionOnFloorAndWalkingOverItHeals() {
+    void chestDropsPotionOnFloorAndPressingEHeals() {
         GameState s = NewGame.create(b);
         GameSession g = new GameSession(b, TestData.map(), s, 1);
         Room r = g.map.room("L1");
@@ -70,9 +70,15 @@ class PotionChestTest {
         float[] p = s.potionDrops.get(0);
         g.hero.x = p[0];
         g.hero.y = p[1];
+        int before = s.potionDrops.size();
         run(g, new Controls(), 1 / 60f);
-        assertTrue(s.potionDrops.isEmpty(), "지나가면 줍는다");
-        assertEquals(10 + Math.round(max * b.potion.healRatio), s.hp, "주우면 바로 회복");
+        assertEquals(before, s.potionDrops.size(), "지나가기만 해서는 줍지 않는다");
+        assertEquals("E  포션 마시기", g.prompt);
+        Controls e = new Controls();
+        e.interact = true;
+        run(g, e, 1 / 60f);
+        assertEquals(before - 1, s.potionDrops.size(), "E 를 누르면 마신다");
+        assertEquals(10 + Math.round(max * b.potion.healRatio), s.hp, "마시면 바로 회복");
     }
 
     @Test
@@ -98,18 +104,23 @@ class PotionChestTest {
     }
 
     @Test
-    void potionStaysOnFloorAtFullHp() {
+    void potionCanBeDrunkAtFullHpWithoutMessage() {
         GameState s = NewGame.create(b);
         GameSession g = new GameSession(b, TestData.map(), s, 1);
         s.chests.add("L6");
         g.openChest(g.map.room("L6"));
-        assertEquals(b.reward.bossChestPotions, s.potionDrops.size());
+        g.pollEvents();
+        int drops = s.potionDrops.size();
         float[] p = s.potionDrops.get(0);
         g.hero.x = p[0];
         g.hero.y = p[1];
-        s.hp = g.rules.maxHp(s);
-        List<GameEvent> ev = run(g, new Controls(), 0.1f);
-        assertEquals(b.reward.bossChestPotions, s.potionDrops.size(), "체력이 가득하면 남겨 둔다");
-        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.TOAST && e.text.contains("남겨 둔다")));
+        int max = g.rules.maxHp(s);
+        s.hp = max;
+        Controls e = new Controls();
+        e.interact = true;
+        List<GameEvent> ev = run(g, e, 1 / 60f);
+        assertEquals(drops - 1, s.potionDrops.size(), "체력이 가득해도 E 로 마신다");
+        assertEquals(max, s.hp, "풀피면 변화 없음");
+        assertTrue(ev.stream().noneMatch(x -> x.type == GameEvent.Type.TOAST && x.text.contains("포션")), "안내 멘트 없음");
     }
 }
