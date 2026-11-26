@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Disposable;
 import com.yongsa.YongsaGame;
 import com.yongsa.combat.Facing;
@@ -1156,16 +1157,27 @@ public class WorldRenderer implements Disposable {
         speechBoxes.clear();
         for (Speech sp : speeches) {
             float a = Math.min(1f, sp.t * 4f) * Math.min(1f, (3.6f - sp.t) * 2f);
-            layout.setText(fonts.normal, sp.text);
-            float w = layout.width + 28, hgt = layout.height + 20;
-            float x = sx(cam, sp.x) - w / 2f, y = sy(cam, sp.y);
             boolean friend = sp.speaker != null; // 용사·마을 사람은 금빛 테두리와 이름
+            // 긴 대사는 옆으로 길게 늘어지지 않게 비슷한 길이의 두 줄로 나눈다
+            Color tc = speechColor.set(1f, friend ? 0.97f : 0.9f, friend ? 0.9f : 1f, a);
+            speechLayout.setText(fonts.normal, sp.text);
+            if (speechLayout.width > SPEECH_ONE_LINE_MAX) {
+                // 띄어쓰기에서만 끊기므로 세 줄이 되면 폭을 조금씩 넓혀 두 줄에 맞춘다
+                float full = speechLayout.width, target = full / 2f + 24;
+                do {
+                    speechLayout.setText(fonts.normal, sp.text, tc, target, Align.left, true);
+                    target += 24;
+                } while (speechLayout.runs.size > 2 && target < full);
+            } else {
+                speechLayout.setText(fonts.normal, sp.text, tc, 0, Align.left, false);
+            }
+            float w = speechLayout.width + 28, hgt = speechLayout.height + 20;
+            float x = sx(cam, sp.x) - w / 2f, y = sy(cam, sp.y);
             // 말풍선(꼬리 포함)과 그 위 왼쪽 이름표 자리: E 안내가 이 자리를 피해 간다
             speechBoxes.add(new float[]{x, y - 8, x + w, y + hgt});
             if (friend) {
                 layout.setText(fonts.small, sp.speaker);
                 speechBoxes.add(new float[]{x + 10, y + hgt, x + 10 + layout.width, y + hgt + 20});
-                layout.setText(fonts.normal, sp.text);
             }
             batch.setColor(friend ? 0.05f : 0.06f, friend ? 0.04f : 0.02f, friend ? 0.07f : 0.1f, 0.85f * a);
             batch.draw(art.white(), x, y, w, hgt);
@@ -1179,8 +1191,7 @@ public class WorldRenderer implements Disposable {
                 fonts.small.draw(batch, sp.speaker, x + 10, y + hgt + 20);
                 fonts.small.setColor(Color.WHITE);
             }
-            fonts.normal.setColor(friend ? 1f : 1f, friend ? 0.97f : 0.9f, friend ? 0.9f : 1f, a);
-            fonts.normal.draw(batch, sp.text, x + 14, y + hgt - 10);
+            fonts.normal.draw(batch, speechLayout, x + 14, y + hgt - 10);
         }
         if (g.prompt != null) {
             layout.setText(fonts.normal, g.prompt);
@@ -1199,6 +1210,11 @@ public class WorldRenderer implements Disposable {
         fonts.large.setColor(Color.WHITE);
         batch.setColor(Color.WHITE);
     }
+
+    /** 말풍선 대사가 이보다 넓으면 두 줄로 나눈다 (화면 픽셀). */
+    private static final float SPEECH_ONE_LINE_MAX = 420f;
+    private final GlyphLayout speechLayout = new GlyphLayout();
+    private final Color speechColor = new Color();
 
     /** 이번 프레임 말풍선 자리 (화면 좌표 x0, y0, x1, y1). */
     private final List<float[]> speechBoxes = new ArrayList<>();
