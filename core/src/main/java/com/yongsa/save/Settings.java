@@ -2,7 +2,12 @@ package com.yongsa.save;
 
 /** 설정 (UI-10). 바로 적용되고 따로 저장된다. */
 public class Settings {
+    /** 예전 하나뿐이던 소리 크기. 효과음·배경음악을 따로 정한 적이 없으면 이 값을 쓴다. */
     public float volume = 0.7f;
+    /** 효과음 크기 (0~1). 음수면 아직 안 정함 → volume. */
+    public float sfxVolume = -1f;
+    /** 배경음악 크기 (0~1). 음수면 아직 안 정함 → volume. */
+    public float bgmVolume = -1f;
     public boolean fullscreen = false;
     /** 연출 속도: 1 보통, 2 빠르게. */
     public float effectSpeed = 1f;
@@ -19,6 +24,14 @@ public class Settings {
     public boolean devGodMode = false;
     /** 개발용 (F1): 걸을 수 있는 곳을 초록으로 표시한다. 저장하지 않아도 되지만 다른 개발 설정과 같이 둔다. */
     public boolean devShowWalkable = false;
+
+    public float sfx() {
+        return sfxVolume < 0 ? volume : sfxVolume;
+    }
+
+    public float bgm() {
+        return bgmVolume < 0 ? volume : bgmVolume;
+    }
 
     /** 조작 키 (동작 이름 → 키 코드). 없으면 기본 키. 화면에서 바꾸면 여기에 다시 적는다. */
     public java.util.Map<String, int[]> keyBindings;
