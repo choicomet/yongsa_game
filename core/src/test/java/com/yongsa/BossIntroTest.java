@@ -70,17 +70,22 @@ class BossIntroTest {
         push.attack = true;
         List<GameEvent> ev = new ArrayList<>();
         boolean wound = false, struck = false;
+        boolean[] castFrames = new boolean[4];
         float maxFocus = 0;
         while (g.inBossIntro()) {
             maxFocus = Math.max(maxFocus, g.bossIntroFocus());
             ev.addAll(run(g, push, 1 / 60f));
-            if (m.state == Monster.State.CAST_TELEGRAPH) wound = true;
+            if (m.state == Monster.State.CAST_TELEGRAPH) {
+                wound = true;
+                castFrames[Math.min(3, (int) (m.progress() * 4))] = true;
+            }
             if (m.state == Monster.State.RECOVER) struck = true;
         }
         assertEquals(hx, g.hero.x, 0.01f, name + ": 연출 중엔 용사가 움직이지 않는다");
         assertEquals(hy, g.hero.y, 0.01f, name);
         assertEquals(heroHp, g.state.hp, name + ": 연출 동작은 용사를 다치게 하지 않는다");
         assertEquals(bossHp, m.hp, name + ": 연출 중엔 보스도 맞지 않는다");
+        if (m.finalBoss) assertArrayEquals(new boolean[]{true, true, true, true}, castFrames);
         assertTrue(wound && struck, name + ": 특수 공격 준비 → 내리치기 동작을 한 번 보여 준다");
         assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.SLAM_FX), name + ": 충격파");
         assertTrue(maxFocus > 0.99f, name + ": 카메라가 보스까지 간다");

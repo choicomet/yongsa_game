@@ -497,7 +497,15 @@ public class EnemyPainter {
         else if (m.finalBoss && m.phase2 && sheet.endsWith("boss_lich.png")) batch.setColor(0.95f, 0.62f + 0.08f * MathUtils.sin(time * 6f), 0.95f, appear); // 시트가 없는 경우만 임시 색상을 쓴다.
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
-        actorInk.draw(batch, r, faceRight ? x0 + size : x0, y0, faceRight ? -size : size, size);
+        TextureRegion detail = r;
+        float focus = 0f;
+        if (m.finalBoss && !m.phase2 && g.inBossIntro()) {
+            // Four idle frames, then eight casting frames. Both sheets use the same foot anchor.
+            int frame = pose[0] == 3 ? 4 + pose[1] : pose[1] % 4;
+            detail = art.cell("team/jiyong/boss_lich_intro.png", 4, 3, frame);
+            focus = g.bossIntroFocus();
+        }
+        actorInk.draw(batch, r, detail, focus, faceRight ? x0 + size : x0, y0, faceRight ? -size : size, size);
         if (m.flash > 0) {
             Particles.additive(batch);
             batch.setColor(1f, 1f, 1f, Math.min(1f, m.flash / 0.15f));
