@@ -433,18 +433,27 @@ public class EnemyPainter {
 
     private static final java.util.Map<String, Boolean> SHEET_EXISTS = new java.util.HashMap<>();
 
+    // Each HD page holds twenty 408px cells. They represent the central 204 world
+    // pixels of the old 256px cell, in the original order, at double the density.
+    private static final int HD_CELL = 408;
+    private static final Map<String, List<String>> HD_PAGES = Map.of(
+            "team/jiyong/boss_golem.png", List.of("team/jiyong/hd/golem-1.png", "team/jiyong/hd/golem-2.png"),
+            "team/jiyong/boss_lich.png", List.of("team/jiyong/hd/lich-1.png", "team/jiyong/hd/lich-2.png"),
+            "team/jiyong/boss_lich2.png", List.of("team/jiyong/hd/lich2-1.png", "team/jiyong/hd/lich2-2.png"));
+
     private TextureRegion bossCell(String sheet, int row, int col) {
-        int column = Math.min(7, Math.max(0, col));
-        // The detail sheets contain four idle and eight special-attack poses.
-        if ((row == 0 && column < 4) || row == 3) {
-            String detail = switch (sheet) {
-                case "team/jiyong/boss_golem.png" -> "team/jiyong/boss_golem_intro.png";
-                case "team/jiyong/boss_lich.png" -> "team/jiyong/boss_lich_intro.png";
-                default -> null;
-            };
-            if (detail != null) return art.cell(detail, 4, 3, row == 0 ? column : 4 + column);
-        }
-        return art.cell(sheet, 8, 5, row * 8 + column);
+        int frame = row * 8 + MathUtils.clamp(col, 0, 7);
+        List<String> pages = HD_PAGES.get(sheet);
+        if (pages == null) return art.cell(sheet, 8, 5, frame);
+        return art.cell(pages.get(frame / 20), 4, 5, frame % 20);
+    }
+
+    private static float bossDrawSize(TextureRegion frame, float scale) {
+        return (frame.getRegionWidth() == HD_CELL ? HD_CELL / 2 : BOSS_CELL) * scale;
+    }
+
+    private static float bossDrawBottom(float footY, float scale, float size) {
+        return footY + (BOSS_FOOT - BOSS_CELL / 2f) * scale - size / 2f;
     }
 
     /**
@@ -496,13 +505,13 @@ public class EnemyPainter {
         float appear = m.state == Monster.State.SPAWN ? Math.max(0f, (m.progress() - 0.35f) / 0.65f) : 1f;
         if (appear <= 0f) return;
         float k = sheetScale(m) * appear;
-        float size = BOSS_CELL * k;
+        float size = bossDrawSize(r, k);
         drawActorShadow(m.x, m.y, BOSS_BODY * k * 0.8f, appear, false);
         float jx = m.state == Monster.State.STUNNED ? MathUtils.sin(time * 14f) * 1.5f
                 : m.state == Monster.State.CHARGE_TELEGRAPH ? MathUtils.sin(time * 60f) * 2f * m.progress() : 0;
         boolean faceRight = m.dirX > 0.2f;
         float lift = m.state == Monster.State.LEAP ? MathUtils.sin(m.progress() * MathUtils.PI) * 70f : 0f; // 뒤로 도약
-        float x0 = m.x + jx - size / 2f, y0 = m.y - (BOSS_CELL - BOSS_FOOT) * k + lift;
+        float x0 = m.x + jx - size / 2f, y0 = bossDrawBottom(m.y, k, size) + lift;
         if (m.warning()) batch.setColor(1f, 0.8f, 0.7f, appear);
         else if (m.finalBoss && m.phase2 && sheet.endsWith("boss_lich.png")) batch.setColor(0.95f, 0.62f + 0.08f * MathUtils.sin(time * 6f), 0.95f, appear); // 시트가 없는 경우만 임시 색상을 쓴다.
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
@@ -894,8 +903,8 @@ public class EnemyPainter {
         if (c.sheet != null) {
             // 쓰러지는 줄 8칸을 돌리고, 마지막 칸에서 천천히 사라진다
             TextureRegion r = bossCell(c.sheet, 4, (int) Math.min(7, p / 0.6f * 8));
-            float size = BOSS_CELL * c.sheetScale;
-            float x0 = c.x - size / 2f, y0 = c.y - (BOSS_CELL - BOSS_FOOT) * c.sheetScale;
+            float size = bossDrawSize(r, c.sheetScale);
+            float x0 = c.x - size / 2f, y0 = bossDrawBottom(c.y, c.sheetScale, size);
             batch.setColor(1f, 1f, 1f, p < 0.7f ? 1f : 1f - (p - 0.7f) / 0.3f);
             if (c.sheetFaceRight) batch.draw(r, x0 + size, y0, -size, size);
             else batch.draw(r, x0, y0, size, size);
