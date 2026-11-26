@@ -792,11 +792,6 @@ public class GameSession {
         return bossIntroT > 0;
     }
 
-    /** 등장 연출이 시작된 뒤 지난 시간 (연출 중이 아니면 -1). 화면의 보스 이름표가 쓴다. */
-    public float bossIntroElapsed() {
-        return bossIntroT > 0 ? BOSS_INTRO_SECONDS - bossIntroT : -1f;
-    }
-
     /** 카메라가 보스 쪽으로 얼마나 가 있어야 하는지 (0 = 용사, 1 = 보스). 부드럽게 갔다가 돌아온다. */
     public float bossIntroFocus() {
         if (bossIntroT <= 0) return 0f;
