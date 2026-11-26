@@ -375,10 +375,17 @@ public class GameSession {
                 float cos = (dx * hero.aimX + dy * hero.aimY) / dist;
                 if (Math.acos(Math.max(-1, Math.min(1, cos))) > half) continue;
             }
-            if (basicAttack.tryHit(m)) damageMonster(m, basicAttack.multiplier);
+            if (basicAttack.tryHit(m)) {
+                // 기본 공격은 소리 없이 (해성 2026-11-26): 효과음은 스킬·보스 패턴에 쓴다
+                quietHit = true;
+                damageMonster(m, basicAttack.multiplier);
+                quietHit = false;
+            }
         }
-        events.add(GameEvent.sound("swing"));
     }
+
+    /** 기본 공격으로 때리는 중: 타격음을 내지 않는다. */
+    private boolean quietHit;
 
     // ───────────────────────── 검 스킬 (L, U, I, O)
 
@@ -470,7 +477,8 @@ public class GameSession {
         e.dirX = hero.aimX;
         e.dirY = hero.aimY;
         events.add(e);
-        events.add(GameEvent.sound("strike".equals(sk.kind) ? "cast" : "slam"));
+        // 스킬마다 다른 소리: sk_cleave, sk_crescent, sk_strike, sk_beam (SfxMix)
+        events.add(GameEvent.sound("sk_" + sk.kind));
     }
 
     /** 새로 열린 검 스킬을 빈 칸에 넣고 어느 키인지 알려 준다. */
@@ -506,7 +514,7 @@ public class GameSession {
                 fx.text = h.kind;
                 fx.size = h.radius;
                 events.add(fx);
-                events.add(GameEvent.sound("cast"));
+                events.add(GameEvent.sound("sk_" + h.kind + "Hit"));
                 h.dead = true;
                 continue;
             }
@@ -563,7 +571,7 @@ public class GameSession {
         hero.invuln = Math.max(hero.invuln, balance.attack.rollInvulnTime);
         hero.swingT = 0;
         hero.mineSwingT = 0;
-        events.add(GameEvent.sound("dash"));
+        // 구르기는 소리 없이 (해성 2026-11-26)
     }
 
     private int roll(int base, float mult) {
@@ -633,7 +641,7 @@ public class GameSession {
             events.add(GameEvent.sound("roar"));
         }
         events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), guarded ? GameEvent.Tone.SHIELD : GameEvent.Tone.MONSTER_HIT));
-        events.add(GameEvent.sound(guarded ? "block" : m.boss ? "hitBoss" : "hit"));
+        if (!quietHit) events.add(GameEvent.sound(guarded ? "block" : m.boss ? "hitBoss" : "hit"));
         GameEvent fx = GameEvent.fx(GameEvent.Type.HIT_FX, m.x, m.centerY());
         fx.tone = GameEvent.Tone.MONSTER_HIT;
         float ddx = m.x - hero.x, ddy = m.centerY() - hero.centerY(), dl = (float) Math.sqrt(ddx * ddx + ddy * ddy);

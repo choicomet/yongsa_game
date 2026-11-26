@@ -61,3 +61,11 @@
 | select | -20 | 0.03 | 잔소리 | |
 
 숫자를 바꾸려면 `SfxMix`의 `static { ... }` 블록에서 고친다. `SfxMixTest`가 모든 소리에 규칙이 있는지, 목표 크기에 맞는지 확인한다.
+
+## 2026-11-26 바뀐 점 (해성 요청)
+
+- **기본 공격(휘두르기·타격음)과 구르기는 소리 없음.** 기본 공격으로 잡은 몹의 처치음(`kill`)은 남김.
+- 녹음 효과음(`assets/audio/sfx/*.wav`, Kenney CC0)은 대신 **스킬과 보스 패턴**에 씀:
+  - 스킬: `sk_cleave`(대지 가르기, 낮은 내려찍기) · `sk_crescent`(혈월참, 길게 끌리는 베기) · `sk_strike`/`sk_strikeHit`(천공 낙뢰, 모으기 → 깨지는 소리) · `sk_beam`(성광 검기, 맑은 종소리)
+  - 보스·몹 장판이 터질 때 모양마다: `hz_boulder` `hz_rock` `hz_pound` `hz_quake` `hz_leap` `hz_spear` `hz_flame` `hz_spin` `hz_whip` `hz_bolt` `hz_cage` `hz_bone` `hz_tentacle` `hz_brand`. 규칙 없는 새 모양은 `slam`.
+- 같은 녹음 파일을 높낮이만 바꿔 여러 곳에 쓴다 (예: 바위 = `destroy` 0.55배, 번개 = `destroy` 1.45배). 숫자는 `SfxMix`.

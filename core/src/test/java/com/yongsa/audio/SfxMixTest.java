@@ -106,4 +106,18 @@ class SfxMixTest {
         float crowded = mix.decide("monsterAttack", 5.1).gain;
         assertEquals(alone * SfxMix.CROWD_GAIN, crowded, 1e-4);
     }
+
+    @Test
+    void skillsAndBossPatternsHaveTheirOwnSounds() {
+        for (String kind : new String[]{"cleave", "crescent", "strike", "beam"}) {
+            assertTrue(SfxMix.CUES.containsKey("sk_" + kind), kind);
+        }
+        assertTrue(SfxMix.CUES.containsKey("sk_strikeHit"));
+        assertEquals("hz_boulder", SfxNames.hazard("boulder"));
+        assertEquals("slam", SfxNames.hazard("somethingNew"), "규칙 없는 패턴은 쿵 소리로");
+        SfxMix mix = baked();
+        for (String name : SfxMix.CUES.keySet()) {
+            assertNotNull(mix.decide(name, 1000 + name.hashCode() % 100), name + " 이 원본 파형을 못 찾는다");
+        }
+    }
 }

@@ -97,6 +97,27 @@ final class SfxMix {
         cue("door", -16f, 0.15f, 0.04f, 1);
         cue("step", -22f, 0.12f, 0.06f, 0);
         cue("select", -20f, 0.03f, 0f, 0);
+        // ── 용사 스킬 (해성 2026-11-26: 효과음은 기본 공격·구르기 대신 스킬·보스 패턴에 쓴다)
+        cue("sk_cleave", "slam", -10f, 0.1f, 0.04f, 0.8f, 2, 0.2f, 0.2f);      // 흑철 대지 가르기: 낮고 무거운 내려찍기
+        cue("sk_crescent", "swing", -11f, 0.1f, 0.04f, 0.78f, 2, 0.12f, 0.15f); // 혈월참: 길게 끌리는 베기
+        cue("sk_strike", "cast", -13f, 0.1f, 0.04f, 0.9f, 2, 0f, 0f);          // 천공 낙뢰: 모으는 소리
+        cue("sk_strikeHit", "destroy", -11f, 0.06f, 0.08f, 1.35f, 2, 0.15f, 0.12f); // 낙뢰가 떨어지며 깨지는 소리
+        cue("sk_beam", "craft", -11f, 0.1f, 0.03f, 1.25f, 2, 0.2f, 0.2f);      // 성광 검기: 맑게 울리는 종소리
+        // ── 보스·몹 장판 패턴이 터질 때 (hz_<모양>). 여러 개가 한꺼번에 터져도 최소 간격으로 한 번만
+        cue("hz_boulder", "destroy", -10f, 0.12f, 0.05f, 0.55f, 2, 0.25f, 0.2f); // 골렘 바위: 낮게 부서지는 소리
+        cue("hz_rock", "destroy", -12f, 0.1f, 0.08f, 0.65f, 1, 0f, 0f);
+        cue("hz_pound", "slam", -10f, 0.12f, 0.04f, 0.7f, 2, 0.25f, 0.2f);     // 골렘 연속 내려찍기
+        cue("hz_quake", "slam", -12f, 0.12f, 0.05f, 0.6f, 1, 0f, 0f);
+        cue("hz_leap", "slam", -11f, 0.12f, 0.05f, 0.75f, 2, 0.15f, 0.12f);
+        cue("hz_spear", "block", -13f, 0.08f, 0.06f, 0.85f, 1, 0f, 0f);        // 혈월의 기사 창: 쇳소리
+        cue("hz_flame", "cast", -13f, 0.1f, 0.06f, 0.7f, 1, 0f, 0f);
+        cue("hz_spin", "swing", -11f, 0.12f, 0.04f, 0.7f, 2, 0f, 0f);          // 회전 베기
+        cue("hz_whip", "monsterAttack", -11f, 0.08f, 0.06f, 0.7f, 2, 0f, 0f);  // 마왕 채찍
+        cue("hz_bolt", "destroy", -12f, 0.07f, 0.1f, 1.45f, 1, 0f, 0f);        // 번개: 높고 날카롭게 깨지는 소리
+        cue("hz_cage", "destroy", -12f, 0.1f, 0.08f, 1.3f, 1, 0f, 0f);
+        cue("hz_bone", "kill", -12f, 0.08f, 0.08f, 1.2f, 1, 0f, 0f);           // 뼈 가시
+        cue("hz_tentacle", "slam", -12f, 0.1f, 0.06f, 0.65f, 1, 0f, 0f);
+        cue("hz_brand", "destroy", -10f, 0.15f, 0.04f, 0.8f, 2, 0.2f, 0.2f);   // 마왕의 낙인 폭발
         for (String d : new String[]{"LEFT", "RIGHT", "TOP"}) {
             cue("gateClose_" + d, -15f, 0.2f, 0.03f, 1);
             cue("gateOpen_" + d, -16f, 0.2f, 0.03f, 1);
