@@ -34,15 +34,17 @@ public class Lwjgl3Launcher {
             @Override
             public void create() {
                 useWindowIconForTaskbar();
+                refreshTaskbarIcon();
                 super.create();
                 // 게임을 불러오는 동안은 창이 바빠서 작업표시줄이 아이콘을 묻다가 포기하고 빈 칸을 둔다.
-                // 다 불러온 뒤 화면이 돌기 시작하면 한 번 더 알려 준다.
+                // 다 불러오자마자 바로 다시 알려 주고, 놓칠 때를 대비해 0.3초 간격으로 몇 번 더 알려 준다.
+                refreshTaskbarIcon();
                 Timer.schedule(new Timer.Task() {
                     @Override
                     public void run() {
                         refreshTaskbarIcon();
                     }
-                }, 0.5f, 1.5f, 2);
+                }, 0f, 0.3f, 4);
             }
         }, config);
     }
