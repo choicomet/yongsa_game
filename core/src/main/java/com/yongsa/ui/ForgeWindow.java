@@ -194,7 +194,7 @@ public class ForgeWindow extends Modal {
         if (g.forge.craftBlockReason(g.state, d) != null) return;
         startHammer(d.id, false, () -> {
             Weapon w = g.forge.craft(g.state, d);
-            screen.game.sfx.play("fg_craft");
+            screen.game.sfx.play("craft");
             resultText = d.name + "을 만들었다!" + (w.uid == g.state.equippedUid ? " 바로 장착했다." : "");
             resultColor = Ui.BLUE;
             motion.result(EnhanceService.Outcome.SUCCESS, false, 0.9f / speed());
@@ -354,23 +354,23 @@ public class ForgeWindow extends Modal {
                 case SUCCESS:
                     resultText = "성공! +" + r.levelBefore + " → +" + r.levelAfter;
                     resultColor = Ui.BLUE;
-                    screen.game.sfx.play(r.awakened ? "awaken" : "fg_success");
+                    screen.game.sfx.play(r.awakened ? "awaken" : "success");
                     if (r.awakened) resultText += " · " + g.balance.weapon(w.defId).awakenedName + " 각성!";
                     break;
                 case KEEP:
                     resultText = "유지. 단계가 그대로다";
                     resultColor = Ui.GREY;
-                    screen.game.sfx.play("fg_keep");
+                    screen.game.sfx.play("keep");
                     break;
                 case DOWN:
                     resultText = "하락… +" + r.levelBefore + " → +" + r.levelAfter;
                     resultColor = Ui.ORANGE;
-                    screen.game.sfx.play("fg_down");
+                    screen.game.sfx.play("down");
                     break;
                 default:
                     resultText = "용사가 실수했다! 무기가 파괴되었다";
                     resultColor = Ui.RED;
-                    screen.game.sfx.play("fg_destroy");
+                    screen.game.sfx.play("destroy");
                     screen.hud.toast(r.refundOre.displayName + " " + r.refund + "개를 돌려받았다. 봉인된 성검을 들었다");
             }
             if (r.masteryGained > 0) resultText += "   (숙련 +" + r.masteryGained + ")";
@@ -420,7 +420,7 @@ public class ForgeWindow extends Modal {
                         int n = g.forge.dismantle(s, w);
                         resultText = ore.displayName + " " + n + "개를 돌려받았다";
                         resultColor = Ui.BLUE;
-                        screen.game.sfx.play("fg_down");
+                        screen.game.sfx.play("down");
                         screen.save(false);
                         rebuild();
                     })))).width(120).height(46).padBottom(10).row();

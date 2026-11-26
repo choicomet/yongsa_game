@@ -1,6 +1,6 @@
 """대장간·보스 패턴 효과음 만들기 (2026-11-26 밤, 해성 요청).
 
-- 대장간 (fg_*): 강화·제작 소리를 더 크고, 실제 모루 망치질처럼 '깡' 하고 울리게.
+- 대장간 망치 (fg_hammer): 모루를 치는 '깡'. 강화 결과음은 원래 녹음 그대로.
 - 보스 패턴 준비 (bs_*): 패턴을 시작할 때 (예고 동안) 나는 소리. 보스마다 재질이 다르다:
   골렘 = 바위·땅, 혈월의 기사 = 쇠·피, 탑의 수문장 = 번개·불·마법, 마왕 = 어둠.
 - 보스 패턴 터짐 (hz_*): 장판이 터지는 순간의 소리.
@@ -68,58 +68,7 @@ def fg_hammer():
     return reverb(anvil(), size=0.25, wet=0.12, damp=2500)
 
 
-# 결과음에는 망치 소리를 넣지 않는다: '깡'은 화면에서 망치가 내려칠 때(fg_hammer)만 난다 (해성, 2026-11-26 밤).
-
-def quench(dur=0.8):
-    """달군 쇠를 물에 담그는 '치이익'."""
-    return hp(noise(dur), 2500) * env(dur, 0.03, 2.2) * (0.8 + 0.2 * onepole_lp(noise(dur), 30) * 20).clip(0.5, 1.2)
-
-
-def fg_keep():
-    """강화 유지: 아무 일도 없음. 쇠가 식으며 '치익' 짧게."""
-    return reverb(quench(0.35) * 0.6, size=0.2, wet=0.1, damp=4000)
-
-
-def fg_success():
-    """강화 성공: 불꽃이 튀고 '슈잉' 빛이 올라오며 '치이익' 담금질."""
-    sparks = hp(crackle(0.6, 900, 9000), 2500) * env(0.6, 0.01, 3) * 0.7
-    rise = bandsweep(noise(0.45), 800, 6000) * env(0.45, 0.15, 1.5) * 0.7
-    glow = onepole_lp(sine_sweep(330, 660, 0.45), 2000) * env(0.45, 0.2, 1.4) * 0.25
-    out = np.zeros(int(1.3 * SR))
-    place(out, sparks, 0, 1.0)
-    place(out, rise, 0, 1.0)
-    place(out, glow, 0, 1.0)
-    place(out, quench(0.8), 0.35, 0.8)
-    return reverb(out, size=0.4, wet=0.2, damp=6000)
-
-
-def fg_down():
-    """강화 하락: 쇠가 '우웅' 내려앉는 소리."""
-    groan = sine_sweep(330, 150, 0.6, vib=0.02, vib_hz=6) * env(0.6, 0.02, 2.5)
-    out = np.zeros(int(0.8 * SR))
-    place(out, lp(groan, 1500), 0, 1.0)
-    place(out, quench(0.4) * 0.3, 0.05, 1.0)
-    return reverb(out, size=0.3, wet=0.15, damp=2500)
-
-
-def fg_destroy():
-    """검 파괴: 쇠가 '쩡' 하고 금 가며 부러짐 → 조각이 바닥에 떨어져 짤그랑."""
-    metal, glass = load("block"), load("destroy")
-    crack = bandsweep(noise(0.06), 4000, 1200) * env(0.06, 0.0005, 5) * 1.6
-    out = np.zeros(int(1.1 * SR))
-    place(out, crack, 0, 1.0)
-    place(out, pitch(glass, 0.75), 0, 0.9)
-    for at, p in ((0.29, 1.3), (0.44, 1.6), (0.56, 1.15), (0.72, 1.45)):
-        place(out, lp(pitch(metal, p), 5000), at, 0.25)
-    return reverb(out, size=0.35, wet=0.18, damp=4000)
-
-
-def fg_craft():
-    """제작: 다 두드린 검을 물에 담그는 '치이익'."""
-    out = np.zeros(int(1.0 * SR))
-    place(out, quench(0.9), 0, 1.0)
-    return reverb(out, size=0.3, wet=0.14, damp=3000)
-
+# 강화 결과음(success·keep·down·destroy·craft)은 원래 Kenney 녹음을 그대로 쓴다 (해성, 2026-11-26 밤). 여기서는 망치만 만든다.
 
 
 # ── 보스 패턴 준비 (bs_) ──────────────────────────────
@@ -436,7 +385,7 @@ def hz_whip():
     return reverb(out, size=0.25, wet=0.12, damp=6000)
 
 
-ALL = [fg_hammer, fg_keep, fg_success, fg_down, fg_destroy, fg_craft,
+ALL = [fg_hammer,
        bs_rush, bs_charge, bs_slam, bs_boulder, bs_pound, bs_shield, bs_combo, bs_spear, bs_crescent, bs_spin,
        bs_lightning, bs_firespin, bs_volley, bs_cage, bs_homing, bs_summon,
        bs_ring, bs_darkorb, bs_brand, bs_tentacle, bs_eyes,

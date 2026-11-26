@@ -118,13 +118,8 @@ final class SfxMix {
                 "lightning", "firespin", "volley", "cage", "homing", "summon", "ring", "darkorb", "brand", "tentacle", "eyes"}) {
             cue("bs_" + bs, "bs_" + bs, -7.5f, 0.3f, 0.03f, 1f, 2, 0.15f, 0.25f);
         }
-        // ── 대장간 (fg_): 실제 모루 망치질처럼 둔탁하게, 예전보다 크게
+        // ── 대장간 망치 (fg_hammer): 모루 "깡". 강화 결과음(success·keep·down·destroy·craft)은 원래 녹음 그대로
         cue("fg_hammer", "fg_hammer", -7f, 0.05f, 0.05f, 1f, 2, 0f, 0f);
-        cue("fg_keep", "fg_keep", -12f, 0.1f, 0f, 1f, 2, 0.15f, 0.2f);
-        cue("fg_success", "fg_success", -7f, 0.1f, 0f, 1f, 3, 0.3f, 0.4f);
-        cue("fg_down", "fg_down", -7f, 0.1f, 0f, 1f, 3, 0.25f, 0.3f);
-        cue("fg_destroy", "fg_destroy", -7f, 0.3f, 0f, 1f, 3, 0.45f, 0.55f);
-        cue("fg_craft", "fg_craft", -7f, 0.1f, 0f, 1f, 3, 0.25f, 0.6f);
         for (String d : new String[]{"LEFT", "RIGHT", "TOP"}) {
             cue("gateClose_" + d, -15f, 0.2f, 0.03f, 1);
             cue("gateOpen_" + d, -16f, 0.2f, 0.03f, 1);
