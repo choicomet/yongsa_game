@@ -448,11 +448,50 @@ public class Hud {
             float textL = tx0 + 74;
             centered(fonts.normal, toast.text, textL + (tx0 + tw - 30 - textL) / 2f, cy + 9, new Color(1, 1, 1, alpha));
         }
+        drawIntroPlate();
         batch.setColor(Color.WHITE);
         batch.end();
         if (mapAnim > 0.01f) drawMap();
         fonts.normal.setColor(Color.WHITE);
         fonts.small.setColor(Color.WHITE);
+    }
+
+    private final Color plateColor = new Color();
+
+    /**
+     * 보스 등장 연출 동안 화면 아래쪽 가운데에 크게 뜨는 이름표 (2026-11-26 지용).
+     * 던전 이름 한 줄 + 보스 이름, 양옆으로 금색 줄이 뻗는다. 연출 시작 0.3초 뒤 나타나 끝나기 직전에 사라진다.
+     */
+    private void drawIntroPlate() {
+        float e = g.bossIntroElapsed();
+        Monster boss = g.activeBoss();
+        if (e < 0 || boss == null) return;
+        float left = GameSession.BOSS_INTRO_SECONDS - e;
+        float a = MathUtils.clamp(Math.min((e - 0.3f) / 0.5f, (left - 0.2f) / 0.5f), 0f, 1f);
+        if (a <= 0f) return;
+        Room r = g.fightRoom();
+        String sub = boss.finalBoss ? "봉인의 끝, 심연" : r != null && r.dungeonId != null ? g.balance.dungeon(r.dungeonId).name : "";
+        Color main = boss.finalBoss ? Ui.PURPLE : Ui.GOLD;
+        float cy = h * 0.27f;
+        // 뒤 띠: 글씨가 바닥 그림에 묻히지 않게
+        plateColor.set(0f, 0f, 0f, 0.55f * a);
+        rect(0, cy - 58, w, 112, plateColor);
+        layout.setText(fonts.title, boss.def.name);
+        float nw = layout.width;
+        float grow = MathUtils.clamp((e - 0.3f) / 0.7f, 0f, 1f);
+        float line = 160 * grow * grow * (3 - 2 * grow);
+        plateColor.set(main.r, main.g, main.b, 0.9f * a);
+        rect(w / 2 - nw / 2 - 24 - line, cy - 12, line, 2, plateColor);
+        rect(w / 2 + nw / 2 + 24, cy - 12, line, 2, plateColor);
+        fonts.title.setColor(0, 0, 0, 0.8f * a);
+        fonts.title.draw(batch, boss.def.name, w / 2 - nw / 2 + 3, cy + 18 - 3);
+        plateColor.set(main.r, main.g, main.b, a);
+        text(fonts.title, boss.def.name, w / 2 - nw / 2, cy + 18, plateColor);
+        if (!sub.isEmpty()) {
+            plateColor.set(Ui.DIM.r, Ui.DIM.g, Ui.DIM.b, a);
+            centered(fonts.small, sub, w / 2, cy + 46, plateColor);
+        }
+        fonts.title.setColor(Color.WHITE);
     }
 
     private void rect(float x, float y, float width, float height, Color color) {
