@@ -8,7 +8,7 @@ import com.yongsa.model.GameState;
 import com.yongsa.screen.GameScreen;
 
 /**
- * 개발용 메뉴 (F1). 보스를 다시 싸우게 되살리고, 보스방으로 바로 가고, 광물 무한·무적을 켜고 끈다.
+ * 개발용 메뉴 (F1). 캠프로 돌아가고(싸우는 중에도), 보스를 다시 싸우게 되살리고, 보스방으로 바로 가고, 광물 무한·무적을 켜고 끈다.
  * 켜고 끈 값은 설정 파일에 저장되어 다음 실행에도 유지된다.
  */
 public class DevMenu extends Modal {
@@ -26,10 +26,18 @@ public class DevMenu extends Modal {
         GameSession g = screen.session;
         GameState s = g.state;
         Table p = panel();
+        nav.rows = true; // 위/아래 = 줄 이동, 왼쪽/오른쪽 = 같은 줄 안에서 이동 (2026-11-26 지용)
         p.add(label("개발용 메뉴", "large", Ui.GOLD)).colspan(3).padBottom(4).row();
         p.add(label("F1 로 열고 닫는다. 실제 플레이에는 쓰지 않는다.", "small", Ui.DIM)).colspan(3).padBottom(16).row();
 
+        p.add(label("캠프로 이동", "default", Ui.DIM)).left().padRight(24);
+        nav.newRow();
+        p.add(nav.add(g.fighting() ? "싸움을 그만두고 캠프로" : "캠프로", () -> {
+            if (screen.devWarpToCamp()) close();
+        })).width(260).height(46).left().padBottom(8).row();
+
         p.add(label("광물 무한", "default", Ui.DIM)).left().padRight(24);
+        nav.newRow();
         p.add(nav.add(screen.game.settings.devInfiniteOre ? "켜짐 (" + INFINITE_ORE + "개 유지)" : "꺼짐", () -> {
             screen.game.settings.devInfiniteOre = !screen.game.settings.devInfiniteOre;
             screen.game.saveSettings();
@@ -38,6 +46,7 @@ public class DevMenu extends Modal {
         })).width(260).height(46).left().padBottom(8).row();
 
         p.add(label("무적", "default", Ui.DIM)).left().padRight(24);
+        nav.newRow();
         p.add(nav.add(screen.game.settings.devGodMode ? "켜짐" : "꺼짐", () -> {
             screen.game.settings.devGodMode = !screen.game.settings.devGodMode;
             screen.game.saveSettings();
@@ -46,6 +55,7 @@ public class DevMenu extends Modal {
         })).width(260).height(46).left().padBottom(8).row();
 
         p.add(label("이동 영역 보기", "default", Ui.DIM)).left().padRight(24);
+        nav.newRow();
         p.add(nav.add(screen.game.settings.devShowWalkable ? "켜짐 (초록 = 걸을 수 있음)" : "꺼짐", () -> {
             screen.game.settings.devShowWalkable = !screen.game.settings.devShowWalkable;
             screen.game.saveSettings();
@@ -60,6 +70,7 @@ public class DevMenu extends Modal {
         com.yongsa.model.EnhanceService es = g.enhance;
         p.add(label("강화 숙련도", "default", Ui.DIM)).left().padRight(24);
         Table mastery = new Table();
+        nav.newRow();
         mastery.add(label("Lv " + s.masteryLevel + (es.masteryMaxed(s) ? " (마스터)" : ""), "default", Ui.GOLD)).width(110).left();
         TextButton up = nav.add("+1", () -> {
             es.addMasteryExp(s, es.masteryNeed(s.masteryLevel) - s.masteryExp);
@@ -83,17 +94,20 @@ public class DevMenu extends Modal {
         p.add(mastery).colspan(2).left().padBottom(16).row();
 
         p.add(label("보스 부활 · 바로 가기", "default", Ui.GOLD)).colspan(3).left().padBottom(4).row();
-        p.add(label("흡수한 힘과 열린 길은 그대로. 보스방 입구로 가서 걸어 들어가면 싸운다.", "small", Ui.DIM)).colspan(3).left().padBottom(10).row();
+        p.add(label("흡수한 힘과 열린 길은 그대로. 보스방 입구로 가서 걸어 들어가면 처음부터 싸운다.", "small", Ui.DIM)).colspan(3).left().padBottom(10).row();
         for (String id : AbsorbService.BOSS_ORDER) {
             String name = g.balance.dungeon(id).boss.name;
             p.add(label(name, "default", Ui.TEXT)).left().padRight(24);
+            nav.newRow();
             p.add(reviveButton(id, s.bossDefeated(id), g.devRevived(id))).width(260).height(42).left().padBottom(6);
             p.add(warpButton(id, name)).width(150).height(42).left().padLeft(8).padBottom(6).row();
         }
         p.add(label(g.balance.finalBoss.name, "default", Ui.TEXT)).left().padRight(24);
+        nav.newRow();
         p.add(reviveButton("FINAL", s.finalBossDefeated, false)).width(260).height(42).left().padBottom(6);
         p.add(warpButton("FINAL", g.balance.finalBoss.name)).width(150).height(42).left().padLeft(8).padBottom(6).row();
 
+        nav.newRow();
         TextButton all = nav.add("모든 보스 부활", () -> {
             int n = 0;
             for (String id : AbsorbService.BOSS_ORDER) if (g.devReviveBoss(id)) n++;
@@ -103,8 +117,9 @@ public class DevMenu extends Modal {
         });
         all.setDisabled(g.fighting());
         p.add(all).colspan(3).width(300).height(46).padTop(8).row();
-        if (g.fighting()) p.add(label("싸우는 중에는 되살리거나 옮길 수 없다", "small", Ui.DIM)).colspan(3).padTop(4).row();
+        if (g.fighting()) p.add(label("싸우는 중에는 되살릴 수 없다 (바로 가기·캠프로는 싸움을 그만두고 간다)", "small", Ui.DIM)).colspan(3).padTop(4).row();
 
+        nav.newRow();
         p.add(nav.add("닫기", this::close)).colspan(3).width(200).height(50).padTop(14);
     }
 
@@ -115,7 +130,6 @@ public class DevMenu extends Modal {
                 screen.hud.toast(name + "의 방 입구로 간다");
             }
         });
-        b.setDisabled(screen.session.fighting());
         return b;
     }
 
