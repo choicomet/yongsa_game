@@ -434,7 +434,17 @@ public class EnemyPainter {
     private static final java.util.Map<String, Boolean> SHEET_EXISTS = new java.util.HashMap<>();
 
     private TextureRegion bossCell(String sheet, int row, int col) {
-        return art.cell(sheet, 8, 5, row * 8 + Math.min(7, Math.max(0, col)));
+        int column = Math.min(7, Math.max(0, col));
+        // The detail sheets contain four idle and eight special-attack poses.
+        if ((row == 0 && column < 4) || row == 3) {
+            String detail = switch (sheet) {
+                case "team/jiyong/boss_golem.png" -> "team/jiyong/boss_golem_intro.png";
+                case "team/jiyong/boss_lich.png" -> "team/jiyong/boss_lich_intro.png";
+                default -> null;
+            };
+            if (detail != null) return art.cell(detail, 4, 3, row == 0 ? column : 4 + column);
+        }
+        return art.cell(sheet, 8, 5, row * 8 + column);
     }
 
     /**
@@ -497,16 +507,7 @@ public class EnemyPainter {
         else if (m.finalBoss && m.phase2 && sheet.endsWith("boss_lich.png")) batch.setColor(0.95f, 0.62f + 0.08f * MathUtils.sin(time * 6f), 0.95f, appear); // 시트가 없는 경우만 임시 색상을 쓴다.
         else if (m.enraged) batch.setColor(1f, 0.75f + 0.1f * MathUtils.sin(time * 8f), 0.7f, appear);
         else batch.setColor(1f, 1f, 1f, appear);
-        TextureRegion detail = r;
-        float focus = 0f;
-        if (g.inBossIntro() && !m.phase2 && (m.finalBoss || "golem".equals(m.def.sprite))) {
-            // Four idle frames, then eight casting frames. Both sheets use the same foot anchor.
-            int frame = pose[0] == 3 ? 4 + pose[1] : pose[1] % 4;
-            String path = m.finalBoss ? "team/jiyong/boss_lich_intro.png" : "team/jiyong/boss_golem_intro.png";
-            detail = art.cell(path, 4, 3, frame);
-            focus = g.bossIntroFocus();
-        }
-        actorInk.draw(batch, r, detail, focus, faceRight ? x0 + size : x0, y0, faceRight ? -size : size, size);
+        actorInk.draw(batch, r, faceRight ? x0 + size : x0, y0, faceRight ? -size : size, size);
         if (m.flash > 0) {
             Particles.additive(batch);
             batch.setColor(1f, 1f, 1f, Math.min(1f, m.flash / 0.15f));
