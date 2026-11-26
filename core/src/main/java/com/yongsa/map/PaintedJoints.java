@@ -67,8 +67,9 @@ final class PaintedJoints implements Disposable {
                 pixels.put(i,(byte)Math.round((pixels.get(i)&255)*j.alpha(j.x((x+.5f)/w),j.y((y+.5f)/h))));
             }
             p.texture=texture(src);
-            if(layerScenes.contains("joints/"+j.id))return;
+            boolean hasAuthoredLayers=layerScenes.contains("joints/"+j.id);
             for(var mask:j.foregrounds) {
+                if(hasAuthoredLayers && !mask.supplemental)continue;
                 int x0=(int)(mask.minX()*w),y0=(int)(mask.minY()*h);
                 int x1=Math.min(w,(int)Math.ceil(mask.maxX()*w)),y1=Math.min(h,(int)Math.ceil(mask.maxY()*h));
                 Pixmap cut=new Pixmap(x1-x0,y1-y0,Pixmap.Format.RGBA8888);

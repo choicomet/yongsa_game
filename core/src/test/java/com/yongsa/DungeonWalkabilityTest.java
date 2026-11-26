@@ -41,6 +41,57 @@ class DungeonWalkabilityTest {
         assertTrue(failures.isEmpty(),"Visible floor blocked: "+failures);
     }
 
+    @Test void paintedShouldersStayOpenAndStairFurnitureHasSolidFeet() {
+        var map=unlocked();
+        var hero=new com.yongsa.combat.HeroActor();
+        var trail=map.corridors.stream().filter(c->c.scene.id.equals("camp-trail")).findFirst().orElseThrow();
+        hero.x=trail.sceneX(210/480f);
+        hero.y=trail.sceneY(329/420f);
+        float startX=hero.x,startY=hero.y;
+        float shoulderX=trail.sceneX(100/480f),shoulderY=trail.sceneY(318/420f);
+        assertFalse(com.yongsa.combat.Physics.walk(map,hero,shoulderX-startX,shoulderY-startY,map.tileSize));
+        assertFalse(com.yongsa.combat.Physics.walk(map,hero,startX-hero.x,startY-hero.y,map.tileSize));
+        assertEquals(startX,hero.x,.03f);
+        assertEquals(startY,hero.y,.03f);
+
+        var mine=map.room("L7");
+        assertTrue(map.free(mine.sceneX(115/640f),mine.sceneY(149/360f),hero.hw,hero.hh),"Dirt by the winch");
+        var tower=map.room("T4");
+        assertTrue(map.free(tower.sceneX(145/640f),tower.sceneY(184/360f),hero.hw,hero.hh),"Gravel in front of ore tray");
+        assertFalse(map.free(tower.sceneX(142/640f),tower.sceneY(159/360f),hero.hw,hero.hh),"Ore tray base");
+
+        for(var joint:map.paintedJoints) {
+            switch(joint.id) {
+                case "exit-R1-R2", "exit-R3-R4", "entry-R5-R6" -> {
+                    assertTrue(map.free(joint.x(.50f),joint.y(.22f),hero.hw,hero.hh),joint.id+" stair");
+                    assertFalse(map.free(joint.x(167/512f),joint.y(137/512f),hero.hw,hero.hh),joint.id+" brazier");
+                    assertFalse(map.free(joint.x(.66f),joint.y(.19f),hero.hw,hero.hh),joint.id+" parapet");
+                }
+                case "entry-T2-T3", "entry-T3-T4", "entry-T7-T6" -> {
+                    float lampX=joint.id.equals("entry-T7-T6")?279/512f:233/512f;
+                    assertFalse(map.free(joint.x(lampX),joint.y(.15f),hero.hw,hero.hh),joint.id+" lamp");
+                    float landingX=joint.id.equals("entry-T7-T6")?.46f:.54f;
+                    assertTrue(map.free(joint.x(landingX),joint.y(.16f),hero.hw,hero.hh),joint.id+" landing");
+                }
+            }
+        }
+    }
+
+    @Test void flatStonesInTheMiddleOfTheVillageTrailCanBeCrossed() {
+        var map=unlocked();
+        var trail=map.corridors.stream().filter(c->c.scene.id.equals("camp-trail")).findFirst().orElseThrow();
+        float cx=trail.sceneX(539/1024f), cy=trail.sceneY(405/1536f);
+        var hero=new com.yongsa.combat.HeroActor();
+        for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) {
+            if (dx==0 && dy==0) continue;
+            hero.x=cx-15*dx;
+            hero.y=cy-15*dy;
+            assertFalse(com.yongsa.combat.Physics.walk(map,hero,30*dx,30*dy,map.tileSize));
+            assertEquals(cx+15*dx,hero.x,.02f);
+            assertEquals(cy+15*dy,hero.y,.02f);
+        }
+    }
+
     @Test void everyRoomFloorAndActiveArrivalRemainReachable() {
         var map=unlocked(); int checked=0;
         for(var room:map.rooms) {

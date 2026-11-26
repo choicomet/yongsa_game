@@ -22,6 +22,8 @@ final class RoomGates implements Disposable {
     private final Map<Door,SideSill> sideSills=new IdentityHashMap<>();
     private final Map<Door,SideSill> paintedSills=new IdentityHashMap<>();
 
+    private final float[] grilleQuad = new float[20];
+    private final Map<Door,float[][]> grilleOpenings = new IdentityHashMap<>();
     private final PaintedDoorways doorways;
 
     RoomGates(WorldMap map, PaintedDoorways doorways, Art art) {
@@ -29,6 +31,11 @@ final class RoomGates implements Disposable {
         this.doorways=doorways;
         this.map=map;
         for(var r:map.rooms)for(var d:r.doors)closure.put(d,d.isClosed()?1f:0f);
+        for (var room : map.rooms) if (room.scene != null) {
+            for (var portal : room.scene.portals) if (portal.grilleOpening != null) {
+                for (var door : room.doors) if (door.name.equals(portal.id)) grilleOpenings.put(door,portal.grilleOpening);
+            }
+        }
         for (var joint:map.paintedJoints) {
             if (joint.gateSill==null) continue;
             var feet=joint.gateSill;
@@ -47,7 +54,7 @@ final class RoomGates implements Disposable {
     }
 
     private String key(Door d) {
-        if(d.dead() || d.room.scene==null || d.room.type==RoomType.TUNNEL)return null;
+        if(d.dead() || d.room.scene==null || (d.room.type==RoomType.TUNNEL && !grilleOpenings.containsKey(d)))return null;
         String theme=d.room.dungeonId;
         if(d.room.type==RoomType.CAMP)theme=d.link.other(d.room).dungeonId;
         if(theme==null || !List.of("LEFT","RIGHT","TOP").contains(theme))return null;
@@ -116,7 +123,7 @@ final class RoomGates implements Disposable {
     /** A shallow permanent sill, drawn underneath actors and both gate states. */
     void drawThresholds(SpriteBatch batch,float x0,float y0,float x1,float y1) {
         for (var room:map.rooms) for (var d:room.doors) {
-            if (!supports(d) || room.type==RoomType.CAMP || d.footX<x0-256 || d.footX>x1+256
+            if (!supports(d) || grilleOpenings.containsKey(d) || room.type==RoomType.CAMP || d.footX<x0-256 || d.footX>x1+256
                     || d.footY<y0-256 || d.footY>y1+256) continue;
             SideSill sill = sill(d);
             batch.setColor(.07f,.045f,.055f,.52f);
@@ -136,6 +143,14 @@ final class RoomGates implements Disposable {
         return new SideSill(cx-reach,cy-reach*slope,cx+reach,cy+reach*slope);
     }
 
+    private Texture texture(String path) {
+        return textures.computeIfAbsent(path,k->{
+            Texture t=new Texture(Gdx.files.internal(k),true);
+            t.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);
+            return t;
+        });
+    }
+
     List<Part> parts(SpriteBatch batch,float x0,float y0,float x1,float y1) {
         var parts=new ArrayList<Part>();
         for(var r:map.rooms)for(var d:r.doors) {
@@ -147,11 +162,17 @@ final class RoomGates implements Disposable {
                 continue;
             }
             if (r.type==RoomType.CAMP && close<=0) continue;
-            Texture texture=textures.computeIfAbsent(key,k->{
-                Texture t=new Texture(Gdx.files.internal(k),true);
-                t.setFilter(Texture.TextureFilter.MipMapLinearLinear,Texture.TextureFilter.Linear);return t;
-            });
             boolean side=!frontFacing(d), tower=key.endsWith("top.png"), iron=key.endsWith("right.png");
+            Texture leaf=iron ? texture("sprites/citadel-portcullis.png") : null;
+            var opening=grilleOpenings.get(d);
+            if (opening!=null && iron) {
+                if (close>0) {
+                    float depth=r.sceneY((opening[0][2]+opening[opening.length-1][2])*.5f);
+                    parts.add(new Part(depth,()->drawInsetGrille(batch,leaf,r,opening,close)));
+                }
+                continue;
+            }
+            Texture texture=texture(key);
             float width=span(d,map.tileSize*.35f);
             float height=MathUtils.clamp(width*(tower?.30f:.34f),28,52);
             SideSill sill=sill(d);
@@ -190,9 +211,9 @@ final class RoomGates implements Disposable {
                 float depth=(ay+by)/2;
                 if (iron) {
                     // The guide stays attached to both piers. Only the iron teeth travel.
-                    parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,srcA,srcB,0,.211f,.789f,1)));
-                    if (amount>0) parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,
-                            srcA,srcB,1-.789f*amount,1,.789f*(1-amount),.789f)));
+                    parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,srcA,srcB,0,.211f,.89f,1)));
+                    if (amount>0) parts.add(new Part(depth,()->panel(batch,leaf,ax,ay,bx,by,height,
+                            u,v,1-amount,1,.89f*(1-amount),.89f)));
                 } else if (amount>0) {
                     float hinge=u<.5f?0:1, angle=(1-amount)*MathUtils.PI/2;
                     float scale=MathUtils.cos(angle), fold=MathUtils.sin(angle)*width*.28f;
@@ -205,6 +226,47 @@ final class RoomGates implements Disposable {
             }
         }
         return parts;
+    }
+
+    /** Slide the ironwork behind the painted arch, clipping at the inner stones. */
+    private void drawInsetGrille(SpriteBatch batch,Texture texture,Room room,float[][] outline,float close) {
+        float crown=outline[0][1], floor=outline[0][2];
+        for (float[] column : outline) {
+            crown=Math.min(crown,column[1]);
+            floor=Math.max(floor,column[2]);
+        }
+        float height=floor-crown;
+        float lift=(1-(close*close*(3-2*close)))*height;
+        float left=outline[0][0], width=outline[outline.length-1][0]-left;
+        float color=Color.toFloatBits(.82f,.77f,.73f,1);
+        for (int i=1;i<outline.length;i++) {
+            float[] a=outline[i-1], b=outline[i];
+            float clearanceA=a[2]-lift-a[1], clearanceB=b[2]-lift-b[1];
+            if (clearanceA<=0 && clearanceB<=0) continue;
+            float from=clearanceA<0 ? clearanceA/(clearanceA-clearanceB) : 0;
+            float to=clearanceB<0 ? clearanceA/(clearanceA-clearanceB) : 1;
+            grilleEdge(room,a,b,from,lift,crown,height,left,width,color,0,5);
+            grilleEdge(room,a,b,to,lift,crown,height,left,width,color,15,10);
+            batch.draw(texture,grilleQuad,0,grilleQuad.length);
+        }
+    }
+
+    private void grilleEdge(Room room,float[] a,float[] b,float t,float lift,float crown,float height,
+                            float left,float width,float color,int bottomVertex,int topVertex) {
+        float u=MathUtils.lerp(a[0],b[0],t);
+        float top=MathUtils.lerp(a[1],b[1],t), bottom=MathUtils.lerp(a[2],b[2],t)-lift;
+        // The masonry jambs are already in the painting. Only sample the iron grille.
+        float x=room.sceneX(u), texU=(u-left)/width;
+        grilleVertex(bottomVertex,x,room.sceneY(bottom),color,texU,(bottom+lift-crown)/height);
+        grilleVertex(topVertex,x,room.sceneY(top),color,texU,(top+lift-crown)/height);
+    }
+
+    private void grilleVertex(int i,float x,float y,float color,float u,float v) {
+        grilleQuad[i]=x;
+        grilleQuad[i+1]=y;
+        grilleQuad[i+2]=color;
+        grilleQuad[i+3]=u;
+        grilleQuad[i+4]=MathUtils.clamp(v,0,1);
     }
 
     private static void panel(SpriteBatch batch,Texture texture,float ax,float ay,float bx,float by,

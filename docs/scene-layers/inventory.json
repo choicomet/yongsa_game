@@ -2083,5 +2083,20 @@
       970
     ],
     "pixels": 970
+  },
+  {
+    "scene": "passages/camp-trail",
+    "file": "layers/passages/camp-trail/trail-pine.png",
+    "canvas": [
+      1024,
+      1536
+    ],
+    "bounds": [
+      14,
+      1125,
+      141,
+      1327
+    ],
+    "pixels": 13430
   }
 ]

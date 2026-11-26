@@ -1339,6 +1339,17 @@
             ]
           ],
           "image": "layers/passages/camp-trail/west-fence-rail.png"
+        },
+        {
+          "id": "trail-pine",
+          "foot": 0.8619048,
+          "block": [
+            0.06875,
+            0.8488095,
+            0.090625,
+            0.8630952
+          ],
+          "image": "layers/passages/camp-trail/trail-pine.png"
         }
       ]
     }
