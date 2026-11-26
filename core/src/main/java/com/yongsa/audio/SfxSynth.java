@@ -115,6 +115,11 @@ final class SfxSynth {
 
     /** 16비트 모노 WAV 파일 내용. */
     static byte[] wav(float[] samples) {
+        return wav(samples, RATE);
+    }
+
+    /** 16비트 모노 WAV 파일 내용 (초당 rate 개). */
+    static byte[] wav(float[] samples, int rate) {
         int dataLen = samples.length * 2;
         byte[] b = new byte[44 + dataLen];
         writeStr(b, 0, "RIFF");
@@ -124,8 +129,8 @@ final class SfxSynth {
         writeInt(b, 16, 16);
         writeShort(b, 20, 1);
         writeShort(b, 22, 1);
-        writeInt(b, 24, RATE);
-        writeInt(b, 28, RATE * 2);
+        writeInt(b, 24, rate);
+        writeInt(b, 28, rate * 2);
         writeShort(b, 32, 2);
         writeShort(b, 34, 16);
         writeStr(b, 36, "data");
