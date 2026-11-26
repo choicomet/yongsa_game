@@ -7,8 +7,8 @@
 실행: python tools/make_skill_sfx.py   (numpy 필요)
 2026-11-26 저녁: 해성이 천공 낙뢰(날카로운 시작 + 갈라지는 결 + 길게 구르는 꼬리)를 가장 좋아해서
 대지 가르기·혈월참·성광 검기도 같은 짜임으로 다시 만들었다. 대지 가르기는 이름처럼 지진 소리.
-2026-11-26 밤: 혈월참 = 피의 맥박(심장 박동 → 붉은 검기, 맞으면 흡혈 '스읍'),
-성광 검기 = 검의 각성(칼날 공명 '우웅' → '콰앙').
+2026-11-26 밤: 혈월참 = 저주받은 칼날(녹슨 쇠 긁힘 '끼이익' → 낮은 웅얼거림),
+성광 검기 = 검의 각성(칼날 공명 '우웅' → '콰앙'), 종소리 없음.
 """
 import os
 import subprocess
@@ -231,59 +231,64 @@ def cleave_hit():
     return reverb(sat(hp(out, 120), 1.6), size=0.3, wet=0.15, damp=2500)
 
 
-def heartbeat(gain_dub=0.75):
-    """심장 박동 '둥-둥' 한 번 (lub-dub). 노트북 스피커에서도 들리게 120~300Hz 층을 섞는다."""
-    def thump(dur, f0, f1):
-        body = sine_sweep(f0, f1, dur) * env(dur, 0.004, 4)
-        over = sine_sweep(f0 * 2.3, f1 * 2.3, dur) * env(dur, 0.003, 5)
-        knock = onepole_lp(noise(dur), 380) * 5 * env(dur, 0.002, 6)
-        return sat(body + 0.6 * over + knock, 2.2)
-    out = np.zeros(int(0.5 * SR))
-    place(out, thump(0.22, 120, 55), 0, 1.0)
-    place(out, thump(0.2, 140, 60), 0.17, gain_dub)
-    return out
+def saw(f0, f1, dur, vib=0.0, vib_hz=0.0):
+    """톱니파 (목소리·쇳소리 재료)."""
+    tt = t(dur)
+    f = f0 * (f1 / f0) ** (tt / dur)
+    if vib:
+        f = f * (1 + vib * np.sin(2 * np.pi * vib_hz * tt + rng.uniform(0, 6)))
+    ph = np.cumsum(f) / SR
+    return 2 * (ph - np.floor(ph + 0.5))
+
+
+def scrape(dur):
+    """녹슨 쇠를 긁는 '끼이익': 걸렸다 미끄러지는 떨림(스틱슬립) + 높은 쇳소리 공명."""
+    tt = t(dur)
+    jerk = 0.55 + 0.45 * np.sign(np.sin(2 * np.pi * (38 + 10 * np.sin(2 * np.pi * 3 * tt)) * tt))
+    squeal = saw(1250, 1600, dur, vib=0.025, vib_hz=17)
+    rasp = bandsweep(noise(dur), 2400, 1700) * 1.5
+    x = (bandsweep(squeal, 1700, 2300) * 0.8 + rasp) * onepole_lp(jerk, 300)
+    return x * env(dur, 0.03, 1.6)
+
+
+def murmur(dur, voices=((92, 520, 880), (110, 450, 760), (131, 600, 1000), (78, 400, 700))):
+    """여러 목소리가 낮게 웅얼거림: 낮은 톱니파를 모음 모양(포먼트)으로 거르고, 목소리마다 크기가 따로 출렁인다."""
+    out = np.zeros(int(dur * SR))
+    for f0, f1, f2 in voices:
+        v = saw(f0, f0 * 0.92, dur, vib=0.012, vib_hz=rng.uniform(4, 6))
+        vowel = bandsweep(v, f1, f1 * 0.85) + 0.6 * bandsweep(v, f2, f2 * 1.1)
+        swell = onepole_lp(np.abs(noise(dur)), 3) * 25
+        swell = np.clip(swell / (np.max(swell) + 1e-9), 0.15, 1)
+        out += vowel * swell
+    return out / len(voices) * env(dur, 0.15, 1.8)
 
 
 def crescent():
-    """혈월 · 혈월참: 피의 맥박. 심장이 '둥-둥' 두 번 뛰고 → 붉은 검기가 '촤악' 휘어 나가며
-    → 핏빛 지직거림과 어두운 울림이 남는다."""
+    """혈월 · 혈월참: 저주받은 칼날. 녹슨 쇠를 긁는 '끼이익' → 칼바람 → 여러 목소리가 낮게 웅얼거리는 울림.
+    (2026-11-26 밤 해성 선택: 아이디어 2번)"""
     swing, metal = load("swing"), load("block")
-    beat = heartbeat()
-    shing = hp(noise(0.025), 3500) * env(0.025, 0.0005, 5) * 1.4
-    arc = bandsweep(noise(0.55), 600, 3400) * env(0.55, 0.03, 2.6)
-    sizzle = hp(crackle(0.6, 900, 7000), 1800) * env(0.6, 0.02, 3.0)
-    drone = chord([110, 130.8, 164.8], 1.0) * env(1.0, 0.05, 2.4)
-    drone *= 1 + 0.35 * np.sin(2 * np.pi * 5 * t(1.0))
-    out = np.zeros(int(1.45 * SR))
-    place(out, beat, 0, 1.0)
-    place(out, shing, 0.3, 0.9)
-    place(out, pitch(metal, 1.25), 0.3, 0.4)
-    place(out, pitch(swing, 0.8), 0.3, 0.8)
-    place(out, arc, 0.3, 0.9)
-    place(out, sizzle, 0.34, 0.4)
-    place(out, drone, 0.32, 0.5)
-    # 꼬리에서 약한 심장 박동이 한 번 더 (멀어짐)
-    place(out, onepole_lp(heartbeat(0.6), 900), 0.95, 0.35)
-    return reverb(sat(hp(out, 60), 1.4), size=0.6, wet=0.25, damp=3000)
+    out = np.zeros(int(1.55 * SR))
+    place(out, scrape(0.42), 0, 1.0)
+    place(out, lp_metal(metal), 0, 0.5)
+    place(out, pitch(swing, 0.75), 0.3, 0.9)
+    place(out, bandsweep(noise(0.45), 2800, 500) * env(0.45, 0.02, 3), 0.32, 0.8)
+    place(out, murmur(1.15), 0.32, 1.1)
+    place(out, onepole_lp(noise(1.0), 200) * 4 * env(1.0, 0.1, 2.5), 0.35, 0.4)
+    return reverb(sat(hp(out, 60), 1.4), size=0.7, wet=0.3, damp=2800)
+
+
+def lp_metal(metal):
+    return onepole_lp(pitch(metal, 0.7), 3000)
 
 
 def crescent_hit():
-    """혈월참에 맞음: 베이는 '촤' 직후 피를 빨아들이는 '스읍' (흡혈 회복)."""
+    """혈월참에 맞음: 녹슨 칼날이 '츠윽' 긁고 베임 + 짧은 웅얼거림."""
     chop = load("kill")
-    slice_ = bandsweep(noise(0.1), 4000, 1000) * env(0.1, 0.001, 4) * 1.1
-    # 스읍: 커지면서 위로 올라가는 숨 들이쉬는 바람, 끝에서 뚝 끊김
-    n = 0.38
-    rise = np.clip(t(n) / n, 0, 1)
-    suck = bandsweep(noise(n), 500, 2600) * rise ** 2.2
-    cut = int(0.015 * SR)
-    suck[-cut:] *= np.linspace(1, 0, cut)
-    gulp = sine_sweep(180, 320, n) * rise ** 3 * 0.35
-    out = np.zeros(int(0.65 * SR))
-    place(out, slice_, 0, 1.0)
-    place(out, pitch(chop, 0.8), 0.005, 0.8)
-    place(out, suck, 0.12, 0.9)
-    place(out, gulp, 0.12, 1.0)
-    return reverb(sat(out, 1.3), size=0.3, wet=0.18, damp=3500)
+    out = np.zeros(int(0.6 * SR))
+    place(out, scrape(0.16), 0, 0.9)
+    place(out, pitch(chop, 0.8), 0.01, 0.9)
+    place(out, murmur(0.45, voices=((98, 500, 850), (123, 560, 950))), 0.05, 0.7)
+    return reverb(sat(out, 1.4), size=0.35, wet=0.2, damp=3000)
 
 
 def strike():
@@ -312,40 +317,39 @@ def strike_hit():
 
 def beam():
     """깨어난 성검 · 성광 검기: 검의 각성. 칼날이 '우웅' 공명하며 빠르게 커지다가 → '콰앙' 빛이 뻗어 나가고
-    → 밝은 화음 여운."""
-    slam, bell = load("slam"), load("craft")
-    w = 0.32
+    → 묵직한 '우웅' 여운. 종소리·화음은 넣지 않는다 (해성: 종소리 싫음)."""
+    slam = load("slam")
+    w = 0.38
     ramp = np.clip(t(w) / w, 0, 1) ** 1.6
-    hum = (sine_sweep(196, 262, w, vib=0.02, vib_hz=9) + 0.5 * sine_sweep(392, 523, w, vib=0.02, vib_hz=9)
-           + 0.3 * sine_sweep(588, 785, w)) * ramp
-    shimmer = bandsweep(noise(w), 1200, 6000) * ramp ** 2 * 0.5
-    boom = sine_sweep(110, 45, 0.6) * env(0.6, 0.002, 3.5)
-    crack = hp(noise(0.03), 3000) * env(0.03, 0.0005, 5) * 1.4
-    blast = bandsweep(noise(0.7), 6000, 1200) * env(0.7, 0.005, 2.6)
-    shine = chord([523.3, 659.3, 784.0, 1046.5], 1.2, detune=0.005) * env(1.2, 0.01, 2.2)
-    out = np.zeros(int(1.7 * SR))
-    place(out, hum, 0, 0.8)
-    place(out, shimmer, 0, 1.0)
+    hum = (saw(98, 147, w, vib=0.03, vib_hz=11) * 0.5 + sine_sweep(196, 294, w, vib=0.03, vib_hz=11)) * ramp
+    hum = onepole_lp(hum, 1400)
+    rush = bandsweep(noise(w), 300, 2500) * ramp ** 2 * 0.7
+    boom = sine_sweep(110, 40, 0.7) * env(0.7, 0.002, 3.2)
+    crack = hp(noise(0.03), 2500) * env(0.03, 0.0005, 5) * 1.4
+    blast = bandsweep(noise(0.8), 3500, 400) * env(0.8, 0.005, 2.4)
+    drone = onepole_lp(saw(147, 140, 1.1, vib=0.02, vib_hz=7) + 0.6 * saw(98, 94, 1.1), 900) * env(1.1, 0.01, 2.6)
+    out = np.zeros(int(1.8 * SR))
+    place(out, hum, 0, 0.9)
+    place(out, rush, 0, 1.0)
     place(out, crack, w, 1.0)
-    place(out, pitch(slam, 0.85), w, 0.9)
-    place(out, boom, w, 0.5)
-    place(out, pitch(bell, 1.0), w, 0.7)
-    place(out, blast, w, 0.8)
-    place(out, shine, w + 0.02, 0.6)
-    return reverb(sat(hp(out, 60), 1.6), size=0.8, wet=0.3, damp=7000)
+    place(out, pitch(slam, 0.8), w, 1.0)
+    place(out, boom, w, 0.6)
+    place(out, blast, w, 0.9)
+    place(out, drone, w + 0.02, 0.6)
+    return reverb(sat(hp(out, 60), 1.7), size=0.7, wet=0.25, damp=4000)
 
 
 def beam_hit():
-    """성광 검기에 맞음: 묵직한 빛의 '쾅' + 짧은 공명."""
-    slam, bell = load("slam"), load("craft")
-    crack = hp(noise(0.025), 3500) * env(0.025, 0.0004, 5) * 1.2
-    ring = chord([784.0, 1046.5, 1568.0], 0.4, detune=0.003) * env(0.4, 0.002, 4)
+    """성광 검기에 맞음: 묵직한 '쾅' + 짧은 '우웅'. 종소리 없음."""
+    slam = load("slam")
+    crack = hp(noise(0.025), 2500) * env(0.025, 0.0004, 5) * 1.2
+    thump = onepole_lp(saw(147, 110, 0.3), 900) * env(0.3, 0.003, 3.5)
     out = np.zeros(int(0.6 * SR))
     place(out, crack, 0, 1.0)
-    place(out, pitch(slam, 1.1), 0, 0.8)
-    place(out, pitch(bell, 1.3), 0, 0.5)
-    place(out, ring, 0.005, 0.5)
-    return reverb(sat(hp(out, 120), 1.5), size=0.4, wet=0.22, damp=7000)
+    place(out, pitch(slam, 1.0), 0, 1.0)
+    place(out, thump, 0.005, 0.6)
+    place(out, bandsweep(noise(0.3), 2500, 500) * env(0.3, 0.003, 3), 0, 0.5)
+    return reverb(sat(hp(out, 120), 1.6), size=0.35, wet=0.18, damp=4000)
 
 
 if __name__ == "__main__":
