@@ -367,10 +367,130 @@
         1672,
         941
       ],
-      "status": "reviewed-preserved",
-      "note": "Reviewed visible floor, stairs, solid prop footings and outer drop; retained the existing mask.",
-      "edits": [],
-      "samples": []
+      "status": "reviewed-edited",
+      "note": "Exposed southwest dirt below mine carts and above the cliff",
+      "edits": [
+        {
+          "floor": true,
+          "note": "Exposed southwest dirt below mine carts and above the cliff",
+          "points": [
+            [
+              0.2112507,
+              0.3744681
+            ],
+            [
+              0.1526032,
+              0.4117021
+            ],
+            [
+              0.1178935,
+              0.4489362
+            ],
+            [
+              0.1238779,
+              0.4723404
+            ],
+            [
+              0.1406344,
+              0.4819149
+            ],
+            [
+              0.1466188,
+              0.512766
+            ],
+            [
+              0.1472172,
+              0.5595745
+            ],
+            [
+              0.1298624,
+              0.587234
+            ],
+            [
+              0.1328546,
+              0.6117021
+            ],
+            [
+              0.144225,
+              0.6393617
+            ],
+            [
+              0.1436266,
+              0.6606383
+            ],
+            [
+              0.1615799,
+              0.6755319
+            ],
+            [
+              0.1932974,
+              0.6829787
+            ],
+            [
+              0.2184321,
+              0.7021277
+            ],
+            [
+              0.2531418,
+              0.7148936
+            ],
+            [
+              0.2782765,
+              0.737234
+            ],
+            [
+              0.3064034,
+              0.7521277
+            ],
+            [
+              0.331538,
+              0.7702128
+            ],
+            [
+              0.3620586,
+              0.7829787
+            ],
+            [
+              0.4009575,
+              0.7797872
+            ],
+            [
+              0.4219031,
+              0.7765957
+            ],
+            [
+              0.4278875,
+              0.6755319
+            ],
+            [
+              0.2692998,
+              0.5425532
+            ],
+            [
+              0.2214243,
+              0.3989362
+            ]
+          ]
+        }
+      ],
+      "samples": [
+        {
+          "uv": [
+            0.2752843,
+            0.7042553
+          ],
+          "floor": true,
+          "note": "Southwest dirt"
+        },
+        {
+          "uv": [
+            0.1166966,
+            0.5319149
+          ],
+          "floor": false,
+          "note": "West rock footing"
+        }
+      ]
     },
     {
       "kind": "rooms",
@@ -486,10 +606,96 @@
         1672,
         941
       ],
-      "status": "reviewed-preserved",
-      "note": "Reviewed visible floor, stairs, solid prop footings and outer drop; retained the existing mask.",
-      "edits": [],
-      "samples": []
+      "status": "reviewed-edited",
+      "note": "Stair treads fan outward below the return arch",
+      "edits": [
+        {
+          "floor": false,
+          "note": "Clear the old rectangular doorway approach",
+          "points": [
+            [
+              0.4296828,
+              0.1329787
+            ],
+            [
+              0.5709156,
+              0.1329787
+            ],
+            [
+              0.5709156,
+              0.2382979
+            ],
+            [
+              0.4296828,
+              0.2382979
+            ]
+          ]
+        },
+        {
+          "floor": true,
+          "note": "Stair treads fan outward below the return arch",
+          "points": [
+            [
+              0.4739677,
+              0.1489362
+            ],
+            [
+              0.5260323,
+              0.1489362
+            ],
+            [
+              0.5260323,
+              0.1851064
+            ],
+            [
+              0.5523639,
+              0.1989362
+            ],
+            [
+              0.5643327,
+              0.2393617
+            ],
+            [
+              0.5691203,
+              0.2553191
+            ],
+            [
+              0.4302813,
+              0.2553191
+            ],
+            [
+              0.4362657,
+              0.2382979
+            ],
+            [
+              0.4476361,
+              0.1989362
+            ],
+            [
+              0.4739677,
+              0.1851064
+            ]
+          ]
+        }
+      ],
+      "samples": [
+        {
+          "uv": [
+            0.5002992,
+            0.1659574
+          ],
+          "floor": true,
+          "note": "Upper stair landing"
+        },
+        {
+          "uv": [
+            0.4452424,
+            0.1712766
+          ],
+          "floor": false,
+          "note": "Left jamb"
+        }
+      ]
     },
     {
       "kind": "rooms",
@@ -753,10 +959,96 @@
         1672,
         940
       ],
-      "status": "reviewed-preserved",
-      "note": "Reviewed visible floor, stairs, solid prop footings and outer drop; retained the existing mask.",
-      "edits": [],
-      "samples": []
+      "status": "reviewed-edited",
+      "note": "Tower stair landing and treads to the circular floor",
+      "edits": [
+        {
+          "floor": false,
+          "note": "Keep the raised stair cheeks solid",
+          "points": [
+            [
+              0.4129264,
+              0.085197
+            ],
+            [
+              0.5655296,
+              0.085197
+            ],
+            [
+              0.5655296,
+              0.1799787
+            ],
+            [
+              0.4129264,
+              0.1799787
+            ]
+          ]
+        },
+        {
+          "floor": true,
+          "note": "Tower stair landing and treads to the circular floor",
+          "points": [
+            [
+              0.4781568,
+              0.1001065
+            ],
+            [
+              0.5206463,
+              0.1001065
+            ],
+            [
+              0.5206463,
+              0.1267306
+            ],
+            [
+              0.5380012,
+              0.14377
+            ],
+            [
+              0.5505685,
+              0.1693291
+            ],
+            [
+              0.5595452,
+              0.1916933
+            ],
+            [
+              0.4410533,
+              0.1916933
+            ],
+            [
+              0.448833,
+              0.1650692
+            ],
+            [
+              0.4631957,
+              0.1395101
+            ],
+            [
+              0.4781568,
+              0.1267306
+            ]
+          ]
+        }
+      ],
+      "samples": [
+        {
+          "uv": [
+            0.5002992,
+            0.1224707
+          ],
+          "floor": true,
+          "note": "Upper stair landing"
+        },
+        {
+          "uv": [
+            0.4458408,
+            0.1490948
+          ],
+          "floor": false,
+          "note": "Left stair cheek"
+        }
+      ]
     },
     {
       "kind": "rooms",

@@ -13,6 +13,7 @@ public final class PaintedJointLayout {
         public float[] rect, door;
         /** Two jamb feet, in normalized image coordinates, for oblique painted stairways. */
         public float[] gateSill;
+        public boolean recessedGrille;
         public float feather;
         /** Normalized visible floor in the new painting, including solid prop exclusions. */
         public float[] walkable;

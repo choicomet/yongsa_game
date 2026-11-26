@@ -1133,6 +1133,7 @@
     },
     {
       "id": "entry-R2-R7",
+      "recessedGrille": true,
       "room": "R2",
       "image": "scenes/joints-v2/entry-R2-R7.png",
       "rect": [11369.408, 2862.5166, 512.0, 512.0],
@@ -1159,6 +1160,7 @@
     },
     {
       "id": "entry-R7-R3",
+      "recessedGrille": true,
       "gateSill": [0.5630859, 0.6115234, 0.3804687, 0.4289062],
       "room": "R7",
       "image": "scenes/joints-v2/entry-R7-R3.png",

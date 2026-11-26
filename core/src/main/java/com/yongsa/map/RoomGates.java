@@ -22,6 +22,7 @@ final class RoomGates implements Disposable {
     private final Map<Door,SideSill> sideSills=new IdentityHashMap<>();
     private final Map<Door,SideSill> paintedSills=new IdentityHashMap<>();
 
+    private final Set<Door> recessedGrilles = Collections.newSetFromMap(new IdentityHashMap<>());
     private final float[] grilleQuad = new float[20];
     private final Map<Door,float[][]> grilleOpenings = new IdentityHashMap<>();
     private final PaintedDoorways doorways;
@@ -40,8 +41,10 @@ final class RoomGates implements Disposable {
             if (joint.gateSill==null) continue;
             var feet=joint.gateSill;
             for (var door:map.room(joint.room).doors)
-                if (Math.abs(joint.door[0]-door.footX)<.02f && Math.abs(joint.door[1]-door.footY)<.02f)
+                if (Math.abs(joint.door[0]-door.footX)<.02f && Math.abs(joint.door[1]-door.footY)<.02f) {
+                    if (joint.recessedGrille) recessedGrilles.add(door);
                     paintedSills.put(door,new SideSill(joint.x(feet[0]),joint.y(feet[1]),joint.x(feet[2]),joint.y(feet[3])));
+                }
         }
     }
 
@@ -123,7 +126,7 @@ final class RoomGates implements Disposable {
     /** A shallow permanent sill, drawn underneath actors and both gate states. */
     void drawThresholds(SpriteBatch batch,float x0,float y0,float x1,float y1) {
         for (var room:map.rooms) for (var d:room.doors) {
-            if (!supports(d) || grilleOpenings.containsKey(d) || room.type==RoomType.CAMP || d.footX<x0-256 || d.footX>x1+256
+            if (!supports(d) || recessedGrilles.contains(d) || grilleOpenings.containsKey(d) || room.type==RoomType.CAMP || d.footX<x0-256 || d.footX>x1+256
                     || d.footY<y0-256 || d.footY>y1+256) continue;
             SideSill sill = sill(d);
             batch.setColor(.07f,.045f,.055f,.52f);
@@ -169,6 +172,19 @@ final class RoomGates implements Disposable {
                 if (close>0) {
                     float depth=r.sceneY((opening[0][2]+opening[opening.length-1][2])*.5f);
                     parts.add(new Part(depth,()->drawInsetGrille(batch,leaf,r,opening,close)));
+                }
+                continue;
+            }
+            if (recessedGrilles.contains(d)) {
+                if (close > 0) {
+                    SideSill sill = sill(d);
+                    float amount = close * close * (3 - 2 * close);
+                    for (int i = 0; i < 16; i++) {
+                        float u = i / 16f, v = (i + 1) / 16f;
+                        float ax = MathUtils.lerp(sill.nearX, sill.farX, u), bx = MathUtils.lerp(sill.nearX, sill.farX, v);
+                        float ay = MathUtils.lerp(sill.nearY, sill.farY, u), by = MathUtils.lerp(sill.nearY, sill.farY, v);
+                        parts.add(new Part((ay + by) / 2, () -> panel(batch, leaf, ax, ay, bx, by, 48, u, v, 0, amount, 0, amount)));
+                    }
                 }
                 continue;
             }

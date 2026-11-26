@@ -124,7 +124,8 @@ class DungeonWalkabilityTest {
         for(Object[] sample:new Object[][]{
                 {"L1",.32f,.33f,.32f,.25f},{"L1",.495f,.33f,.495f,.25f},
                 {"L1",.70f,.33f,.70f,.25f},{"L8",.20f,.56f,.07f,.48f},
-                {"L8",.50f,.65f,.50f,.79f},{"R6",.50f,.32f,.50f,.205f}}) {
+                {"L8",.50f,.65f,.50f,.79f},{"R6",.50f,.32f,.50f,.166f},
+                {"T6",.50f,.32f,.50f,.125f},{"L6",.34f,.65f,460/1672f,662/941f}}) {
             var r=map.room((String)sample[0]);
             float ax=r.sceneX((float)sample[1]),ay=r.sceneY((float)sample[2]);
             float bx=r.sceneX((float)sample[3]),by=r.sceneY((float)sample[4]);
