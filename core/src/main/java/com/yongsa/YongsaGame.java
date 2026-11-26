@@ -9,6 +9,7 @@ import com.yongsa.config.Balance;
 import com.yongsa.config.Story;
 import com.yongsa.gfx.Art;
 import com.yongsa.gfx.Fonts;
+import com.yongsa.audio.Ambience;
 import com.yongsa.audio.Bgm;
 import com.yongsa.audio.Sfx;
 import com.yongsa.model.GameState;
@@ -35,6 +36,8 @@ public class YongsaGame extends Game {
     public Sfx sfx;
     /** 배경음악 (audio/Bgm). */
     public Bgm bgm;
+    /** 환경 소리 (캠프 모닥불). 배경음악과 따로 깔린다. */
+    public Ambience ambience;
     public Skin skin;
     public SpriteBatch batch;
     public ShapeRenderer shapes;
@@ -52,6 +55,7 @@ public class YongsaGame extends Game {
         sfx = new Sfx();
         bgm = new Bgm();
         sfx.setBgm(bgm);
+        ambience = new Ambience();
         skin = Ui.createSkin(fonts, art);
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();
@@ -68,6 +72,7 @@ public class YongsaGame extends Game {
     public void applySettings() {
         sfx.volume = settings.sfx();
         bgm.setVolume(settings.bgm());
+        ambience.setVolume(settings.bgm());
         if (settings.fullscreen && !Gdx.graphics.isFullscreen()) {
             Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
         } else if (!settings.fullscreen && Gdx.graphics.isFullscreen()) {
@@ -99,6 +104,7 @@ public class YongsaGame extends Game {
         shapes.dispose();
         sfx.dispose();
         bgm.dispose();
+        ambience.dispose();
         art.dispose();
         fonts.dispose();
         skin.dispose();
