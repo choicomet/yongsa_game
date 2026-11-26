@@ -36,25 +36,32 @@ def reverse(x):
 
 # ── 대장간: 모루 위 달군 쇠를 두드리는 둔탁한 소리 ────────────
 
-def anvil(ring_hz=(1040, 1690, 2470, 3310), ring=0.45, weight=1.0):
-    """망치 한 번: 모루를 치는 '깡'. 짧은 딱 + 묵직한 중음 몸통 + 쇠가 울리는 배음(정수배가 아닌 모루 배음).
-    해성 요청 (2026-11-26 밤): 둔탁하되 '깡' 하고 울리는 소리, 망치질마다 계속 난다."""
+# 해성이 녹음해 준 '대장간 모루질소리' 영상(2026-11-26)을 재서 맞춘 모루 배음 (Hz, 처음 크기).
+# 1636/1745 두 배음이 붙어 있어 '깡'이 살짝 거칠게 떨리고, 0.15초쯤 울리다 망치가 눌러 빨리 사라진다.
+ANVIL_PARTIALS = ((1636, 1.0), (1745, 0.55), (2880, 0.3), (5640, 0.45), (6160, 0.35), (7760, 0.4))
+
+
+def anvil(ring=0.17, weight=1.0, tune=1.0):
+    """망치 한 번: 모루를 치는 '깡'. 넓게 터지는 '딱' + 1.6kHz 중심의 모루 배음이 ring 초 울리다 눌려 꺼짐 + 약한 몸통."""
     metal = load("block")
-    tick = hp(noise(0.012), 2500) * env(0.012, 0.0003, 6) * 1.2
-    body = sine_sweep(420, 300, 0.12) * env(0.12, 0.0008, 5)
-    thud = lp(noise(0.05), 1200) * env(0.05, 0.0005, 6) * 2.5
-    rings = np.zeros(int(ring * SR))
-    for i, f in enumerate(ring_hz):
-        d = ring / (1 + 0.6 * i)  # 높은 배음일수록 빨리 사라짐
-        part = np.sin(2 * np.pi * f * (1 + rng.uniform(-0.004, 0.004)) * t(d) + rng.uniform(0, 6)) * env(d, 0.0005, 4)
-        place(rings, part, 0, 1.0 / (1 + 0.5 * i))
-    out = np.zeros(int((ring + 0.05) * SR))
+    tick = bandsweep(noise(0.035), 7000, 3500) * env(0.035, 0.0003, 5) * 1.3
+    hold = int(ring * SR)
+    tail = int(0.25 * SR)
+    shape = np.concatenate([np.exp(-np.arange(hold) / (0.22 * SR)), np.exp(-np.arange(tail) / (0.035 * SR)) * np.exp(-hold / (0.22 * SR))])
+    shape[:int(0.0008 * SR)] *= np.linspace(0, 1, int(0.0008 * SR))
+    tt = np.arange(len(shape)) / SR
+    rings = np.zeros(len(shape))
+    for i, (f, a) in enumerate(ANVIL_PARTIALS):
+        speed = 1 + 0.25 * i  # 높은 배음은 조금 더 빨리 사라짐
+        rings += a * np.sin(2 * np.pi * f * tune * tt + rng.uniform(0, 6)) * shape ** speed
+    body = sine_sweep(320, 260, 0.1) * env(0.1, 0.001, 5)
+    out = np.zeros(len(shape) + int(0.02 * SR))
     place(out, tick, 0, 1.0)
-    place(out, thud, 0, 0.8 * weight)
+    place(out, rings, 0.0005, 0.9)
+    place(out, hp(pitch(metal, 1.1), 600), 0, 0.6)
     place(out, body, 0, 0.6 * weight)
-    place(out, lp(pitch(metal, 0.8), 4500), 0, 0.8)
-    place(out, rings, 0.001, 0.55)
-    return sat(out, 1.5)
+    place(out, hp(noise(0.2), 3000) * env(0.2, 0.001, 4) * 0.25, 0, 1.0)  # 쇳가루 같은 높은 잔결
+    return sat(out, 1.3)
 
 
 def fg_hammer():
@@ -63,7 +70,7 @@ def fg_hammer():
 
 def fg_keep():
     """강화 유지: 망치 한 번, 울림 없이 묵직하게 끝."""
-    return reverb(anvil(ring=0.12, weight=1.2), size=0.2, wet=0.1, damp=2000)
+    return reverb(anvil(ring=0.1, weight=1.2), size=0.2, wet=0.1, damp=2000)
 
 
 def fg_success():
