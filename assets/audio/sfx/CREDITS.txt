@@ -13,7 +13,7 @@ ore.wav <- rpg-audio / handleCoins.ogg
 door.wav <- rpg-audio / doorOpen_1.ogg
 step.wav <- rpg-audio / footstep00.ogg
 select.wav <- interface-sounds / select_001.ogg
-potion.wav <- interface-sounds / glass_001.ogg
+potion.wav <- RPG Sound Pack (artisticdude, OpenGameArt, CC0) / inventory/bubble2.wav
 craft.wav <- impact-sounds / impactBell_heavy_004.ogg
 success.wav <- interface-sounds / confirmation_002.ogg
 down.wav <- interface-sounds / error_001.ogg

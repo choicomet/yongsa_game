@@ -33,7 +33,7 @@ public class GameState {
     public int exitRefusals;
     /** 예전 저장 파일 호환용 (포션은 이제 상자에서 바닥에 떨어지고 주우면 바로 회복한다). */
     public int potions;
-    /** 바닥에 떨어져 있는 회복 포션 자리 (월드 x, y). 체력이 가득하면 줍지 않고 남는다. */
+    /** 바닥에 떨어져 있는 회복 포션 자리 (월드 x, y). E 를 눌러 마신다. */
     public List<float[]> potionDrops = new ArrayList<>();
     public boolean finalBossDefeated;
     /** 지나가 본 통로 (Corridor.key). 지도에는 가 본 방과 지나온 통로만 보인다. */
