@@ -1,0 +1,29 @@
+﻿Sound effects: Kenney (www.kenney.nl), CC0 1.0 Universal - https://creativecommons.org/publicdomain/zero/1.0/
+Packs: RPG Audio, Impact Sounds, Interface Sounds (kenney.nl/assets)
+Each file was trimmed (leading silence, length) and level-matched (loudest 50 ms RMS = -12 dBFS) and saved as mono 16-bit WAV.
+
+swing.wav <- rpg-audio / knifeSlice2.ogg
+hit.wav <- impact-sounds / impactPunch_medium_000.ogg
+kill.wav <- rpg-audio / chop.ogg
+hurt.wav <- impact-sounds / impactSoft_heavy_001.ogg
+block.wav <- impact-sounds / impactMetal_medium_001.ogg
+slam.wav <- impact-sounds / impactPunch_heavy_000.ogg
+mine.wav <- impact-sounds / impactMining_000.ogg
+ore.wav <- rpg-audio / handleCoins.ogg
+door.wav <- rpg-audio / doorOpen_1.ogg
+step.wav <- rpg-audio / footstep00.ogg
+select.wav <- interface-sounds / select_001.ogg
+potion.wav <- interface-sounds / glass_001.ogg
+craft.wav <- impact-sounds / impactBell_heavy_004.ogg
+success.wav <- interface-sounds / confirmation_002.ogg
+down.wav <- interface-sounds / error_001.ogg
+keep.wav <- interface-sounds / bong_001.ogg
+destroy.wav <- impact-sounds / impactGlass_heavy_001.ogg
+dash.wav <- rpg-audio / cloth1.ogg
+monsterAttack.wav <- rpg-audio / knifeSlice.ogg
+gateOpen_LEFT.wav <- rpg-audio / creak2.ogg
+gateOpen_RIGHT.wav <- rpg-audio / creak1.ogg
+gateOpen_TOP.wav <- rpg-audio / doorOpen_2.ogg
+gateClose_LEFT.wav <- impact-sounds / impactMetal_heavy_001.ogg
+gateClose_RIGHT.wav <- impact-sounds / impactMetal_heavy_003.ogg
+gateClose_TOP.wav <- rpg-audio / doorClose_3.ogg
