@@ -1160,8 +1160,13 @@ public class WorldRenderer implements Disposable {
             float w = layout.width + 28, hgt = layout.height + 20;
             float x = sx(cam, sp.x) - w / 2f, y = sy(cam, sp.y);
             boolean friend = sp.speaker != null; // 용사·마을 사람은 금빛 테두리와 이름
-            // 꼬리(아래 8)부터 이름표(위 24)까지: E 안내가 이 자리를 피해 간다
-            speechBoxes.add(new float[]{x, y - 8, x + w, y + hgt + (friend ? 24 : 0)});
+            // 말풍선(꼬리 포함)과 그 위 왼쪽 이름표 자리: E 안내가 이 자리를 피해 간다
+            speechBoxes.add(new float[]{x, y - 8, x + w, y + hgt});
+            if (friend) {
+                layout.setText(fonts.small, sp.speaker);
+                speechBoxes.add(new float[]{x + 10, y + hgt, x + 10 + layout.width, y + hgt + 20});
+                layout.setText(fonts.normal, sp.text);
+            }
             batch.setColor(friend ? 0.05f : 0.06f, friend ? 0.04f : 0.02f, friend ? 0.07f : 0.1f, 0.85f * a);
             batch.draw(art.white(), x, y, w, hgt);
             batch.draw(art.white(), x + w / 2f - 6, y - 8, 12, 8);
@@ -1200,11 +1205,11 @@ public class WorldRenderer implements Disposable {
 
     /** E 안내 상자가 말풍선과 겹치면 겹치지 않을 때까지 말풍선 위로 올린다. */
     private float avoidSpeech(float x, float y, float w, float h) {
-        final float gap = 6;
+        final float gap = 2; // 말풍선 이름표와 E 안내 사이 여백
         for (int guard = 0; guard < 4; guard++) {
             boolean moved = false;
             for (float[] b : speechBoxes) {
-                boolean overlap = x < b[2] + gap && x + w > b[0] - gap && y < b[3] + gap && y + h > b[1] - gap;
+                boolean overlap = x < b[2] && x + w > b[0] && y < b[3] + gap && y + h > b[1] - gap;
                 if (overlap) {
                     y = b[3] + gap;
                     moved = true;
