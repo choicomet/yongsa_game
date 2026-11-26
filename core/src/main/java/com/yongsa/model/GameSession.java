@@ -1478,7 +1478,12 @@ public class GameSession {
             hero.aimY = dy / l;
         }
         if (!villagersFree()) {
-            heroSpeech(String.format(balance.village.trappedLine, v.name));
+            if (v.trappedLines == null || v.trappedLines.isEmpty()) {
+                heroSpeech(String.format(balance.village.trappedLine, v.name));
+            } else {
+                int t = talkCount.merge("trapped:" + v.kind, 1, Integer::sum) - 1;
+                heroSpeech(v.trappedLines.get(t % v.trappedLines.size()));
+            }
             return;
         }
         int n = talkCount.merge(v.kind, 1, Integer::sum) - 1;
