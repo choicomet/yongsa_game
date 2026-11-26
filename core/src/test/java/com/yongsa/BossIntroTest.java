@@ -85,7 +85,7 @@ class BossIntroTest {
         assertEquals(hy, g.hero.y, 0.01f, name);
         assertEquals(heroHp, g.state.hp, name + ": 연출 동작은 용사를 다치게 하지 않는다");
         assertEquals(bossHp, m.hp, name + ": 연출 중엔 보스도 맞지 않는다");
-        if (m.finalBoss) assertArrayEquals(new boolean[]{true, true, true, true}, castFrames);
+        if (m.finalBoss || "LEFT".equals(name)) assertArrayEquals(new boolean[]{true, true, true, true}, castFrames);
         assertTrue(wound && struck, name + ": 특수 공격 준비 → 내리치기 동작을 한 번 보여 준다");
         assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.SLAM_FX), name + ": 충격파");
         assertTrue(maxFocus > 0.99f, name + ": 카메라가 보스까지 간다");

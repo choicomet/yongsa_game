@@ -499,10 +499,11 @@ public class EnemyPainter {
         else batch.setColor(1f, 1f, 1f, appear);
         TextureRegion detail = r;
         float focus = 0f;
-        if (m.finalBoss && !m.phase2 && g.inBossIntro()) {
+        if (g.inBossIntro() && !m.phase2 && (m.finalBoss || "golem".equals(m.def.sprite))) {
             // Four idle frames, then eight casting frames. Both sheets use the same foot anchor.
             int frame = pose[0] == 3 ? 4 + pose[1] : pose[1] % 4;
-            detail = art.cell("team/jiyong/boss_lich_intro.png", 4, 3, frame);
+            String path = m.finalBoss ? "team/jiyong/boss_lich_intro.png" : "team/jiyong/boss_golem_intro.png";
+            detail = art.cell(path, 4, 3, frame);
             focus = g.bossIntroFocus();
         }
         actorInk.draw(batch, r, detail, focus, faceRight ? x0 + size : x0, y0, faceRight ? -size : size, size);
