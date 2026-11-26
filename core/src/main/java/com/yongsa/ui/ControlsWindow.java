@@ -77,6 +77,8 @@ public class ControlsWindow extends Modal {
 
     @Override
     public void build() {
+        // 키 칸 셋 + “기본” 버튼이 한 줄: 위/아래 키는 다음 동작의 같은 칸으로 간다
+        nav.columns = KeyBindings.SLOTS + 1;
         Table p = panel();
         p.add(label("조작 키", "large", Ui.GOLD)).padBottom(4).row();
         p.add(label("칸을 고르고 Enter(또는 클릭)한 뒤 바꿀 키를 누르세요. 한 동작에 키를 세 개까지 둘 수 있습니다.",

@@ -100,6 +100,12 @@ public class GameScreen extends ScreenAdapter {
                     return true;
                 }
                 if (endingDelay >= 0) return true;
+                // 지도가 열려 있으면 Esc 는 지도부터 닫는다 (메뉴 스택처럼 위에 열린 것이 먼저)
+                if (keycode == Input.Keys.ESCAPE && hud.mapOpen()) {
+                    hud.closeMap();
+                    game.sfx.play("select");
+                    return true;
+                }
                 if (keycode == Input.Keys.ESCAPE) {
                     openPause();
                     return true;
@@ -139,7 +145,8 @@ public class GameScreen extends ScreenAdapter {
     @Override
     public void render(float delta) {
         float dt = Math.min(delta, 1 / 20f);
-        boolean paused = !modals.isEmpty() || endingDelay >= 0 || warping;
+        // 지도를 보는 동안에도 게임 시간은 멈춘다 (몬스터가 지도 뒤에서 때리지 않게)
+        boolean paused = !modals.isEmpty() || endingDelay >= 0 || warping || hud.mapOpen();
         boolean frozen = hitStop > 0;
         hitStop -= dt;
         session.devGodMode = game.settings.devGodMode;
@@ -194,6 +201,8 @@ public class GameScreen extends ScreenAdapter {
         renderer.render(worldCam);
         stage.getViewport().apply();
         hud.showWalkMasks = game.settings.devShowWalkable;
+        hud.flashEnabled = game.settings.screenFlash;
+        if (!modals.isEmpty()) hud.closeMap(); // 창이 뜨면 지도는 접는다
         hud.render(stage.getCamera().combined, YongsaGame.WIDTH, YongsaGame.HEIGHT);
         hud.renderFade(fade);
         stage.act(delta);
@@ -294,6 +303,7 @@ public class GameScreen extends ScreenAdapter {
         hud.rollKey = keys.primaryShort(KeyBindings.Action.ROLL);
         hud.mapKey = keys.primaryName(KeyBindings.Action.MAP);
         hud.bagKey = keys.primaryName(KeyBindings.Action.BAG);
+        session.bagKey = hud.bagKey;
         hud.moveKeys = keys.primaryShort(KeyBindings.Action.MOVE_UP) + " " + keys.primaryShort(KeyBindings.Action.MOVE_LEFT) + " "
                 + keys.primaryShort(KeyBindings.Action.MOVE_DOWN) + " " + keys.primaryShort(KeyBindings.Action.MOVE_RIGHT);
     }
@@ -369,7 +379,8 @@ public class GameScreen extends ScreenAdapter {
                     hud.toast("문이 잠겼다! 몬스터를 모두 쓰러뜨리자");
                     break;
                 case ROOM_CLEARED:
-                    if (!e.boss) hud.toast("방을 정리했다 · 길이 다시 열렸다");
+                    // 안내 글은 GameSession 이 “방을 비웠다! 문이 열렸다/보물상자가 나타났다”로 따로 띄운다.
+                    // 여기서도 띄우면 같은 뜻의 안내가 두 줄 연달아 떴다.
                     break;
                 case OPEN_FORGE:
                     modals.push(new ForgeWindow(this));
@@ -477,10 +488,12 @@ public class GameScreen extends ScreenAdapter {
     }
 
     public void openPause() {
+        hud.closeMap();
         modals.push(new PauseMenu(this));
     }
 
     public void openBag() {
+        hud.closeMap();
         modals.push(new BagWindow(this));
     }
 
@@ -507,5 +520,6 @@ public class GameScreen extends ScreenAdapter {
     public void dispose() {
         stage.dispose();
         renderer.dispose();
+        hud.dispose();
     }
 }

@@ -209,7 +209,7 @@ public class GameSession {
     }
 
     public String nextTask() {
-        return NextTask.describe(state, balance, state.room("L1").visited);
+        return NextTask.describe(state, balance, state.room("L1").visited, bagKey);
     }
 
     // ───────────────────────── 한 프레임
@@ -382,6 +382,8 @@ public class GameSession {
     public final String[] skillKeys = {"L", "U", "I", "O"};
     /** 상호작용 키 이름 (안내 문구 "E  대장간" 의 앞부분). */
     public String interactKey = "E";
+    /** 다음 할 일 안내에 쓸 가방 키 이름 (GameScreen 이 조작 키에 맞춰 바꾼다). */
+    public String bagKey = "B";
 
     /**
      * 스킬 칸 하나를 쓴다. 칸은 검 스킬이 열린 차례대로 채워진다 (+10 강화·각성 또는 흡수).
