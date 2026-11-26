@@ -502,7 +502,7 @@ public class GameScreen extends ScreenAdapter {
     /** 개발용: 보스방(또는 심연) 입구로 바로 간다. 싸우는 중이면 싸움을 그만두고 간다. 다른 이동 중이면 false. */
     public boolean devWarpToBoss(String dungeonId) {
         if (warping) return false;
-        session.devAbandonFight();
+        devAbandonFight();
         devWarpTarget = dungeonId;
         warping = true;
         fadeTarget = 1f;
@@ -515,11 +515,18 @@ public class GameScreen extends ScreenAdapter {
      */
     public boolean devWarpToCamp() {
         if (warping) return false;
-        session.devAbandonFight();
+        devAbandonFight();
         warping = true;
         fadeTarget = 1f;
         hud.toast("캠프로 돌아간다");
         return true;
+    }
+
+    /** 개발용: 하던 싸움을 그만둔다. 보스전이었으면 보스 음악도 서서히 끈다 (캠프까지 따라오지 않게). */
+    private void devAbandonFight() {
+        if (!session.fighting()) return;
+        session.devAbandonFight();
+        game.bgm.fadeOut(1f);
     }
 
     /** 개발용 메뉴 (F1): 캠프로 이동, 보스 부활, 보스방 바로 가기, 광물 무한, 무적. */
