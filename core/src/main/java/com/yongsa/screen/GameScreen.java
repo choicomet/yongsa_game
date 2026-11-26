@@ -367,15 +367,9 @@ public class GameScreen extends ScreenAdapter {
                 case FALL:
                     startFall();
                     break;
-                case BOSS_SPEECH: {
-                    // 말풍선이 화면 밖이면 자막으로도 보여 준다 (용사는 늘 화면 가운데라 필요 없다)
-                    if ("용사".equals(e.speaker)) break;
-                    float hw = worldCam.viewportWidth * worldCam.zoom / 2f, hh = worldCam.viewportHeight * worldCam.zoom / 2f;
-                    if (Math.abs(e.x - worldCam.position.x) > hw - 40 || Math.abs(e.y - worldCam.position.y) > hh - 60) {
-                        hud.toast((e.speaker == null ? "마왕" : e.speaker) + ": “" + e.text + "”");
-                    }
+                case BOSS_SPEECH:
+                    // 대사는 보스 머리 위 말풍선으로만 보여 준다 (화면 아래 자막은 겹쳐 보여서 뺐다, 2026-11-26 지용)
                     break;
-                }
                 case BOSS_PHASE2:
                     shake(0.9f);
                     stop(0.25f);
