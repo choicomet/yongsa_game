@@ -90,7 +90,7 @@ class CombatGateEntryTest {
             var door=room.doors.stream().filter(d->!d.dead()).findFirst().orElseThrow();
             var events=enter(game,door);
             assertEquals(1,events.stream().filter(e->e.type==GameEvent.Type.ROOM_LOCKED).count());
-            assertEquals(1,events.stream().filter(e->e.type==GameEvent.Type.SOUND&&e.text.equals("gateClose_"+room.dungeonId)).count());
+            assertFalse(events.stream().anyMatch(e->e.type==GameEvent.Type.SOUND&&e.text.startsWith("gate")),"문 소리는 뺐다 (지용 11/27)");
             assertFalse(tick(game,new Controls()).stream().anyMatch(e->e.type==GameEvent.Type.ROOM_LOCKED));
             assertTrue(game.monsters.size()>1);
             for(int i=1;i<game.monsters.size();i++)game.monsters.get(i).dead=true;
@@ -102,7 +102,7 @@ class CombatGateEntryTest {
                 boolean last=wave==room.waves-1;
                 assertEquals(!last,game.fighting(),id+" wave "+wave);
                 assertEquals(last,events.stream().anyMatch(e->e.type==GameEvent.Type.ROOM_CLEARED));
-                assertEquals(last,events.stream().anyMatch(e->e.type==GameEvent.Type.SOUND&&e.text.equals("gateOpen_"+room.dungeonId)));
+                assertFalse(events.stream().anyMatch(e->e.type==GameEvent.Type.SOUND&&e.text.startsWith("gate")),"문 소리는 뺐다 (지용 11/27)");
                 for(var d:room.doors)assertEquals(!last,d.lockedByFight);
             }
             assertFalse(tick(game,new Controls()).stream().anyMatch(e->e.type==GameEvent.Type.ROOM_CLEARED));
