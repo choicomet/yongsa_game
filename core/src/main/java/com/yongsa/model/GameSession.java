@@ -864,13 +864,11 @@ public class GameSession {
             }
             // 특수 공격(동작 시트 4행) 준비 자세: 힘을 모은다
             b.enter(Monster.State.CAST_TELEGRAPH, INTRO_STRIKE_AT - INTRO_WINDUP_AT);
-            events.add(GameEvent.sound("cast"));
+            // 소리는 연출 시작 때 보스별 등장 소리(intro_*) 하나로 낸다 (지용 2026-11-27)
         } else if (introStep == 1 && e >= INTRO_STRIKE_AT && bossIntroT > 0) {
             introStep = 2;
             // 내리친다: 특수 공격 뒷동작 + 충격파 (보여 주기만 하고 용사는 맞지 않는다)
             b.enter(Monster.State.RECOVER, 0.8f);
-            events.add(GameEvent.sound("slam"));
-            events.add(GameEvent.sound("roar"));
             GameEvent fx = GameEvent.fx(GameEvent.Type.SLAM_FX, b.x, b.y);
             fx.size = balance.monster.bossSlamRadiusTiles * T * (b.finalBoss ? 1.3f : 1f);
             events.add(fx);
