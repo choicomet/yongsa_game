@@ -1060,7 +1060,7 @@ public class GameSession {
             return;
         }
         roomGateEvent(GameEvent.Type.ROOM_LOCKED, r);
-        events.add(GameEvent.sound("gateClose_" + r.dungeonId));
+        // 문 닫히는 소리는 뺐다 (지용 2026-11-27)
     }
 
     private void roomGateEvent(GameEvent.Type type, Room room) {
@@ -1155,7 +1155,7 @@ public class GameSession {
         blindT = 0;
         hero.stunT = 0;
         state.room(r.id).cleared = true;
-        if (r.type != RoomType.FINAL) events.add(GameEvent.sound("gateOpen_" + r.dungeonId));
+        // 문 열리는 소리는 뺐다 (지용 2026-11-27)
         roomGateEvent(GameEvent.Type.ROOM_CLEARED, r);
         if (r.type == RoomType.BOSS) {
             DungeonDef d = balance.dungeon(r.dungeonId);

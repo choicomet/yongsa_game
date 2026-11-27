@@ -517,8 +517,8 @@ public class MonsterBrain extends EnemyContext {
         } else {
             shoot(m, m.x, sy, base, speed, dmg, m.def.sprite);
         }
-        // 탑의 수문장은 마법 구슬 '퓽' (지용 11/27), 나머지는 예전 그대로
-        events.add(GameEvent.sound(m.boss && "warden".equals(m.def.sprite) ? "bs_orb_volley" : "cast"));
+        // 보스별 쏘는 소리: 기사 shot_knight, 탑의 수문장 shot_warden, 마왕 shot_demonlord (SfxMix). 몹은 예전 그대로
+        events.add(GameEvent.sound(m.boss ? com.yongsa.audio.SfxNames.bossShot(m.def.sprite, "cast") : "cast"));
     }
 
     void shoot(Monster m, float x, float y, float angle, float speed, int damage, String source) {
@@ -590,7 +590,7 @@ public class MonsterBrain extends EnemyContext {
             p.source = orb.source;
             out.add(p);
         }
-        events.add(GameEvent.sound("cast"));
+        events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossOrbBurst(orb.source, "cast")));
     }
 
     /** 유도탄: 속도는 그대로, 방향만 용사 쪽으로 조금씩 튼다. */

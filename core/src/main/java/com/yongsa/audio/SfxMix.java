@@ -91,12 +91,17 @@ final class SfxMix {
         // 회전 구슬은 시작 때 크게 한 번 + 도는 동안 한 발마다 작게, 그냥 쏠 때(부채꼴·유도)도 같은 소리
         cue("bs_orb_shot", "bs_orb_shot", -13f, .2f, .05f, 1f, 1, 0f, 0f);
         cue("bs_orb_volley", "bs_orb_shot", -9f, .1f, .03f, 1f, 2, 0f, 0f);
+        cue("shot_warden", "bs_orb_shot", -9f, .1f, .03f, 1f, 2, 0f, 0f);  // 그냥 쏠 때 (SfxNames.bossShot)
         // 마왕 변신: 1페이즈 곡이 끊긴 사이 '콰아앙' + 낮은 웃음 (GameScreen 이 2페이즈 곡도 잠깐 줄인다)
         cue("bs_demonlord_phase2", "bs_demonlord_phase2", -7f, 1f, 0f, 1f, 3, 0f, 0f);
         cue("intro_hit_pound", "hz_pound", -7.5f, .12f, .04f, 1f, 2, .25f, .2f);
         cue("intro_hit_spin", "hz_spin", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
         cue("intro_hit_bolt", "hz_bolt", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
         cue("intro_hit_whip", "hz_whip", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
+        // 보스 구슬·검기 쏘는 소리 (지용 2026-11-27): 예전에는 몹과 같은 '삐융'(cast). 기사·마왕만
+        cue("shot_knight", "shot_knight", -9f, 0.1f, 0.05f, 1f, 2, 0f, 0f);
+        cue("shot_demonlord", "shot_demonlord", -9f, 0.1f, 0.05f, 1f, 2, 0f, 0f);
+        cue("orbBurst_demonlord", "orbBurst_demonlord", -9f, 0.1f, 0.04f, 1f, 2, 0.2f, 0.3f);
         cue("awaken", "awaken", -12f, 0.3f, 0f, 1f, 3, 0.4f, 0.5f);
         cue("unseal", "unseal", -11f, 0.5f, 0f, 1f, 3, 0.5f, 1.1f);
         cue("destroy", "destroy", -11f, 0.3f, 0f, 1f, 3, 0.45f, 0.55f);
@@ -193,8 +198,12 @@ final class SfxMix {
 
     /** 파일로 바꿔 넣은 소리. 직접 만든 소리(sk_ 스킬, fg_ 대장간 망치)는 더 크게 구워 두었다 (LEVEL_DB). */
     void measureFile(String base) {
-        level.put(base, base.startsWith("sk_") || base.startsWith("fg_") || base.startsWith("bs_") || base.startsWith("hz_") ? SKILL_FILE_DB : FILE_REFERENCE_DB);
+        level.put(base, base.startsWith("sk_") || base.startsWith("fg_") || base.startsWith("bs_") || base.startsWith("hz_") ? SKILL_FILE_DB
+                : base.startsWith("shot_") || base.startsWith("orbBurst_") ? BOSS_SHOT_FILE_DB : FILE_REFERENCE_DB);
     }
+
+    /** 보스 쏘는 소리 파일은 크게 구웠다 (가장 큰 50ms 구간 RMS 약 -8.5dB). */
+    static final float BOSS_SHOT_FILE_DB = -8.5f;
 
     static final float SKILL_FILE_DB = -7f;
 

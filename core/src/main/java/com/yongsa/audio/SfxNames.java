@@ -24,4 +24,22 @@ public final class SfxNames {
         String n = "hz_" + style;
         return SfxMix.CUES.containsKey(n) ? n : "slam";
     }
+
+    /**
+     * 보스가 구슬·검기를 쏠 때의 소리 (지용 2026-11-27): 혈월의 기사 shot_knight, 탑의 수문장 shot_warden, 마왕 shot_demonlord.
+     * 다른 보스와 몹은 예전 소리(fallback).
+     */
+    public static String bossShot(String sprite, String fallback) {
+        return boss("shot_", sprite, fallback);
+    }
+
+    /** 마왕 어둠 구체가 터질 때의 소리 (orbBurst_demonlord). */
+    public static String bossOrbBurst(String sprite, String fallback) {
+        return boss("orbBurst_", sprite, fallback);
+    }
+
+    private static String boss(String prefix, String sprite, String fallback) {
+        String n = prefix + sprite;
+        return sprite != null && SfxMix.CUES.containsKey(n) ? n : fallback;
+    }
 }
