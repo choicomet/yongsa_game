@@ -41,6 +41,14 @@ public class GameState {
 
     public int hp;
 
+    /** 달성한 업적 (판과 상관없이 설정 파일에 저장된다). 화면이 게임을 열 때 넣어 준다. 저장하지 않는다. */
+    public transient Achievements achievements;
+
+    public Achievements achievements() {
+        if (achievements == null) achievements = Achievements.none();
+        return achievements;
+    }
+
     public Map<String, RoomRecord> rooms = new HashMap<>();
     public boolean firstOreRoomDone;
 

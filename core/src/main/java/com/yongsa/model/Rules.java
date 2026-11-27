@@ -32,9 +32,15 @@ public final class Rules {
     /** 최대 체력은 흡수한 보스 수로만 정해진다 (100 → 250 → 450 → 700). */
     public int maxHp(GameState s) {
         int n = s.bossesDefeated.size();
-        if (n <= 0) return b.hero.baseMaxHp;
+        int bonus = s.achievements().maxHpBonus();
+        if (n <= 0) return b.hero.baseMaxHp + bonus;
         int[] t = b.hero.maxHpAfterBosses;
-        return t[Math.min(n, t.length) - 1];
+        return t[Math.min(n, t.length) - 1] + bonus;
+    }
+
+    /** 검을 만드는 데 드는 광물 (업적 '검 수집가'가 있으면 줄어든다, 적어도 1개). */
+    public int craftCost(GameState s, WeaponDef d) {
+        return Math.max(1, d.craftCost - s.achievements().craftDiscount());
     }
 
     /** 각성 능력은 각성한 무기를 들고 있을 때만 쓴다. */

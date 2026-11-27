@@ -37,7 +37,9 @@ public class GameEvent {
         /** 잡몹방의 다음 웨이브가 나왔다. text = 알림 글. */
         WAVE_STARTED,
         /** 검 스킬을 씀 (text = 종류, dirX·dirY = 방향) / 검 스킬이 맞음·낙뢰가 떨어짐 (size = 크기). */
-        SKILL_CAST, SKILL_HIT
+        SKILL_CAST, SKILL_HIT,
+        /** 업적을 달성했다 (achievement). */
+        ACHIEVEMENT
     }
 
     /** 떠오르는 글자 색 구분. */
@@ -58,6 +60,8 @@ public class GameEvent {
     /** CHEST_OPENED: 얻은 포션 수. */
     public int potions;
     public String opened;
+    /** ACHIEVEMENT: 달성한 업적. */
+    public Achievement achievement;
     /** 연출용 값: 방향, 크기, 그림 이름. */
     public float dirX, dirY, size;
     public String sprite;

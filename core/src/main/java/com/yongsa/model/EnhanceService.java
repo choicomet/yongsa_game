@@ -95,7 +95,21 @@ public class EnhanceService {
 
     /** 지금 상태(숙련도 포함)의 확률. */
     public Odds odds(GameState s, int level) {
-        return odds(level, s.masteryLevel);
+        Odds o = odds(level, s.masteryLevel);
+        double bonus = s.achievements().enhanceBonus();
+        if (bonus <= 0 || o.success >= 100) return o;
+        // 업적 '망치를 놓지 않는 자': 성공 몫을 유지 → 하락 → 파괴 순으로 가져온다
+        double keep = o.keep, down = o.down, destroy = o.destroy;
+        double take = Math.min(bonus, keep);
+        keep -= take;
+        double left = bonus - take;
+        take = Math.min(left, down);
+        down -= take;
+        left -= take;
+        take = Math.min(left, destroy);
+        destroy -= take;
+        left -= take;
+        return new Odds(o.success + bonus - left, keep, down, destroy);
     }
 
     /**

@@ -77,6 +77,8 @@ public class GameScreen extends ScreenAdapter {
 
     public GameScreen(YongsaGame game, GameState state) {
         this.game = game;
+        // 업적은 판과 상관없이 설정 파일에 있다. 효과(최대 체력 등)가 세션을 만들 때부터 들어가도록 먼저 넣는다
+        state.achievements = new com.yongsa.model.Achievements(game.settings.achievements);
         this.session = new GameSession(game.balance, game.newMap(), state, System.nanoTime());
         session.deferDoors = true;
         session.bossIntroEnabled = true;
@@ -354,7 +356,7 @@ public class GameScreen extends ScreenAdapter {
                     // 곡을 먼저 틀어야 포효가 곡을 잠깐 눌러(덕킹) 포효가 끝날 즈음 음악이 올라온다
                     String track = bossBgm(e);
                     game.bgm.play(track, 0.8f, bgmStart(track));
-                    game.sfx.play("roar");
+                    game.sfx.play(bossIntroSfx(e));
                     shake(0.5f);
                     hud.bossIntro(e.text, e.boss);
                     break;
@@ -387,6 +389,11 @@ public class GameScreen extends ScreenAdapter {
                     break;
                 case TOAST:
                     hud.toast(e.text);
+                    break;
+                case ACHIEVEMENT:
+                    hud.achievement(e.achievement);
+                    game.sfx.play("success");
+                    game.saveSettings();
                     break;
                 case SOUND:
                     game.sfx.play(e.text);
@@ -458,6 +465,15 @@ public class GameScreen extends ScreenAdapter {
         return null;
     }
 
+    /** 보스가 나올 때 한 번 나는 소리 (보스마다 다르다). 모르는 보스는 예전처럼 포효. */
+    private static String bossIntroSfx(GameEvent e) {
+        if (e.boss) return "intro_demonlord";
+        if ("LEFT".equals(e.dungeonId)) return "intro_golem";
+        if ("RIGHT".equals(e.dungeonId)) return "intro_knight";
+        if ("TOP".equals(e.dungeonId)) return "intro_warden";
+        return "roar";
+    }
+
     /** 곡 앞부분이 조용해서 중간부터 트는 곡 (초). 반복할 때도 이 지점으로 돌아간다. */
     private static float bgmStart(String track) {
         if ("boss_golem".equals(track)) return 37f;
@@ -490,7 +506,7 @@ public class GameScreen extends ScreenAdapter {
             if (session.state.bossDefeated(id)) continue;
             com.yongsa.config.Balance.DungeonDef d = game.balance.dungeon(id);
             com.yongsa.config.Balance.WeaponDef w = game.balance.weaponForOre(d.ore);
-            return "다음에 만들 무기: " + w.name + " (" + com.yongsa.model.OreType.valueOf(d.ore).displayName + " " + w.craftCost + "개)";
+            return "다음에 만들 무기: " + w.name + " (" + com.yongsa.model.OreType.valueOf(d.ore).displayName + " " + session.rules.craftCost(session.state, w) + "개)";
         }
         return "이제 캠프로 돌아가면 성검의 봉인을 풀 수 있다";
     }

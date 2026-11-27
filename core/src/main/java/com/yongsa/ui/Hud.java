@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
@@ -86,6 +87,16 @@ public class Hud {
         if (toasts.size() > MAX_TOASTS) toasts.remove(0);
     }
 
+    /** 업적 달성 알림. 여러 개가 한꺼번에 오면 하나씩 차례로 보여 준다. */
+    public void achievement(com.yongsa.model.Achievement a) {
+        achievements.add(a);
+    }
+
+    private final List<com.yongsa.model.Achievement> achievements = new ArrayList<>();
+    private float achievementT;
+    private static final float ACHIEVEMENT_TIME = 4.5f;
+    private static final Color ACH_BG = new Color(0x0d1117ee), ACH_EDGE = new Color(0x7d6440ff), ACH_SUB = new Color(0xa9a294ff);
+
     public void banner(String text) {
         banner = text;
         bannerT = 0;
@@ -116,6 +127,13 @@ public class Hud {
 
     public void update(float dt) {
         time += dt;
+        if (!achievements.isEmpty()) {
+            achievementT += dt;
+            if (achievementT > ACHIEVEMENT_TIME) {
+                achievements.remove(0);
+                achievementT = 0;
+            }
+        }
         for (int i = toasts.size() - 1; i >= 0; i--) {
             toasts.get(i).t += dt;
             if (toasts.get(i).t > 3.2f) toasts.remove(i);
@@ -375,7 +393,7 @@ public class Hud {
                 batch.setColor(1f, 0.85f, 0.5f, readyFlash[i] / 0.4f * 0.8f);
                 batch.draw(art.glow, x - 10, SY - 10, SLOT + 20, SLOT_H + 20);
             }
-            float total = i == 0 ? g.balance.attack.basicCooldown : i == 1 ? g.balance.attack.rollTime + g.balance.attack.rollCooldown
+            float total = i == 0 ? g.balance.attack.basicCooldown : i == 1 ? g.rollCooldownTotal()
                     : sk.def.cooldown;
             if (left[i] > 0) rect(x + 9, SY + 9, SLOT - 18, (SLOT_H - 18) * Math.min(1, left[i] / total), COOL_SHADE);
             // 아이콘: 칸 가운데 54px, 위 오른쪽에 상태 글자(익힘·검 필요)가 있으면 46px 로 줄여 겹치지 않게
@@ -448,11 +466,47 @@ public class Hud {
             float textL = tx0 + 74;
             centered(fonts.normal, toast.text, textL + (tx0 + tw - 30 - textL) / 2f, cy + 9, new Color(1, 1, 1, alpha));
         }
+        if (!achievements.isEmpty()) drawAchievement(achievements.get(0));
         batch.setColor(Color.WHITE);
         batch.end();
         if (mapAnim > 0.01f) drawMap();
         fonts.normal.setColor(Color.WHITE);
         fonts.small.setColor(Color.WHITE);
+    }
+
+    /** 업적 달성: 화면 위쪽 가운데, 지역 이름 아래. 업적 그림 + “업적 달성” + 이름 + 조건과 효과. */
+    private void drawAchievement(com.yongsa.model.Achievement a) {
+        float t = achievementT;
+        float alpha = Math.min(1, Math.min(t / 0.25f, (ACHIEVEMENT_TIME - t) / 0.5f));
+        if (alpha <= 0) return;
+        String sub = a.done + "   " + a.effect;
+        layout.setText(fonts.small, sub);
+        float pw = Math.max(420, layout.width + 120), ph = 76;
+        float px = (w - pw) / 2f, py = h - 112 - ph + (1 - Math.min(1, t / 0.25f)) * 10;
+        rect(px - 1, py - 1, pw + 2, ph + 2, alphaOf(ACH_EDGE, alpha));
+        rect(px, py, pw, ph, alphaOf(ACH_BG, alpha));
+        batch.setColor(1, 1, 1, alpha);
+        batch.draw(frames.keyRound, px + 12, py + 10, 56, 56);
+        TextureRegion icon = com.yongsa.ui.AchievementArt.icon(art, a);
+        float is = 36, iw = is, ih = is;
+        if (icon.getRegionWidth() > 0 && icon.getRegionHeight() > 0) {
+            float r = (float) icon.getRegionWidth() / icon.getRegionHeight();
+            if (r > 1) ih = is / r; else iw = is * r;
+        }
+        batch.draw(icon, px + 40 - iw / 2f, py + 38 - ih / 2f, iw, ih);
+        float tx = px + 84;
+        text(fonts.small, "업적 달성", tx, py + ph - 10, alphaOf(Ui.GOLD, alpha));
+        text(fonts.normal, a.title, tx, py + ph - 28, alphaOf(Ui.TEXT, alpha));
+        text(fonts.small, a.done, tx, py + 22, alphaOf(ACH_SUB, alpha));
+        layout.setText(fonts.small, a.done + "   ");
+        text(fonts.small, a.effect, tx + layout.width, py + 22, alphaOf(Ui.GOLD, alpha));
+        batch.setColor(Color.WHITE);
+    }
+
+    private static final Color tmpColor = new Color();
+
+    private static Color alphaOf(Color c, float a) {
+        return tmpColor.set(c.r, c.g, c.b, c.a * a);
     }
 
     private void rect(float x, float y, float width, float height, Color color) {

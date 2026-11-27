@@ -164,7 +164,7 @@ public class ForgeWindow extends Modal {
         boolean completed = motion.advance(delta);
         int strikes = motion.strikes();
         if (wasBusy && (motion.phase() == ForgeMotion.Phase.HAMMER || completed)) {
-            if (strikes > playedStrikes) screen.game.sfx.play("mine");
+            if (strikes > playedStrikes) screen.game.sfx.play("fg_hammer");
             playedStrikes = strikes;
         }
         if (completed && afterHammer != null) {
@@ -398,7 +398,7 @@ public class ForgeWindow extends Modal {
         } else {
             name = label(it.craft.name + " 만들기", "small", Ui.TEXT);
             sub.add(Ui.artImage(art.gem(OreType.valueOf(it.craft.ore)))).size(15).padRight(4);
-            sub.add(small(String.valueOf(it.craft.craftCost), Ui.DIM, 0.78f));
+            sub.add(small(String.valueOf(g.rules.craftCost(g.state, it.craft)), Ui.DIM, 0.78f));
         }
         text.add(name).left().row();
         text.add(sub).left().padTop(3);
@@ -740,8 +740,9 @@ public class ForgeWindow extends Modal {
         int diff = d.baseAttack - g.rules.attack(s, s.equipped());
         content.add(attackLine(null, String.valueOf(d.baseAttack),
                 "지금 검보다 " + (diff >= 0 ? "+" : "") + diff)).left().padTop(14).padBottom(6).row();
-        boolean enough = s.ore(ore) >= d.craftCost;
-        addRow(content, row("재료", oreAmount(ore, String.valueOf(d.craftCost), enough ? Ui.GOLD : Ui.ORANGE, " / " + s.ore(ore))));
+        int cost = g.rules.craftCost(s, d);
+        boolean enough = s.ore(ore) >= cost;
+        addRow(content, row("재료", oreAmount(ore, String.valueOf(cost), enough ? Ui.GOLD : Ui.ORANGE, " / " + s.ore(ore))));
         addRow(content, row("강화마다", "공격력 +" + d.perLevel, Ui.TEXT));
         if (d.awakenedName != null)
             addRow(content, row("+" + g.balance.enhance.maxLevel + " 각성",
