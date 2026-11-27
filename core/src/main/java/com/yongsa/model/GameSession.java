@@ -596,6 +596,12 @@ public class GameSession {
             }
             return;
         }
+        if (m.state == Monster.State.GUARD) {
+            // 혈월의 기사 방패 반격: 웅크린 동안 맞으면 피해 없이 막고 바로 반격한다
+            m.flash = 0.1f;
+            bosses.counter(m);
+            return;
+        }
         int dmg = roll(rules.attack(state), mult);
         boolean guarded = false;
         if (m.guardActive()) {
@@ -670,10 +676,20 @@ public class GameSession {
         if (m.hp <= 0) {
             m.hp = 0;
             m.dead = true;
-            if (m.finalBoss) {
-                bosses.speech(m, "이런 풋내기에게 당하다니!");
-                // 마왕이 쓰러지면 불러낸 부하도 함께 무너진다
-                for (Monster o : monsters) if (!o.boss) o.dead = true;
+            if (m.finalBoss) bosses.speech(m, "이런 풋내기에게 당하다니!");
+            // 보스(탑의 수문장·마왕)가 쓰러지면 불러낸 부하도 함께 무너져 바로 클리어된다
+            if (m.boss) {
+                for (Monster o : monsters) {
+                    if (o.boss || o.dead) continue;
+                    o.hp = 0;
+                    o.dead = true;
+                    GameEvent gone = GameEvent.fx(GameEvent.Type.MONSTER_DIED, o.x, o.y);
+                    gone.sprite = o.def.sprite;
+                    gone.size = 1f;
+                    gone.flip = o.dirX < -0.2f;
+                    gone.dirX = o.dirX;
+                    events.add(gone);
+                }
             }
             state.stats.monstersKilled++;
             GameEvent died = GameEvent.fx(GameEvent.Type.MONSTER_DIED, m.x, m.y);
@@ -1755,6 +1771,47 @@ public class GameSession {
         heroRoom = currentRoom = f;
         state.room(f.id).visited = true;
         setEntry(null);
+    }
+
+    /**
+     * 엔딩 결과 창의 "마을로 가기": 캠프와 마을 사이 통로(마을 가는 길) 한가운데에 마을 쪽을 보고 세운다.
+     * 통로를 못 찾으면 마을 들어가는 자리에 세운다. 길에 섰으면 true.
+     */
+    public boolean placeOnVillageRoad() {
+        Room village = village();
+        for (Corridor c : map.corridors) {
+            if (c.link.a.type != RoomType.VILLAGE && c.link.b.type != RoomType.VILLAGE) continue;
+            List<float[]> line = new ArrayList<>(c.centerline);
+            if (line.isEmpty()) for (int[] t : c.path) line.add(new float[]{center(t[0]), center(t[1])});
+            int n = line.size();
+            // 가운데에서 시작해 양옆으로 번갈아 가며 설 수 있는 자리를 찾는다
+            for (int k = 0; k < n; k++) {
+                int i = n / 2 + ((k % 2 == 0) ? k / 2 : -(k / 2 + 1));
+                if (i < 0 || i >= n) continue;
+                float x = line.get(i)[0], y = line.get(i)[1];
+                if (!Physics.free(map, x, y, hero, T)) continue;
+                hero.x = x;
+                hero.y = y;
+                heroRoom = map.roomAt(tileX(x), tileY(y));
+                currentRoom = heroRoom != null ? heroRoom : c.link.a;
+                if (village != null) faceToward(village.spawnX(T), village.spawnY(T));
+                return true;
+            }
+        }
+        if (village == null) return false;
+        hero.x = village.spawnX(T);
+        hero.y = village.spawnY(T);
+        heroRoom = currentRoom = village;
+        return false;
+    }
+
+    private void faceToward(float x, float y) {
+        float dx = x - hero.x, dy = y - hero.y;
+        float len = (float) Math.hypot(dx, dy);
+        if (len < 1e-3f) return;
+        hero.aimX = dx / len;
+        hero.aimY = dy / len;
+        hero.facing = Facing.of(hero.aimX, hero.aimY);
     }
 
     /** 귀환문으로 캠프에 돌아간다. */

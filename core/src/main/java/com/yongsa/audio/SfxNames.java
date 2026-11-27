@@ -15,6 +15,8 @@ public final class SfxNames {
             case "bonespike": n = "bs_summon"; break;
             case "bloodpool": n = "bs_crescent"; break;
             case "whip": n = "bs_combo"; break;
+            case "punch": n = "bs_pound"; break;
+            case "counter": n = "bs_shield"; break;
             default: n = "bs_" + p;
         }
         return SfxMix.CUES.containsKey(n) ? n : "roar";

@@ -120,6 +120,9 @@ final class SfxMix {
         }
         // ── 대장간 망치 (fg_hammer): 모루 "깡". 강화 결과음(success·keep·down·destroy·craft)은 원래 녹음 그대로
         cue("fg_hammer", "fg_hammer", -7f, 0.05f, 0.05f, 1f, 2, 0f, 0f);
+        // main #56 새 패턴 (골렘 주먹, 기사 방패 반격): 녹음 효과음 높낮이만 바꿔 씀
+        cue("hz_punch", "destroy", -14f, 0.06f, 0.08f, 0.6f, 1, 0f, 0f);       // 골렘 주먹 충격파: 차례로 부서지는 소리
+        cue("hz_counter", "swing", -11f, 0.1f, 0.04f, 0.85f, 2, 0f, 0f);       // 혈월의 기사 방패 반격
         for (String d : new String[]{"LEFT", "RIGHT", "TOP"}) {
             cue("gateClose_" + d, -15f, 0.2f, 0.03f, 1);
             cue("gateOpen_" + d, -16f, 0.2f, 0.03f, 1);
