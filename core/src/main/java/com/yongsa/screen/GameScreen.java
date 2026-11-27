@@ -351,9 +351,10 @@ public class GameScreen extends ScreenAdapter {
                     shake(0.12f);
                     break;
                 case BOSS_FIGHT_START:
-                    // 등장 효과음이 뒤이어 나올 때 음악이 자연스럽게 잦아들도록 곡부터 시작한다
+                    // 곡을 먼저 틀어야 포효가 곡을 잠깐 눌러(덕킹) 포효가 끝날 즈음 음악이 올라온다
                     String track = bossBgm(e);
                     game.bgm.play(track, 0.8f, bgmStart(track));
+                    game.sfx.play("roar");
                     shake(0.5f);
                     hud.bossIntro(e.text, e.boss);
                     break;
