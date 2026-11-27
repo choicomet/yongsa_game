@@ -78,7 +78,8 @@ public class BossBrain extends EnemyContext {
         if (m.patternCd <= 0 && dist < 11 * T) {
             String p = pickPattern(m);
             m.lastPattern = p;
-            m.patternCd = mc.bossPatternGap * (m.lastStand ? mc.lastStandGapMultiplier : 1f);
+            float gap = m.def.patternGap > 0 ? m.def.patternGap : mc.bossPatternGap; // 보스마다 따로 정했으면 그 값
+            m.patternCd = gap * (m.lastStand ? mc.lastStandGapMultiplier : 1f);
             if (startPattern(m, p, summoned)) return;
         }
         if (m.finalBoss && !m.phase2 && m.def.noMeleePhase1) {

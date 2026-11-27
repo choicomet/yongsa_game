@@ -246,4 +246,20 @@ class BossAddedPatternTest {
         assertEquals(Monster.State.TELEGRAPH, golem.state);
         assertEquals(b.monster.telegraphSeconds, golem.stateTotal, 0.001f, "골렘은 공통 예고 그대로");
     }
+
+    // ---- 혈월의 기사: 패턴 사이 간격을 조금 늘림 ----
+
+    @Test
+    void knightWaitsLongerBetweenPatternsThanOtherBosses() {
+        assertEquals(2.7f, b.dungeon("RIGHT").boss.patternGap, 0.001f);
+        GameSession g = fightIn("R6", hero());
+        Monster m = forcePattern(g, "R6", "slam", 3 * b.tileSize);
+        run(g, idle, 2 / 60f);
+        assertEquals(2.7f, m.patternCd, 0.05f, "기사는 패턴 사이 2.7초");
+
+        GameSession g2 = fightIn("L6", hero());
+        Monster golem = forcePattern(g2, "L6", "slam", 3 * b.tileSize);
+        run(g2, idle, 2 / 60f);
+        assertEquals(b.monster.bossPatternGap, golem.patternCd, 0.05f, "다른 보스는 공통 2.2초 그대로");
+    }
 }
