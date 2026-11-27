@@ -470,7 +470,7 @@ public class EnemyPainter {
         if (moved) a[3] += Gdx.graphics.getDeltaTime();
         int four = Math.min(3, (int) (m.progress() * 4));
         switch (m.state) {
-            case TELEGRAPH: case COMBO_TELEGRAPH: case CHARGE_TELEGRAPH:
+            case TELEGRAPH: case COMBO_TELEGRAPH: case CHARGE_TELEGRAPH: case PUNCH_TELEGRAPH:
                 a[2] = 2;
                 return new int[]{2, four};
             case SLAM_TELEGRAPH: case CAST_TELEGRAPH:
@@ -738,6 +738,16 @@ public class EnemyPainter {
                 // 골렘 내려찍기: 흙과 돌이 크게 튄다
                 particles.debris(e.x, e.y + 6, 7, new Color(.42f,.36f,.30f,1), 175, 2);
                 break;
+            case "punch": {
+                // 골렘 주먹 충격파: 한 칸을 따라 흙과 돌이 솟는다
+                float dx = e.dirX - e.x, dy = e.dirY - e.y;
+                for (int i = 0; i <= 3; i++) {
+                    float px = e.x + dx * i / 3f, py = e.y + dy * i / 3f;
+                    if (!inView(px, py)) continue;
+                    particles.debris(px, py + 4, 4, new Color(.45f,.38f,.31f,1), 160, 3);
+                }
+                break;
+            }
             case "flame":
                 // 마족병 불기둥
                 particles.burst(e.x, e.y + 10, 18, c, 220, 0.5f, 3, true);
@@ -775,7 +785,7 @@ public class EnemyPainter {
             case "brand": return PROJ_DARK;
             case "whip": return WHIP;
             case "eye": return EYE_RED;
-            case "quake": case "boulder": case "pound": return new Color(0.85f, 0.62f, 0.4f, 1f);
+            case "quake": case "boulder": case "pound": case "punch": return new Color(0.85f, 0.62f, 0.4f, 1f);
             case "flame": return PROJ_FIRE;
             default: return new Color(1f, 0.6f, 0.35f, 1f);
         }

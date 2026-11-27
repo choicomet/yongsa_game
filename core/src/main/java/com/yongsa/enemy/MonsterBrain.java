@@ -187,6 +187,14 @@ public class MonsterBrain extends EnemyContext {
                 case CHANNEL:
                     boss.channel(m, dt * speedUp);
                     break;
+                case PUNCH_TELEGRAPH:
+                    // 충격파(Hazard)는 실제 시간으로 터지므로 주먹도 실제 시간에 맞춰 뻗는다 (2페이즈 가속 없음)
+                    m.stateT -= dt;
+                    if (m.stateT <= 0) {
+                        m.enter(Monster.State.RECOVER, mc.punchRecover);
+                        m.attackCd = Math.max(m.attackCd, mc.attackCooldown);
+                    }
+                    break;
                 case LEAP: {
                     m.stateT -= dt;
                     float p = m.progress();

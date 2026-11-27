@@ -27,7 +27,9 @@ public class Monster extends Actor {
         /** 혈월의 기사: 구석에서 뒤로 크게 도약하는 중. 공중이라 맞지 않는다. */
         LEAP,
         /** 해골병: 쓰러져 뼈 무더기가 된 채 다시 일어나려는 중. 이때 때리면 완전히 부서진다. */
-        DOWNED
+        DOWNED,
+        /** 골렘 주먹 날리기: 주먹을 뒤로 당기는 중 (기본 공격 줄 앞 4칸). 끝나면 RECOVER 에서 주먹을 뻗는다. */
+        PUNCH_TELEGRAPH
     }
 
     public final MonsterDef def;
@@ -148,6 +150,7 @@ public class Monster extends Actor {
     /** 머리 위에 ‘!’ 를 띄울 상태. */
     public boolean warning() {
         return state == State.TELEGRAPH || state == State.SWOOP_TELEGRAPH || state == State.CAST_TELEGRAPH
-                || state == State.SLAM_TELEGRAPH || state == State.CHARGE_TELEGRAPH || state == State.COMBO_TELEGRAPH;
+                || state == State.SLAM_TELEGRAPH || state == State.CHARGE_TELEGRAPH || state == State.COMBO_TELEGRAPH
+                || state == State.PUNCH_TELEGRAPH;
     }
 }

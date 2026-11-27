@@ -291,6 +291,35 @@ public class BossBrain extends EnemyContext {
                 events.add(GameEvent.sound("roar"));
                 return true;
             }
+            case "punch": {
+                // 주먹 날리기: 주먹을 뒤로 당겼다가(PUNCH_TELEGRAPH) 뻗는다. 용사 쪽 일직선으로
+                // 돌 충격파가 앞에서부터 차례로 터진다. 벽에 닿으면 거기서 멈춘다
+                mobs.aimAtHero(m);
+                float seg = mc.punchSegmentTiles * T;
+                float sx = m.x + m.dirX * m.hurtRadius * 0.8f, sy = m.y + m.dirY * m.hurtRadius * 0.8f;
+                int made = 0;
+                for (int i = 0; i < mc.punchSegments; i++) {
+                    float x0 = sx + m.dirX * seg * i, y0 = sy + m.dirY * seg * i;
+                    float x1 = x0 + m.dirX * seg, y1 = y0 + m.dirY * seg;
+                    if (map.solid(tileX((x0 + x1) / 2f), tileY((y0 + y1) / 2f)) || map.solid(tileX(x1), tileY(y1))) break;
+                    Hazard h = new Hazard(Hazard.Kind.LINE, "punch");
+                    h.x = x0;
+                    h.y = y0;
+                    h.x2 = x1;
+                    h.y2 = y1;
+                    h.radius = mc.punchWidthTiles * T / 2f;
+                    h.delay = h.warning = mc.punchWindup + mc.punchStep * i;
+                    h.damage = m.attack();
+                    h.multiplier = mc.punchMultiplier;
+                    hazards.add(h);
+                    made++;
+                }
+                if (made == 0) return false; // 바로 앞이 벽이면 다른 패턴
+                m.enter(Monster.State.PUNCH_TELEGRAPH, mc.punchWindup);
+                events.add(GameEvent.toast(m.def.name + "이(가) 주먹을 뒤로 당긴다! 옆으로 비키자"));
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
             case "spinslash": {
                 // 회전 베기: 보스 둘레 원을 예고 뒤 한 번에 벤다
                 circleHazard("spin", m.x, m.y, mc.spinSlashRadiusTiles * T, mc.spinSlashWarning, m.attack(), mc.spinSlashMultiplier);

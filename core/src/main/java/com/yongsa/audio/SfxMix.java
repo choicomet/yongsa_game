@@ -112,6 +112,7 @@ final class SfxMix {
         cue("hz_rock", "destroy", -12f, 0.1f, 0.08f, 0.65f, 1, 0f, 0f);
         cue("hz_pound", "slam", -10f, 0.12f, 0.04f, 0.7f, 2, 0.25f, 0.2f);     // 골렘 연속 내려찍기
         cue("hz_quake", "slam", -12f, 0.12f, 0.05f, 0.6f, 1, 0f, 0f);
+        cue("hz_punch", "destroy", -14f, 0.06f, 0.08f, 0.6f, 1, 0f, 0f);       // 골렘 주먹 충격파: 차례로 부서지는 소리
         cue("hz_leap", "slam", -11f, 0.12f, 0.05f, 0.75f, 2, 0.15f, 0.12f);
         cue("hz_spear", "block", -13f, 0.08f, 0.06f, 0.85f, 1, 0f, 0f);        // 혈월의 기사 창: 쇳소리
         cue("hz_flame", "cast", -13f, 0.1f, 0.06f, 0.7f, 1, 0f, 0f);
