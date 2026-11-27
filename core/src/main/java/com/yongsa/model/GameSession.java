@@ -367,6 +367,8 @@ public class GameSession {
         hero.swingKind = 0;
         hero.swingT = 0.18f;
         basicAttack = new Attack(Attack.Kind.BASIC, balance.attack.basicMultiplier);
+        // 칼 휘두르는 소리 (지용 2026-11-27, 지용이 고른 녹음 hero_swing.wav). 맞히는 소리는 여전히 없음 (해성 11/26)
+        events.add(GameEvent.sound("hero_swing"));
         float range = basicRange();
         float half = (float) Math.toRadians(balance.attack.basicArcDegrees / 2f);
         float hx = hero.x, hy = hero.centerY();
