@@ -107,6 +107,8 @@ final class SfxMix {
         cue("sk_strikeHit", "sk_strikeHit", -7f, 0.07f, 0.06f, 1f, 3, 0.35f, 0.4f);  // 번개 '딱' + 천둥
         cue("sk_beam", "sk_beam", -7f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);                // 성광 검기: 종 + 밝은 장조 반짝임
         cue("sk_beamHit", "sk_beamHit", -9f, 0.06f, 0.05f, 1f, 2, 0f, 0f);
+        // ── 대장간 망치 (fg_hammer): 모루를 치는 "깡". 망치가 내려칠 때만. 강화 결과음은 원래 녹음 그대로
+        cue("fg_hammer", "fg_hammer", -7f, 0.05f, 0.05f, 1f, 2, 0f, 0f);
         // ── 보스·몹 장판 패턴이 터질 때 (hz_<모양>). 여러 개가 한꺼번에 터져도 최소 간격으로 한 번만
         cue("hz_boulder", "destroy", -10f, 0.12f, 0.05f, 0.55f, 2, 0.25f, 0.2f); // 골렘 바위: 낮게 부서지는 소리
         cue("hz_rock", "destroy", -12f, 0.1f, 0.08f, 0.65f, 1, 0f, 0f);
@@ -171,9 +173,9 @@ final class SfxMix {
         return scale;
     }
 
-    /** 파일로 바꿔 넣은 소리. 스킬 소리(sk_)는 더 크게 구워 두었다 (tools/make_skill_sfx.py LEVEL_DB). */
+    /** 파일로 바꿔 넣은 소리. 직접 만든 소리(sk_ 스킬, fg_ 대장간 망치)는 더 크게 구워 두었다 (LEVEL_DB). */
     void measureFile(String base) {
-        level.put(base, base.startsWith("sk_") ? SKILL_FILE_DB : FILE_REFERENCE_DB);
+        level.put(base, base.startsWith("sk_") || base.startsWith("fg_") ? SKILL_FILE_DB : FILE_REFERENCE_DB);
     }
 
     static final float SKILL_FILE_DB = -7f;
