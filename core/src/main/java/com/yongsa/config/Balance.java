@@ -260,6 +260,17 @@ public class Balance {
          */
         public int poundCount;
         public float poundStartTiles, poundStepTiles, poundRadiusTiles, poundRadiusGrowTiles, poundWarning, poundMultiplier, poundRecover;
+        /**
+         * 골렘 주먹 날리기: punchWindup 초 동안 주먹을 뒤로 당긴 뒤 앞으로 뻗는다. 용사 쪽 일직선으로
+         * punchSegments 칸짜리 돌 충격파가 punchStep 초 간격으로 차례로 터진다 (벽에서 멈춘다).
+         */
+        public int punchSegments;
+        public float punchWindup, punchStep, punchSegmentTiles, punchWidthTiles, punchMultiplier, punchRecover;
+        /**
+         * 혈월의 기사 방패 반격: counterGuard 초 동안 방패 뒤로 웅크린다. 그 사이 맞으면 피해 없이 막고,
+         * counterWarning 초 뒤 용사 쪽 앞(counterReachTiles 앞, 반지름 counterRadiusTiles)을 벤다. 반격 뒤 counterRecover 초 쉰다.
+         */
+        public float counterGuard, counterWarning, counterReachTiles, counterRadiusTiles, counterMultiplier, counterRecover;
         /** 혈월의 기사 회전 베기: 보스 둘레 원을 예고 뒤 한 번에 벤다. */
         public float spinSlashRadiusTiles, spinSlashWarning, spinSlashMultiplier;
         /** 혈월의 기사 혈월 검기: 크고 붉은 초승달 검기 여러 줄을 부채꼴로 날린다. */
@@ -303,7 +314,7 @@ public class Balance {
         public float speedTiles;
         /** 잡몹 행동: melee(기본), swoop(박쥐), brute(해골병), caster(마족병). */
         public String ai;
-        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, boulder, pound, spearstand, spinslash, crescent, cage, homing, darkorb, brand. */
+        /** 보스 패턴 이름: slam, charge, rush, combo, volley, ring, summon, rockfall, shield, bloodpool, lightning, firespin, tentacle, bonespike, whip, eyes, boulder, pound, spearstand, spinslash, crescent, cage, homing, darkorb, brand, punch, counter. */
         public List<String> patterns;
         /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;

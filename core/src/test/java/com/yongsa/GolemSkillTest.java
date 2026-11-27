@@ -62,7 +62,7 @@ class GolemSkillTest {
     @Test
     void golemGetsNewPatternsOnlyInPhaseTwo() {
         Balance.MonsterDef golem = b.dungeon("LEFT").boss;
-        assertEquals(List.of("rush", "slam"), golem.patterns, "2026-11-10: 낙석은 뺐다");
+        assertEquals(List.of("rush", "slam", "punch"), golem.patterns, "2026-11-10: 낙석은 뺐다. 2026-11-27: 주먹 날리기를 더했다");
         assertEquals(List.of("boulder", "pound"), golem.phase2Patterns, "지진 파동은 내려찍기에 합쳤다");
     }
 

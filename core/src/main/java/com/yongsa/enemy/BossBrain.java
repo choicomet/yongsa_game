@@ -291,6 +291,42 @@ public class BossBrain extends EnemyContext {
                 events.add(GameEvent.sound("roar"));
                 return true;
             }
+            case "punch": {
+                // 주먹 날리기: 주먹을 뒤로 당겼다가(PUNCH_TELEGRAPH) 뻗는다. 용사 쪽 일직선으로
+                // 돌 충격파가 앞에서부터 차례로 터진다. 벽에 닿으면 거기서 멈춘다
+                mobs.aimAtHero(m);
+                float seg = mc.punchSegmentTiles * T;
+                float sx = m.x + m.dirX * m.hurtRadius * 0.8f, sy = m.y + m.dirY * m.hurtRadius * 0.8f;
+                int made = 0;
+                for (int i = 0; i < mc.punchSegments; i++) {
+                    float x0 = sx + m.dirX * seg * i, y0 = sy + m.dirY * seg * i;
+                    float x1 = x0 + m.dirX * seg, y1 = y0 + m.dirY * seg;
+                    if (map.solid(tileX((x0 + x1) / 2f), tileY((y0 + y1) / 2f)) || map.solid(tileX(x1), tileY(y1))) break;
+                    Hazard h = new Hazard(Hazard.Kind.LINE, "punch");
+                    h.x = x0;
+                    h.y = y0;
+                    h.x2 = x1;
+                    h.y2 = y1;
+                    h.radius = mc.punchWidthTiles * T / 2f;
+                    h.delay = h.warning = mc.punchWindup + mc.punchStep * i;
+                    h.damage = m.attack();
+                    h.multiplier = mc.punchMultiplier;
+                    hazards.add(h);
+                    made++;
+                }
+                if (made == 0) return false; // 바로 앞이 벽이면 다른 패턴
+                m.enter(Monster.State.PUNCH_TELEGRAPH, mc.punchWindup);
+                events.add(GameEvent.toast(m.def.name + "이(가) 주먹을 뒤로 당긴다! 옆으로 비키자"));
+                events.add(GameEvent.sound("roar"));
+                return true;
+            }
+            case "counter":
+                // 방패 반격: 방패 뒤로 웅크려 버틴다. 이때 맞으면 막고 바로 반격한다 (counter)
+                mobs.aimAtHero(m);
+                m.enter(Monster.State.GUARD, mc.counterGuard);
+                events.add(GameEvent.toast(m.def.name + "이(가) 방패 뒤로 웅크린다! 지금 치면 반격당한다"));
+                events.add(GameEvent.sound("block"));
+                return true;
             case "spinslash": {
                 // 회전 베기: 보스 둘레 원을 예고 뒤 한 번에 벤다
                 circleHazard("spin", m.x, m.y, mc.spinSlashRadiusTiles * T, mc.spinSlashWarning, m.attack(), mc.spinSlashMultiplier);
@@ -381,6 +417,25 @@ public class BossBrain extends EnemyContext {
             default:
                 return false;
         }
+    }
+
+    /**
+     * 방패 반격: 웅크린(GUARD) 기사가 맞았다. 피해 없이 막고, 잠깐 뒤 용사 쪽 앞을 벤다.
+     * 막는 순간·베는 순간은 특수 공격 줄 뒤 4칸(방패 불꽃 → 낮게 베기)으로 보인다.
+     */
+    public void counter(Monster m) {
+        Balance.MonsterCfg mc = balance.monster;
+        mobs.aimAtHero(m);
+        events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, "막았다!", GameEvent.Tone.BLOCKED));
+        events.add(GameEvent.sound("block"));
+        GameEvent fx = GameEvent.fx(GameEvent.Type.SHIELD_UP, m.x + m.dirX * m.hurtRadius, m.centerY());
+        fx.size = m.hurtRadius * 1.2f;
+        events.add(fx);
+        float reach = mc.counterReachTiles * T;
+        circleHazard("counter", m.x + m.dirX * reach, m.y + m.dirY * reach, mc.counterRadiusTiles * T,
+                mc.counterWarning, m.attack(), mc.counterMultiplier);
+        m.enter(Monster.State.RECOVER, mc.counterRecover);
+        m.attackCd = Math.max(m.attackCd, mc.counterRecover);
     }
 
     void startChannel(Monster m, String kind, int count, float firstDelay) {

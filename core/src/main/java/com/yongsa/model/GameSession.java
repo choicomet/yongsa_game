@@ -596,6 +596,12 @@ public class GameSession {
             }
             return;
         }
+        if (m.state == Monster.State.GUARD) {
+            // 혈월의 기사 방패 반격: 웅크린 동안 맞으면 피해 없이 막고 바로 반격한다
+            m.flash = 0.1f;
+            bosses.counter(m);
+            return;
+        }
         int dmg = roll(rules.attack(state), mult);
         boolean guarded = false;
         if (m.guardActive()) {
