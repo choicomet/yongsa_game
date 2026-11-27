@@ -85,6 +85,10 @@ final class SfxMix {
             cue(intro.arrival(), intro.arrival(), -10f, .4f, .015f, 1f, 3, .34f, .5f);
             cue(intro.windup(), intro.windup(), -7.5f, .3f, .03f, 1f, 2, .15f, .25f);
         }
+        // 번개 두 번은 길어서(2.6초) 끝날 때까지 곡을 조금 더 줄인다
+        cue("bs_intro_warden_bolts", "bs_intro_warden_bolts", -9f, .4f, 0f, 1f, 3, .45f, 2.2f);
+        // 마왕 변신: 1페이즈 곡이 끊긴 사이 '콰아앙' + 낮은 웃음 (GameScreen 이 2페이즈 곡도 잠깐 줄인다)
+        cue("bs_demonlord_phase2", "bs_demonlord_phase2", -7f, 1f, 0f, 1f, 3, 0f, 0f);
         cue("intro_hit_pound", "hz_pound", -7.5f, .12f, .04f, 1f, 2, .25f, .2f);
         cue("intro_hit_spin", "hz_spin", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
         cue("intro_hit_bolt", "hz_bolt", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);

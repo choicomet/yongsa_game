@@ -775,7 +775,7 @@ public class BossBrain extends EnemyContext {
         e.x = m.x;
         e.y = m.centerY();
         events.add(e);
-        events.add(GameEvent.sound("roar"));
+        // 소리는 GameScreen 이 BOSS_PHASE2 에서 변신 소리(bs_demonlord_phase2: 콰아앙 + 낮은 웃음)로 낸다
     }
 
     public void speech(Monster m, String text) {

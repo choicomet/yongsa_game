@@ -10,7 +10,8 @@ public final class SfxNames {
     private static final java.util.Map<String, BossIntro> INTROS = java.util.Map.of(
             "golem", new BossIntro("bs_intro_golem", "bs_slam", "intro_hit_pound"),
             "knight", new BossIntro("bs_intro_knight", "bs_spin", "intro_hit_spin"),
-            "warden", new BossIntro("bs_intro_warden", "bs_lightning", "intro_hit_bolt"),
+            // 탑의 수문장 등장은 번개 두 번 (지용 11/27, tools/make_combat_sfx.py)
+            "warden", new BossIntro("bs_intro_warden_bolts", "bs_lightning", "intro_hit_bolt"),
             "demonlord", new BossIntro("bs_intro_demonlord", "bs_darkorb", "intro_hit_whip"));
     private static final BossIntro DEFAULT_INTRO = new BossIntro("roar", "cast", "slam");
 

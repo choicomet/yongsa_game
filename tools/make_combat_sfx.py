@@ -581,6 +581,15 @@ def warden_f():
     return reverb(fade(out, 0.3), size=0.8, wet=0.3, damp=5000)
 
 
+def warden_h():
+    """탑의 수문장 (시안 7f 에서 발걸음 '쿵쿵'을 뺌, 지용 11/27 밤): 번개 '콰광' → 더 큰 번개 '콰광'."""
+    dur = 2.4
+    out = np.zeros(int(dur * SR))
+    lightning(out, 0.02, 0.8)
+    lightning(out, 0.92, 1.0)
+    return reverb(fade(out, 0.3), size=0.8, wet=0.3, damp=5000)
+
+
 def demonlord_e():
     """마왕 (시안 E): 합창·심장 고동 → 2.3초 '콰아앙' → 수문장 시안 E 에 있던 낮은 저음 웃음 '흐흐흐하하'
     (조금 더 낮게, 길게) → 어두운 합창."""
@@ -630,7 +639,51 @@ def warden_g():
     return reverb(fade(out, 0.3), size=0.8, wet=0.3, damp=5000)
 
 
+# ── 보스 힘 모으기 (예전엔 몹과 같은 가는 'cast' 소리, 지용: 힘 빠지는 느낌) ─────────
+# 보스가 공격하기 전 0.6~1초쯤 힘을 모을 때. 끝이 풀리지 않고 '터지기 직전'에서 멈춰야 한다.
+
+def charge_a():
+    """'우우웅↑': 낮은 울림이 올라가고 주변 공기가 빨려 들어가다가 꼭대기에서 '칭' 하고 멈춤."""
+    dur = 0.75
+    out = np.zeros(int(0.85 * SR))
+    rise = t(dur) / dur
+    sub = sine_sweep(45, 110, dur) * rise ** 1.5
+    mid = sine_sweep(90, 220, dur, 0.02, 9) * rise ** 2
+    place(out, fade(norm(sub), 0.015), 0, 0.8)
+    place(out, fade(norm(lp(mid, 900, 1)), 0.015), 0, 0.35)
+    place(out, swell(dur, 250, 3500, 0.98), 0, 0.5)
+    ting = hp(rpg("battle/sword-unsheathe2.wav"), 3000)
+    place(out, fade(norm(ting[:int(0.12 * SR)]), 0.08), dur - 0.03, 0.25)
+    return fade(out, 0.05)
+
+
+def charge_b():
+    """역재생 '쉬이익-': 큰 쿵 소리를 거꾸로 틀어 점점 다가오는 느낌 (터지기 직전에 뚝)."""
+    slam = pitch(k.load("slam"), 0.6)
+    wet = reverb(np.concatenate([slam, np.zeros(int(0.3 * SR))]), size=0.9, wet=0.6, damp=4000)
+    rev = wet[::-1]
+    rev = rev[-int(0.8 * SR):]
+    air = swell(0.8, 300, 4000, 1.0)
+    out = norm(rev) + 0.35 * air
+    out *= np.clip(np.arange(len(out)) / (0.15 * SR), 0, 1)
+    return fade(out, 0.02)
+
+
+def charge_c():
+    """'그르르르↑': 낮게 으르렁거리며 힘을 주는 소리 + 땅이 떨림 (몸이 무거운 보스 느낌)."""
+    dur = 0.8
+    growl = pitch(rpg("NPC/ogre/ogre2.wav"), 0.55)[:int(dur * SR)]
+    growl = np.pad(growl, (0, max(0, int(dur * SR) - len(growl))))
+    growl = lp(norm(growl), 1500, 1) * (0.4 + 0.6 * t(dur) / dur)
+    rumble = lp(noise(dur), 160) * 8 * (t(dur) / dur) ** 1.2 * (1 + 0.6 * np.sin(2 * np.pi * 14 * t(dur)))
+    sub = sine_sweep(40, 70, dur) * (t(dur) / dur)
+    out = norm(growl) * 0.8 + norm(rumble) * 0.5 + norm(sub) * 0.6
+    out *= np.clip(np.arange(len(out)) / (0.06 * SR), 0, 1)
+    return fade(sat(out, 1.5), 0.05)
+
+
 SOUNDS = [
+    ("boss_charge_a", charge_a, -12), ("boss_charge_b", charge_b, -12), ("boss_charge_c", charge_c, -12),
     # (파일 이름, 함수, 크기 dB)  크기는 Kenney 녹음 기준(-12)과 맞춘다. 보스 등장은 조금 크게.
     ("hero_swing_a", swing_a, -12), ("hero_swing_b", swing_b, -12),
     ("hero_hit_a", hit_a, -12), ("hero_hit_b", hit_b, -12),
@@ -640,22 +693,22 @@ SOUNDS = [
     ("intro_warden", warden, -9), ("intro_warden_b", warden_b, -9), ("intro_warden_c", warden_c, -9), ("intro_demonlord", demonlord, -9), ("intro_demonlord_b", demonlord_b, -9), ("intro_demonlord_c", demonlord_c, -9), ("intro_warden_d", warden_d, -9), ("intro_warden_e", warden_e, -9), ("intro_demonlord_d", demonlord_d, -9), ("intro_warden_f", warden_f, -9), ("intro_warden_g", warden_g, -9), ("intro_demonlord_e", demonlord_e, -9),
 ]
 
-# 게임에 넣은 것 (2026-11-27 지용 결정): 보스 등장 소리만. 파일 크기 기준은 Kenney 녹음과 같은 -12dB
-# (SfxMix.FILE_REFERENCE_DB), 실제 재생 크기는 SfxMix 의 intro_* 규칙에서 정한다.
+# 게임에 넣은 것 (2026-11-27 밤 지용 결정). 보스 등장·준비·타격음은 해성이 tools/make_boss_intro_sfx.py (bs_*) 로
+# 정리했고, 그중 탑의 수문장 등장 소리만 이 도구의 번개 두 번으로 바꾼다. 시안 8e 는 마왕이 2페이즈로 변할 때 쓴다.
+# bs_ 파일은 SfxMix.SKILL_FILE_DB(-7dB) 로 잰다.
+GAME_LEVEL_DB = -7
 GAME = [
-    ("intro_golem", golem),
-    ("intro_knight", knight),
-    ("intro_warden", warden_f),      # 시안 7f: 발걸음 → 번개 두 번
-    ("intro_demonlord", demonlord_e),  # 시안 8e: 콰아앙 → 낮은 저음 웃음
+    ("bs_intro_warden_bolts", warden_h),     # 탑의 수문장 등장: 번개 두 번
+    ("bs_demonlord_phase2", demonlord_e),    # 마왕 변신: 합창·심장 고동 → 콰아앙 → 낮은 저음 웃음
 ]
 
 if __name__ == "__main__":
-    # python tools/make_combat_sfx.py            → 게임 파일 4개를 assets/audio/sfx 에 쓴다
+    # python tools/make_combat_sfx.py            → 게임 파일(GAME)을 assets/audio/sfx 에 쓴다
     # python tools/make_combat_sfx.py 폴더 [이름…] → 모든 시안을 그 폴더에 쓴다 (미리듣기용)
     if len(sys.argv) == 1:
         sfx = os.path.join(ROOT, "assets", "audio", "sfx")
         for name, fn in GAME:
-            finish(fn(), os.path.join(sfx, name + ".wav"), -12)
+            finish(fn(), os.path.join(sfx, name + ".wav"), GAME_LEVEL_DB)
         sys.exit(0)
     out_dir = sys.argv[1]
     only = sys.argv[2:]

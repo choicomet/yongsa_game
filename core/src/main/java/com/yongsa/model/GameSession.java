@@ -1056,7 +1056,7 @@ public class GameSession {
             events.add(e);
             events.add(GameEvent.sound(SfxNames.bossIntro(balance.finalBoss.sprite).arrival()));
             // 심연에는 문이 없다: 잠기는 대신 마왕이 말을 건다
-            for (Monster m : monsters) if (m.finalBoss && !m.dead) bosses.speech(m, "봉인을 풀고 여기까지 내려오다니. 어디 한번 놀아 주마.");
+            for (Monster m : monsters) if (m.finalBoss && !m.dead) bosses.speech(m, "마을을 구하려 오다니. 한번 놀아주마.");
             return;
         }
         roomGateEvent(GameEvent.Type.ROOM_LOCKED, r);

@@ -30,8 +30,8 @@ gateClose_TOP.wav <- rpg-audio / doorClose_3.ogg
 
 sk_*.wav (용사 검 스킬 소리): tools/make_skill_sfx.py 로 만든 것. 위 Kenney CC0 녹음(slam, destroy, swing, block, kill, craft)을 높낮이를 바꿔 쓰고, 코드로 만든 저음·바람·번개·화음·잔향을 섞음.
 
-intro_*.wav (보스 등장 소리: 골렘·혈월의 기사·탑의 수문장·마왕): tools/make_combat_sfx.py 로 만든 것.
-위 Kenney CC0 녹음(slam, destroy, mine, block, craft) + RPG Sound Pack (artisticdude, OpenGameArt, CC0: 거인·오우거 목소리, 칼 뽑기, 쇠사슬)
-+ OpenGameArt CC0 웃음 녹음 ("Evil Laugh" by AntumDeluge) + 코드로 만든 저음·바람·화음·잔향. 재료 원본은 tools/sfx_src.
+bs_intro_warden_bolts.wav (탑의 수문장 등장: 번개 두 번), bs_demonlord_phase2.wav (마왕 변신: 낮은 저음 웃음): tools/make_combat_sfx.py 로 만든 것.
+위 Kenney CC0 녹음(slam, destroy, craft) + OpenGameArt CC0 웃음 녹음 ("Evil Laugh" by AntumDeluge)
++ 코드로 만든 저음·바람·화음·잔향. 재료 원본은 tools/sfx_src.
 
 보스 등장과 시범 동작 (bs_*, hz_*.wav): 위 Kenney CC0 녹음과 합성한 소리를 tools/make_boss_intro_sfx.py로 혼합.
