@@ -28,6 +28,7 @@ import com.yongsa.ui.Ui;
 import com.yongsa.ui.UnsealScene;
 import com.yongsa.enemy.Monster;
 import com.yongsa.map.CameraFollow;
+import com.yongsa.map.Prop;
 import com.yongsa.map.Room;
 import com.yongsa.map.RoomType;
 import com.yongsa.ui.EndingScreen;
@@ -164,7 +165,9 @@ public class GameScreen extends ScreenAdapter {
             skillPressed = -1;
         }
         handleEvents();
+        updatePlaceMusic();
         game.bgm.update(delta);
+        updateCampfireSound(delta);
         if (!paused) renderer.update(frozen ? dt * 0.15f : dt);
         hud.update(dt);
         updateFade(delta);
@@ -525,6 +528,53 @@ public class GameScreen extends ScreenAdapter {
         return true;
     }
 
+    /**
+     * 장소 배경음악. 캠프에 있으면 캠프 곡(assets/audio/bgm/camp.ogg)을 2초 동안 서서히 키우며 틀고,
+     * 캠프를 나가면 1.5초 동안 줄인다. 보스 곡이 줄어드는 중(쓰러져서 캠프로 돌아올 때 등)이면 다 줄어든 뒤에 튼다.
+     */
+    private void updatePlaceMusic() {
+        String track = game.bgm.playing();
+        boolean wantCamp = session.inCamp() && endingDelay < 0;
+        if (wantCamp) {
+            if (track == null) game.bgm.play("camp", 2f);
+        } else if ("camp".equals(track)) {
+            game.bgm.fadeOut(1.5f);
+        }
+    }
+
+    /**
+     * 캠프에 있는 동안 모닥불 장작 소리를 깐다. 불에 가까울수록 크고, 불이 있는 쪽 귀에서 조금 더 들린다.
+     * 캠프를 나가거나, 보스 음악이 나오거나, 엔딩으로 넘어가면 서서히 줄어든다.
+     */
+    private void updateCampfireSound(float delta) {
+        float amount = 0f, pan = 0f;
+        String track = game.bgm.playing();
+        boolean bossMusic = track != null && track.startsWith("boss");
+        if (session.inCamp() && endingDelay < 0 && !bossMusic) {
+            Prop fire = campfire();
+            Room camp = session.heroRoom();
+            if (fire != null && camp != null) {
+                int T = game.balance.tileSize;
+                float dx = session.hero.x - fire.centerX(T);
+                float dy = session.hero.y - fire.centerY(T);
+                float d = (float) Math.hypot(dx, dy);
+                // 불 옆 3칸 안은 가장 크게, 캠프 끝(방 크기의 절반쯤)에서는 35% 까지 줄어든다
+                float near = 3f * T;
+                float far = Math.max(near + T, 0.5f * (float) Math.hypot((camp.x1 - camp.x0 + 1) * T, (camp.y1 - camp.y0 + 1) * T));
+                float t = MathUtils.clamp((d - near) / (far - near), 0f, 1f);
+                amount = 1f - 0.65f * t;
+                pan = MathUtils.clamp(-dx / (8f * T), -0.45f, 0.45f);
+            }
+        }
+        game.ambience.setFire(amount, pan);
+        game.ambience.update(delta);
+    }
+
+    private Prop campfire() {
+        for (Prop p : session.map.props) if (p.kind == Prop.Kind.CAMPFIRE) return p;
+        return null;
+    }
+
     /** 개발용: 하던 싸움을 그만둔다. 보스전이었으면 보스 음악도 서서히 끈다 (캠프까지 따라오지 않게). */
     private void devAbandonFight() {
         if (!session.fighting()) return;
@@ -572,6 +622,7 @@ public class GameScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         game.bgm.stop();
+        game.ambience.stop();
         stage.dispose();
         renderer.dispose();
         hud.dispose();
