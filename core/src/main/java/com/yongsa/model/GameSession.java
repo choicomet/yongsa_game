@@ -670,10 +670,20 @@ public class GameSession {
         if (m.hp <= 0) {
             m.hp = 0;
             m.dead = true;
-            if (m.finalBoss) {
-                bosses.speech(m, "이런 풋내기에게 당하다니!");
-                // 마왕이 쓰러지면 불러낸 부하도 함께 무너진다
-                for (Monster o : monsters) if (!o.boss) o.dead = true;
+            if (m.finalBoss) bosses.speech(m, "이런 풋내기에게 당하다니!");
+            // 보스(탑의 수문장·마왕)가 쓰러지면 불러낸 부하도 함께 무너져 바로 클리어된다
+            if (m.boss) {
+                for (Monster o : monsters) {
+                    if (o.boss || o.dead) continue;
+                    o.hp = 0;
+                    o.dead = true;
+                    GameEvent gone = GameEvent.fx(GameEvent.Type.MONSTER_DIED, o.x, o.y);
+                    gone.sprite = o.def.sprite;
+                    gone.size = 1f;
+                    gone.flip = o.dirX < -0.2f;
+                    gone.dirX = o.dirX;
+                    events.add(gone);
+                }
             }
             state.stats.monstersKilled++;
             GameEvent died = GameEvent.fx(GameEvent.Type.MONSTER_DIED, m.x, m.y);
