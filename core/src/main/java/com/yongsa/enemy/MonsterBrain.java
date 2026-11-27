@@ -517,7 +517,8 @@ public class MonsterBrain extends EnemyContext {
         } else {
             shoot(m, m.x, sy, base, speed, dmg, m.def.sprite);
         }
-        events.add(GameEvent.sound("cast"));
+        // 탑의 수문장은 마법 구슬 '퓽' (지용 11/27), 나머지는 예전 그대로
+        events.add(GameEvent.sound(m.boss && "warden".equals(m.def.sprite) ? "bs_orb_volley" : "cast"));
     }
 
     void shoot(Monster m, float x, float y, float angle, float speed, int damage, String source) {

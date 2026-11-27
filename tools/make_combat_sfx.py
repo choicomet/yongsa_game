@@ -682,7 +682,46 @@ def charge_c():
     return fade(sat(out, 1.5), 0.05)
 
 
+# ── 탑의 수문장 패턴 소리 (지용 11/27 밤) ─────────────────────────────
+
+def bolt_strike():
+    """번개 내려치기 한 방 '콰광': 번개 장판이 터지는 순간마다 난다 (0.28초 간격으로 여러 번 → 꼬리를 짧게)."""
+    out = np.zeros(int(0.75 * SR))
+    crack = bandsweep(noise(0.04), 7000, 1500) * env(0.04, 0.0003, 5)
+    place(out, norm(crack), 0, 0.9)
+    place(out, fade(norm(pitch(k.load("destroy"), 1.35)), 0.06), 0, 0.7)
+    place(out, boom(0.5, 85, 40), 0, 0.7)
+    thunder = lp(noise(0.6), 320) * 8 * env(0.6, 0.01, 3.5)
+    place(out, fade(norm(thunder), 0.25), 0.03, 0.4)
+    return fade(out, 0.1)
+
+
+def orb_shot():
+    """마법 구슬 한 발 '퓽': 회전하며 쏘는 불 구슬마다 (짧고 가볍게, 여러 번 나도 시끄럽지 않게)."""
+    dur = 0.16
+    zap = sine_sweep(1500, 520, dur) * env(dur, 0.002, 4)
+    body = sine_sweep(380, 200, dur) * env(dur, 0.002, 5)
+    air = bandsweep(noise(dur), 2500, 900) * env(dur, 0.003, 4)
+    out = norm(zap) * 0.55 + norm(body) * 0.45 + norm(air) * 0.3
+    return fade(out, 0.04)
+
+
+def firespin_start():
+    """불 구슬 회전 시작 '후우웅': 회오리 바람이 돌며 커지고 구슬이 '화륵' 붙는 소리 (예전 포효 대신)."""
+    dur = 0.7
+    swirl = bandsweep(noise(dur), 400, 2200) * (t(dur) / dur) ** 1.2 * (1 + 0.6 * np.sin(2 * np.pi * 7 * t(dur)))
+    hum = sine_sweep(110, 220, dur, 0.02, 7) * (t(dur) / dur)
+    ign = crackle(0.35, 700, 6000) * env(0.35, 0.01, 3)
+    out = np.zeros(int(0.95 * SR))
+    place(out, norm(swirl), 0, 0.7)
+    place(out, fade(norm(hum), 0.05), 0, 0.4)
+    place(out, norm(ign), 0.55, 0.45)
+    place(out, norm(orb_shot()), 0.62, 0.5)
+    return fade(out, 0.08)
+
+
 SOUNDS = [
+    ("bs_bolt_strike", bolt_strike, -9), ("bs_orb_shot", orb_shot, -12), ("bs_firespin_start", firespin_start, -10),
     ("boss_charge_a", charge_a, -12), ("boss_charge_b", charge_b, -12), ("boss_charge_c", charge_c, -12),
     # (파일 이름, 함수, 크기 dB)  크기는 Kenney 녹음 기준(-12)과 맞춘다. 보스 등장은 조금 크게.
     ("hero_swing_a", swing_a, -12), ("hero_swing_b", swing_b, -12),
@@ -700,6 +739,9 @@ GAME_LEVEL_DB = -7
 GAME = [
     ("bs_intro_warden_bolts", warden_h),     # 탑의 수문장 등장: 번개 두 번
     ("bs_demonlord_phase2", demonlord_e),    # 마왕 변신: 합창·심장 고동 → 콰아앙 → 낮은 저음 웃음
+    ("bs_bolt_strike", bolt_strike),         # 탑의 수문장 번개 장판이 터질 때 (hz_bolt)
+    ("bs_orb_shot", orb_shot),               # 탑의 수문장 불 구슬 회전: 한 발마다
+    ("bs_firespin_start", firespin_start),   # 탑의 수문장 불 구슬 회전 시작 (예전 포효 대신)
 ]
 
 if __name__ == "__main__":
