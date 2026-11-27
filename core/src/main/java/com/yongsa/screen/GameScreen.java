@@ -530,7 +530,8 @@ public class GameScreen extends ScreenAdapter {
 
     /**
      * 장소 배경음악 (assets/audio/bgm). 캠프는 camp, 마을은 마왕을 잡기 전 village_frozen, 잡은 뒤 village_free,
-     * 던전은 dungeon_mine·dungeon_citadel·dungeon_tower (심연 제외). 보스전이 시작되면 보스곡이 이 곡을 대신한다.
+     * 던전은 dungeon_mine·dungeon_citadel·dungeon_tower (심연 제외), 잡몹과 싸우는 동안은 battle_mine·battle_citadel·battle_tower.
+     * 보스전이 시작되면 보스곡이 이 곡을 대신한다.
      * 그 장소에 들어오면 2초 동안 서서히 키우며 틀고, 나가면 1.5초 동안 줄인다.
      * 다른 곡이 줄어드는 중(쓰러져서 캠프로 돌아올 때 등)이면 다 줄어든 뒤에 튼다.
      */
@@ -541,17 +542,24 @@ public class GameScreen extends ScreenAdapter {
             if (session.inCamp()) want = "camp";
             else if (session.inVillage()) want = session.villagersFree() ? "village_free" : "village_frozen";
             else if (session.inDungeon() && session.currentRoom().type != RoomType.FINAL) want = dungeonBgm(session.currentRoom().dungeonId);
+            // 잡몹 방이 잠기고 싸움이 붙으면 그 던전 전투곡 (보스방은 보스곡이 따로 나온다)
+            Room fight = session.fightRoom();
+            if (fight != null && fight.type != RoomType.BOSS && fight.type != RoomType.FINAL && fight.dungeonId != null) {
+                want = dungeonBgm(fight.dungeonId).replace("dungeon_", "battle_");
+            }
         }
+        // 전투곡으로는 빨리 넘어가고(0.4초 줄이고 0.3초 키움), 다른 곳은 천천히(1.5초 줄이고 2초 키움)
+        boolean battle = want != null && want.startsWith("battle_");
         if (want != null) {
-            if (track == null) game.bgm.play(want, 2f);
-            else if (isPlaceMusic(track) && !track.equals(want)) game.bgm.fadeOut(1.5f);
+            if (track == null) game.bgm.play(want, battle ? 0.3f : 2f);
+            else if (isPlaceMusic(track) && !track.equals(want)) game.bgm.fadeOut(battle ? 0.4f : 1.5f);
         } else if (isPlaceMusic(track)) {
             game.bgm.fadeOut(1.5f);
         }
     }
 
     private static boolean isPlaceMusic(String track) {
-        return track != null && (track.equals("camp") || track.startsWith("village_") || track.startsWith("dungeon_"));
+        return track != null && (track.equals("camp") || track.startsWith("village_") || track.startsWith("dungeon_") || track.startsWith("battle_"));
     }
 
     /** 던전 탐험 곡 이름. 보스곡과 같은 조라서 보스방에서 보스곡으로 넘어갈 때 덜 튄다. */
