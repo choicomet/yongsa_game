@@ -1,0 +1,6 @@
+보스 힘 모으기 소리 재료 (tools/make_boss_charge_sfx.py). 모두 CC0 1.0, 모노 16비트 44.1kHz WAV 로 바꿈.
+- OpenGameArt "80 CC0 RPG SFX" (rubberduck) https://opengameart.org/content/80-cc0-rpg-sfx : stones_*, item_stone_*, blade_*, chain_*, creature_roar_*
+- OpenGameArt "100 CC0 SFX" (rubberduck) https://opengameart.org/content/100-cc0-sfx : bell_*, gong_*, metal_*, explosion
+- OpenGameArt "100 CC0 SFX #2" (rubberduck) https://opengameart.org/content/100-cc0-sfx-2 : sfx100v2_stones_*
+- OpenGameArt "150 Game Effect Sounds" 모음 https://opengameart.org/node/195932 : Earth/Lightning Spell Impact, Retro Electric Sparks, low_frequency_explosion (Kenney Sci-fi, CoMiGo 등 CC0)
+- RPG Sound Pack (artisticdude) https://opengameart.org/content/rpg-sound-pack : giant2, metal-ringing, chainmail1

@@ -84,6 +84,10 @@ final class SfxMix {
         for (String b : new String[]{"golem", "knight", "warden", "demonlord"}) {
             cue("intro_" + b, "intro_" + b, -10f, 1f, 0f, 1f, 3, 0.5f, b.equals("demonlord") ? 2.5f : 1.6f);
         }
+        // 보스 힘 모으기 (지용 2026-11-27): 패턴을 시작할 때 보스마다 다른 소리. 파일: tools/make_boss_charge_sfx.py
+        for (String b : new String[]{"golem", "knight", "warden", "demonlord"}) {
+            cue("charge_" + b, "charge_" + b, -10f, 0.6f, 0.03f, 1f, 2, 0.25f, 0.9f);
+        }
         cue("awaken", "awaken", -12f, 0.3f, 0f, 1f, 3, 0.4f, 0.5f);
         cue("unseal", "unseal", -11f, 0.5f, 0f, 1f, 3, 0.5f, 1.1f);
         cue("destroy", "destroy", -11f, 0.3f, 0f, 1f, 3, 0.45f, 0.55f);
