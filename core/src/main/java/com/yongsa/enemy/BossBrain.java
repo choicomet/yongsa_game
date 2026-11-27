@@ -164,7 +164,7 @@ public class BossBrain extends EnemyContext {
                 m.stateT = m.stateTotal = mc.spinMin + random.nextFloat() * (mc.spinMax - mc.spinMin);
                 m.spinAngle = random.nextFloat() * 6.283f;
                 m.orbitSign = random.nextBoolean() ? 1 : -1;
-                events.add(GameEvent.sound("bs_firespin_start"));
+                events.add(GameEvent.sound("bs_orb_volley"));
                 return true;
             case "spearstand":
                 // 혈월의 기사 창 찌르기: 멈춰 선 채로만 창이 나온다 (channel)

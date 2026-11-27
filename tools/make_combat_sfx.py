@@ -740,8 +740,8 @@ GAME = [
     ("bs_intro_warden_bolts", warden_h),     # 탑의 수문장 등장: 번개 두 번
     ("bs_demonlord_phase2", demonlord_e),    # 마왕 변신: 합창·심장 고동 → 콰아앙 → 낮은 저음 웃음
     ("bs_bolt_strike", bolt_strike),         # 탑의 수문장 번개 장판이 터질 때 (hz_bolt)
-    ("bs_orb_shot", orb_shot),               # 탑의 수문장 불 구슬 회전: 한 발마다
-    ("bs_firespin_start", firespin_start),   # 탑의 수문장 불 구슬 회전 시작 (예전 포효 대신)
+    # bs_orb_shot.wav (수문장 구슬)은 이 도구로 만들지 않는다: 지용이 고른 마왕 쏘기 소리(shot_demonlord,
+    # tools/make_boss_charge_sfx.py)를 -7dB 로 맞춰 넣었다. orb_shot·firespin_start 는 시안으로만 남김.
 ]
 
 if __name__ == "__main__":

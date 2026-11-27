@@ -87,10 +87,10 @@ final class SfxMix {
         }
         // 번개 두 번은 길어서(2.6초) 끝날 때까지 곡을 조금 더 줄인다
         cue("bs_intro_warden_bolts", "bs_intro_warden_bolts", -9f, .4f, 0f, 1f, 3, .45f, 2.2f);
-        // 탑의 수문장 마법 구슬 (지용 11/27): 회전 시작 '후우웅', 회전 중 한 발마다 '퓽', 그냥 쏠 때(부채꼴·유도)도 '퓽'
-        cue("bs_firespin_start", "bs_firespin_start", -9f, .5f, 0f, 1f, 2, .15f, .3f);
-        cue("bs_orb_shot", "bs_orb_shot", -15f, .2f, .07f, 1f, 1, 0f, 0f);
-        cue("bs_orb_volley", "bs_orb_shot", -11f, .1f, .05f, .9f, 2, 0f, 0f);
+        // 탑의 수문장 마법 구슬 (지용 11/27, 지용이 고른 마왕 쏘기 소리 shot_demonlord 와 같은 녹음):
+        // 회전 구슬은 시작 때 크게 한 번 + 도는 동안 한 발마다 작게, 그냥 쏠 때(부채꼴·유도)도 같은 소리
+        cue("bs_orb_shot", "bs_orb_shot", -13f, .2f, .05f, 1f, 1, 0f, 0f);
+        cue("bs_orb_volley", "bs_orb_shot", -9f, .1f, .03f, 1f, 2, 0f, 0f);
         // 마왕 변신: 1페이즈 곡이 끊긴 사이 '콰아앙' + 낮은 웃음 (GameScreen 이 2페이즈 곡도 잠깐 줄인다)
         cue("bs_demonlord_phase2", "bs_demonlord_phase2", -7f, 1f, 0f, 1f, 3, 0f, 0f);
         cue("intro_hit_pound", "hz_pound", -7.5f, .12f, .04f, 1f, 2, .25f, .2f);
