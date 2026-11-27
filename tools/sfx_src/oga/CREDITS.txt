@@ -1,3 +1,4 @@
 OpenGameArt CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/), 모노 16비트 WAV 로 바꿈
 evil_laughter_qubodup.wav  <- "Evil laughter" by qubodup  https://opengameart.org/content/evil-laughter (q.mp3)
 laugh_evil_1_antumdeluge.wav <- "Evil Laugh" by AntumDeluge https://opengameart.org/content/evil-laugh (laugh-evil-1.ogg)
+thunder_rain_wuxiascrub.wav <- "Rain + Long Thunder" by WuxiaScrub  https://opengameart.org/content/rain-long-thunder (rain-thunder.ogg, 22초 근처 벼락 2초만)

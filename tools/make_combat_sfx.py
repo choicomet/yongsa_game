@@ -696,6 +696,16 @@ def bolt_strike():
     return fade(out, 0.1)
 
 
+def bolt_strike_real():
+    """번개 내려치기 한 방, 실제 녹음 (지용 11/27 고름 'B 짧게'): WuxiaScrub 'Rain + Long Thunder'(OGA CC0) 의 벼락
+    '빠직·콰광' 부분 0.9초. 0.3초부터 우르릉 꼬리를 빠르게 줄여 0.28초 간격으로 여러 번 나도 뭉개지지 않게."""
+    x = oga("thunder_rain_wuxiascrub.wav")[:int(0.9 * SR)].copy()
+    x[:220] *= np.linspace(0, 1, 220)
+    f0 = int(0.3 * SR)
+    x[f0:] *= np.linspace(1, 0, len(x) - f0) ** 2.5
+    return x
+
+
 def orb_shot():
     """마법 구슬 한 발 '퓽': 회전하며 쏘는 불 구슬마다 (짧고 가볍게, 여러 번 나도 시끄럽지 않게)."""
     dur = 0.16
@@ -739,7 +749,7 @@ GAME_LEVEL_DB = -7
 GAME = [
     ("bs_intro_warden_bolts", warden_h),     # 탑의 수문장 등장: 번개 두 번
     ("bs_demonlord_phase2", demonlord_e),    # 마왕 변신: 합창·심장 고동 → 콰아앙 → 낮은 저음 웃음
-    ("bs_bolt_strike", bolt_strike),         # 탑의 수문장 번개 장판이 터질 때 (hz_bolt)
+    ("bs_bolt_strike", bolt_strike_real),    # 탑의 수문장 번개 장판이 터질 때 (hz_bolt), 실제 벼락 녹음 (합성 bolt_strike 대신)
     # bs_orb_shot.wav (수문장 구슬)은 이 도구로 만들지 않는다: 지용이 고른 마왕 쏘기 소리(shot_demonlord,
     # tools/make_boss_charge_sfx.py)를 -7dB 로 맞춰 넣었다. orb_shot·firespin_start 는 시안으로만 남김.
 ]
