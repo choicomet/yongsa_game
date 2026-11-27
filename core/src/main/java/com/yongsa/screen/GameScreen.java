@@ -441,9 +441,7 @@ public class GameScreen extends ScreenAdapter {
                     break;
                 case CHEST_OPENED: {
                     game.sfx.play("awaken");
-                    boolean bossChest = session.map.room(e.opened) != null && session.map.room(e.opened).type == com.yongsa.map.RoomType.BOSS;
-                    hud.toast("보물상자에서 " + e.ore.displayName + " " + e.amount + "개"
-                            + "를 얻었다" + (e.potions > 0 && !bossChest ? " · 포션 " + e.potions + "개가 바닥에 떨어졌다" : ""));
+                    hud.toast("보물상자에서 " + e.ore.displayName + " " + e.amount + "개를 얻었다");
                     if (e.first) {
                         // 상자에서 보스의 힘 구슬이 튀어나와 왼쪽 위 '보스 힘' 칸으로 날아간다
                         Vector3 v = worldCam.project(new Vector3(e.x, e.y - session.balance.tileSize * 0.4f, 0), 0, 0, YongsaGame.WIDTH, YongsaGame.HEIGHT);
