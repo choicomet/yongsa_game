@@ -77,6 +77,8 @@ public class GameScreen extends ScreenAdapter {
 
     public GameScreen(YongsaGame game, GameState state) {
         this.game = game;
+        // 업적은 판과 상관없이 설정 파일에 있다. 효과(최대 체력 등)가 세션을 만들 때부터 들어가도록 먼저 넣는다
+        state.achievements = new com.yongsa.model.Achievements(game.settings.achievements);
         this.session = new GameSession(game.balance, game.newMap(), state, System.nanoTime());
         session.deferDoors = true;
         session.bossIntroEnabled = true;
@@ -388,6 +390,11 @@ public class GameScreen extends ScreenAdapter {
                 case TOAST:
                     hud.toast(e.text);
                     break;
+                case ACHIEVEMENT:
+                    hud.achievement(e.achievement);
+                    game.sfx.play("success");
+                    game.saveSettings();
+                    break;
                 case SOUND:
                     game.sfx.play(e.text);
                     break;
@@ -490,7 +497,7 @@ public class GameScreen extends ScreenAdapter {
             if (session.state.bossDefeated(id)) continue;
             com.yongsa.config.Balance.DungeonDef d = game.balance.dungeon(id);
             com.yongsa.config.Balance.WeaponDef w = game.balance.weaponForOre(d.ore);
-            return "다음에 만들 무기: " + w.name + " (" + com.yongsa.model.OreType.valueOf(d.ore).displayName + " " + w.craftCost + "개)";
+            return "다음에 만들 무기: " + w.name + " (" + com.yongsa.model.OreType.valueOf(d.ore).displayName + " " + session.rules.craftCost(session.state, w) + "개)";
         }
         return "이제 캠프로 돌아가면 성검의 봉인을 풀 수 있다";
     }

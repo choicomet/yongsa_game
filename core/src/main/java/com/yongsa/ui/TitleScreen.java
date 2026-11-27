@@ -17,7 +17,7 @@ import com.yongsa.ui.SettingsWindow;
 import com.yongsa.ui.Ui;
 import com.yongsa.screen.GameScreen;
 
-/** 타이틀 (UI-01): 이어하기, 시작하기, 설정(조작 키 포함), 종료하기. 배경은 제목이 그려진 키 아트(title_keyart). */
+/** 타이틀 (UI-01): 이어하기, 시작하기, 업적, 설정(조작 키 포함), 종료하기. 배경은 제목이 그려진 키 아트(title_keyart). */
 public class TitleScreen extends MenuScreen {
 
     public TitleScreen(YongsaGame game) {
@@ -46,6 +46,9 @@ public class TitleScreen extends MenuScreen {
             cont.setDisabled(!hasSave);
             col.add(cont).row();
             col.add(nav.add("시작하기", TitleScreen.this::newGame)).row();
+            int got = new com.yongsa.model.Achievements(game.settings.achievements).count();
+            col.add(nav.add("업적   " + got + " / " + com.yongsa.model.Achievement.values().length,
+                    () -> modals.push(new AchievementWindow(game)))).row();
             col.add(nav.add("설정", () -> modals.push(new SettingsWindow(game,
                     () -> modals.push(new ControlsWindow(game, null)))))).row();
             col.add(nav.add("종료하기", () -> Gdx.app.exit())).padBottom(0).row();

@@ -217,6 +217,8 @@ public class GameSession {
 
     public void update(float dt, Controls c) {
         state.stats.playSeconds += dt;
+        // 강화·제작은 창에서, 채굴은 여기서 센다. 매 프레임 확인해도 셋뿐이라 가볍다
+        announce(state.achievements().checkDuringRun(state.stats));
         lockedGateMsgCd -= dt;
         justDied = false;
         if (pendingDoor != null) return; // 화면이 어두워지는 동안은 멈춰 있다
@@ -568,7 +570,7 @@ public class GameSession {
             hero.rollX = hero.aimX;
             hero.rollY = hero.aimY;
         }
-        hero.rollCd = balance.attack.rollTime + balance.attack.rollCooldown;
+        hero.rollCd = rollCooldownTotal();
         hero.rollFacing = Facing.of(hero.rollX, hero.rollY);
         hero.facing = hero.rollFacing;
         hero.moving = false;
@@ -585,6 +587,20 @@ public class GameSession {
         return Math.max(1, Math.round(base * mult * spread));
     }
 
+    /** 구르기 한 번의 전체 대기 시간 (업적 '번개 같은 용사'가 있으면 줄어든다). */
+    public float rollCooldownTotal() {
+        return balance.attack.rollTime + balance.attack.rollCooldown * state.achievements().rollCooldown();
+    }
+
+    /** 새로 달성한 업적을 알린다. 화면이 알림을 띄우고 설정 파일에 저장한다. */
+    private void announce(List<Achievement> unlocked) {
+        for (Achievement a : unlocked) {
+            GameEvent e = new GameEvent(GameEvent.Type.ACHIEVEMENT);
+            e.achievement = a;
+            events.add(e);
+        }
+    }
+
     private void damageMonster(Monster m, float mult) {
         if (m.invulnerable()) return;
         if (m.finalBoss && !Rules.HOLY_AWAKENED.equals(state.equipped().defId)) {
@@ -596,7 +612,8 @@ public class GameSession {
             }
             return;
         }
-        int dmg = roll(rules.attack(state), mult);
+        // 업적 '불굴의 용사': 보스가 아닌 몬스터에게 피해가 늘어난다
+        int dmg = roll(rules.attack(state), m.boss ? mult : mult * state.achievements().mobDamage());
         boolean guarded = false;
         if (m.guardActive()) {
             // 해골병 방패: 정면에서 오는 공격은 크게 줄어든다. 뒤나 옆은 그대로
@@ -1145,7 +1162,9 @@ public class GameSession {
             events.add(e);
             events.add(new GameEvent(GameEvent.Type.AUTOSAVE));
         } else if (r.type == RoomType.FINAL) {
+            boolean firstClear = !state.finalBossDefeated;
             state.finalBossDefeated = true;
+            if (firstClear) announce(state.achievements().checkClear(state.stats));
             events.add(new GameEvent(GameEvent.Type.FINAL_DEFEATED));
             events.add(new GameEvent(GameEvent.Type.AUTOSAVE));
         } else if (r.type == RoomType.MOB && !state.chests.contains(r.id)
@@ -1402,17 +1421,19 @@ public class GameSession {
         fx.size = v.hitsLeft;
         events.add(fx);
         if (v.hitsLeft > 0) return;
-        state.addOre(v.ore, v.amount);
-        state.stats.oreMined += v.amount;
+        // 업적 '갱도의 주인': 광맥 하나마다 더 받는다
+        int amount = v.amount + state.achievements().veinBonus();
+        state.addOre(v.ore, amount);
+        state.stats.oreMined += amount;
         veinsOf(heroRoom).remove(v);
         if (!v.painted()) map.setBlocked(v.tileX, v.tileY, false);
         GameEvent e = new GameEvent(GameEvent.Type.ORE_GAINED);
         e.ore = v.ore;
-        e.amount = v.amount;
+        e.amount = amount;
         e.x = center(v.tileX);
         e.y = center(v.tileY) + T / 2f;
         events.add(e);
-        events.add(GameEvent.floatText(e.x, e.y, v.ore.displayName + " +" + v.amount, GameEvent.Tone.ORE));
+        events.add(GameEvent.floatText(e.x, e.y, v.ore.displayName + " +" + amount, GameEvent.Tone.ORE));
         events.add(GameEvent.sound("ore"));
     }
 

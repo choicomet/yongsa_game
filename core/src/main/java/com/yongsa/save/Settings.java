@@ -25,6 +25,8 @@ public class Settings {
     /** 개발용 (F1): 걸을 수 있는 곳을 초록으로 표시한다. 저장하지 않아도 되지만 다른 개발 설정과 같이 둔다. */
     public boolean devShowWalkable = false;
     public boolean devShowLayers = false;
+    /** 달성한 업적 (Achievement 이름). 새 게임을 시작해도 남는다. */
+    public java.util.List<String> achievements = new java.util.ArrayList<>();
 
     public float sfx() {
         return sfxVolume < 0 ? volume : sfxVolume;
