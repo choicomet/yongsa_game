@@ -55,6 +55,8 @@ public class GameScreen extends ScreenAdapter {
     /** 누른 스킬 칸 (0=L, 1=U, 2=I, 3=O), 없으면 -1. */
     private int skillPressed = -1;
     private float endingDelay = -1;
+    /** 마왕 처치 후 엔딩 이야기까지 기다리는 시간 (초): 승리 팡파레 bs_victory.wav 길이 7.24초 + 여유. */
+    static final float ENDING_AFTER_FANFARE = 7.5f;
     /** 화면 흔들림 세기 (0~1), 타격 순간 잠깐 멈추는 시간, 화면 전환용 검은 막. */
     private float trauma, hitStop, shakeTime;
     private float fade = 1f, fadeTarget = 0f;
@@ -183,6 +185,8 @@ public class GameScreen extends ScreenAdapter {
                 GameState done = session.state;
                 game.setScreen(new StoryScreen(game, game.story.ending, () -> game.setScreen(new EndingScreen(game, done))));
                 dispose();
+                // 엔딩곡: 이야기 그림부터 기록 화면까지 반복 (dispose 가 음악을 멈추므로 그 뒤에 튼다)
+                game.bgm.play("ending", 1.5f);
                 return;
             }
         }
@@ -422,7 +426,8 @@ public class GameScreen extends ScreenAdapter {
                     hud.banner("마왕을 쓰러뜨렸다!");
                     game.bgm.fadeOut(2.4f);
                     game.sfx.play("bossVictory");
-                    endingDelay = 2.5f;
+                    // 팡파레(약 7.2초)가 끝난 뒤 엔딩 이야기로 넘어간다 (지용 2026-11-28)
+                    endingDelay = ENDING_AFTER_FANFARE;
                     break;
                 case HERO_DIED:
                     game.sfx.play("death");

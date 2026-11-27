@@ -87,6 +87,7 @@ public class StoryScreen extends ScreenAdapter {
     @Override
     public void render(float delta) {
         t += delta;
+        game.bgm.update(delta);
         fade = Math.min(1f, fade + delta * 1.4f);
         textAlpha = Math.min(1f, textAlpha + delta / 0.6f);
         Gdx.gl.glClearColor(0, 0, 0, 1);
