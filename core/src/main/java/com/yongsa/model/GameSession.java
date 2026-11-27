@@ -1,5 +1,7 @@
 package com.yongsa.model;
 
+import com.yongsa.audio.SfxNames;
+
 import com.yongsa.combat.Attack;
 import com.yongsa.combat.Facing;
 import com.yongsa.enemy.Hazard;
@@ -864,11 +866,12 @@ public class GameSession {
             }
             // 특수 공격(동작 시트 4행) 준비 자세: 힘을 모은다
             b.enter(Monster.State.CAST_TELEGRAPH, INTRO_STRIKE_AT - INTRO_WINDUP_AT);
-            // 소리는 연출 시작 때 보스별 등장 소리(intro_*) 하나로 낸다 (지용 2026-11-27)
+            events.add(GameEvent.sound(SfxNames.bossIntro(b.def.sprite).windup()));
         } else if (introStep == 1 && e >= INTRO_STRIKE_AT && bossIntroT > 0) {
             introStep = 2;
             // 내리친다: 특수 공격 뒷동작 + 충격파 (보여 주기만 하고 용사는 맞지 않는다)
             b.enter(Monster.State.RECOVER, 0.8f);
+            events.add(GameEvent.sound(SfxNames.bossIntro(b.def.sprite).impact()));
             GameEvent fx = GameEvent.fx(GameEvent.Type.SLAM_FX, b.x, b.y);
             fx.size = balance.monster.bossSlamRadiusTiles * T * (b.finalBoss ? 1.3f : 1f);
             events.add(fx);
@@ -1027,12 +1030,14 @@ public class GameSession {
             e.text = d.boss.name;
             e.dungeonId = r.dungeonId;
             events.add(e);
+            events.add(GameEvent.sound(SfxNames.bossIntro(d.boss.sprite).arrival()));
         } else if (r.type == RoomType.FINAL) {
             spawn(r, balance.finalBoss, true, true, true);
             GameEvent e = new GameEvent(GameEvent.Type.BOSS_FIGHT_START);
             e.text = balance.finalBoss.name;
             e.boss = true;
             events.add(e);
+            events.add(GameEvent.sound(SfxNames.bossIntro(balance.finalBoss.sprite).arrival()));
             // 심연에는 문이 없다: 잠기는 대신 마왕이 말을 건다
             for (Monster m : monsters) if (m.finalBoss && !m.dead) bosses.speech(m, "봉인을 풀고 여기까지 내려오다니. 어디 한번 놀아 주마.");
             return;

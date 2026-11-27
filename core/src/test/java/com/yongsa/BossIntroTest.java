@@ -88,6 +88,9 @@ class BossIntroTest {
         if (m.finalBoss || "LEFT".equals(name)) assertArrayEquals(new boolean[]{true, true, true, true}, castFrames);
         assertTrue(wound && struck, name + ": 특수 공격 준비 → 내리치기 동작을 한 번 보여 준다");
         assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.SLAM_FX), name + ": 충격파");
+        var cues = com.yongsa.audio.SfxNames.bossIntro(m.def.sprite);
+        assertEquals(List.of(cues.windup(), cues.impact()), ev.stream()
+                .filter(event -> event.type == GameEvent.Type.SOUND).map(event -> event.text).toList(), name);
         assertTrue(maxFocus > 0.99f, name + ": 카메라가 보스까지 간다");
         assertEquals(0f, g.bossIntroFocus(), name + ": 끝나면 카메라는 용사에게");
         assertEquals(Monster.State.CHASE, m.state, name);
