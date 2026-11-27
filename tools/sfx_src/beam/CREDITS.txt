@@ -1,0 +1,10 @@
+성광 검기 효과음 재료 (tools/make_beam_sfx.py). 모두 CC0 1.0, 모노 16비트 44.1kHz WAV 로 바꿈.
+- OpenGameArt "150 Game Effect Sounds" 모음 https://opengameart.org/node/195932
+  - lentikula "Healing Spell Impacts" (CC0) : Healing_Spell_Impact_4, 9, 11, 15
+  - lentikula "Basic Spell Impacts" (CC0) : Ice_Spell_Impact_5
+  - lentikula "Druid Spell Impacts" (CC0) : Wind_Spell_Impact_5
+  - Kenney "RPG Audio" (CC0) : draw_knife2, knife_slice
+  - Kenney "Impact Sounds" (CC0) : impact_punch_heavy_002, impact_punch_medium_002
+- OpenGameArt "80 CC0 RPG SFX" (rubberduck) https://opengameart.org/content/80-cc0-rpg-sfx : blade_03, metal_02, spell_02, item_gem_04
+- OpenGameArt "100 CC0 SFX" (rubberduck) https://opengameart.org/content/100-cc0-sfx : bell_02, bell_03
+- RPG Sound Pack (artisticdude) https://opengameart.org/content/rpg-sound-pack : swing2

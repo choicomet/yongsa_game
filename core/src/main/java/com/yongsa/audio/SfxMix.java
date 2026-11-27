@@ -118,7 +118,7 @@ final class SfxMix {
         cue("sk_crescentHit", "sk_crescentHit", -9f, 0.06f, 0.06f, 1f, 2, 0f, 0f);
         cue("sk_strike", "sk_strike", -8f, 0.1f, 0.02f, 1f, 2, 0.15f, 0.3f);         // 천공 낙뢰: 전기가 모이는 소리
         cue("sk_strikeHit", "sk_strikeHit", -7f, 0.07f, 0.06f, 1f, 3, 0.35f, 0.4f);  // 번개 '딱' + 천둥
-        cue("sk_beam", "sk_beam", -7f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);                // 성광 검기: 종 + 밝은 장조 반짝임
+        cue("sk_beam", "sk_beam", -11f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);               // 성광 검기: 종 + 치유 빛 녹음 (지용 2026-11-27: 예전 -7dB 는 너무 컸다, tools/make_beam_sfx.py)
         cue("sk_beamHit", "sk_beamHit", -9f, 0.06f, 0.05f, 1f, 2, 0f, 0f);
         // ── 대장간 망치 (fg_hammer): 모루를 치는 "깡". 망치가 내려칠 때만. 강화 결과음은 원래 녹음 그대로
         cue("fg_hammer", "fg_hammer", -7f, 0.05f, 0.05f, 1f, 2, 0f, 0f);
