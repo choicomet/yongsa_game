@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * 대장간 창 (UI-04, 2026-11-27 개편).
  * 왼쪽 목록에서 검을 고르면(↑↓) 오른쪽에서 그 검으로 할 일(강화 · 흡수 · 분해, ←→)을 하고 Enter 로 실행한다.
- * 목록 아래 "새로 만들기" 칸을 고르면 제작. Q 는 고른 검 장착, Esc 는 닫기. 마우스로도 같은 일을 한다.
+ * 목록 아래 "새로 만들기" 칸을 고르면 제작. Space 는 고른 검 장착, Esc 는 닫기. 마우스로도 같은 일을 한다.
  * 가운데 작업대에는 고른 검이 올라간다. 파괴 확인과 실제 판정/저장 규칙은 그대로 유지한다.
  */
 public class ForgeWindow extends Modal {
@@ -137,10 +137,9 @@ public class ForgeWindow extends Modal {
                 return true;
             case Input.Keys.ENTER:
             case Input.Keys.NUMPAD_ENTER:
-            case Input.Keys.SPACE:
                 runPrimary();
                 return true;
-            case Input.Keys.Q:
+            case Input.Keys.SPACE:
                 equipSelected();
                 return true;
             default:
@@ -477,8 +476,20 @@ public class ForgeWindow extends Modal {
                 t.add(label(g.rules.weaponName(w), "default", w.awakened ? Ui.PURPLE : Ui.TEXT)).left().row();
                 String sub = "공격력 " + g.rules.attack(g.state, w);
                 if (w.awakened && d.abilityName != null) sub += " · 각성 완료 · " + d.abilityName;
-                sub += w.uid == g.state.equippedUid ? " · 장착 중" : " · Q 장착";
-                t.add(small(sub, Ui.DIM, 0.85f)).left().padTop(4);
+                boolean equipped = w.uid == g.state.equippedUid;
+                if (equipped) sub += " · 장착 중";
+                Table subRow = new Table();
+                subRow.add(small(sub, Ui.DIM, 0.85f)).left();
+                if (!equipped) {
+                    Table hint = new Table();
+                    Table k = keycap("Space");
+                    ((Label) k.getChildren().first()).setFontScale(0.62f);
+                    k.pad(0, 4, 0, 4);
+                    hint.add(k).height(16).padRight(4);
+                    hint.add(small("장착", Ui.DIM, 0.7f));
+                    subRow.add(hint).left().padLeft(10);
+                }
+                t.add(subRow).left().padTop(4);
                 name.add(t).left();
             } else {
                 name.add(Ui.artImage(art.sword(it.craft.id, false))).size(60).padRight(14);
