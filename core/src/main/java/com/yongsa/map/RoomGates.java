@@ -22,6 +22,8 @@ final class RoomGates implements Disposable {
     private final Map<Door,SideSill> sideSills=new IdentityHashMap<>();
     private final Map<Door,SideSill> paintedSills=new IdentityHashMap<>();
 
+    /** 계단 옆 성채 문(map.json recessedGrille): 반달 방패문을 세우면 계단 위에 떠 보여서, 예전처럼 얇은 쇠창살이 내려온다. */
+    private final Set<Door> recessedGrilles = Collections.newSetFromMap(new IdentityHashMap<>());
     private final float[] grilleQuad = new float[20];
     private final Map<Door,float[][]> grilleOpenings = new IdentityHashMap<>();
     private final PaintedDoorways doorways;
@@ -41,6 +43,7 @@ final class RoomGates implements Disposable {
             var feet=joint.gateSill;
             for (var door:map.room(joint.room).doors)
                 if (Math.abs(joint.door[0]-door.footX)<.02f && Math.abs(joint.door[1]-door.footY)<.02f) {
+                    if (joint.recessedGrille) recessedGrilles.add(door);
                     paintedSills.put(door,new SideSill(joint.x(feet[0]),joint.y(feet[1]),joint.x(feet[2]),joint.y(feet[3])));
                 }
         }
@@ -172,7 +175,23 @@ final class RoomGates implements Disposable {
                 }
                 continue;
             }
-            if (iron) {
+            Texture leaf=iron ? texture("sprites/citadel-portcullis.png") : null;
+            if (recessedGrilles.contains(d) && !level(sill(d))) {
+                if (close > 0) {
+                    SideSill sill = sill(d);
+                    float amount = close * close * (3 - 2 * close);
+                    for (int i = 0; i < 16; i++) {
+                        float u = i / 16f, v = (i + 1) / 16f;
+                        float ax = MathUtils.lerp(sill.nearX, sill.farX, u), bx = MathUtils.lerp(sill.nearX, sill.farX, v);
+                        float ay = MathUtils.lerp(sill.nearY, sill.farY, u), by = MathUtils.lerp(sill.nearY, sill.farY, v);
+                        parts.add(new Part((ay + by) / 2, () -> panel(batch, leaf, ax, ay, bx, by, 48, u, v, 0, amount, 0, amount)));
+                    }
+                }
+                continue;
+            }
+            // 반달 방패문은 정면 그림이라, 비스듬한 문턱에 세우면 기울어진 판자처럼 찌그러져 보인다.
+            // 문턱이 수평에 가까운 문만 방패문, 비스듬한 문은 예전 쇠창살.
+            if (iron && level(sill(d))) {
                 if (close > 0) addCitadelDoors(parts, batch, sill(d), close);
                 continue;
             }
@@ -181,7 +200,7 @@ final class RoomGates implements Disposable {
             float height=MathUtils.clamp(width*(tower?.30f:.34f),28,52);
             SideSill sill=sill(d);
             float sign=Math.signum(sill.farX-sill.nearX);
-            float jamb=tower?.18f:.15f;
+            float jamb=tower?.18f:iron?.165f:.15f;
             float post=Math.min(Math.abs(sill.farX-sill.nearX)*.25f,side?13:19);
             float lx=sill.nearX+sign*post/2, rx=sill.farX-sign*post/2, ly=sill.nearY, ry=sill.farY;
             parts.add(new Part(ly,()->panel(batch,texture,lx-sign*post,ly,lx,ly,height,0,jamb,0,1,0,1)));
@@ -213,7 +232,12 @@ final class RoomGates implements Disposable {
                 float ay=MathUtils.lerp(ly,ry,u), by=MathUtils.lerp(ly,ry,v);
                 float srcA=MathUtils.lerp(jamb,1-jamb,u), srcB=MathUtils.lerp(jamb,1-jamb,v);
                 float depth=(ay+by)/2;
-                if (amount>0) {
+                if (iron) {
+                    // The guide stays attached to both piers. Only the iron teeth travel.
+                    parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,srcA,srcB,0,.211f,.89f,1)));
+                    if (amount>0) parts.add(new Part(depth,()->panel(batch,leaf,ax,ay,bx,by,height,
+                            u,v,1-amount,1,.89f*(1-amount),.89f)));
+                } else if (amount>0) {
                     float hinge=u<.5f?0:1, angle=(1-amount)*MathUtils.PI/2;
                     float scale=MathUtils.cos(angle), fold=MathUtils.sin(angle)*width*.28f;
                     float a=MathUtils.lerp(hinge,u,scale), b=MathUtils.lerp(hinge,v,scale);
@@ -225,6 +249,10 @@ final class RoomGates implements Disposable {
             }
         }
         return parts;
+    }
+
+    private static boolean level(SideSill s) {
+        return Math.abs(s.farY - s.nearY) <= .2f * Math.abs(s.farX - s.nearX);
     }
 
     /** Slide both leaves out of the masonry, clipping their hidden ends at each bank. */
