@@ -6,7 +6,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Scaling;
 import com.yongsa.YongsaGame;
@@ -24,10 +23,7 @@ import com.yongsa.screen.GameScreen;
  * 아래: 보유 기술과 자기소개. 버튼은 마을로 가기(마을 가는 길에서 이어서), 타이틀로 돌아가기 (FR-던전-10).
  */
 public class EndingScreen extends MenuScreen {
-    private static final Color LINE = new Color(0xffffff18);
     private static final Color CARD_SUB = new Color(0x8f897dff);
-    private static final Color BAR = new Color(0xe2973fff);
-    private static final Color BAR_BG = new Color(0x0b1015ff);
     private static final Color GRADE = new Color(0xffcf7aff);
 
     private final GameState state;
@@ -52,16 +48,16 @@ public class EndingScreen extends MenuScreen {
         @Override
         public void build() {
             if (card == null) {
-                card = Ui.rounded(0x1c2630f2, 0x3a444dff, 1, 12, 14, 10);
-                photo = Ui.rounded(0x0d1319ff, 0xb8935aff, 2, 10, 4, 4);
-                tag = Ui.rounded(0x1c2630ff, 0x55606aff, 1, 10, 9, 2);
-                tagGold = Ui.rounded(0x2a2219ff, 0xe2973fff, 1, 10, 9, 2);
-                gradeTag = Ui.rounded(0x141c24ff, 0xb8935a99, 1, 9, 8, 1);
+                card = skin.getDrawable("record/career_card");
+                photo = skin.getDrawable("record/photo_frame");
+                tag = skin.getDrawable("record/skill_chip");
+                tagGold = skin.getDrawable("record/skill_chip_gold");
+                gradeTag = skin.getDrawable("record/grade_badge");
             }
             nav.style = "round";
             Stats s = state.stats;
             Rules rules = new Rules(game.balance);
-            Table p = panel("panelRound");
+            Table p = panel("record/paper");
             p.pad(18, 30, 20, 30);
 
             p.add(label("기록", "title", Ui.GOLD)).padBottom(2).row();
@@ -113,7 +109,7 @@ public class EndingScreen extends MenuScreen {
             skills.add(chip("마왕 퇴치", true));
             bottom.add(skills).width(400).height(70).padRight(10);
             Table intro = new Table();
-            intro.setBackground(card);
+            intro.setBackground(skin.getDrawable("record/quote"));
             Label quote = label("\"광물을 캐고, 칼을 두드리고, 마왕을 베었습니다.\n 도와줄 사람이 없어서 전부 제가 했습니다.\"", "small", Ui.TEXT);
             quote.setAlignment(Align.left);
             intro.add(quote).left().expandX();
@@ -147,7 +143,7 @@ public class EndingScreen extends MenuScreen {
         private void infoRow(Table t, String k, String v, Color color) {
             t.add(label(k, "default", Ui.DIM)).left().width(110).padBottom(3);
             t.add(label(v, "default", color)).left().expandX().padBottom(3).row();
-            Image line = new Image(new TextureRegionDrawable(game.art.white()).tint(LINE));
+            Image line = new Image(skin.getDrawable("record/row_line"));
             t.add(line).colspan(2).growX().height(1).padBottom(4).row();
         }
 
@@ -166,8 +162,8 @@ public class EndingScreen extends MenuScreen {
             c.add(statRow(k2, v2)).growX().padBottom(8).row();
             float w = 240;
             Table bar = new Table();
-            bar.setBackground(new TextureRegionDrawable(game.art.white()).tint(BAR_BG));
-            Image fill = new Image(new TextureRegionDrawable(game.art.white()).tint(BAR));
+            bar.setBackground(skin.getDrawable("record/bar_back"));
+            Image fill = new Image(skin.getDrawable("record/bar_fill"));
             bar.add(fill).width(Math.max(1, w * progress)).height(5).left();
             bar.add().expandX();
             c.add(bar).width(w).height(5).left();
