@@ -706,6 +706,16 @@ def bolt_strike_real():
     return x
 
 
+def warden_intro_real():
+    """탑의 수문장 등장, 실제 벼락 녹음 (지용 11/27 고름 'A 긴 것'): InspectorJ 'Thunder, Very Close, Rain, 01'
+    (OpenGameArt CC-BY 3.0, 크레딧 필요) 의 가까운 벼락 '빠지직·콰광' + 우르릉 3초. 1초부터 줄인다."""
+    x = oga("thunder_close_inspectorj.wav").copy()
+    x[:220] *= np.linspace(0, 1, 220)
+    f0 = int(1.0 * SR)
+    x[f0:] *= np.linspace(1, 0, len(x) - f0) ** 2
+    return x
+
+
 def orb_shot():
     """마법 구슬 한 발 '퓽': 회전하며 쏘는 불 구슬마다 (짧고 가볍게, 여러 번 나도 시끄럽지 않게)."""
     dur = 0.16
@@ -747,7 +757,7 @@ SOUNDS = [
 # bs_ 파일은 SfxMix.SKILL_FILE_DB(-7dB) 로 잰다.
 GAME_LEVEL_DB = -7
 GAME = [
-    ("bs_intro_warden_bolts", warden_h),     # 탑의 수문장 등장: 번개 두 번
+    ("bs_intro_warden_bolts", warden_intro_real),  # 탑의 수문장 등장: 실제 벼락 녹음 3초 (합성 번개 두 번 warden_h 대신)
     ("bs_demonlord_phase2", demonlord_e),    # 마왕 변신: 합창·심장 고동 → 콰아앙 → 낮은 저음 웃음
     ("bs_bolt_strike", bolt_strike_real),    # 탑의 수문장 번개 장판이 터질 때 (hz_bolt), 실제 벼락 녹음 (합성 bolt_strike 대신)
     # bs_orb_shot.wav (수문장 구슬)은 이 도구로 만들지 않는다: 지용이 고른 마왕 쏘기 소리(shot_demonlord,

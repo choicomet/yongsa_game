@@ -86,7 +86,7 @@ final class SfxMix {
             cue(intro.windup(), intro.windup(), -7.5f, .3f, .03f, 1f, 2, .15f, .25f);
         }
         // 번개 두 번은 길어서(2.6초) 끝날 때까지 곡을 조금 더 줄인다
-        cue("bs_intro_warden_bolts", "bs_intro_warden_bolts", -9f, .4f, 0f, 1f, 3, .45f, 2.2f);
+        cue("bs_intro_warden_bolts", "bs_intro_warden_bolts", -9f, .4f, 0f, 1f, 3, .45f, 2.8f);  // 실제 벼락 녹음 2.7초 동안 곡을 줄임
         // 탑의 수문장 마법 구슬 (지용 11/27, 지용이 고른 마왕 쏘기 소리 shot_demonlord 와 같은 녹음):
         // 회전 구슬은 시작 때 크게 한 번 + 도는 동안 한 발마다 작게, 그냥 쏠 때(부채꼴·유도)도 같은 소리
         cue("bs_orb_shot", "bs_orb_shot", -13f, .2f, .05f, 1f, 1, 0f, 0f);
