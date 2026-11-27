@@ -78,7 +78,7 @@ public class ForgeWindow extends Modal {
         boolean completed = motion.advance(delta);
         int strikes = motion.strikes();
         if (wasBusy && (motion.phase() == ForgeMotion.Phase.HAMMER || completed)) {
-            if (strikes > playedStrikes) screen.game.sfx.play("mine");
+            if (strikes > playedStrikes) screen.game.sfx.play("fg_hammer");
             playedStrikes = strikes;
         }
         if (completed && afterHammer != null) {
