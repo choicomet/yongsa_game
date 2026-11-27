@@ -557,6 +557,57 @@ def demonlord_d():
     return reverb(fade(out, 0.8), size=1.0, wet=0.35, damp=3000)
 
 
+def lightning(out, at, g=1.0):
+    """번개 '콰광' 한 번: 날카로운 '콰직' + 깨지는 소리 + 쿵 + 천둥 꼬리."""
+    crack = bandsweep(noise(0.04), 7000, 1500) * env(0.04, 0.0003, 5)
+    place(out, norm(crack), at, 0.9 * g)
+    place(out, fade(norm(pitch(k.load("destroy"), 1.35)), 0.06), at, 0.75 * g)
+    place(out, boom(1.0, 80, 32), at, 0.75 * g)
+    thunder = lp(noise(1.3), 300) * 8 * k.quake_roll(1.3, 8.0) * env(1.3, 0.02, 2.5)
+    place(out, fade(norm(thunder), 0.4), at + 0.05, 0.55 * g)
+
+
+def warden_f():
+    """탑의 수문장 (시안 F): 무거운 발걸음 '쿵·쿵' → 번개 '콰광' → 더 큰 번개 '콰광'. 웃음·마법 모으기 없음."""
+    dur = 3.4
+    out = np.zeros(int(dur * SR))
+    for at, g in ((0.0, 0.7), (0.5, 0.85)):
+        place(out, fade(norm(pitch(k.load("slam"), 0.55)), 0.08), at, g)
+        place(out, fade(norm(pitch(k.load("block"), 0.6)), 0.08), at + 0.01, 0.25)
+    lightning(out, 1.15, 0.8)
+    lightning(out, 2.05, 1.0)
+    return reverb(fade(out, 0.3), size=0.8, wet=0.3, damp=5000)
+
+
+def demonlord_e():
+    """마왕 (시안 E): 합창·심장 고동 → 2.3초 '콰아앙' → 수문장 시안 E 에 있던 낮은 저음 웃음 '흐흐흐하하'
+    (조금 더 낮게, 길게) → 어두운 합창."""
+    dur = 6.2
+    out = np.zeros(int(dur * SR))
+    hit = 2.3
+    ch1 = formant(saw_voices([73.4, 110.0, 146.8, 174.6], hit + 0.1))
+    ch1 *= np.clip(t(hit + 0.1) / hit, 0, 1) ** 1.6
+    place(out, norm(ch1), 0.0, 0.2)
+    for at, g in ((0.45, 0.4), (1.1, 0.55), (1.7, 0.7)):
+        place(out, boom(0.6, 70, 38), at, g)
+        place(out, boom(0.5, 70, 38), at + 0.17, g * 0.6)
+    place(out, swell(0.8, 200, 5000, 0.98), hit - 0.78, 0.3)
+    place(out, boom(2.2, 48, 20), hit, 1.0)
+    place(out, fade(norm(pitch(k.load("slam"), 0.45)), 0.1), hit, 0.8)
+    place(out, fade(norm(pitch(k.load("destroy"), 0.4)), 0.1), hit + 0.02, 0.45)
+    br = brass([73.4, 103.8, 146.8, 174.6], 2.4) * (0.35 + 0.65 * np.exp(-t(2.4) * 4)) * np.exp(-t(2.4) * 1.0)
+    place(out, sat(norm(br), 1.8), hit, 0.35)
+    laugh = low_laugh("laugh_evil_1_antumdeluge.wav", 0.58)
+    laugh = laugh[int(0.6 * SR):int(3.4 * SR)]
+    laugh = fade(laugh, 0.4) * np.clip(np.arange(len(laugh)) / (0.05 * SR), 0, 1)
+    place(out, laugh, hit + 0.2, 1.0)
+    tail = dur - hit
+    ch2 = formant(saw_voices([73.4, 110.0, 155.6, 174.6, 220.0], tail), (650, 1080, 2650))
+    ch2 *= np.clip(t(tail) / 0.4, 0, 1) * np.exp(-t(tail) * 0.8)
+    place(out, norm(ch2), hit + 0.05, 0.22)
+    return reverb(fade(out, 0.8), size=1.0, wet=0.35, damp=3000)
+
+
 SOUNDS = [
     # (파일 이름, 함수, 크기 dB)  크기는 Kenney 녹음 기준(-12)과 맞춘다. 보스 등장은 조금 크게.
     ("hero_swing_a", swing_a, -12), ("hero_swing_b", swing_b, -12),
@@ -564,7 +615,7 @@ SOUNDS = [
     ("hero_hurt", hurt, -12),
     ("hero_roll_a", roll_a, -12), ("hero_roll_b", roll_b, -12),
     ("intro_golem", golem, -9), ("intro_knight", knight, -9),
-    ("intro_warden", warden, -9), ("intro_warden_b", warden_b, -9), ("intro_warden_c", warden_c, -9), ("intro_demonlord", demonlord, -9), ("intro_demonlord_b", demonlord_b, -9), ("intro_demonlord_c", demonlord_c, -9), ("intro_warden_d", warden_d, -9), ("intro_warden_e", warden_e, -9), ("intro_demonlord_d", demonlord_d, -9),
+    ("intro_warden", warden, -9), ("intro_warden_b", warden_b, -9), ("intro_warden_c", warden_c, -9), ("intro_demonlord", demonlord, -9), ("intro_demonlord_b", demonlord_b, -9), ("intro_demonlord_c", demonlord_c, -9), ("intro_warden_d", warden_d, -9), ("intro_warden_e", warden_e, -9), ("intro_demonlord_d", demonlord_d, -9), ("intro_warden_f", warden_f, -9), ("intro_demonlord_e", demonlord_e, -9),
 ]
 
 if __name__ == "__main__":
