@@ -320,6 +320,8 @@ public class Balance {
         public List<String> phase2Patterns;
         /** 근접 공격 예고 시간과 공격 뒤 쉬는 시간 (0이면 monster 공통 값). 잡몹과 보스 모두 쓴다 (보스: 마왕 2페이즈). */
         public float telegraph, cooldown;
+        /** 보스: 패턴 사이 간격 (0이면 monster.bossPatternGap 공통 값). 혈월의 기사는 패턴이 많아 조금 길다. */
+        public float patternGap;
         /** 보스: 구석에 몰리면 순간이동해서 빠져나간다. */
         public boolean cornerBlink;
         /** 보스: 구석에 몰리면 순간이동 대신 뒤로 크게 도약해서 빠져나간다 (혈월의 기사). */
