@@ -31,3 +31,5 @@ gateClose_TOP.wav <- rpg-audio / doorClose_3.ogg
 sk_*.wav (용사 검 스킬 소리): tools/make_skill_sfx.py 로 만든 것. 위 Kenney CC0 녹음(slam, destroy, swing, block, kill, craft)을 높낮이를 바꿔 쓰고, 코드로 만든 저음·바람·번개·화음·잔향을 섞음.
 
 fg_*.wav (대장간 망치·강화 결과), bs_*.wav (보스 패턴 시작음), hz_*.wav (보스·몹 장판 터지는 소리): tools/make_world_sfx.py 로 만든 것. 같은 Kenney CC0 녹음을 높낮이를 바꿔 쓰고, 코드로 만든 저음·쇳소리·잔향을 섞음.
+
+보스 등장과 시범 동작 (bs_*, hz_*.wav): 위 Kenney CC0 녹음과 합성한 소리를 tools/make_boss_intro_sfx.py로 혼합.

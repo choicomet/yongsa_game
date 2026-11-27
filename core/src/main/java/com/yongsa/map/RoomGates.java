@@ -22,7 +22,6 @@ final class RoomGates implements Disposable {
     private final Map<Door,SideSill> sideSills=new IdentityHashMap<>();
     private final Map<Door,SideSill> paintedSills=new IdentityHashMap<>();
 
-    private final Set<Door> recessedGrilles = Collections.newSetFromMap(new IdentityHashMap<>());
     private final float[] grilleQuad = new float[20];
     private final Map<Door,float[][]> grilleOpenings = new IdentityHashMap<>();
     private final PaintedDoorways doorways;
@@ -42,7 +41,6 @@ final class RoomGates implements Disposable {
             var feet=joint.gateSill;
             for (var door:map.room(joint.room).doors)
                 if (Math.abs(joint.door[0]-door.footX)<.02f && Math.abs(joint.door[1]-door.footY)<.02f) {
-                    if (joint.recessedGrille) recessedGrilles.add(door);
                     paintedSills.put(door,new SideSill(joint.x(feet[0]),joint.y(feet[1]),joint.x(feet[2]),joint.y(feet[3])));
                 }
         }
@@ -126,7 +124,7 @@ final class RoomGates implements Disposable {
     /** A shallow permanent sill, drawn underneath actors and both gate states. */
     void drawThresholds(SpriteBatch batch,float x0,float y0,float x1,float y1) {
         for (var room:map.rooms) for (var d:room.doors) {
-            if (!supports(d) || recessedGrilles.contains(d) || grilleOpenings.containsKey(d) || room.type==RoomType.CAMP || d.footX<x0-256 || d.footX>x1+256
+            if (!supports(d) || "RIGHT".equals(room.dungeonId) || grilleOpenings.containsKey(d) || room.type==RoomType.CAMP || d.footX<x0-256 || d.footX>x1+256
                     || d.footY<y0-256 || d.footY>y1+256) continue;
             SideSill sill = sill(d);
             batch.setColor(.07f,.045f,.055f,.52f);
@@ -166,26 +164,16 @@ final class RoomGates implements Disposable {
             }
             if (r.type==RoomType.CAMP && close<=0) continue;
             boolean side=!frontFacing(d), tower=key.endsWith("top.png"), iron=key.endsWith("right.png");
-            Texture leaf=iron ? texture("sprites/citadel-portcullis.png") : null;
             var opening=grilleOpenings.get(d);
             if (opening!=null && iron) {
                 if (close>0) {
                     float depth=r.sceneY((opening[0][2]+opening[opening.length-1][2])*.5f);
-                    parts.add(new Part(depth,()->drawInsetGrille(batch,leaf,r,opening,close)));
+                    parts.add(new Part(depth,()->drawInsetGrille(batch,texture("sprites/citadel-portcullis.png"),r,opening,close)));
                 }
                 continue;
             }
-            if (recessedGrilles.contains(d)) {
-                if (close > 0) {
-                    SideSill sill = sill(d);
-                    float amount = close * close * (3 - 2 * close);
-                    for (int i = 0; i < 16; i++) {
-                        float u = i / 16f, v = (i + 1) / 16f;
-                        float ax = MathUtils.lerp(sill.nearX, sill.farX, u), bx = MathUtils.lerp(sill.nearX, sill.farX, v);
-                        float ay = MathUtils.lerp(sill.nearY, sill.farY, u), by = MathUtils.lerp(sill.nearY, sill.farY, v);
-                        parts.add(new Part((ay + by) / 2, () -> panel(batch, leaf, ax, ay, bx, by, 48, u, v, 0, amount, 0, amount)));
-                    }
-                }
+            if (iron) {
+                if (close > 0) addCitadelDoors(parts, batch, sill(d), close);
                 continue;
             }
             Texture texture=texture(key);
@@ -193,7 +181,7 @@ final class RoomGates implements Disposable {
             float height=MathUtils.clamp(width*(tower?.30f:.34f),28,52);
             SideSill sill=sill(d);
             float sign=Math.signum(sill.farX-sill.nearX);
-            float jamb=tower?.18f:iron?.165f:.15f;
+            float jamb=tower?.18f:.15f;
             float post=Math.min(Math.abs(sill.farX-sill.nearX)*.25f,side?13:19);
             float lx=sill.nearX+sign*post/2, rx=sill.farX-sign*post/2, ly=sill.nearY, ry=sill.farY;
             parts.add(new Part(ly,()->panel(batch,texture,lx-sign*post,ly,lx,ly,height,0,jamb,0,1,0,1)));
@@ -225,12 +213,7 @@ final class RoomGates implements Disposable {
                 float ay=MathUtils.lerp(ly,ry,u), by=MathUtils.lerp(ly,ry,v);
                 float srcA=MathUtils.lerp(jamb,1-jamb,u), srcB=MathUtils.lerp(jamb,1-jamb,v);
                 float depth=(ay+by)/2;
-                if (iron) {
-                    // The guide stays attached to both piers. Only the iron teeth travel.
-                    parts.add(new Part(depth,()->panel(batch,texture,ax,ay,bx,by,height,srcA,srcB,0,.211f,.89f,1)));
-                    if (amount>0) parts.add(new Part(depth,()->panel(batch,leaf,ax,ay,bx,by,height,
-                            u,v,1-amount,1,.89f*(1-amount),.89f)));
-                } else if (amount>0) {
+                if (amount>0) {
                     float hinge=u<.5f?0:1, angle=(1-amount)*MathUtils.PI/2;
                     float scale=MathUtils.cos(angle), fold=MathUtils.sin(angle)*width*.28f;
                     float a=MathUtils.lerp(hinge,u,scale), b=MathUtils.lerp(hinge,v,scale);
@@ -242,6 +225,26 @@ final class RoomGates implements Disposable {
             }
         }
         return parts;
+    }
+
+    /** Slide both leaves out of the masonry, clipping their hidden ends at each bank. */
+    private void addCitadelDoors(List<Part> parts, SpriteBatch batch, SideSill sill, float close) {
+        Texture doors = texture("sprites/citadel-shield-doors.png");
+        float travel = .5f * close * close * (3 - 2 * close);
+        float width = (float)Math.hypot(sill.farX - sill.nearX, sill.farY - sill.nearY);
+        float height = MathUtils.clamp(width * .43f, 35, 66);
+        // Sort narrow strips against actors using the actual feet along the angled stair.
+        for (int side = 0; side < 2; side++) {
+            float start = side == 0 ? 0 : 1 - travel;
+            float source = side == 0 ? .5f - travel : .5f;
+            for (int i = 0; i < 8; i++) {
+                float u = start + travel * i / 8, v = start + travel * (i + 1) / 8;
+                float ax = MathUtils.lerp(sill.nearX, sill.farX, u), bx = MathUtils.lerp(sill.nearX, sill.farX, v);
+                float ay = MathUtils.lerp(sill.nearY, sill.farY, u), by = MathUtils.lerp(sill.nearY, sill.farY, v);
+                float texA = source + travel * i / 8, texB = source + travel * (i + 1) / 8;
+                parts.add(new Part((ay + by) / 2, () -> panel(batch, doors, ax, ay, bx, by, height, texA, texB, 0, 1, 0, 1)));
+            }
+        }
     }
 
     /** Slide the ironwork behind the painted arch, clipping at the inner stones. */

@@ -101,12 +101,21 @@ final class SfxMix {
         // 파일: assets/audio/sfx/sk_*.wav (tools/make_skill_sfx.py 로 만든 것, 크게 구움 -7dB)
         cue("sk_cleave", "sk_cleave", -7f, 0.1f, 0.03f, 1f, 3, 0.3f, 0.35f);         // 흑철 대지 가르기: 바위가 갈라지는 내려찍기
         cue("sk_cleaveHit", "sk_cleaveHit", -9f, 0.08f, 0.06f, 1f, 2, 0f, 0f);
-        cue("sk_crescent", "sk_crescent", -7f, 0.1f, 0.03f, 1f, 3, 0.25f, 0.3f);     // 혈월참: 휘어지는 바람 + 어두운 단조 울림
+        cue("sk_crescent", "sk_crescent", -7f, 0.1f, 0.03f, 1f, 3, 0.25f, 0.3f);     // 혈월참: 쇠를 긁고 빠져나가는 칼바람
         cue("sk_crescentHit", "sk_crescentHit", -9f, 0.06f, 0.06f, 1f, 2, 0f, 0f);
         cue("sk_strike", "sk_strike", -8f, 0.1f, 0.02f, 1f, 2, 0.15f, 0.3f);         // 천공 낙뢰: 전기가 모이는 소리
         cue("sk_strikeHit", "sk_strikeHit", -7f, 0.07f, 0.06f, 1f, 3, 0.35f, 0.4f);  // 번개 '딱' + 천둥
-        cue("sk_beam", "sk_beam", -7f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);                // 성광 검기: 종 + 밝은 장조 반짝임
+        cue("sk_beam", "sk_beam", -7f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);                // 성광 검기: 칼날의 공명
         cue("sk_beamHit", "sk_beamHit", -9f, 0.06f, 0.05f, 1f, 2, 0f, 0f);
+        for (String boss : new String[]{"golem", "knight", "warden", "demonlord"}) {
+            var intro = SfxNames.bossIntro(boss);
+            cue(intro.arrival(), intro.arrival(), -10f, .4f, .015f, 1f, 3, .34f, .5f);
+            cue(intro.windup(), intro.windup(), -7.5f, .3f, .03f, 1f, 2, .15f, .25f);
+        }
+        cue("intro_hit_pound", "hz_pound", -7.5f, .12f, .04f, 1f, 2, .25f, .2f);
+        cue("intro_hit_spin", "hz_spin", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
+        cue("intro_hit_bolt", "hz_bolt", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
+        cue("intro_hit_whip", "hz_whip", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
         // ── 보스·몹 장판 패턴이 터질 때 (hz_<모양>). 여러 개가 한꺼번에 터져도 최소 간격으로 한 번만
         // 파일: tools/make_world_sfx.py 로 만든 것 (2026-11-26 밤). 보스 재질: 골렘 바위 · 기사 쇠·피 · 수문장 번개·불·마법 · 마왕 어둠
         for (String hz : new String[]{"boulder", "pound", "brand"}) cue("hz_" + hz, "hz_" + hz, -7.5f, 0.12f, 0.04f, 1f, 2, 0.25f, 0.2f);
