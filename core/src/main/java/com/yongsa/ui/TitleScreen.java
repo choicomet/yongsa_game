@@ -46,9 +46,7 @@ public class TitleScreen extends MenuScreen {
             cont.setDisabled(!hasSave);
             col.add(cont).row();
             col.add(nav.add("시작하기", TitleScreen.this::newGame)).row();
-            int got = new com.yongsa.model.Achievements(game.settings.achievements).count();
-            col.add(nav.add("업적   " + got + " / " + com.yongsa.model.Achievement.values().length,
-                    () -> modals.push(new AchievementWindow(game)))).row();
+            col.add(nav.add("업적", () -> modals.push(new AchievementWindow(game)))).row();
             col.add(nav.add("설정", () -> modals.push(new SettingsWindow(game,
                     () -> modals.push(new ControlsWindow(game, null)))))).row();
             col.add(nav.add("종료하기", () -> Gdx.app.exit())).padBottom(0).row();
