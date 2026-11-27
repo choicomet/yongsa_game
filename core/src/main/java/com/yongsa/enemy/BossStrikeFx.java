@@ -65,9 +65,8 @@ final class BossStrikeFx {
         float x=e.x,y=e.y,r=e.size;
         b.setColor(1,1,1,fade);
         switch(e.text) {
-            case "pound", "boulder", "rock", "punch" -> {
-                float size=r*("pound".equals(e.text)?1.92f:"boulder".equals(e.text)?1.65f:"punch".equals(e.text)?1.4f:1.20f);
-                if ("punch".equals(e.text)) { x=(e.x+e.dirX)/2; y=(e.y+e.dirY)/2; } // 충격파 한 칸의 가운데
+            case "pound", "boulder", "rock" -> {
+                float size=r*("pound".equals(e.text)?1.92f:"boulder".equals(e.text)?1.65f:1.20f);
                 int frame=p<.15f?0:p<.38f?1:p<.64f?2:3;
                 b.draw(rubble[frame],x-size/2,y-size*.19f,size,size);
             }
@@ -81,7 +80,7 @@ final class BossStrikeFx {
                             y+radius*MathUtils.sin(angle)-size*.18f,size,size);
                 }
             }
-            case "spin", "leap", "counter" -> {
+            case "spin", "leap" -> {
                 float size=r*(1.65f+.47f*rise), angle=165-rise*245;
                 b.draw(impacts[1],x-size/2,y-size/2,size/2,size/2,size,size,1,1,angle);
                 if ("spin".equals(e.text)) {

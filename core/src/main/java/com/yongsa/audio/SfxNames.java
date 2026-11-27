@@ -15,24 +15,9 @@ public final class SfxNames {
             case "bonespike": n = "bs_summon"; break;
             case "bloodpool": n = "bs_crescent"; break;
             case "whip": n = "bs_combo"; break;
-            case "punch": n = "bs_pound"; break;
-            case "counter": n = "bs_shield"; break;
             default: n = "bs_" + p;
         }
         return SfxMix.CUES.containsKey(n) ? n : "roar";
-    }
-
-    public record BossIntro(String arrival, String windup, String impact) {}
-
-    private static final java.util.Map<String, BossIntro> INTROS = java.util.Map.of(
-            "golem", new BossIntro("bs_intro_golem", "bs_slam", "intro_hit_pound"),
-            "knight", new BossIntro("bs_intro_knight", "bs_spin", "intro_hit_spin"),
-            "warden", new BossIntro("bs_intro_warden", "bs_lightning", "intro_hit_bolt"),
-            "demonlord", new BossIntro("bs_intro_demonlord", "bs_darkorb", "intro_hit_whip"));
-    private static final BossIntro DEFAULT_INTRO = new BossIntro("roar", "cast", "slam");
-
-    public static BossIntro bossIntro(String sprite) {
-        return sprite == null ? DEFAULT_INTRO : INTROS.getOrDefault(sprite, DEFAULT_INTRO);
     }
 
     /** 보스·몹 장판 패턴이 터질 때의 소리. 모양(style)마다 다르고, 규칙이 없으면 쿵 소리. */

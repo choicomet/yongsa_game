@@ -22,7 +22,6 @@ final class RoomGates implements Disposable {
     private final Map<Door,SideSill> sideSills=new IdentityHashMap<>();
     private final Map<Door,SideSill> paintedSills=new IdentityHashMap<>();
 
-    /** 계단 옆 성채 문(map.json recessedGrille): 반달 방패문을 세우면 계단 위에 떠 보여서, 예전처럼 얇은 쇠창살이 내려온다. */
     private final Set<Door> recessedGrilles = Collections.newSetFromMap(new IdentityHashMap<>());
     private final float[] grilleQuad = new float[20];
     private final Map<Door,float[][]> grilleOpenings = new IdentityHashMap<>();
@@ -127,7 +126,7 @@ final class RoomGates implements Disposable {
     /** A shallow permanent sill, drawn underneath actors and both gate states. */
     void drawThresholds(SpriteBatch batch,float x0,float y0,float x1,float y1) {
         for (var room:map.rooms) for (var d:room.doors) {
-            if (!supports(d) || "RIGHT".equals(room.dungeonId) || grilleOpenings.containsKey(d) || room.type==RoomType.CAMP || d.footX<x0-256 || d.footX>x1+256
+            if (!supports(d) || recessedGrilles.contains(d) || grilleOpenings.containsKey(d) || room.type==RoomType.CAMP || d.footX<x0-256 || d.footX>x1+256
                     || d.footY<y0-256 || d.footY>y1+256) continue;
             SideSill sill = sill(d);
             batch.setColor(.07f,.045f,.055f,.52f);
@@ -167,16 +166,16 @@ final class RoomGates implements Disposable {
             }
             if (r.type==RoomType.CAMP && close<=0) continue;
             boolean side=!frontFacing(d), tower=key.endsWith("top.png"), iron=key.endsWith("right.png");
+            Texture leaf=iron ? texture("sprites/citadel-portcullis.png") : null;
             var opening=grilleOpenings.get(d);
             if (opening!=null && iron) {
                 if (close>0) {
                     float depth=r.sceneY((opening[0][2]+opening[opening.length-1][2])*.5f);
-                    parts.add(new Part(depth,()->drawInsetGrille(batch,texture("sprites/citadel-portcullis.png"),r,opening,close)));
+                    parts.add(new Part(depth,()->drawInsetGrille(batch,leaf,r,opening,close)));
                 }
                 continue;
             }
-            Texture leaf=iron ? texture("sprites/citadel-portcullis.png") : null;
-            if (recessedGrilles.contains(d) && !level(sill(d))) {
+            if (recessedGrilles.contains(d)) {
                 if (close > 0) {
                     SideSill sill = sill(d);
                     float amount = close * close * (3 - 2 * close);
@@ -187,12 +186,6 @@ final class RoomGates implements Disposable {
                         parts.add(new Part((ay + by) / 2, () -> panel(batch, leaf, ax, ay, bx, by, 48, u, v, 0, amount, 0, amount)));
                     }
                 }
-                continue;
-            }
-            // 반달 방패문은 정면 그림이라, 비스듬한 문턱에 세우면 기울어진 판자처럼 찌그러져 보인다.
-            // 문턱이 수평에 가까운 문만 방패문, 비스듬한 문은 예전 쇠창살.
-            if (iron && level(sill(d))) {
-                if (close > 0) addCitadelDoors(parts, batch, sill(d), close);
                 continue;
             }
             Texture texture=texture(key);
@@ -249,30 +242,6 @@ final class RoomGates implements Disposable {
             }
         }
         return parts;
-    }
-
-    private static boolean level(SideSill s) {
-        return Math.abs(s.farY - s.nearY) <= .2f * Math.abs(s.farX - s.nearX);
-    }
-
-    /** Slide both leaves out of the masonry, clipping their hidden ends at each bank. */
-    private void addCitadelDoors(List<Part> parts, SpriteBatch batch, SideSill sill, float close) {
-        Texture doors = texture("sprites/citadel-shield-doors.png");
-        float travel = .5f * close * close * (3 - 2 * close);
-        float width = (float)Math.hypot(sill.farX - sill.nearX, sill.farY - sill.nearY);
-        float height = MathUtils.clamp(width * .43f, 35, 66);
-        // Sort narrow strips against actors using the actual feet along the angled stair.
-        for (int side = 0; side < 2; side++) {
-            float start = side == 0 ? 0 : 1 - travel;
-            float source = side == 0 ? .5f - travel : .5f;
-            for (int i = 0; i < 8; i++) {
-                float u = start + travel * i / 8, v = start + travel * (i + 1) / 8;
-                float ax = MathUtils.lerp(sill.nearX, sill.farX, u), bx = MathUtils.lerp(sill.nearX, sill.farX, v);
-                float ay = MathUtils.lerp(sill.nearY, sill.farY, u), by = MathUtils.lerp(sill.nearY, sill.farY, v);
-                float texA = source + travel * i / 8, texB = source + travel * (i + 1) / 8;
-                parts.add(new Part((ay + by) / 2, () -> panel(batch, doors, ax, ay, bx, by, height, texA, texB, 0, 1, 0, 1)));
-            }
-        }
     }
 
     /** Slide the ironwork behind the painted arch, clipping at the inner stones. */

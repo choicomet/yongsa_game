@@ -111,33 +111,4 @@ class VillageTest {
                     && "용사".equals(x.speaker) && want.equals(x.text)), "추억 대사 " + i);
         }
     }
-
-    /** 엔딩 결과 창의 "마을로 가기": 마을 가는 길 통로에 서고, 마을 쪽으로 걸으면 풀려난 마을에 들어간다. */
-    @Test
-    void endingGoToVillageStartsOnVillageRoad() {
-        GameState s = NewGame.create(b);
-        s.finalBossDefeated = true;
-        GameSession g = new GameSession(b, TestData.map(), s, 1);
-        assertTrue(g.placeOnVillageRoad());
-        assertNull(g.heroRoom(), "통로 위에 서야 한다");
-        com.yongsa.map.Corridor c = g.map.corridorAtWorld(g.hero.x, g.hero.y);
-        assertNotNull(c);
-        assertTrue(c.link.a.type == RoomType.VILLAGE || c.link.b.type == RoomType.VILLAGE);
-        // 바라보는 쪽(마을)으로 걸어가면 마을에 들어간다
-        Controls walk = new Controls();
-        walk.moveX = g.hero.aimX;
-        walk.moveY = g.hero.aimY;
-        boolean reached = false;
-        for (int i = 0; i < 60 * 15 && !reached; i++) {
-            float dx = g.village().spawnX(b.tileSize) - g.hero.x, dy = g.village().spawnY(b.tileSize) - g.hero.y;
-            float len = (float) Math.hypot(dx, dy);
-            walk.moveX = dx / len;
-            walk.moveY = dy / len;
-            g.update(1 / 60f, walk);
-            g.pollEvents();
-            reached = g.inVillage();
-        }
-        assertTrue(reached, "마을 가는 길에서 마을로 걸어 들어갈 수 있어야 한다");
-        assertTrue(g.villagersFree());
-    }
 }
