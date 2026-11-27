@@ -16,7 +16,7 @@ public class ForgeService {
     public String craftBlockReason(GameState s, WeaponDef d) {
         if (d.ore == null) return "만들 수 없는 무기입니다";
         OreType ore = OreType.valueOf(d.ore);
-        if (s.ore(ore) < d.craftCost) return ore.displayName + "이 모자랍니다";
+        if (s.ore(ore) < rules.craftCost(s, d)) return ore.displayName + "이 모자랍니다";
         return null;
     }
 
@@ -24,7 +24,7 @@ public class ForgeService {
     public Weapon craft(GameState s, WeaponDef d) {
         String reason = craftBlockReason(s, d);
         if (reason != null) throw new IllegalStateException(reason);
-        s.addOre(OreType.valueOf(d.ore), -d.craftCost);
+        s.addOre(OreType.valueOf(d.ore), -rules.craftCost(s, d));
         Weapon w = s.newWeapon(d.id);
         s.stats.crafted++;
         if (rules.attack(s, w) > rules.attack(s, s.equipped())) s.equippedUid = w.uid;

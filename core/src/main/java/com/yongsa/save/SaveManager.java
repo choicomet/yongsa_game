@@ -75,7 +75,10 @@ public class SaveManager {
         try {
             if (Files.exists(p)) {
                 Settings s = gson.fromJson(new String(Files.readAllBytes(p), StandardCharsets.UTF_8), Settings.class);
-                if (s != null) return s;
+                if (s != null) {
+                    if (s.achievements == null) s.achievements = new java.util.ArrayList<>();
+                    return s;
+                }
             }
         } catch (IOException | JsonParseException e) {
             // 설정이 깨졌으면 기본값으로

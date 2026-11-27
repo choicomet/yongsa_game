@@ -171,8 +171,9 @@ public class ForgeWindow extends Modal {
             card.add(Ui.artImage(art.sword(d.id, false))).size(160).pad(8).row();
             card.add(label(d.name, "large", Ui.TEXT)).left().padBottom(8).row();
             card.add(label("공격력 " + d.baseAttack + "  ·  강화마다 +" + d.perLevel, "small", Ui.DIM)).left().padBottom(16).row();
-            boolean enough = s.ore(ore) >= d.craftCost;
-            card.add(label(ore.displayName + "  " + s.ore(ore) + " / " + d.craftCost,
+            int cost = g.rules.craftCost(s, d);
+            boolean enough = s.ore(ore) >= cost;
+            card.add(label(ore.displayName + "  " + s.ore(ore) + " / " + cost,
                     "default", enough ? Ui.TEXT : Ui.ORANGE)).left().padBottom(14).row();
             TextButton button = nav.add("제작하기", () -> craft(d));
             button.setDisabled(g.forge.craftBlockReason(s, d) != null);

@@ -30,10 +30,10 @@ public final class NextTask {
             Weapon owned = s.weaponByDef(wd.id);
             String where = dungeonWord(d.id);
             if (owned == null) {
-                if (s.ore(ore) >= wd.craftCost) return "캠프 대장간에서 " + wd.name + " 제작";
+                if (s.ore(ore) >= rules.craftCost(s, wd)) return "캠프 대장간에서 " + wd.name + " 제작";
                 if (d.id.equals("LEFT") && !leftDungeonVisited) return "왼쪽 던전으로 이동";
                 return where + " 던전 광물방에서 " + ore.displayName + " 모으기 "
-                        + s.ore(ore) + "/" + wd.craftCost;
+                        + s.ore(ore) + "/" + rules.craftCost(s, wd);
             }
             if (s.equippedUid != owned.uid && rules.attack(s, owned) > rules.attack(s)) {
                 return "가방(" + bagKey + ")에서 " + wd.name + " 장착";
