@@ -640,8 +640,9 @@ SOUNDS = [
     ("intro_warden", warden, -9), ("intro_warden_b", warden_b, -9), ("intro_warden_c", warden_c, -9), ("intro_demonlord", demonlord, -9), ("intro_demonlord_b", demonlord_b, -9), ("intro_demonlord_c", demonlord_c, -9), ("intro_warden_d", warden_d, -9), ("intro_warden_e", warden_e, -9), ("intro_demonlord_d", demonlord_d, -9), ("intro_warden_f", warden_f, -9), ("intro_warden_g", warden_g, -9), ("intro_demonlord_e", demonlord_e, -9),
 ]
 
-# 게임에 넣은 것 (2026-11-27 지용 결정): 보스 등장 소리만. 파일 크기 기준은 Kenney 녹음과 같은 -12dB
-# (SfxMix.FILE_REFERENCE_DB), 실제 재생 크기는 SfxMix 의 intro_* 규칙에서 정한다.
+# 게임에 넣은 것 (2026-11-27 지용 결정): 보스 등장 소리만.
+# 보스 곡에 묻혀서(11/27 저녁 지용) 스킬 소리처럼 크게 굽는다: SfxMix.INTRO_FILE_DB 와 같아야 한다.
+GAME_LEVEL_DB = -7
 GAME = [
     ("intro_golem", golem),
     ("intro_knight", knight),
@@ -655,7 +656,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         sfx = os.path.join(ROOT, "assets", "audio", "sfx")
         for name, fn in GAME:
-            finish(fn(), os.path.join(sfx, name + ".wav"), -12)
+            finish(fn(), os.path.join(sfx, name + ".wav"), GAME_LEVEL_DB)
         sys.exit(0)
     out_dir = sys.argv[1]
     only = sys.argv[2:]

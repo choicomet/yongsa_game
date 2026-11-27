@@ -53,6 +53,11 @@ final class SfxMix {
         float duck, duckHold;
     }
 
+    /** 보스 등장 소리(intro_)를 구운 크기 (tools/make_combat_sfx.py GAME_LEVEL_DB). */
+    static final float INTRO_FILE_DB = -7f;
+    /** 보스 등장 소리가 나는 동안 배경음악을 줄이는 정도 (0.75 → 곡이 1/4 크기). */
+    static final float INTRO_DUCK = 0.75f;
+
     static final Map<String, Cue> CUES = new HashMap<>();
 
     private static void cue(String name, String base, float db, float gap, float vary, float pitch, int prio, float duck, float hold) {
@@ -81,9 +86,11 @@ final class SfxMix {
         // ── 큰 사건: 배경음악을 잠깐 내려 길을 내 준다
         cue("roar", "roar", -11f, 0.5f, 0.03f, 1f, 3, 0.45f, 0.7f);
         // 보스 등장 (지용 2026-11-27): 보스방에 들어서면 보스마다 다른 소리 한 번. 파일: tools/make_combat_sfx.py
-        for (String b : new String[]{"golem", "knight", "warden", "demonlord"}) {
-            cue("intro_" + b, "intro_" + b, -10f, 1f, 0f, 1f, 3, 0.5f, b.equals("demonlord") ? 2.5f : 1.6f);
-        }
+        // 보스 곡이 같이 시작해서 묻히지 않게 크게 굽고(-7dB), 소리가 끝날 때까지 곡을 많이 줄인다
+        cue("intro_golem", "intro_golem", INTRO_FILE_DB, 1f, 0f, 1f, 3, INTRO_DUCK, 3.0f);
+        cue("intro_knight", "intro_knight", INTRO_FILE_DB, 1f, 0f, 1f, 3, INTRO_DUCK, 3.2f);
+        cue("intro_warden", "intro_warden", INTRO_FILE_DB, 1f, 0f, 1f, 3, INTRO_DUCK, 3.7f);
+        cue("intro_demonlord", "intro_demonlord", INTRO_FILE_DB, 1f, 0f, 1f, 3, INTRO_DUCK, 6.5f);
         cue("awaken", "awaken", -12f, 0.3f, 0f, 1f, 3, 0.4f, 0.5f);
         cue("unseal", "unseal", -11f, 0.5f, 0f, 1f, 3, 0.5f, 1.1f);
         cue("destroy", "destroy", -11f, 0.3f, 0f, 1f, 3, 0.45f, 0.55f);
@@ -177,7 +184,7 @@ final class SfxMix {
 
     /** 파일로 바꿔 넣은 소리. 스킬 소리(sk_)는 더 크게 구워 두었다 (tools/make_skill_sfx.py LEVEL_DB). */
     void measureFile(String base) {
-        level.put(base, base.startsWith("sk_") ? SKILL_FILE_DB : FILE_REFERENCE_DB);
+        level.put(base, base.startsWith("sk_") ? SKILL_FILE_DB : base.startsWith("intro_") ? INTRO_FILE_DB : FILE_REFERENCE_DB);
     }
 
     static final float SKILL_FILE_DB = -7f;

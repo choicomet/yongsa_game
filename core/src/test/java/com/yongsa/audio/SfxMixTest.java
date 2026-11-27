@@ -133,4 +133,16 @@ class SfxMixTest {
         SfxMix mix = baked();
         assertTrue(mix.decide("sk_beam", 1).gain > 0.99f, "스킬 소리는 줄이지 않고 그대로 크게");
     }
+
+    @Test
+    void bossIntroIsLoudAndMusicStaysDownUntilItEnds() {
+        SfxMix mix = baked();
+        for (String b : new String[]{"golem", "knight", "warden", "demonlord"}) {
+            SfxMix.Play p = mix.decide("intro_" + b, 100 + b.length());
+            assertTrue(p.gain > 0.99f, b + " 등장 소리는 줄이지 않고 그대로 크게");
+            double heard = SfxMix.INTRO_FILE_DB + 20 * Math.log10(p.gain);
+            assertTrue(heard > heardDb("roar") + 3, b + " 등장 소리가 예전 포효보다 커야 한다");
+            assertTrue(p.duck >= 0.7f && p.duckHold >= 3f, b + " 소리가 끝날 때까지 배경음악을 줄인다");
+        }
+    }
 }
