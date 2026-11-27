@@ -318,7 +318,7 @@ public class Balance {
         public List<String> patterns;
         /** 2페이즈에 더해지는 패턴 (없으면 빠르기만 한다). 마왕은 2페이즈에 이 목록으로 바뀐다. */
         public List<String> phase2Patterns;
-        /** 잡몹: 공격 예고 시간과 공격 뒤 쉬는 시간 (0이면 monster 공통 값). */
+        /** 근접 공격 예고 시간과 공격 뒤 쉬는 시간 (0이면 monster 공통 값). 잡몹과 보스 모두 쓴다 (보스: 마왕 2페이즈). */
         public float telegraph, cooldown;
         /** 보스: 구석에 몰리면 순간이동해서 빠져나간다. */
         public boolean cornerBlink;

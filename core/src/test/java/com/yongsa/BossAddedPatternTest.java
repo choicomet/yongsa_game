@@ -198,4 +198,52 @@ class BossAddedPatternTest {
     void knightHasCounterInItsPatterns() {
         assertTrue(b.dungeon("RIGHT").boss.patterns.contains("counter"));
     }
+
+    // ---- 마왕 2페이즈: 근접 공격을 조금 늦춤 ----
+
+    /** 보스 바로 옆에 용사를 세우고 근접 공격을 시작하게 한다. */
+    private Monster meleeReady(GameSession g, Monster m) {
+        for (Monster o : g.monsters) if (!o.boss) o.dead = true;
+        g.hazards.clear();
+        g.hero.x = m.x - 30;
+        g.hero.y = m.y;
+        m.enter(Monster.State.CHASE, 0);
+        m.patternCd = 99;
+        m.attackCd = 0;
+        run(g, idle, 2 / 60f);
+        return m;
+    }
+
+    @Test
+    void demonPhaseTwoMeleeIsSlowerThanOtherBosses() {
+        GameState s = hero();
+        s.equippedUid = s.newWeapon("holy_awakened").uid;
+        for (String id : new String[]{"LEFT", "RIGHT", "TOP"}) s.bossesDefeated.add(id);
+        s.unsealed = true;
+        GameSession g = new GameSession(b, TestData.map(), s, 7);
+        g.dropToAbyss();
+        Controls up = new Controls();
+        up.moveY = 1;
+        for (int i = 0; i < 600 && !g.fighting(); i++) {
+            g.update(1 / 60f, up);
+            g.pollEvents();
+        }
+        assertTrue(g.fighting());
+        Monster demon = g.activeBoss();
+        run(g, idle, 1.5f);
+        demon.phase2 = true;
+        s.hp = 9999;
+        meleeReady(g, demon);
+        assertEquals(Monster.State.TELEGRAPH, demon.state, "2페이즈에는 붙으면 근접 공격을 한다");
+        assertEquals(0.7f, demon.stateTotal, 0.001f, "예고가 0.55 → 0.7초로 늘었다");
+        run(g, idle, 0.7f);
+        assertEquals(1.3f, demon.attackCd, 0.05f, "다음 공격까지 1.0 → 1.3초 쉰다");
+
+        // 다른 보스는 그대로
+        GameSession g2 = fightIn("L6", hero());
+        Monster golem = forcePattern(g2, "L6", "punch", 2 * b.tileSize);
+        meleeReady(g2, golem);
+        assertEquals(Monster.State.TELEGRAPH, golem.state);
+        assertEquals(b.monster.telegraphSeconds, golem.stateTotal, 0.001f, "골렘은 공통 예고 그대로");
+    }
 }

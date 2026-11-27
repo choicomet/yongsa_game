@@ -94,7 +94,8 @@ public class BossBrain extends EnemyContext {
             return;
         }
         if (dist <= reach && m.attackCd <= 0) {
-            m.enter(Monster.State.TELEGRAPH, mc.telegraphSeconds);
+            // 보스마다 따로 정했으면 그 값 (마왕 2페이즈 근접 공격은 조금 느리다), 아니면 공통 값
+            m.enter(Monster.State.TELEGRAPH, m.telegraph(mc.telegraphSeconds));
         } else if (dist > reach * 0.7f) {
             float k = m.speed * dt * (m.enraged ? 1.15f : 1f);
             Physics.move(map, m, mobs.pathX * k, mobs.pathY * k, T);
