@@ -93,6 +93,8 @@ final class SfxMix {
         cue("shot_knight", "shot_knight", -9f, 0.1f, 0.05f, 1f, 2, 0f, 0f);
         cue("shot_demonlord", "shot_demonlord", -9f, 0.1f, 0.05f, 1f, 2, 0f, 0f);
         cue("orbBurst_demonlord", "orbBurst_demonlord", -9f, 0.1f, 0.04f, 1f, 2, 0.2f, 0.3f);
+        // 보스·마왕 승리 팡파레 (지용 2026-11-27, 네 보스 공통). 파일을 최고점 -1dB 로 구워 둬서 -7 이면 파일 크기 그대로 튼다
+        cue("bossVictory", "bs_victory", -7f, 1f, 0f, 1f, 3, 0.5f, 2.0f);
         cue("awaken", "awaken", -12f, 0.3f, 0f, 1f, 3, 0.4f, 0.5f);
         cue("unseal", "unseal", -11f, 0.5f, 0f, 1f, 3, 0.5f, 1.1f);
         cue("destroy", "destroy", -11f, 0.3f, 0f, 1f, 3, 0.45f, 0.55f);

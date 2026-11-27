@@ -36,3 +36,6 @@ intro_*.wav (보스 등장 소리: 골렘·혈월의 기사·탑의 수문장·�
 
 보스 등장과 시범 동작 (bs_*, hz_*.wav): 위 Kenney CC0 녹음과 합성한 소리를 tools/make_boss_intro_sfx.py로 혼합.
 shot_knight.wav, shot_demonlord.wav, orbBurst_demonlord.wav <- tools/make_boss_charge_sfx.py (브랜치 jiyong/boss_charge_sfx), 재료 OpenGameArt CC0 (80 CC0 RPG SFX·100 CC0 SFX - rubberduck, RPG Sound Pack - artisticdude) + 합성
+
+bs_victory.wav (보스·마왕 승리 팡파레) <- "Lively Meadow Victory Fanfare" by Matthew Pablo (http://www.matthewpablo.com), OpenGameArt, CC-BY 3.0
+  https://opengameart.org/content/lively-meadow-victory-fanfare-and-song  (모노로 바꾸고 앞뒤 무음 자르고 끝 0.5초 페이드, 크기 맞춤)

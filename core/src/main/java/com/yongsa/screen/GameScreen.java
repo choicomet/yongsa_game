@@ -421,7 +421,7 @@ public class GameScreen extends ScreenAdapter {
                 case FINAL_DEFEATED:
                     hud.banner("마왕을 쓰러뜨렸다!");
                     game.bgm.fadeOut(2.4f);
-                    game.sfx.play("unseal");
+                    game.sfx.play("bossVictory");
                     endingDelay = 2.5f;
                     break;
                 case HERO_DIED:
@@ -472,7 +472,7 @@ public class GameScreen extends ScreenAdapter {
     }
 
     private void showBossResult(GameEvent e) {
-        game.sfx.play("awaken");
+        game.sfx.play("bossVictory");
         if (!e.first) {
             // 침대 뒤 다시 생긴 보스: 힘은 이미 흡수했으니 상자만 나온다
             hud.banner(e.text + "을(를) 다시 쓰러뜨렸다 · 보물상자가 나타났다");
