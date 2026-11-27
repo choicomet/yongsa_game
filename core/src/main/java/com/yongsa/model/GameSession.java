@@ -612,6 +612,12 @@ public class GameSession {
             }
             return;
         }
+        if (m.state == Monster.State.GUARD) {
+            // 혈월의 기사 방패 반격: 웅크린 동안 맞으면 피해 없이 막고 바로 반격한다
+            m.flash = 0.1f;
+            bosses.counter(m);
+            return;
+        }
         // 업적 '불굴의 용사': 보스가 아닌 몬스터에게 피해가 늘어난다
         int dmg = roll(rules.attack(state), m.boss ? mult : mult * state.achievements().mobDamage());
         boolean guarded = false;
@@ -687,10 +693,20 @@ public class GameSession {
         if (m.hp <= 0) {
             m.hp = 0;
             m.dead = true;
-            if (m.finalBoss) {
-                bosses.speech(m, "이런 풋내기에게 당하다니!");
-                // 마왕이 쓰러지면 불러낸 부하도 함께 무너진다
-                for (Monster o : monsters) if (!o.boss) o.dead = true;
+            if (m.finalBoss) bosses.speech(m, "이런 풋내기에게 당하다니!");
+            // 보스(탑의 수문장·마왕)가 쓰러지면 불러낸 부하도 함께 무너져 바로 클리어된다
+            if (m.boss) {
+                for (Monster o : monsters) {
+                    if (o.boss || o.dead) continue;
+                    o.hp = 0;
+                    o.dead = true;
+                    GameEvent gone = GameEvent.fx(GameEvent.Type.MONSTER_DIED, o.x, o.y);
+                    gone.sprite = o.def.sprite;
+                    gone.size = 1f;
+                    gone.flip = o.dirX < -0.2f;
+                    gone.dirX = o.dirX;
+                    events.add(gone);
+                }
             }
             state.stats.monstersKilled++;
             GameEvent died = GameEvent.fx(GameEvent.Type.MONSTER_DIED, m.x, m.y);

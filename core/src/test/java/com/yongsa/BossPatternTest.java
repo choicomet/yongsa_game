@@ -318,6 +318,24 @@ class BossPatternTest {
         assertTrue(minions >= boss.def.summonCount && minions <= boss.def.summonCountMax, "부하 " + minions + "마리");
     }
 
+    /** 2026-11-27: 탑의 수문장을 잡으면 불러낸 부하도 함께 쓰러져 바로 클리어된다 (예전엔 부하를 다 잡아야 끝났다). */
+    @Test
+    void wardenDeathTakesItsMinionsDown() {
+        GameState s = strongHero();
+        GameSession g = fightIn("T6", s);
+        Monster boss = forcePattern(g, "summon", 5 * b.tileSize);
+        for (Monster o : g.monsters) if (!o.boss) o.dead = true;
+        run(g, idle, 2 / 60f);
+        assertTrue(g.monsters.stream().anyMatch(o -> !o.dead && !o.boss), "부하가 나와 있어야 한다");
+        boss.phase2 = true;
+        boss.hp = 1;
+        List<GameEvent> ev = hitBoss(g, boss);
+        ev.addAll(run(g, idle, 0.5f));
+        assertTrue(boss.dead);
+        assertFalse(g.fighting(), "부하가 남아 있어도 싸움이 끝나야 한다");
+        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.BOSS_DEFEATED));
+    }
+
     /** 2026-10-27 버그: 스킬(검기)로 마왕 1페이즈를 마무리하면 ConcurrentModificationException 으로 게임이 꺼졌다. */
     @Test
     void finishingPhaseOneWithASkillShotDoesNotCrash() {
