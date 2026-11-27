@@ -608,6 +608,26 @@ def demonlord_e():
     return reverb(fade(out, 0.8), size=1.0, wet=0.35, damp=3000)
 
 
+def stomp(out, at, g=1.0):
+    """무거운 발걸음 '쿵': 쇳소리 없이 낮은 울림 + 둔탁한 흙먼지 + 돌바닥 자갈 조금."""
+    place(out, boom(0.7, 65, 32), at, 0.9 * g)
+    thud = lp(noise(0.12), 180, 2) * env(0.12, 0.002, 4)
+    place(out, norm(thud), at, 0.6 * g)
+    grit = lp(fade(norm(pitch(k.load("destroy"), 0.5)), 0.08), 1200, 1)
+    place(out, norm(grit), at + 0.01, 0.18 * g)
+
+
+def warden_g():
+    """탑의 수문장 (시안 G): F 와 같고 발걸음만 바꿈 (병 깨지는 듯한 쇳소리 빼고 낮고 둔탁하게)."""
+    dur = 3.4
+    out = np.zeros(int(dur * SR))
+    stomp(out, 0.0, 0.8)
+    stomp(out, 0.5, 1.0)
+    lightning(out, 1.15, 0.8)
+    lightning(out, 2.05, 1.0)
+    return reverb(fade(out, 0.3), size=0.8, wet=0.3, damp=5000)
+
+
 SOUNDS = [
     # (파일 이름, 함수, 크기 dB)  크기는 Kenney 녹음 기준(-12)과 맞춘다. 보스 등장은 조금 크게.
     ("hero_swing_a", swing_a, -12), ("hero_swing_b", swing_b, -12),
@@ -615,7 +635,7 @@ SOUNDS = [
     ("hero_hurt", hurt, -12),
     ("hero_roll_a", roll_a, -12), ("hero_roll_b", roll_b, -12),
     ("intro_golem", golem, -9), ("intro_knight", knight, -9),
-    ("intro_warden", warden, -9), ("intro_warden_b", warden_b, -9), ("intro_warden_c", warden_c, -9), ("intro_demonlord", demonlord, -9), ("intro_demonlord_b", demonlord_b, -9), ("intro_demonlord_c", demonlord_c, -9), ("intro_warden_d", warden_d, -9), ("intro_warden_e", warden_e, -9), ("intro_demonlord_d", demonlord_d, -9), ("intro_warden_f", warden_f, -9), ("intro_demonlord_e", demonlord_e, -9),
+    ("intro_warden", warden, -9), ("intro_warden_b", warden_b, -9), ("intro_warden_c", warden_c, -9), ("intro_demonlord", demonlord, -9), ("intro_demonlord_b", demonlord_b, -9), ("intro_demonlord_c", demonlord_c, -9), ("intro_warden_d", warden_d, -9), ("intro_warden_e", warden_e, -9), ("intro_demonlord_d", demonlord_d, -9), ("intro_warden_f", warden_f, -9), ("intro_warden_g", warden_g, -9), ("intro_demonlord_e", demonlord_e, -9),
 ]
 
 if __name__ == "__main__":
