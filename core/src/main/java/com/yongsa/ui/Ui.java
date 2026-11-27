@@ -37,6 +37,23 @@ public final class Ui {
         // 일시정지 · 설정 창: 모서리가 둥근 판과 버튼, 제목 아래 옅은 금색 줄
         skin.add("panelRound", rounded(0x121820f5, 0x8a7350ff, 2, 20, 14, 10), Drawable.class);
         skin.add("divider", new TextureRegionDrawable(art.white()).tint(new Color(0xe3b87559)), Drawable.class);
+        // 대장간 창: 둥근 칸 · 무기 카드 · 작은 표 · 경고 상자
+        skin.add("forgeCol", rounded(0x0c1219f0, 0x35414aff, 1, 14, 14, 14), Drawable.class);
+        skin.add("forgeChip", rounded(0x0c1219ff, 0x35414aff, 1, 12, 10, 4), Drawable.class);
+        skin.add("forgeCard", rounded(0x16202aff, 0x2d3842ff, 2, 12, 10, 6), Drawable.class);
+        skin.add("forgeCardSel", rounded(0x2c271fff, 0xe3b875ff, 2, 12, 10, 6), Drawable.class);
+        skin.add("forgeCardAwake", rounded(0x16202aff, 0x7a5faeff, 2, 12, 10, 6), Drawable.class);
+        skin.add("forgeIcon", rounded(0x0b1016ff, 0x2d3842ff, 1, 10, 3, 3), Drawable.class);
+        skin.add("forgeBadgeEq", rounded(0x3a3226ff, 0x8a7350ff, 1, 8, 7, 1), Drawable.class);
+        skin.add("forgeBadgeSkill", rounded(0x2b2240ff, 0x5f4a8aff, 1, 8, 7, 1), Drawable.class);
+        skin.add("forgeSeg", rounded(0x0b1016ff, 0x2d3842ff, 1, 12, 4, 4), Drawable.class);
+        skin.add("forgeSegOn", rounded(0x3a3226ff, 0x8a7350ff, 1, 9, 6, 6), Drawable.class);
+        skin.add("forgeWarn", rounded(0x2a1714ff, 0x6b2e2eff, 1, 10, 11, 8), Drawable.class);
+        skin.add("forgeSkill", rounded(0x1d1830ff, 0x5f4a8aff, 1, 12, 14, 12), Drawable.class);
+        skin.add("forgeKey", rounded(0x0b1016ff, 0x5a636cff, 1, 7, 7, 2), Drawable.class);
+        skin.add("forgeLine", new TextureRegionDrawable(art.white()).tint(new Color(0x222b34ff)), Drawable.class);
+        skin.add("roundDanger", roundStyle(fonts, 0x7a2219ff, 0xf2c94cff, 0x8e2a20ff, 0x5a160fff, Color.WHITE), TextButton.TextButtonStyle.class);
+        skin.add("roundPurple", roundStyle(fonts, 0x3b2a5cff, 0xc9a0ffff, 0x4a3570ff, 0x2a1d42ff, new Color(0xf1e8ffff)), TextButton.TextButtonStyle.class);
 
         skin.add("default", buttonStyle(fonts, 0x202a33ff, 0x45515bff, 0x303d48ff, 0x131c25ff), TextButton.TextButtonStyle.class);
         skin.add("focused", buttonStyle(fonts, 0x3d352bff, 0xe3b875ff, 0x504431ff, 0x29241eff), TextButton.TextButtonStyle.class);

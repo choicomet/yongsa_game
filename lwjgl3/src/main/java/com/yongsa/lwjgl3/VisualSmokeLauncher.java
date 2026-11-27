@@ -214,7 +214,7 @@ public final class VisualSmokeLauncher {
                 input.keyDown(com.badlogic.gdx.Input.Keys.ESCAPE);
                 input.keyDown(com.badlogic.gdx.Input.Keys.F1);
                 if (screen.modals.top() != forge) throw new AssertionError("Busy smithing can be interrupted");
-                var tab = findButton(forge, "제작");
+                com.badlogic.gdx.scenes.scene2d.Actor tab = forge.findActor("forgeAct:흡수");
                 var mouse = new com.badlogic.gdx.scenes.scene2d.InputEvent();
                 mouse.setType(com.badlogic.gdx.scenes.scene2d.InputEvent.Type.touchDown);
                 tab.fire(mouse);
