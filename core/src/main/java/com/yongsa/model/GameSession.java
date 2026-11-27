@@ -1266,7 +1266,7 @@ public class GameSession {
             }
         }
         if (targetPotion != null) {
-            prompt = interactKey + (fullPotion(targetPotion) ? "  완전 회복 물약 마시기" : "  포션 마시기");
+            prompt = interactKey + (fullPotion(targetPotion) ? "  물약 마시기" : "  포션 마시기");
             promptX = targetPotion[0];
             promptY = targetPotion[1] + 1.2f * T;
             return;

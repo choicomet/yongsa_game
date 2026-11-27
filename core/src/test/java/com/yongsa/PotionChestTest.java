@@ -148,7 +148,7 @@ class PotionChestTest {
         g.hero.x = p[0];
         g.hero.y = p[1];
         run(g, new Controls(), 1 / 60f);
-        assertEquals("E  완전 회복 물약 마시기", g.prompt);
+        assertEquals("E  물약 마시기", g.prompt);
         Controls e = new Controls();
         e.interact = true;
         run(g, e, 1 / 60f);
