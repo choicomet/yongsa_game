@@ -82,7 +82,7 @@ def lp(x, hz, passes=2):
 def finish(x, path, level_db, fade_out=0.06):
     """앞 무음 자르기, 끝 페이드, 가장 큰 50ms RMS 를 level_db 로, 꼭대기는 -1dB 아래로."""
     x = np.asarray(x, dtype=np.float64)
-    x = x - np.mean(x)
+    x = hp(x - np.mean(x), 20)  # 직류 성분(한쪽으로 쏠린 파형) 제거
     nz = np.nonzero(np.abs(x) > 1e-3 * np.max(np.abs(x)))[0]
     x = x[nz[0]:nz[-1] + 1]
     x = fade(x, fade_out)
@@ -494,6 +494,69 @@ def warden_d():
     return reverb(fade(out, 0.3), size=0.8, wet=0.3, damp=5000)
 
 
+def low_laugh(src, ratio, dur=None):
+    """웃음 녹음을 낮게: 원래 높이 + 한 옥타브 아래를 겹치고 높은 쪽을 깎아 굵은 저음으로."""
+    x = oga(src)
+    if dur:
+        x = x[:int(dur * SR)]
+    a = pitch(x, ratio)
+    b = pitch(x, ratio / 2)[:len(a)]
+    b = np.pad(b, (0, len(a) - len(b)))
+    v = lp(norm(a), 2200, 1) * 0.75 + lp(norm(b), 1200, 1) * 0.6
+    v += 0.25 * lp(np.abs(v), 120, 2) * sine_sweep(45, 45, len(v) / SR)[:len(v)]
+    return fade(hp(sat(norm(v), 1.4), 30), 0.3)
+
+
+def warden_e():
+    """탑의 수문장 (시안 E): 무거운 발걸음 '쿵·쿵' → 마법 모으는 소리 대신 낮은 저음 웃음 '흐흐흐'
+    → 번개 '콰직' + 천둥 '우르릉'."""
+    dur = 3.6
+    out = np.zeros(int(dur * SR))
+    for at, g in ((0.0, 0.7), (0.5, 0.85)):
+        place(out, fade(norm(pitch(k.load("slam"), 0.55)), 0.08), at, g)
+        place(out, fade(norm(pitch(k.load("block"), 0.6)), 0.08), at + 0.01, 0.25)
+    laugh = low_laugh("laugh_evil_1_antumdeluge.wav", 0.62)
+    laugh = laugh[int(0.6 * SR):int(2.9 * SR)]  # 커지는 가운데 부분
+    laugh = fade(laugh, 0.3) * np.clip(np.arange(len(laugh)) / (0.05 * SR), 0, 1)
+    place(out, laugh, 0.8, 0.8)
+    hit = 2.2
+    crack = bandsweep(noise(0.04), 7000, 1500) * env(0.04, 0.0003, 5)
+    place(out, norm(crack), hit, 0.9)
+    place(out, fade(norm(pitch(k.load("destroy"), 1.35)), 0.06), hit, 0.75)
+    place(out, boom(1.0, 80, 32), hit, 0.75)
+    thunder = lp(noise(1.3), 300) * 8 * k.quake_roll(1.3, 8.0) * env(1.3, 0.02, 2.5)
+    place(out, fade(norm(thunder), 0.4), hit + 0.05, 0.55)
+    return reverb(fade(out, 0.3), size=0.8, wet=0.3, damp=5000)
+
+
+def demonlord_d():
+    """마왕 (시안 D): C 와 같고 웃음만 더 낮은 저음으로 (0.62배 + 한 옥타브 아래, 높은 쪽 깎음)."""
+    dur = 6.4
+    out = np.zeros(int(dur * SR))
+    hit = 2.3
+    ch1 = formant(saw_voices([73.4, 110.0, 146.8, 174.6], hit + 0.1))
+    ch1 *= np.clip(t(hit + 0.1) / hit, 0, 1) ** 1.6
+    place(out, norm(ch1), 0.0, 0.18)
+    for at, g in ((0.45, 0.35), (1.1, 0.5), (1.7, 0.65)):
+        place(out, boom(0.6, 70, 38), at, g)
+        place(out, boom(0.5, 70, 38), at + 0.17, g * 0.6)
+    chuckle = low_laugh("laugh_evil_1_antumdeluge.wav", 0.6)[:int(2.1 * SR)]
+    chuckle = fade(chuckle, 0.25) * np.clip(np.arange(len(chuckle)) / (2.1 * SR), 0.25, 1)
+    place(out, chuckle, 0.15, 0.4)
+    place(out, swell(0.8, 200, 5000, 0.98), hit - 0.78, 0.3)
+    place(out, boom(2.2, 48, 20), hit, 1.0)
+    place(out, fade(norm(pitch(k.load("slam"), 0.45)), 0.1), hit, 0.8)
+    place(out, fade(norm(pitch(k.load("destroy"), 0.4)), 0.1), hit + 0.02, 0.45)
+    br = brass([73.4, 103.8, 146.8, 174.6], 2.4) * (0.35 + 0.65 * np.exp(-t(2.4) * 4)) * np.exp(-t(2.4) * 1.0)
+    place(out, sat(norm(br), 1.8), hit, 0.35)
+    place(out, low_laugh("evil_laughter_qubodup.wav", 0.62, 2.0), hit + 0.15, 1.0)
+    tail = dur - hit
+    ch2 = formant(saw_voices([73.4, 110.0, 155.6, 174.6, 220.0], tail), (650, 1080, 2650))
+    ch2 *= np.clip(t(tail) / 0.4, 0, 1) * np.exp(-t(tail) * 0.8)
+    place(out, norm(ch2), hit + 0.05, 0.25)
+    return reverb(fade(out, 0.8), size=1.0, wet=0.35, damp=3000)
+
+
 SOUNDS = [
     # (파일 이름, 함수, 크기 dB)  크기는 Kenney 녹음 기준(-12)과 맞춘다. 보스 등장은 조금 크게.
     ("hero_swing_a", swing_a, -12), ("hero_swing_b", swing_b, -12),
@@ -501,7 +564,7 @@ SOUNDS = [
     ("hero_hurt", hurt, -12),
     ("hero_roll_a", roll_a, -12), ("hero_roll_b", roll_b, -12),
     ("intro_golem", golem, -9), ("intro_knight", knight, -9),
-    ("intro_warden", warden, -9), ("intro_warden_b", warden_b, -9), ("intro_warden_c", warden_c, -9), ("intro_demonlord", demonlord, -9), ("intro_demonlord_b", demonlord_b, -9), ("intro_demonlord_c", demonlord_c, -9), ("intro_warden_d", warden_d, -9),
+    ("intro_warden", warden, -9), ("intro_warden_b", warden_b, -9), ("intro_warden_c", warden_c, -9), ("intro_demonlord", demonlord, -9), ("intro_demonlord_b", demonlord_b, -9), ("intro_demonlord_c", demonlord_c, -9), ("intro_warden_d", warden_d, -9), ("intro_warden_e", warden_e, -9), ("intro_demonlord_d", demonlord_d, -9),
 ]
 
 if __name__ == "__main__":
