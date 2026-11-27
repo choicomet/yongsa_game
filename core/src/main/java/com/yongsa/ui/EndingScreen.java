@@ -11,7 +11,7 @@ import com.yongsa.model.Stats;
 import com.yongsa.ui.Modal;
 import com.yongsa.ui.Ui;
 
-/** 엔딩 (UI-11): 마무리 글과 플레이 기록, 계속하기 (FR-던전-10). */
+/** 엔딩 (UI-11): 마무리 글과 플레이 기록. 마을로 가기(마을 가는 길에서 이어서) 또는 타이틀로 돌아가기 (FR-던전-10). */
 public class EndingScreen extends MenuScreen {
     private final GameState state;
 
@@ -50,14 +50,16 @@ public class EndingScreen extends MenuScreen {
             row(t, "흡수해 익힌 검 스킬", state.learnedSkills.size() + "개");
             p.add(t).padBottom(20).row();
             Table b = new Table();
-            b.add(nav.add("계속하기", () -> {
-                game.setScreen(new GameScreen(game, state));
+            b.add(nav.add("마을로 가기", () -> {
+                GameScreen screen = new GameScreen(game, state);
+                screen.startOnVillageRoad();
+                game.setScreen(screen);
                 EndingScreen.this.dispose();
-            })).width(220).height(52).padRight(14);
-            b.add(nav.add("타이틀로", () -> {
+            })).width(240).height(52).padRight(14);
+            b.add(nav.add("타이틀로 돌아가기", () -> {
                 game.setScreen(new TitleScreen(game));
                 EndingScreen.this.dispose();
-            })).width(220).height(52);
+            })).width(240).height(52);
             p.add(b);
         }
 
