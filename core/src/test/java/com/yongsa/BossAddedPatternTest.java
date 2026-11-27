@@ -131,4 +131,71 @@ class BossAddedPatternTest {
     void golemHasPunchInItsPatterns() {
         assertTrue(b.dungeon("LEFT").boss.patterns.contains("punch"));
     }
+
+    // ---- 혈월의 기사: 방패 반격 ----
+
+    /** 용사 바로 오른쪽에 있는 보스를 한 번 벤다 (상태는 그대로 둔다). */
+    private List<GameEvent> swingAt(GameSession g, Monster m) {
+        m.x = g.hero.x + 40;
+        m.y = g.hero.y;
+        g.hero.aimX = 1;
+        g.hero.aimY = 0;
+        g.hero.attackCd = 0;
+        Controls atk = new Controls();
+        atk.attack = true;
+        List<GameEvent> ev = run(g, atk, 2 / 60f);
+        ev.addAll(run(g, idle, 1 / 60f));
+        return ev;
+    }
+
+    @Test
+    void knightBlocksAndCountersWhenHitWhileCrouching() {
+        GameState s = hero();
+        GameSession g = fightIn("R6", s);
+        Monster m = forcePattern(g, "R6", "counter", 2 * b.tileSize);
+        List<GameEvent> ev = run(g, idle, 2 / 60f);
+        assertEquals(Monster.State.GUARD, m.state, "방패 뒤로 웅크린다");
+        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.TOAST && e.text.contains("반격")));
+        m.patternCd = 99;
+
+        int hp = m.hp;
+        ev = swingAt(g, m);
+        assertEquals(hp, m.hp, "웅크린 동안 맞으면 피해가 없다");
+        assertTrue(ev.stream().anyMatch(e -> e.type == GameEvent.Type.FLOAT_TEXT && "막았다!".equals(e.text)));
+        assertEquals(Monster.State.RECOVER, m.state, "막자마자 반격한다 (방패 불꽃 → 베기)");
+        assertTrue(g.hazards.stream().anyMatch(h -> "counter".equals(h.style) && h.covers(g.hero.x, g.hero.y, 0)),
+                "반격이 바로 앞의 용사를 노린다");
+
+        s.hp = 999;
+        g.hero.invuln = 0;
+        run(g, idle, b.monster.counterWarning + 0.1f);
+        assertTrue(s.hp < 999, "가만히 있으면 반격에 맞는다");
+    }
+
+    @Test
+    void knightStandsUpWithoutCounteringIfLeftAlone() {
+        GameState s = hero();
+        GameSession g = fightIn("R6", s);
+        Monster m = forcePattern(g, "R6", "counter", 3 * b.tileSize);
+        run(g, idle, 2 / 60f);
+        assertEquals(Monster.State.GUARD, m.state);
+        m.patternCd = 99;
+        m.attackCd = 99;
+        s.hp = 999;
+        run(g, idle, b.monster.counterGuard + 0.1f);
+        assertNotEquals(Monster.State.GUARD, m.state, "기다리면 일어선다");
+        assertTrue(g.hazards.stream().noneMatch(h -> "counter".equals(h.style)), "안 때리면 반격도 없다");
+        assertEquals(999, s.hp);
+
+        // 일어선 뒤에는 평소처럼 맞는다
+        int hp = m.hp;
+        m.enter(Monster.State.RECOVER, 5f);
+        swingAt(g, m);
+        assertTrue(m.hp < hp);
+    }
+
+    @Test
+    void knightHasCounterInItsPatterns() {
+        assertTrue(b.dungeon("RIGHT").boss.patterns.contains("counter"));
+    }
 }

@@ -297,6 +297,13 @@ public class EnemyPainter {
                 batch.setColor(SHIELD_COLOR.r, SHIELD_COLOR.g, SHIELD_COLOR.b, (0.18f + 0.25f * fr) * pulse);
                 batch.draw(art.glow, m.x - r, m.y - r * 0.2f, r * 2, r * 1.9f);
             }
+            if (m.state == Monster.State.GUARD) {
+                // 혈월의 기사 방패 반격: 웅크린 동안 앞쪽 방패가 붉게 빛난다 (치면 반격)
+                float gr = m.hurtRadius * 1.5f * bossScale(m.def.sprite);
+                float gx = m.x + m.dirX * m.hurtRadius, gy = m.centerY() + m.dirY * m.hurtRadius * 0.6f;
+                batch.setColor(PROJ_BLOOD.r, PROJ_BLOOD.g, PROJ_BLOOD.b, 0.35f + 0.15f * MathUtils.sin(time * 10f));
+                batch.draw(art.glow, gx - gr, gy - gr, gr * 2, gr * 2);
+            }
             if (m.guardActive()) {
                 // 해골병 방패: 바라보는 쪽에 막이 보인다
                 float gr = m.hurtRadius * 1.6f * mobScale(m.def.sprite);
@@ -476,6 +483,10 @@ public class EnemyPainter {
             case SLAM_TELEGRAPH: case CAST_TELEGRAPH:
                 a[2] = 3;
                 return new int[]{3, four};
+            case GUARD:
+                // 방패 반격: 빠르게 웅크린 뒤 방패 뒤에서 버틴다 (특수 공격 줄 0~3칸, 3칸에서 멈춤)
+                a[2] = 3;
+                return new int[]{3, Math.min(3, (int) ((m.stateTotal - m.stateT) / 0.07f))};
             case RECOVER:
                 return new int[]{(int) a[2], 4 + four};
             case CHANNEL:
@@ -712,7 +723,7 @@ public class EnemyPainter {
                 particles.burst(e.x, e.y, 22, Color.WHITE, 260, 0.35f, 3, true);
                 flash(e.x, e.y + 60, e.size * 4f, c, 0.25f);
                 break;
-            case "spin": case "leap": case "brand":
+            case "spin": case "leap": case "brand": case "counter":
                 particles.burst(e.x,e.y+5,12,c,135,.32f,2,true);
                 flash(e.x,e.y,e.size*1.5f,c,.16f);
                 break;
@@ -780,7 +791,7 @@ public class EnemyPainter {
         switch (style) {
             case "bolt": case "cage": return PROJ_SKY;
             case "tentacle": return PROJ_DARK;
-            case "spear": case "blood": case "spin": case "leap": return PROJ_BLOOD;
+            case "spear": case "blood": case "spin": case "leap": case "counter": return PROJ_BLOOD;
             case "bone": return BONE;
             case "brand": return PROJ_DARK;
             case "whip": return WHIP;

@@ -187,6 +187,18 @@ public class MonsterBrain extends EnemyContext {
                 case CHANNEL:
                     boss.channel(m, dt * speedUp);
                     break;
+                case GUARD:
+                    // 방패 반격: 웅크린 채 용사 쪽으로 몸을 돌린다. 끝까지 안 맞으면 그냥 일어선다
+                    if (dist > 0.01f) {
+                        m.dirX = dx / dist;
+                        m.dirY = dy / dist;
+                    }
+                    m.stateT -= dt * speedUp;
+                    if (m.stateT <= 0) {
+                        m.state = Monster.State.CHASE;
+                        m.attackCd = Math.max(m.attackCd, 0.4f);
+                    }
+                    break;
                 case PUNCH_TELEGRAPH:
                     // 충격파(Hazard)는 실제 시간으로 터지므로 주먹도 실제 시간에 맞춰 뻗는다 (2페이즈 가속 없음)
                     m.stateT -= dt;

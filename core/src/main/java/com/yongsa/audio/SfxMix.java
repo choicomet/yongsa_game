@@ -117,6 +117,7 @@ final class SfxMix {
         cue("hz_spear", "block", -13f, 0.08f, 0.06f, 0.85f, 1, 0f, 0f);        // 혈월의 기사 창: 쇳소리
         cue("hz_flame", "cast", -13f, 0.1f, 0.06f, 0.7f, 1, 0f, 0f);
         cue("hz_spin", "swing", -11f, 0.12f, 0.04f, 0.7f, 2, 0f, 0f);          // 회전 베기
+        cue("hz_counter", "swing", -11f, 0.1f, 0.04f, 0.85f, 2, 0f, 0f);       // 혈월의 기사 방패 반격
         cue("hz_whip", "monsterAttack", -11f, 0.08f, 0.06f, 0.7f, 2, 0f, 0f);  // 마왕 채찍
         cue("hz_bolt", "destroy", -12f, 0.07f, 0.1f, 1.45f, 1, 0f, 0f);        // 번개: 높고 날카롭게 깨지는 소리
         cue("hz_cage", "destroy", -12f, 0.1f, 0.08f, 1.3f, 1, 0f, 0f);

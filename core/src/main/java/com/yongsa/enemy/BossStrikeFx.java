@@ -81,7 +81,7 @@ final class BossStrikeFx {
                             y+radius*MathUtils.sin(angle)-size*.18f,size,size);
                 }
             }
-            case "spin", "leap" -> {
+            case "spin", "leap", "counter" -> {
                 float size=r*(1.65f+.47f*rise), angle=165-rise*245;
                 b.draw(impacts[1],x-size/2,y-size/2,size/2,size/2,size,size,1,1,angle);
                 if ("spin".equals(e.text)) {

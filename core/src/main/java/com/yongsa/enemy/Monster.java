@@ -29,7 +29,9 @@ public class Monster extends Actor {
         /** 해골병: 쓰러져 뼈 무더기가 된 채 다시 일어나려는 중. 이때 때리면 완전히 부서진다. */
         DOWNED,
         /** 골렘 주먹 날리기: 주먹을 뒤로 당기는 중 (기본 공격 줄 앞 4칸). 끝나면 RECOVER 에서 주먹을 뻗는다. */
-        PUNCH_TELEGRAPH
+        PUNCH_TELEGRAPH,
+        /** 혈월의 기사 방패 반격: 방패 뒤로 웅크려 버틴다 (특수 공격 줄 앞 4칸). 이때 맞으면 막고 바로 반격한다. */
+        GUARD
     }
 
     public final MonsterDef def;
