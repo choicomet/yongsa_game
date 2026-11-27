@@ -517,7 +517,7 @@ public class MonsterBrain extends EnemyContext {
         } else {
             shoot(m, m.x, sy, base, speed, dmg, m.def.sprite);
         }
-        events.add(GameEvent.sound("cast"));
+        events.add(GameEvent.sound(m.boss ? com.yongsa.audio.SfxNames.bossShot(m.def.sprite, "cast") : "cast"));
     }
 
     void shoot(Monster m, float x, float y, float angle, float speed, int damage, String source) {
@@ -589,7 +589,7 @@ public class MonsterBrain extends EnemyContext {
             p.source = orb.source;
             out.add(p);
         }
-        events.add(GameEvent.sound("cast"));
+        events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossOrbBurst(orb.source, "cast")));
     }
 
     /** 유도탄: 속도는 그대로, 방향만 용사 쪽으로 조금씩 튼다. */
