@@ -83,7 +83,7 @@ final class SfxMix {
         for (String boss : new String[]{"golem", "knight", "warden", "demonlord"}) {
             var intro = SfxNames.bossIntro(boss);
             cue(intro.arrival(), intro.arrival(), -10f, .4f, .015f, 1f, 3, .34f, .5f);
-            cue(intro.windup(), intro.windup(), -7.5f, .3f, .03f, 1f, 2, .15f, .25f);
+            if (intro.windup() != null) cue(intro.windup(), intro.windup(), -7.5f, .3f, .03f, 1f, 2, .15f, .25f);
         }
         // 번개 두 번은 길어서(2.6초) 끝날 때까지 곡을 조금 더 줄인다
         cue("bs_intro_warden_bolts", "bs_intro_warden_bolts", -9f, .4f, 0f, 1f, 3, .45f, 2.8f);  // 실제 벼락 녹음 2.7초 동안 곡을 줄임

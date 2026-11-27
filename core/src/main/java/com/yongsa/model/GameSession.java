@@ -883,7 +883,8 @@ public class GameSession {
             }
             // 특수 공격(동작 시트 4행) 준비 자세: 힘을 모은다
             b.enter(Monster.State.CAST_TELEGRAPH, INTRO_STRIKE_AT - INTRO_WINDUP_AT);
-            events.add(GameEvent.sound(SfxNames.bossIntro(b.def.sprite).windup()));
+            String windup = SfxNames.bossIntro(b.def.sprite).windup();
+            if (windup != null) events.add(GameEvent.sound(windup));
         } else if (introStep == 1 && e >= INTRO_STRIKE_AT && bossIntroT > 0) {
             introStep = 2;
             // 내리친다: 특수 공격 뒷동작 + 충격파 (보여 주기만 하고 용사는 맞지 않는다)
