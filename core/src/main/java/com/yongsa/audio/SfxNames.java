@@ -16,7 +16,21 @@ public final class SfxNames {
      * 0.8초 동안 모으다가 0.84초에 '딱' 하는 소리 (tools/make_boss_charge_sfx.py). 파일이 없는 보스는 fallback.
      */
     public static String bossCharge(String sprite, String fallback) {
-        String n = "charge_" + sprite;
-        return SfxMix.CUES.containsKey(n) ? n : fallback;
+        return boss("charge_", sprite, fallback);
+    }
+
+    /** 보스가 구슬·검기를 쏠 때의 소리 (shot_knight 등). 보스가 아니거나 소리가 없으면 fallback. */
+    public static String bossShot(String sprite, String fallback) {
+        return boss("shot_", sprite, fallback);
+    }
+
+    /** 보스 구슬이 터질 때의 소리 (orbBurst_demonlord). */
+    public static String bossOrbBurst(String sprite, String fallback) {
+        return boss("orbBurst_", sprite, fallback);
+    }
+
+    private static String boss(String prefix, String sprite, String fallback) {
+        String n = prefix + sprite;
+        return sprite != null && SfxMix.CUES.containsKey(n) ? n : fallback;
     }
 }

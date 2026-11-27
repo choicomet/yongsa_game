@@ -234,9 +234,12 @@ def saw(f, n):
     return 2 * (ph % 1) - 1
 
 
-def finish(x, name, target_db=-12.0):
-    """크기 맞추기: 가장 큰 50ms 구간 RMS 를 -12dBFS 로 (게임 sfx 폴더 기준), 피크는 -1dB 로 제한."""
-    x = hp(x, 28)
+def finish(x, name, target_db=-7.0):
+    """크기 맞추기: 가장 큰 50ms 구간 RMS 를 -7dBFS 로 (스킬 소리 sk_ 와 같은 기준, SfxMix.SKILL_FILE_DB), 피크는 -1dB 로 제한."""
+    # 노트북·모니터 스피커는 70Hz 아래를 거의 못 낸다. 첫 버전은 에너지의 70~85% 가 그 아래라 게임에서 거의 안 들렸다
+    # (지용 11/27). 70Hz 아래를 깎고 1~4kHz(귀가 제일 잘 듣는 대역)를 올린 뒤 크기를 맞춘다.
+    x = hp(hp(x, 70), 70)
+    x = x + 0.8 * bp(x, 2200, 0.7)
     w = int(0.05 * SR)
     rms = np.sqrt(np.convolve(x ** 2, np.ones(w) / w, mode="same"))
     x = x * 10 ** (target_db / 20) / (rms.max() + 1e-9)
@@ -442,12 +445,92 @@ def common():
     return bus(layers, gains, 1.0, 0.2, 4000)
 
 
+# ── 보스 구슬·검기 쏘는 소리 (shot_*, 지용 11/27 '구슬 날리는 소리도') ─────────────
+# 같은 방법을 짧게 (0.5초): 앞 5ms '탁'(트랜지언트) + 날아가는 바람(음이 내려가는 대역 소음 = 멀어지는 느낌)
+# + 보스 재료 꼬리 + 중고음 존재감. 자주 나므로 짧고 매번 조금씩 다르게(게임에서 높낮이 ±5%).
+SN = int(0.55 * SR)
+
+
+def zip_whoosh(f0, f1, dur=0.4, q=1.6):
+    n = int(dur * SR)
+    x = bp(rng.standard_normal(n), expo(f0, f1, n), q)
+    e = np.minimum(1, tt(n) / 0.015) * np.exp(-tt(n) / (dur * 0.35))
+    return x * e
+
+
+def kick(f0, f1, dur, tau, drive=2.0):
+    n = int(dur * SR)
+    return sat(np.sin(2 * np.pi * np.cumsum(expo(f0, f1, n)) / SR) * np.exp(-tt(n) / tau), drive)
+
+
+def shot_mix(parts, rt, wet):
+    y = np.zeros(SN)
+    for x, at, g in parts:
+        place(y, x, at, g)
+    return reverb(comp(y, -14, 3.0), rt, wet, 5000)[:SN]
+
+
+def shot_golem():
+    # 돌덩이를 던지는 소리: 바위 '쩍' + 낮은 '부웅' + 자갈 꼬리
+    crack = hp(head(load("Earth_Spell_Impact_1_s07"), 0.12, 0.035), 150)
+    grav = hp(head(speed(load("sfx100v2_stones_01"), 0.85), 0.3, 0.1), 400)
+    return shot_mix([(crack, 0, 1.0), (zip_whoosh(900, 180, 0.35, 1.2), 0.01, 0.9),
+                     (kick(110, 50, 0.18, 0.05), 0, 0.7), (grav, 0.05, 0.5)], 0.6, 0.15)
+
+
+def shot_knight():
+    # 붉은 검기: 칼 '스왁' (밝은 바람이 내려감) + 쇠 '칭' + 어두운 반음 꼬리
+    shing = hp(head(load("blade_02"), 0.25, 0.09), 1200)
+    ring = bp(head(speed(load("metal-ringing"), 1.2), 0.35, 0.12), 2500, 1.0)
+    n = int(0.4 * SR)
+    dark = lp(saw(np.full(n, 98.0), n) + saw(np.full(n, 104.0), n), 1200) * np.exp(-tt(n) / 0.12)
+    return shot_mix([(zip_whoosh(5000, 900, 0.32, 1.4), 0, 1.0), (shing, 0, 0.8), (ring, 0.02, 0.45),
+                     (dark, 0.0, 0.3), (kick(140, 70, 0.1, 0.03), 0, 0.5)], 0.9, 0.2)
+
+
+def shot_warden():
+    # 마탄: 전기 '지직' + 작은 종 '팅' + 음이 내려가는 '퓨우'
+    zap = hp(head(load("Lightning_Spell_Impact_2_s06"), 0.15, 0.04), 600)
+    sp = hp(grains([load("Retro_Electric_Sparks_01_s05")], SN, 60, 20, (0.008, 0.02), (1.0, 1.6), end=0.3), 2500)
+    ting = hp(head(speed(load("bell_02"), 1.25), 0.35, 0.1), 1500)
+    n = int(0.3 * SR)
+    pew = np.sin(2 * np.pi * np.cumsum(expo(1400, 500, n)) / SR) * np.exp(-tt(n) / 0.08)
+    return shot_mix([(zap, 0, 1.0), (sp, 0, 0.35), (ting, 0.005, 0.5), (pew, 0, 0.35),
+                     (zip_whoosh(3500, 700, 0.3, 1.8), 0, 0.5)], 1.0, 0.22)
+
+
+def shot_demonlord():
+    # 어둠 구체: 짧은 역잔향 '스읍' 다음 낮은 '우웅' 하고 떠나감 + 징 머리 + 공허 바람
+    gong = speed(load("gong_02"), 0.75)
+    pre = reverse_reverb(head(gong, 0.08, 0.03), 0.25, 3000)[-int(0.07 * SR):]
+    body = lp(head(gong, 0.45, 0.15), 2200)
+    n = int(0.45 * SR)
+    hum = lp(saw(expo(110, 70, n), n), 900) * np.exp(-tt(n) / 0.14)
+    y = shot_mix([(body, 0.07, 0.8), (hum, 0.07, 0.6), (kick(120, 40, 0.25, 0.07, 2.5), 0.07, 0.8),
+                  (zip_whoosh(2500, 300, 0.4, 1.0), 0.07, 0.6)], 1.3, 0.25)
+    place(y, pre * 0.6, 0)
+    return y
+
+
+def orb_burst_demonlord():
+    # 어둠 구체가 터지며 사방으로 흩어짐: 낮은 '펑' + 징 + 흩어지는 바람
+    gong = lp(head(speed(load("gong_01"), 0.6), 0.5, 0.18), 2500)
+    boom = lp(head(load("explosion"), 0.4, 0.12), 3000)
+    return shot_mix([(kick(90, 32, 0.35, 0.1, 3.0), 0, 1.0), (boom, 0, 0.7), (gong, 0, 0.6),
+                     (zip_whoosh(400, 4000, 0.35, 1.0), 0.02, 0.4)], 1.4, 0.25)
+
+
 if __name__ == "__main__":
     finish(golem(), "A-골렘-바위가갈리며-쩍")
     finish(knight(), "B-혈월의기사-심장고동-칼날-스링")
     finish(warden(), "C-탑의수문장-역재생종-전기-딱")
     finish(demonlord(), "D-마왕-합창-숨들이켜기-훅")
     finish(common(), "E-공통형-보스누구나")
+    LEN = 0.55
+    for nm, fn in (("shot_golem", shot_golem), ("shot_knight", shot_knight), ("shot_warden", shot_warden),
+                   ("shot_demonlord", shot_demonlord), ("orbBurst_demonlord", orb_burst_demonlord)):
+        finish(fn(), nm, -8.0)
+    LEN = 1.25
     # 층 나눠 듣기 (골렘): 층 하나씩 → 전부 합친 것
     layers, gains = golem(return_layers=True)
     names = ["1서브", "2몸통-돌갈림", "3거인신음", "4역재생폭발", "5돌부스러기", "6먼지바람", "7정점-쩍쿵"]

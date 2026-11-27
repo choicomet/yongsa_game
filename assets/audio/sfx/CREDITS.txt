@@ -34,3 +34,4 @@ intro_*.wav (보스 등장 소리: 골렘·혈월의 기사·탑의 수문장·�
 위 Kenney CC0 녹음(slam, destroy, mine, block, craft) + RPG Sound Pack (artisticdude, OpenGameArt, CC0: 거인·오우거 목소리, 칼 뽑기, 쇠사슬)
 + OpenGameArt CC0 웃음 녹음 ("Evil Laugh" by AntumDeluge) + 코드로 만든 저음·바람·화음·잔향. 재료 원본은 tools/sfx_src.
 charge_golem/knight/warden/demonlord.wav <- tools/make_boss_charge_sfx.py (OpenGameArt CC0 녹음 + 합성, 재료 출처는 tools/sfx_src/boss_charge/CREDITS.txt)
+shot_golem/knight/warden/demonlord.wav, orbBurst_demonlord.wav <- tools/make_boss_charge_sfx.py (같은 재료)

@@ -86,8 +86,12 @@ final class SfxMix {
         }
         // 보스 힘 모으기 (지용 2026-11-27): 패턴을 시작할 때 보스마다 다른 소리. 파일: tools/make_boss_charge_sfx.py
         for (String b : new String[]{"golem", "knight", "warden", "demonlord"}) {
-            cue("charge_" + b, "charge_" + b, -10f, 0.6f, 0.03f, 1f, 2, 0.25f, 0.9f);
+            // 첫 버전(-10dB, 저음 위주)은 배경음악에 묻혀 거의 안 들렸다 (지용 11/27) → 중고음을 살려 다시 굽고 크게, 곡도 잠깐 줄인다
+            cue("charge_" + b, "charge_" + b, -7f, 0.6f, 0.03f, 1f, 2, 0.5f, 0.9f);
+            // 구슬·검기 쏘는 소리 (예전에는 몹과 같은 '삐융')
+            cue("shot_" + b, "shot_" + b, -9f, 0.1f, 0.05f, 1f, 2, 0f, 0f);
         }
+        cue("orbBurst_demonlord", "orbBurst_demonlord", -9f, 0.1f, 0.04f, 1f, 2, 0.2f, 0.3f);
         cue("awaken", "awaken", -12f, 0.3f, 0f, 1f, 3, 0.4f, 0.5f);
         cue("unseal", "unseal", -11f, 0.5f, 0f, 1f, 3, 0.5f, 1.1f);
         cue("destroy", "destroy", -11f, 0.3f, 0f, 1f, 3, 0.45f, 0.55f);
@@ -181,7 +185,14 @@ final class SfxMix {
 
     /** 파일로 바꿔 넣은 소리. 스킬 소리(sk_)는 더 크게 구워 두었다 (tools/make_skill_sfx.py LEVEL_DB). */
     void measureFile(String base) {
-        level.put(base, base.startsWith("sk_") ? SKILL_FILE_DB : FILE_REFERENCE_DB);
+        level.put(base, base.startsWith("sk_") ? SKILL_FILE_DB : isBossFile(base) ? BOSS_FILE_DB : FILE_REFERENCE_DB);
+    }
+
+    /** 보스 힘 모으기·쏘기 소리는 스킬 소리처럼 크게 구웠다 (tools/make_boss_charge_sfx.py, 실제 약 -8.5dB). */
+    static final float BOSS_FILE_DB = -8.5f;
+
+    static boolean isBossFile(String base) {
+        return base.startsWith("charge_") || base.startsWith("shot_") || base.startsWith("orbBurst_");
     }
 
     static final float SKILL_FILE_DB = -7f;
