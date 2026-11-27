@@ -354,7 +354,7 @@ public class GameScreen extends ScreenAdapter {
                     // 곡을 먼저 틀어야 포효가 곡을 잠깐 눌러(덕킹) 포효가 끝날 즈음 음악이 올라온다
                     String track = bossBgm(e);
                     game.bgm.play(track, 0.8f, bgmStart(track));
-                    game.sfx.play("roar");
+                    game.sfx.play(bossIntroSfx(e));
                     shake(0.5f);
                     hud.bossIntro(e.text, e.boss);
                     break;
@@ -456,6 +456,15 @@ public class GameScreen extends ScreenAdapter {
         if ("RIGHT".equals(e.dungeonId)) return "boss_knight";
         if ("TOP".equals(e.dungeonId)) return "boss_warden";
         return null;
+    }
+
+    /** 보스가 나올 때 한 번 나는 소리 (보스마다 다르다). 모르는 보스는 예전처럼 포효. */
+    private static String bossIntroSfx(GameEvent e) {
+        if (e.boss) return "intro_demonlord";
+        if ("LEFT".equals(e.dungeonId)) return "intro_golem";
+        if ("RIGHT".equals(e.dungeonId)) return "intro_knight";
+        if ("TOP".equals(e.dungeonId)) return "intro_warden";
+        return "roar";
     }
 
     /** 곡 앞부분이 조용해서 중간부터 트는 곡 (초). 반복할 때도 이 지점으로 돌아간다. */

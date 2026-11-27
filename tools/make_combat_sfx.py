@@ -1,5 +1,8 @@
 """용사 기본 전투 소리 + 보스 등장 소리 만들기 (2026-11-27, 지용 요청).
 
+게임에는 보스 등장 소리 4개만 넣었다 (아래 GAME). 기본 공격·구르기 소리는 시안만 있고 쓰지 않는다
+(해성이 11/26 일부러 뺌).
+
 만드는 것 (각각 시안 a/b 가 있는 것도 있다):
   hero_swing   용사가 칼을 휘두르는 소리 (기본 공격, 0.4초마다 나도 귀가 피곤하지 않게 짧게)
   hero_hit     칼이 몬스터를 맞히는 소리 (살 베는 '퍽' + 짧은 쇳소리)
@@ -12,8 +15,7 @@
       + 코드로 만든 층 (저음, 바람, 웅웅 화음, 잔향).
 RPG Sound Pack 녹음은 tools/sfx_src/rpg 에 둔다 (CC0, 작은 WAV).
 
-실행: python tools/make_combat_sfx.py [출력 폴더]   (numpy 필요)
-출력 폴더를 안 주면 assets/audio/sfx 에 쓴다.
+실행: python tools/make_combat_sfx.py [출력 폴더 [이름…]]   (numpy 필요, 아래 __main__ 참고)
 """
 import os
 import sys
@@ -638,8 +640,24 @@ SOUNDS = [
     ("intro_warden", warden, -9), ("intro_warden_b", warden_b, -9), ("intro_warden_c", warden_c, -9), ("intro_demonlord", demonlord, -9), ("intro_demonlord_b", demonlord_b, -9), ("intro_demonlord_c", demonlord_c, -9), ("intro_warden_d", warden_d, -9), ("intro_warden_e", warden_e, -9), ("intro_demonlord_d", demonlord_d, -9), ("intro_warden_f", warden_f, -9), ("intro_warden_g", warden_g, -9), ("intro_demonlord_e", demonlord_e, -9),
 ]
 
+# 게임에 넣은 것 (2026-11-27 지용 결정): 보스 등장 소리만. 파일 크기 기준은 Kenney 녹음과 같은 -12dB
+# (SfxMix.FILE_REFERENCE_DB), 실제 재생 크기는 SfxMix 의 intro_* 규칙에서 정한다.
+GAME = [
+    ("intro_golem", golem),
+    ("intro_knight", knight),
+    ("intro_warden", warden_f),      # 시안 7f: 발걸음 → 번개 두 번
+    ("intro_demonlord", demonlord_e),  # 시안 8e: 콰아앙 → 낮은 저음 웃음
+]
+
 if __name__ == "__main__":
-    out_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "assets", "audio", "sfx")
+    # python tools/make_combat_sfx.py            → 게임 파일 4개를 assets/audio/sfx 에 쓴다
+    # python tools/make_combat_sfx.py 폴더 [이름…] → 모든 시안을 그 폴더에 쓴다 (미리듣기용)
+    if len(sys.argv) == 1:
+        sfx = os.path.join(ROOT, "assets", "audio", "sfx")
+        for name, fn in GAME:
+            finish(fn(), os.path.join(sfx, name + ".wav"), -12)
+        sys.exit(0)
+    out_dir = sys.argv[1]
     only = sys.argv[2:]
     os.makedirs(out_dir, exist_ok=True)
     for name, fn, db in SOUNDS:

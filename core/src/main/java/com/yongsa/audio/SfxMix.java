@@ -80,6 +80,10 @@ final class SfxMix {
         cue("slam", "slam", -11f, 0.12f, 0.05f, 1f, 2, 0.2f, 0.15f);
         // ── 큰 사건: 배경음악을 잠깐 내려 길을 내 준다
         cue("roar", "roar", -11f, 0.5f, 0.03f, 1f, 3, 0.45f, 0.7f);
+        // 보스 등장 (지용 2026-11-27): 보스방에 들어서면 보스마다 다른 소리 한 번. 파일: tools/make_combat_sfx.py
+        for (String b : new String[]{"golem", "knight", "warden", "demonlord"}) {
+            cue("intro_" + b, "intro_" + b, -10f, 1f, 0f, 1f, 3, 0.5f, b.equals("demonlord") ? 2.5f : 1.6f);
+        }
         cue("awaken", "awaken", -12f, 0.3f, 0f, 1f, 3, 0.4f, 0.5f);
         cue("unseal", "unseal", -11f, 0.5f, 0f, 1f, 3, 0.5f, 1.1f);
         cue("destroy", "destroy", -11f, 0.3f, 0f, 1f, 3, 0.45f, 0.55f);
