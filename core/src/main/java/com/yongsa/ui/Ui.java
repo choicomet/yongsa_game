@@ -71,6 +71,7 @@ public final class Ui {
         skin.add("small", new Label.LabelStyle(fonts.small, TEXT));
         skin.add("large", new Label.LabelStyle(fonts.large, TEXT));
         skin.add("title", new Label.LabelStyle(fonts.title, GOLD));
+        AchievementArt.install(skin, art);
         return skin;
     }
 

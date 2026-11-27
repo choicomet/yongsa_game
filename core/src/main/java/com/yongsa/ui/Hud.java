@@ -70,6 +70,7 @@ public class Hud {
         java.util.Arrays.fill(wasReady, true);
         this.g = g;
         this.art = art;
+        achievementPlaque = new com.badlogic.gdx.graphics.g2d.NinePatch(art.tex("ui/achievement/toast.png"), 76, 16, 16, 16);
         this.fonts = fonts;
         this.batch = batch;
         this.shapes = shapes;
@@ -93,9 +94,10 @@ public class Hud {
     }
 
     private final List<com.yongsa.model.Achievement> achievements = new ArrayList<>();
+    private final com.badlogic.gdx.graphics.g2d.NinePatch achievementPlaque;
     private float achievementT;
     private static final float ACHIEVEMENT_TIME = 4.5f;
-    private static final Color ACH_BG = new Color(0x0d1117ee), ACH_EDGE = new Color(0x7d6440ff), ACH_SUB = new Color(0xa9a294ff);
+    private static final Color ACH_SUB = new Color(0xa9a294ff);
 
     public void banner(String text) {
         banner = text;
@@ -483,10 +485,8 @@ public class Hud {
         layout.setText(fonts.small, sub);
         float pw = Math.max(420, layout.width + 120), ph = 76;
         float px = (w - pw) / 2f, py = h - 112 - ph + (1 - Math.min(1, t / 0.25f)) * 10;
-        rect(px - 1, py - 1, pw + 2, ph + 2, alphaOf(ACH_EDGE, alpha));
-        rect(px, py, pw, ph, alphaOf(ACH_BG, alpha));
         batch.setColor(1, 1, 1, alpha);
-        batch.draw(frames.keyRound, px + 12, py + 10, 56, 56);
+        achievementPlaque.draw(batch, px, py, pw, ph);
         TextureRegion icon = com.yongsa.ui.AchievementArt.icon(art, a);
         float is = 36, iw = is, ih = is;
         if (icon.getRegionWidth() > 0 && icon.getRegionHeight() > 0) {
