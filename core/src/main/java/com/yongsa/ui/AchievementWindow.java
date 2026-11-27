@@ -1,6 +1,11 @@
 package com.yongsa.ui;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Stack;
@@ -33,7 +38,7 @@ public class AchievementWindow extends Modal {
             cardOff = Ui.rounded(0x11171df5, 0x2a323aff, 2, 12, 14, 12);
             ringOn = Ui.rounded(0x3a2c1aff, 0xe2b25aff, 2, 32, 0, 0);
             ringOff = Ui.rounded(0x2a323cff, 0x3a444eff, 2, 32, 0, 0);
-            ribbon = Ui.patch(0x7b4fc9ff, 0x7b4fc9ff, 1);
+            ribbon = ribbon();
             effectOn = Ui.rounded(0x0e141aff, 0x7a5a30ff, 1, 8, 8, 5);
             effectOff = Ui.rounded(0x0e141aff, 0x262c33ff, 1, 8, 8, 5);
         }
@@ -61,6 +66,36 @@ public class AchievementWindow extends Modal {
         p.add(nav.add("닫기", this::close)).width(200).height(48);
     }
 
+    /** 보라색 제비꼬리 리본: 위는 밝고 아래는 어둡게, 오른쪽 끝은 V자로 파인다. */
+    private static Drawable ribbon() {
+        int w = 40, h = 28, notch = 9, mid = h / 2;
+        Color top = new Color(0x9468e6ff), bottom = new Color(0x5e36a8ff), c = new Color();
+        Pixmap p = new Pixmap(w, h, Pixmap.Format.RGBA8888);
+        p.setBlending(Pixmap.Blending.None);
+        for (int y = 0; y < h; y++) {
+            float t = y / (float) (h - 1);
+            c.set(top).lerp(bottom, t);
+            if (y == 0) c.set(0xb593f5ff);            // 윗변 하이라이트
+            if (y >= h - 2) c.set(0x45277eff);        // 아랫변 그림자
+            for (int x = 0; x < w; x++) {
+                // 오른쪽 V자 홈: 가운데로 갈수록 깊다
+                float cut = w - notch * (1f - Math.abs(y + 0.5f - mid) / mid);
+                float a = Math.max(0, Math.min(1, cut - (x + 0.5f) + 0.5f));
+                    p.drawPixel(x, y, Color.rgba8888(c.r, c.g, c.b, a));
+            }
+        }
+        Texture tex = new Texture(p);
+        tex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        p.dispose();
+        NinePatch np = new NinePatch(new TextureRegion(tex), 4, notch + 2, 0, 0);
+        NinePatchDrawable d = new NinePatchDrawable(np);
+        d.setLeftWidth(10);
+        d.setRightWidth(notch + 8);
+        d.setTopHeight(4);
+        d.setBottomHeight(5);
+        return d;
+    }
+
     private Table card(Achievement a, boolean on) {
         Table c = new Table();
         c.setBackground(on ? cardOn : cardOff);
@@ -82,7 +117,8 @@ public class AchievementWindow extends Modal {
             Table t = new Table();
             t.setBackground(ribbon);
             t.add(tag);
-            top.add(t).top().right();
+            // 카드 오른쪽 끝에 붙는 제비꼬리 리본
+            top.add(t).top().right().padRight(-12).padTop(2);
         }
         c.add(top).growX().row();
 

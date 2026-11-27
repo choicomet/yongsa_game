@@ -19,7 +19,7 @@ import com.yongsa.model.Stats;
 import com.yongsa.screen.GameScreen;
 
 /**
- * 엔딩 (UI-11): “THE HERO'S RECORD” — 플레이 기록을 용사의 이력서처럼 보여 준다.
+ * 엔딩 (UI-11): “기록” — 플레이 기록을 용사의 이력서처럼 보여 준다.
  * 위: 용사 그림과 이름·지원 분야·근무 기간(플레이 시간)·대표 무기·칭호. 가운데: 광부·대장장이·용사 경력 카드와 등급.
  * 아래: 보유 기술과 자기소개. 버튼은 마을로 가기(마을 가는 길에서 이어서), 타이틀로 돌아가기 (FR-던전-10).
  */
@@ -64,7 +64,7 @@ public class EndingScreen extends MenuScreen {
             Table p = panel("panelRound");
             p.pad(18, 30, 20, 30);
 
-            p.add(label("THE HERO'S RECORD", "title", Ui.GOLD)).padBottom(2).row();
+            p.add(label("기록", "title", Ui.GOLD)).padBottom(2).row();
             p.add(label("깨어난 성검이 마왕을 꿰뚫었다. 캠프의 모닥불이 처음으로 밝게 타올랐다.", "small", Ui.DIM)).padBottom(8).row();
             p.add(new Image(skin.getDrawable("divider"))).width(830).height(1).padBottom(12).row();
 
