@@ -365,7 +365,9 @@
   "finalBoss": { "name": "마왕", "hp": 7200, "attack": 80, "speedTiles": 2.0, "sprite": "demonlord",
                 "patterns": ["ring", "darkorb", "brand"],
                 "noMeleePhase1": true,
-                "phase2Patterns": ["tentacle", "eyes", "ring", "eyes"], "cornerBlink": true },
+                "phase2Patterns": ["tentacle", "eyes", "ring", "eyes"], "cornerBlink": true,
+                "_melee": "2026-11-27 선우: 2페이즈 근접 공격이 빠르다는 의견으로 조금 늦춤 (공통 예고 0.55 → 0.7초, 쉬는 시간 1.0 → 1.3초). 1페이즈는 근접 공격이 없다",
+                "telegraph": 0.7, "cooldown": 1.3 },
 
   "village": {
     "_note": "던전 밖 마을 (선우 버전에서 옮김). 좌표는 마을 그림 기준 (왼쪽 위 0,0 ~ 오른쪽 아래 1,1). 마을 그림이 바뀌면 at 을 옮긴다.",
