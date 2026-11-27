@@ -28,7 +28,7 @@
   "reward": { "chestOreMin": 30, "chestOreMax": 40, "bossChestPotions": 1,
               "mobChestChance": 0.3, "mobChestOreMin": 3, "mobChestOreMax": 6, "mobChestPotions": 1 },
 
-  "_potion": "던전 상자를 열면 상자 앞 바닥에 회복 포션이 떨어진다. 포션 앞(pickupRadiusTiles 칸 안)에서 E 를 누르면 마셔서 최대 체력의 healRatio 만큼 회복. 체력이 가득해도 마실 수 있고 그때는 변화 없음 (들고 다니지 않는다)",
+  "_potion": "던전 상자를 열면 상자 앞 바닥에 회복 포션이 떨어진다. 포션 앞(pickupRadiusTiles 칸 안)에서 E 를 누르면 마셔서 최대 체력의 healRatio 만큼 회복. 체력이 가득해도 마실 수 있고 그때는 변화 없음 (들고 다니지 않는다). 보스방 상자의 포션은 체력을 가득 채우는 완전 회복 물약 (보스를 잡아도 체력은 자동으로 차지 않는다, 2026-11-27)",
   "potion": { "healRatio": 0.4, "pickupRadiusTiles": 1.0 },
 
   "weapons": [

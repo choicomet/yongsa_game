@@ -65,6 +65,20 @@ public class Hud {
         float t;
     }
 
+    /** 보스 상자에서 튀어나와 '보스 힘' 칸으로 날아가는 구슬 (화면 좌표). */
+    private static class PowerOrb {
+        float x0, y0, t;
+    }
+
+    /** 구슬이 튀어 오르는 시간, 칸까지 날아가는 시간 (초). */
+    private static final float ORB_POP = 0.55f, ORB_FLY = 0.9f;
+    private final List<PowerOrb> orbs = new ArrayList<>();
+    /** 구슬이 들어간 칸이 번쩍이는 시간 (칸 번호별). */
+    private final float[] pipFlash = new float[3];
+    /** 마지막으로 그린 '보스 힘' 마름모 칸 가운데 (구슬이 날아갈 곳). */
+    private final float[] pipX = new float[3], pipY = new float[3];
+    private boolean pipsVisible;
+
     public Hud(GameSession g, Art art, Fonts fonts, SpriteBatch batch, ShapeRenderer shapes) {
         java.util.Arrays.fill(wasReady, true);
         this.g = g;
@@ -84,6 +98,19 @@ public class Hud {
         toasts.add(t);
         // 연달아 뜬 안내가 바로 지워지지 않게 셋까지 쌓는다 (예: 침대에서 잔 뒤 두 줄)
         if (toasts.size() > MAX_TOASTS) toasts.remove(0);
+    }
+
+    /** 보스 상자를 열었을 때: 화면의 (x, y) 에서 힘 구슬이 튀어나와 왼쪽 위 '보스 힘' 칸으로 날아간다. */
+    public void powerOrb(float x, float y, String dungeonId) {
+        PowerOrb o = new PowerOrb();
+        o.x0 = x;
+        o.y0 = y;
+        orbs.add(o);
+    }
+
+    /** 날아가는 중인 구슬 수 (아직 칸에 채워 보이지 않는다). */
+    public int orbsInFlight() {
+        return orbs.size();
     }
 
     public void banner(String text) {
@@ -116,6 +143,17 @@ public class Hud {
 
     public void update(float dt) {
         time += dt;
+        for (int k = 0; k < pipFlash.length; k++) pipFlash[k] = Math.max(0, pipFlash[k] - dt);
+        for (int i = orbs.size() - 1; i >= 0; i--) {
+            PowerOrb o = orbs.get(i);
+            o.t += dt;
+            if (o.t >= ORB_POP + ORB_FLY) {
+                orbs.remove(i);
+                // 이제 칸이 채워진다: 방금 채워진 칸을 번쩍인다
+                int k = Math.min(2, Math.max(0, g.state.powerOrbsShown() - orbs.size() - 1));
+                pipFlash[k] = 0.6f;
+            }
+        }
         for (int i = toasts.size() - 1; i >= 0; i--) {
             toasts.get(i).t += dt;
             if (toasts.get(i).t > 3.2f) toasts.remove(i);
@@ -190,6 +228,7 @@ public class Hud {
         int maxHp = g.rules.maxHp(s);
         Weapon weapon = s.equipped();
         Monster boss = g.activeBoss();
+        pipsVisible = false;
         batch.begin();
         batch.setColor(0, 0, 0, 0.28f);
         batch.draw(art.vignette, 0, 0, w, h);
@@ -248,11 +287,26 @@ public class Hud {
                 text(fonts.small, "성검 해방", right - layout.width, sy + 17, Ui.PURPLE);
             } else {
                 // 흡수한 보스 힘: 마름모 셋 (채운 것 = 쓰러뜨린 보스). 다 모이면 금색 글자
-                int got = s.bossesDefeated.size();
+                // 보스 상자를 열어 구슬이 날아와 들어간 것만 채운다 (날아가는 중인 구슬은 아직 빈칸)
+                int got = Math.max(0, s.powerOrbsShown() - orbs.size());
                 float pip = 22, pipsW = 3 * pip - 10;
                 batch.setColor(Color.WHITE);
-                for (int k = 0; k < 3; k++)
-                    batch.draw(k < got ? frames.diamond : frames.diamondOutline, right - pipsW + k * (pip - 5), sy, pip, pip);
+                for (int k = 0; k < 3; k++) {
+                    float px = right - pipsW + k * (pip - 5);
+                    pipX[k] = px + pip / 2f;
+                    pipY[k] = sy + pip / 2f;
+                    if (pipFlash[k] > 0) {
+                        float f = pipFlash[k] / 0.6f;
+                        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+                        batch.setColor(1f, 0.8f, 0.35f, f);
+                        float gs = pip * (2f + 3f * (1 - f));
+                        batch.draw(art.glow, pipX[k] - gs / 2f, pipY[k] - gs / 2f, gs, gs);
+                        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+                        batch.setColor(Color.WHITE);
+                    }
+                    batch.draw(k < got ? frames.diamond : frames.diamondOutline, px, sy, pip, pip);
+                }
+                pipsVisible = true;
                 layout.setText(fonts.small, "보스 힘");
                 // 이름은 늘 적는다. 공격력 글자와 8px 안쪽으로 붙으면 짧게 “힘”
                 String powLabel = right - pipsW - 4 - layout.width >= atkEnd + 8 ? "보스 힘" : "힘";
@@ -448,11 +502,89 @@ public class Hud {
             float textL = tx0 + 74;
             centered(fonts.normal, toast.text, textL + (tx0 + tw - 30 - textL) / 2f, cy + 9, new Color(1, 1, 1, alpha));
         }
+        drawPowerOrbs();
         batch.setColor(Color.WHITE);
         batch.end();
         if (mapAnim > 0.01f) drawMap();
         fonts.normal.setColor(Color.WHITE);
         fonts.small.setColor(Color.WHITE);
+    }
+
+    /**
+     * 힘 구슬: 상자에서 위로 톡 튀어 오른 뒤 (커지며 반짝), 휘어진 길을 따라 '보스 힘' 칸으로 빨려 들어간다.
+     * 지나간 자리에 꼬리를 남기고, 칸에 닿으면 칸이 번쩍이며 채워진다.
+     */
+    private void drawPowerOrbs() {
+        if (orbs.isEmpty()) return;
+        int got = Math.max(0, g.state.powerOrbsShown() - orbs.size());
+        // 빛은 더해 그려 어두운 던전 바닥 위에서도 또렷하게
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+        for (int i = 0; i < orbs.size(); i++) {
+            PowerOrb o = orbs.get(i);
+            int k = Math.min(2, got + i);
+            float tx = pipsVisible ? pipX[k] : 59, ty = pipsVisible ? pipY[k] : h - 56;
+            // 꼬리: 조금 전 자리들을 옅게
+            for (int j = 8; j >= 1; j--) {
+                float tt = o.t - j * 0.03f;
+                if (tt <= ORB_POP * 0.6f) continue;
+                float[] p = orbPos(o, tt, tx, ty);
+                float a = 0.5f * (1 - j / 9f), sz = 40 * orbScale(tt) * (1 - j * 0.07f);
+                batch.setColor(1f, 0.7f, 0.25f, a);
+                batch.draw(art.glow, p[0] - sz / 2f, p[1] - sz / 2f, sz, sz);
+            }
+            float[] p = orbPos(o, o.t, tx, ty);
+            float sc = orbScale(o.t), pulse = 1f + 0.12f * MathUtils.sin(time * 18f);
+            float outer = 130 * sc * pulse, inner = 56 * sc, core = 28 * sc;
+            batch.setColor(1f, 0.65f, 0.2f, 0.7f);
+            batch.draw(art.glow, p[0] - outer / 2f, p[1] - outer / 2f, outer, outer);
+            batch.setColor(1f, 0.85f, 0.45f, 1f);
+            batch.draw(art.glow, p[0] - inner / 2f, p[1] - inner / 2f, inner, inner);
+            batch.setColor(1f, 1f, 0.9f, 1f);
+            batch.draw(art.glow, p[0] - core / 2f, p[1] - core / 2f, core, core);
+            // 튀어나올 때 상자 자리에서 퍼지는 빛 고리
+            if (o.t < ORB_POP) {
+                float u = o.t / ORB_POP, ring = 60 + 160 * u;
+                batch.setColor(1f, 0.8f, 0.4f, 0.6f * (1 - u));
+                batch.draw(art.glow, o.x0 - ring / 2f, o.y0 - ring / 2f, ring, ring);
+            }
+        }
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        for (int i = 0; i < orbs.size(); i++) {
+            PowerOrb o = orbs.get(i);
+            int k = Math.min(2, got + i);
+            float tx = pipsVisible ? pipX[k] : 59, ty = pipsVisible ? pipY[k] : h - 56;
+            float[] p = orbPos(o, o.t, tx, ty);
+            // 가운데 마름모 (보스 힘 칸과 같은 모양)
+            float d = 24 * orbScale(o.t);
+            batch.setColor(Color.WHITE);
+            batch.draw(frames.diamond, p[0] - d / 2f, p[1] - d / 2f, d, d);
+        }
+        batch.setColor(Color.WHITE);
+    }
+
+    private static float orbScale(float t) {
+        if (t < ORB_POP) {
+            float u = t / ORB_POP;
+            return 0.3f + 0.9f * (1 - (1 - u) * (1 - u)); // 튀어나오며 커진다
+        }
+        float u = Math.min(1f, (t - ORB_POP) / ORB_FLY);
+        return 1.2f - 0.6f * u; // 칸에 가까워질수록 작아진다
+    }
+
+    private static float[] orbPos(PowerOrb o, float t, float tx, float ty) {
+        float popH = 90;
+        if (t < ORB_POP) {
+            float u = t / ORB_POP;
+            float up = popH * (1 - (1 - u) * (1 - u)) + 6 * MathUtils.sin(u * MathUtils.PI * 3) * (1 - u);
+            return new float[]{o.x0, o.y0 + up};
+        }
+        float u = Math.min(1f, (t - ORB_POP) / ORB_FLY);
+        u = u * u * (3 - 2 * u) * 0.35f + u * u * 0.65f; // 천천히 떠나 빨려 들어가듯 빨라진다
+        float sx = o.x0, sy = o.y0 + popH;
+        // 휘어진 길: 출발점 위쪽 바깥으로 부풀었다 칸으로 들어간다
+        float cx = (sx + tx) / 2f + (sx - tx) * 0.15f, cy = Math.max(sy, ty) + 120;
+        float a = (1 - u) * (1 - u), b = 2 * (1 - u) * u, c = u * u;
+        return new float[]{a * sx + b * cx + c * tx, a * sy + b * cy + c * ty};
     }
 
     private void rect(float x, float y, float width, float height, Color color) {

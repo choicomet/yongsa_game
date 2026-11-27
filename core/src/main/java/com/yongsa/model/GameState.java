@@ -33,8 +33,10 @@ public class GameState {
     public int exitRefusals;
     /** 예전 저장 파일 호환용 (포션은 이제 상자에서 바닥에 떨어지고 주우면 바로 회복한다). */
     public int potions;
-    /** 바닥에 떨어져 있는 회복 포션 자리 (월드 x, y). E 를 눌러 마신다. */
+    /** 바닥에 떨어져 있는 회복 포션 자리 (월드 x, y, 셋째 값이 1 이면 체력을 가득 채우는 보스 상자 물약). E 를 눌러 마신다. */
     public List<float[]> potionDrops = new ArrayList<>();
+    /** 처음 잡은 보스의 힘 구슬이 아직 상자 안에 있는 던전 ID. 상자를 열면 구슬이 왼쪽 위 '보스 힘' 칸으로 들어간다. */
+    public List<String> pendingPowerOrbs = new ArrayList<>();
     public boolean finalBossDefeated;
     /** 지나가 본 통로 (Corridor.key). 지도에는 가 본 방과 지나온 통로만 보인다. */
     public List<String> seenCorridors = new ArrayList<>();
@@ -85,6 +87,13 @@ public class GameState {
 
     public RoomRecord room(String id) {
         return rooms.computeIfAbsent(id, k -> new RoomRecord());
+    }
+
+    /** 왼쪽 위 '보스 힘' 칸에 채워 보일 수 (쓰러뜨린 보스 중 상자를 열어 구슬을 받은 것). */
+    public int powerOrbsShown() {
+        int n = 0;
+        for (String id : bossesDefeated) if (!pendingPowerOrbs.contains(id)) n++;
+        return n;
     }
 
     public boolean bossDefeated(String dungeonId) {

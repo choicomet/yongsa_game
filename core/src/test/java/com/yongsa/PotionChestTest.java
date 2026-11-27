@@ -123,4 +123,42 @@ class PotionChestTest {
         assertEquals(max, s.hp, "풀피면 변화 없음");
         assertTrue(ev.stream().noneMatch(x -> x.type == GameEvent.Type.TOAST && x.text.contains("포션")), "안내 멘트 없음");
     }
+
+    @Test
+    void bossChestHoldsFullHealPotionAndPowerOrb() {
+        GameState s = NewGame.create(b);
+        GameSession g = new GameSession(b, TestData.map(), s, 3);
+        Room r = g.map.room("L6");
+        s.bossesDefeated.add("LEFT");
+        s.pendingPowerOrbs.add("LEFT");
+        s.chests.add("L6");
+        s.room("L6").cleared = true;
+        assertEquals(0, s.powerOrbsShown(), "상자를 열기 전에는 보스 힘 칸이 비어 있다");
+        g.pollEvents();
+        g.openChest(r);
+        GameEvent opened = g.pollEvents().stream().filter(e -> e.type == GameEvent.Type.CHEST_OPENED).findFirst().orElseThrow();
+        assertTrue(opened.first, "처음 잡은 보스의 상자에서는 힘 구슬이 나온다");
+        assertEquals(1, s.powerOrbsShown());
+        assertEquals(b.reward.bossChestPotions, s.potionDrops.size());
+        float[] p = s.potionDrops.get(0);
+        assertTrue(GameSession.fullPotion(p), "보스 상자의 포션은 완전 회복 물약");
+
+        int max = g.rules.maxHp(s);
+        s.hp = 7;
+        g.hero.x = p[0];
+        g.hero.y = p[1];
+        run(g, new Controls(), 1 / 60f);
+        assertEquals("E  완전 회복 물약 마시기", g.prompt);
+        Controls e = new Controls();
+        e.interact = true;
+        run(g, e, 1 / 60f);
+        assertEquals(max, s.hp, "마시면 체력이 가득 찬다");
+
+        // 침대 뒤 다시 잡은 보스의 상자: 구슬은 다시 나오지 않는다
+        s.chests.add("L6");
+        g.pollEvents();
+        g.openChest(r);
+        GameEvent again = g.pollEvents().stream().filter(x -> x.type == GameEvent.Type.CHEST_OPENED).findFirst().orElseThrow();
+        assertFalse(again.first);
+    }
 }

@@ -19,12 +19,14 @@ public class AbsorbService {
         this.rules = new Rules(b);
     }
 
-    /** 보스의 힘을 흡수한다. 오른 최대 체력을 돌려준다. 체력은 가득 찬다. */
+    /**
+     * 보스의 힘을 흡수한다. 오른 최대 체력을 돌려준다.
+     * 체력은 채우지 않는다 (2026-11-27 지용): 보스 상자의 완전 회복 물약을 마셔야 가득 찬다.
+     */
     public int absorbBoss(GameState s, String dungeonId) {
         int before = rules.maxHp(s);
         if (!s.bossesDefeated.contains(dungeonId)) s.bossesDefeated.add(dungeonId);
         int after = rules.maxHp(s);
-        s.hp = after;
         return after - before;
     }
 

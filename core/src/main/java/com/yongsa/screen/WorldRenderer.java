@@ -619,7 +619,7 @@ public class WorldRenderer implements Disposable {
         }
         for (float[] pd : g.state.potionDrops) {
             if (!inView(pd[0], pd[1])) continue;
-            list.add(new Sorted(pd[1], () -> drawPotionDrop(pd[0], pd[1])));
+            list.add(new Sorted(pd[1], () -> drawPotionDrop(pd[0], pd[1], GameSession.fullPotion(pd))));
         }
         for (HeroShot shot : g.shots) if (!shot.dead && !shot.strike())
             list.add(new Sorted(shot.y, () -> drawSkillShot(shot)));
@@ -680,8 +680,13 @@ public class WorldRenderer implements Disposable {
      * 바닥에 떨어진 회복 포션: 붉은 빛 위에 둥실 떠 있는 병. sprites/potion.png 그림이 있으면 그것을 쓰고,
      * 없으면 임시로 코드로 그린 병 (docs/ART_REQUESTS.md 0-7).
      */
-    private void drawPotionDrop(float x, float y) {
+    /** 바닥의 포션. full(보스 상자의 완전 회복 물약)이면 더 크고 금빛으로 빛나며 반짝인다. */
+    private void drawPotionDrop(float x, float y, boolean full) {
         float bob = 3f * MathUtils.sin(time * 3f + x * 0.05f);
+        if (full) {
+            batch.setColor(1f, 0.78f, 0.3f, 0.45f + 0.15f * MathUtils.sin(time * 4f));
+            batch.draw(art.glow, x - 40, y - 18, 80, 64);
+        }
         batch.setColor(1f, 0.25f, 0.3f, 0.35f + 0.1f * MathUtils.sin(time * 4f));
         batch.draw(art.glow, x - 26, y - 14, 52, 40);
         batch.setColor(0, 0, 0, 0.35f);
@@ -690,8 +695,17 @@ public class WorldRenderer implements Disposable {
         Texture pic = potionArt();
         if (pic != null) {
             batch.setColor(Color.WHITE);
-            float h = 30, w = h * pic.getWidth() / pic.getHeight();
+            float h = full ? 40 : 30, w = h * pic.getWidth() / pic.getHeight();
             batch.draw(pic, x - w / 2, by, w, h);
+            if (full) {
+                // 금빛 반짝임 셋이 번갈아 깜빡인다
+                for (int k = 0; k < 3; k++) {
+                    float a = Math.max(0, MathUtils.sin(time * 3.2f + k * 2.1f));
+                    float sx = x + (k - 1) * 13 + 3 * MathUtils.sin(k * 5f), sy = by + 14 + k * 9;
+                    batch.setColor(1f, 0.95f, 0.7f, a);
+                    batch.draw(art.glow, sx - 5, sy - 5, 10, 10);
+                }
+            }
         } else {
             rectW(x - 3, by + 22, 6, 4, new Color(0.55f, 0.38f, 0.22f, 1f));
             rectW(x - 2.5f, by + 17, 5, 6, new Color(0.75f, 0.8f, 0.85f, 0.9f));

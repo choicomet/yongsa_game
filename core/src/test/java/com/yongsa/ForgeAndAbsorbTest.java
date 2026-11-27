@@ -70,9 +70,10 @@ class ForgeAndAbsorbTest {
     @Test
     void bossAbsorptionRaisesMaxHp() {
         GameState s = NewGame.create(b);
+        int hp = s.hp;
         assertEquals(150, absorb.absorbBoss(s, "LEFT"));
         assertEquals(250, rules.maxHp(s));
-        assertEquals(250, s.hp);
+        assertEquals(hp, s.hp, "보스를 잡아도 체력은 자동으로 차지 않는다 (상자의 완전 회복 물약으로 채운다)");
         absorb.absorbBoss(s, "RIGHT");
         assertEquals(450, rules.maxHp(s));
         absorb.absorbBoss(s, "TOP");

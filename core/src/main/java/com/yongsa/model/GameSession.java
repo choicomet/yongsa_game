@@ -1126,6 +1126,7 @@ public class GameSession {
             revived.remove(d.id);
             boolean first = !state.bossDefeated(d.id);
             int gain = absorb.absorbBoss(state, d.id);
+            if (first && !state.pendingPowerOrbs.contains(d.id)) state.pendingPowerOrbs.add(d.id);
             OreType ore = OreType.valueOf(d.ore);
             if (!state.chests.contains(r.id)) state.chests.add(r.id);
             map.updateGates(state);
@@ -1159,11 +1160,17 @@ public class GameSession {
         }
     }
 
+    /** 보스 상자에서 나온, 체력을 가득 채우는 물약인가. */
+    public static boolean fullPotion(float[] p) {
+        return p.length > 2 && p[2] > 0;
+    }
+
     /** 바닥의 포션 앞에서 E 를 누르면 마신다. 체력이 가득해도 마시고, 그때는 아무 변화가 없다. */
     private void drinkPotion(float[] p) {
         if (!state.potionDrops.remove(p)) return;
         int max = rules.maxHp(state);
-        int heal = Math.min(max - state.hp, Math.max(1, Math.round(max * balance.potion.healRatio)));
+        int heal = fullPotion(p) ? Math.max(0, max - state.hp)
+                : Math.min(max - state.hp, Math.max(1, Math.round(max * balance.potion.healRatio)));
         if (heal > 0) {
             state.hp += heal;
             events.add(GameEvent.floatText(hero.x, hero.y + 40, "+" + heal, GameEvent.Tone.HEAL));
@@ -1259,7 +1266,7 @@ public class GameSession {
             }
         }
         if (targetPotion != null) {
-            prompt = interactKey + "  포션 마시기";
+            prompt = interactKey + (fullPotion(targetPotion) ? "  완전 회복 물약 마시기" : "  포션 마시기");
             promptX = targetPotion[0];
             promptY = targetPotion[1] + 1.2f * T;
             return;
@@ -1537,7 +1544,10 @@ public class GameSession {
         return new int[]{cx, cy};
     }
 
-    /** 상자를 열면 그 던전 광물을 받고, 상자 앞 바닥에 회복 포션이 떨어진다 (보스방은 광물이 많고, 잡몹방은 조금). */
+    /**
+     * 상자를 열면 그 던전 광물을 받고, 상자 앞 바닥에 회복 포션이 떨어진다 (보스방은 광물이 많고, 잡몹방은 조금).
+     * 보스방 상자의 포션은 체력을 가득 채우는 물약이고, 처음 잡은 보스면 힘 구슬이 나와 '보스 힘' 칸으로 들어간다.
+     */
     public void openChest(Room r) {
         if (!hasChest(r)) return;
         state.chests.remove(r.id);
@@ -1548,8 +1558,9 @@ public class GameSession {
         int n = lo + random.nextInt(Math.max(1, hi - lo + 1));
         state.addOre(ore, n);
         int potions = boss ? rw.bossChestPotions : rw.mobChestPotions;
-        dropPotions(chestX(r), chestY(r), potions);
+        dropPotions(chestX(r), chestY(r), potions, boss);
         GameEvent e = new GameEvent(GameEvent.Type.CHEST_OPENED);
+        e.first = boss && state.pendingPowerOrbs.remove(r.dungeonId);
         e.dungeonId = r.dungeonId;
         e.opened = r.id;
         e.ore = ore;
@@ -1563,18 +1574,19 @@ public class GameSession {
         events.add(new GameEvent(GameEvent.Type.AUTOSAVE));
     }
 
-    /** 상자 앞 바닥에 포션 n 개를 떨어뜨린다 (설 수 있는 자리에). */
-    private void dropPotions(float cx, float cy, int n) {
+    /** 상자 앞 바닥에 포션 n 개를 떨어뜨린다 (설 수 있는 자리에). full 이면 완전 회복 물약. */
+    private void dropPotions(float cx, float cy, int n, boolean full) {
+        float kind = full ? 1f : 0f;
         float[][] offs = {{0, -1.2f}, {-1.1f, -0.9f}, {1.1f, -0.9f}, {0, -2.2f}, {-1.4f, 0}, {1.4f, 0}};
         int placed = 0;
         for (float[] o : offs) {
             if (placed >= n) break;
             float x = cx + o[0] * T, y = cy + o[1] * T;
             if (!map.free(x, y, hero.hw, hero.hh)) continue;
-            state.potionDrops.add(new float[]{x, y});
+            state.potionDrops.add(new float[]{x, y, kind});
             placed++;
         }
-        for (; placed < n; placed++) state.potionDrops.add(new float[]{cx, cy - T});
+        for (; placed < n; placed++) state.potionDrops.add(new float[]{cx, cy - T, kind});
     }
 
     /** 침대에 눕는다: 화면이 어두워지는 동안 쉬고 (useBed) 다시 밝아지면 일어난다. */

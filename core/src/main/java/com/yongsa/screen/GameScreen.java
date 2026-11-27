@@ -9,6 +9,7 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.yongsa.YongsaGame;
@@ -438,11 +439,18 @@ public class GameScreen extends ScreenAdapter {
                     hud.banner(e.text);
                     trauma = Math.min(1f, trauma + 0.25f);
                     break;
-                case CHEST_OPENED:
+                case CHEST_OPENED: {
                     game.sfx.play("awaken");
+                    boolean bossChest = session.map.room(e.opened) != null && session.map.room(e.opened).type == com.yongsa.map.RoomType.BOSS;
                     hud.toast("보물상자에서 " + e.ore.displayName + " " + e.amount + "개"
-                            + "를 얻었다" + (e.potions > 0 ? " · 포션 " + e.potions + "개가 바닥에 떨어졌다" : ""));
+                            + "를 얻었다" + (e.potions > 0 ? (bossChest ? " · 완전 회복 물약이 바닥에 떨어졌다" : " · 포션 " + e.potions + "개가 바닥에 떨어졌다") : ""));
+                    if (e.first) {
+                        // 상자에서 보스의 힘 구슬이 튀어나와 왼쪽 위 '보스 힘' 칸으로 날아간다
+                        Vector3 v = worldCam.project(new Vector3(e.x, e.y - session.balance.tileSize * 0.4f, 0), 0, 0, YongsaGame.WIDTH, YongsaGame.HEIGHT);
+                        hud.powerOrb(v.x, v.y, e.dungeonId);
+                    }
                     break;
+                }
                 default:
                     break;
             }
@@ -474,10 +482,10 @@ public class GameScreen extends ScreenAdapter {
         }
         int maxHp = session.rules.maxHp(session.state);
         ConfirmDialog.Line[] lines = {
-                new ConfirmDialog.Line(e.text + "의 힘을 흡수했다.", Ui.GOLD),
+                new ConfirmDialog.Line(e.text + "을(를) 쓰러뜨렸다. 보물상자에 그 힘이 담겼다.", Ui.GOLD),
                 new ConfirmDialog.Line("최대 체력 +" + e.hpGain + "  (이제 " + maxHp + ")", Ui.GREEN),
-                new ConfirmDialog.Line("보상: 보물상자가 나타났다 (" + session.interactKey + " 로 열면 " + e.ore.displayName + " "
-                        + game.balance.reward.chestOreMin + "~" + game.balance.reward.chestOreMax + "개)", null),
+                new ConfirmDialog.Line("보상: 보물상자 (" + session.interactKey + " 로 열면 보스의 힘 · " + e.ore.displayName + " "
+                        + game.balance.reward.chestOreMin + "~" + game.balance.reward.chestOreMax + "개 · 완전 회복 물약)", null),
                 new ConfirmDialog.Line("열림: " + e.opened, Ui.BLUE),
                 new ConfirmDialog.Line(nextWeaponHint(), Ui.DIM),
                 new ConfirmDialog.Line("방 위쪽에 열린 귀환문(" + session.interactKey + ")으로 캠프에 돌아갈 수 있다", Ui.PURPLE)
