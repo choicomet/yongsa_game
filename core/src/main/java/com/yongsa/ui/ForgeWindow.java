@@ -180,11 +180,26 @@ public class ForgeWindow extends Modal {
         items.clear();
         for (Weapon w : g.state.weapons) items.add(new Item(w, null));
         for (WeaponDef d : g.balance.weapons) if (d.enhanceable && d.ore != null) items.add(new Item(null, d));
-        // 고른 검이 사라졌으면(파괴 · 분해 · 흡수) 장착한 검으로
+        // 고른 검이 사라졌으면(파괴 · 분해 · 흡수) 장착한 검으로. 장착한 검이 강화할 수 없는 성검이면
+        // 처음 열 때처럼 만들기 칸을 고른다 (마지막 스킬 검까지 흡수했을 때).
+        // 오른쪽 탭도 새로 고른 검에 맞게 다시 정한다: 예전엔 '흡수'·'분해' 탭이 남은 채
+        // 성검을 그리다가 스킬·광석이 없어 게임이 꺼졌다 (2026-11-28 선우).
         if (selectedIndex() < 0) {
             Weapon eq = g.state.equipped();
             selCraft = null;
             selUid = eq != null ? eq.uid : items.isEmpty() || items.get(0).weapon == null ? -1 : items.get(0).weapon.uid;
+            if (eq == null || !g.balance.weapon(eq.defId).enhanceable) {
+                String craft = null;
+                for (WeaponDef d : g.balance.weapons)
+                    if (d.enhanceable && d.ore != null && g.forge.craftBlockReason(g.state, d) == null) { craft = d.id; break; }
+                if (craft == null)
+                    for (Item it : items) if (it.craft != null) { craft = it.craft.id; break; }
+                if (craft != null) {
+                    selUid = -1;
+                    selCraft = craft;
+                }
+            }
+            act = firstEnabledAct();
         }
     }
 
@@ -545,6 +560,8 @@ public class ForgeWindow extends Modal {
         if (it.craft != null) {
             primary = buildCraft(content, it.craft);
         } else {
+            // 고른 검이 이 탭을 쓸 수 없으면(예: 흡수 뒤 성검) 쓸 수 있는 탭으로. 탭 표시보다 먼저 정한다
+            if (!actEnabled(act)) act = firstEnabledAct();
             col.add(segments()).growX().height(46).padBottom(4).row();
             Weapon w = it.weapon;
             switch (act) {
