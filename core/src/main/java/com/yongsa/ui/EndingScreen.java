@@ -118,12 +118,14 @@ public class EndingScreen extends MenuScreen {
 
             Table b = new Table();
             b.add(nav.add("마을로 가기", () -> {
+                game.bgm.fadeOut(2f); // 엔딩곡이 서서히 줄어들면 마을 곡이 이어서 나온다
                 GameScreen screen = new GameScreen(game, state);
                 screen.startOnVillageRoad();
                 game.setScreen(screen);
                 EndingScreen.this.dispose();
             })).width(240).height(48).padRight(14);
             b.add(nav.add("타이틀로 돌아가기", () -> {
+                game.bgm.fadeOut(2f); // 타이틀 화면에서 엔딩곡이 서서히 꺼진다
                 game.setScreen(new TitleScreen(game));
                 EndingScreen.this.dispose();
             })).width(240).height(48);

@@ -52,6 +52,7 @@ public abstract class MenuScreen extends ScreenAdapter {
     @Override
     public void render(float delta) {
         time += delta;
+        game.bgm.update(delta); // 엔딩곡 페이드 (기록 화면, 기록에서 나간 타이틀)
         Gdx.gl.glClearColor(0.04f, 0.035f, 0.05f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         stage.getViewport().apply();
