@@ -383,8 +383,11 @@ public class GameScreen extends ScreenAdapter {
                     shake(0.9f);
                     stop(0.25f);
                     hud.banner(e.text + " · 진정한 모습");
-                    // 변신(약 2.6초) 동안 1페이즈 곡을 거두고 포효만 남긴 뒤, 변신이 끝날 즈음 2페이즈 곡을 올린다
+                    // 변신(약 2.6초) 동안 1페이즈 곡을 거두고 변신 소리만 남긴 뒤, 변신이 끝날 즈음 2페이즈 곡을 올린다
                     game.bgm.playAfter("boss_demonlord2", 0.8f, 2.2f, 0.6f, bgmStart("boss_demonlord2"));
+                    // 곡이 끊긴 사이 '콰아앙' + 낮은 웃음 (지용 11/27). 웃음이 2페이즈 곡 앞부분에 묻히지 않게 그동안 곡을 줄인다
+                    game.sfx.play("bs_demonlord_phase2");
+                    game.bgm.duckNext(0.65f, 3.2f);
                     break;
                 case TOAST:
                     hud.toast(e.text);

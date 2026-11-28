@@ -83,8 +83,17 @@ final class SfxMix {
         for (String boss : new String[]{"golem", "knight", "warden", "demonlord"}) {
             var intro = SfxNames.bossIntro(boss);
             cue(intro.arrival(), intro.arrival(), -10f, .4f, .015f, 1f, 3, .34f, .5f);
-            cue(intro.windup(), intro.windup(), -7.5f, .3f, .03f, 1f, 2, .15f, .25f);
+            if (intro.windup() != null) cue(intro.windup(), intro.windup(), -7.5f, .3f, .03f, 1f, 2, .15f, .25f);
         }
+        // 번개 두 번은 길어서(2.6초) 끝날 때까지 곡을 조금 더 줄인다
+        cue("bs_intro_warden_bolts", "bs_intro_warden_bolts", -9f, .4f, 0f, 1f, 3, .45f, 2.8f);  // 실제 벼락 녹음 2.7초 동안 곡을 줄임
+        // 탑의 수문장 마법 구슬 (지용 11/27, 지용이 고른 마왕 쏘기 소리 shot_demonlord 와 같은 녹음):
+        // 회전 구슬은 시작 때 크게 한 번 + 도는 동안 한 발마다 작게, 그냥 쏠 때(부채꼴·유도)도 같은 소리
+        cue("bs_orb_shot", "bs_orb_shot", -13f, .2f, .05f, 1f, 1, 0f, 0f);
+        cue("bs_orb_volley", "bs_orb_shot", -9f, .1f, .03f, 1f, 2, 0f, 0f);
+        cue("shot_warden", "bs_orb_shot", -9f, .1f, .03f, 1f, 2, 0f, 0f);  // 그냥 쏠 때 (SfxNames.bossShot)
+        // 마왕 변신: 1페이즈 곡이 끊긴 사이 '콰아앙' + 낮은 웃음 (GameScreen 이 2페이즈 곡도 잠깐 줄인다)
+        cue("bs_demonlord_phase2", "bs_demonlord_phase2", -7f, 1f, 0f, 1f, 3, 0f, 0f);
         cue("intro_hit_pound", "hz_pound", -7.5f, .12f, .04f, 1f, 2, .25f, .2f);
         cue("intro_hit_spin", "hz_spin", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
         cue("intro_hit_bolt", "hz_bolt", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
@@ -134,7 +143,8 @@ final class SfxMix {
         cue("hz_spin", "swing", -11f, 0.12f, 0.04f, 0.7f, 2, 0f, 0f);          // 회전 베기
         cue("hz_counter", "swing", -11f, 0.1f, 0.04f, 0.85f, 2, 0f, 0f);       // 혈월의 기사 방패 반격
         cue("hz_whip", "monsterAttack", -11f, 0.08f, 0.06f, 0.7f, 2, 0f, 0f);  // 마왕 채찍
-        cue("hz_bolt", "destroy", -12f, 0.07f, 0.1f, 1.45f, 1, 0f, 0f);        // 번개: 높고 날카롭게 깨지는 소리
+        // 탑의 수문장 번개: 장판이 터지는 순간(내리치는 모션)마다 '콰광' 한 방 (지용 11/27, tools/make_combat_sfx.py)
+        cue("hz_bolt", "bs_bolt_strike", -9f, 0.12f, 0.06f, 1f, 2, 0.12f, 0.15f);
         cue("hz_cage", "destroy", -12f, 0.1f, 0.08f, 1.3f, 1, 0f, 0f);
         cue("hz_bone", "kill", -12f, 0.08f, 0.08f, 1.2f, 1, 0f, 0f);           // 뼈 가시
         cue("hz_tentacle", "slam", -12f, 0.1f, 0.06f, 0.65f, 1, 0f, 0f);

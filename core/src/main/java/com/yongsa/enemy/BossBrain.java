@@ -164,7 +164,7 @@ public class BossBrain extends EnemyContext {
                 m.stateT = m.stateTotal = mc.spinMin + random.nextFloat() * (mc.spinMax - mc.spinMin);
                 m.spinAngle = random.nextFloat() * 6.283f;
                 m.orbitSign = random.nextBoolean() ? 1 : -1;
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound("bs_orb_volley"));
                 return true;
             case "spearstand":
                 // 혈월의 기사 창 찌르기: 멈춰 선 채로만 창이 나온다 (channel)
@@ -480,6 +480,7 @@ public class BossBrain extends EnemyContext {
                     int dmg = Math.max(1, Math.round(m.attack() * mc.spinMultiplier));
                     mobs.shoot(m, m.x, m.centerY(), m.spinAngle, speed, dmg, "fire");
                     mobs.shoot(m, m.x, m.centerY(), m.spinAngle + 3.1416f, speed, dmg, "fire");
+                    events.add(GameEvent.sound("bs_orb_shot"));
                 }
                 if (m.stateT <= 0) m.enter(Monster.State.RECOVER, 1.1f);
                 return;
@@ -775,7 +776,7 @@ public class BossBrain extends EnemyContext {
         e.x = m.x;
         e.y = m.centerY();
         events.add(e);
-        events.add(GameEvent.sound("roar"));
+        // 소리는 GameScreen 이 BOSS_PHASE2 에서 변신 소리(bs_demonlord_phase2: 콰아앙 + 낮은 웃음)로 낸다
     }
 
     public void speech(Monster m, String text) {
