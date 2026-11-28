@@ -66,8 +66,8 @@ final class SfxMix {
     static {
         // ── 전투: 손맛을 주는 소리. 배경음악 위로 또렷해야 한다
         cue("swing", -15f, 0.05f, 0.08f, 1);
-        // 용사 기본 공격 휘두르기 (지용 2026-11-27): 지용이 고른 녹음 assets/audio/sfx/hero_swing.wav (artisticdude swish-9, CC0, -12dB 로 맞춤)
-        cue("hero_swing", "hero_swing", -14f, 0.05f, 0.06f, 1f, 1, 0f, 0f);
+        // 용사 기본 공격 휘두르기 (지용 2026-11-27): 지용이 고른 녹음 assets/audio/sfx/hero_swing.wav (artisticdude swish-9, CC0, -12dB 로 맞춤). 11/28 지용: 2dB 키움 (-14 → -12)
+        cue("hero_swing", "hero_swing", -12f, 0.05f, 0.06f, 1f, 1, 0f, 0f);
         cue("hit", -12f, 0.045f, 0.06f, 2);
         cue("hitBoss", "hit", -10.5f, 0.06f, 0.05f, 0.76f, 2, 0.12f, 0.08f);
         cue("kill", -13f, 0.06f, 0.08f, 2);
@@ -109,7 +109,8 @@ final class SfxMix {
         cue("awaken", "awaken", -12f, 0.3f, 0f, 1f, 3, 0.4f, 0.5f);
         cue("unseal", "unseal", -11f, 0.5f, 0f, 1f, 3, 0.5f, 1.1f);
         cue("destroy", "destroy", -11f, 0.3f, 0f, 1f, 3, 0.45f, 0.55f);
-        cue("death", "death", -12f, 0.5f, 0f, 1f, 3, 0.5f, 0.8f);
+        // 용사 패배 (지용 2026-11-28): 쿵 쓰러짐·칼 떨어짐·낮은 현악. tools/make_defeat_sfx.py 로 만든 hero_defeat.wav (-12dB 로 구움). 배경음악은 GameScreen 이 끈다
+        cue("death", "hero_defeat", -12f, 0.5f, 0f, 1f, 3, 0f, 0f);
         cue("warp", "warp", -14f, 0.3f, 0f, 1f, 3, 0.35f, 0.5f);
         // ── 대장간·아이템
         cue("mine", -15f, 0.05f, 0.08f, 1);

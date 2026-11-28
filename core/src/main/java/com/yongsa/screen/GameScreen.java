@@ -18,6 +18,7 @@ import com.yongsa.model.GameSession;
 import com.yongsa.model.GameState;
 import com.yongsa.ui.BagWindow;
 import com.yongsa.ui.ConfirmDialog;
+import com.yongsa.ui.DefeatWindow;
 import com.yongsa.ui.DevMenu;
 import com.yongsa.ui.ForgeWindow;
 import com.yongsa.ui.Hud;
@@ -151,6 +152,10 @@ public class GameScreen extends ScreenAdapter {
         Gdx.input.setInputProcessor(new InputMultiplexer(keys, stage));
     }
 
+    /** 패배 효과음 hero_defeat.wav 길이(초). 이 동안 배경음악을 다시 틀지 않는다. */
+    private static final float DEFEAT_SFX_SECONDS = 5.6f;
+    private float defeatQuiet;
+
     @Override
     public void render(float delta) {
         float dt = Math.min(delta, 1 / 20f);
@@ -169,6 +174,7 @@ public class GameScreen extends ScreenAdapter {
             skillPressed = -1;
         }
         handleEvents();
+        defeatQuiet = Math.max(0f, defeatQuiet - delta);
         updatePlaceMusic();
         game.bgm.update(delta);
         updateCampfireSound(delta);
@@ -433,14 +439,12 @@ public class GameScreen extends ScreenAdapter {
                     endingDelay = ENDING_AFTER_FANFARE;
                     break;
                 case HERO_DIED:
+                    // 패배 효과음(무너지는 용사, 약 5.6초)이 나오는 동안 배경음악은 끈다 (지용 2026-11-28)
+                    game.bgm.fadeOut(0.2f);
+                    defeatQuiet = DEFEAT_SFX_SECONDS;
                     game.sfx.play("death");
-                    game.bgm.fadeOut(1.5f);
                     follow.snap();
-                    java.util.List<ConfirmDialog.Line> lines = new java.util.ArrayList<>();
-                    if (e.text != null) lines.add(new ConfirmDialog.Line("마왕: “" + e.text + "”", Ui.PURPLE));
-                    lines.add(new ConfirmDialog.Line("캠프로 돌아갑니다.", null));
-                    lines.add(new ConfirmDialog.Line("무기와 광물은 그대로다. 싸우던 방만 처음 상태로 돌아간다.", Ui.DIM));
-                    modals.push(new MessageWindow(game.skin, "쓰러졌다…", Ui.RED, lines.toArray(new ConfirmDialog.Line[0]), "확인"));
+                    modals.push(new DefeatWindow(game.skin, game.art));
                     break;
                 case UNSEAL_READY:
                     modals.push(new UnsealScene(this));
@@ -550,6 +554,8 @@ public class GameScreen extends ScreenAdapter {
      * 다른 곡이 줄어드는 중(쓰러져서 캠프로 돌아올 때 등)이면 다 줄어든 뒤에 튼다.
      */
     private void updatePlaceMusic() {
+        // 패배 효과음이 다 나올 때까지(또는 패배 화면이 떠 있는 동안) 장소 음악을 다시 틀지 않는다
+        if (defeatQuiet > 0 || modals.top() instanceof DefeatWindow) return;
         String track = game.bgm.playing();
         String want = null;
         if (endingDelay < 0) {

@@ -533,8 +533,12 @@ public class Hud {
     private final HudFrames frames = new HudFrames();
     private com.badlogic.gdx.graphics.g2d.TextureRegion portraitBust, portraitSrc;
     private com.badlogic.gdx.graphics.Texture portraitTex;
-    /** 초상화 상반신 그리는 폭, 왼쪽으로 미는 양(망토가 오른쪽으로 뻗어 얼굴이 원 가운데 오게), 보이는 원 반지름. */
-    private static final float BUST_W = 88, BUST_SHIFT = 6, BUST_R = 36;
+    /**
+     * 초상화 상반신 그리는 폭, 왼쪽으로 미는 양(망토가 오른쪽으로 뻗어 얼굴이 원 가운데 오게), 보이는 원 반지름.
+     * 11/28 지용: 얼굴이 왼쪽으로 치우치고 머리카락이 테에 닿아서 미는 양 6 → 1.5 (머리 가운데 = 원 가운데),
+     * 보이는 원을 테 안쪽까지만 (36 → 34). 그림 크기(BUST_W)는 그대로.
+     */
+    private static final float BUST_W = 88, BUST_SHIFT = 1.5f, BUST_R = 34;
 
     /**
      * 용사 그림 위쪽 절반을 잘라, 화면에서 초상화 원(반지름 BUST_R) 밖에 놓일 픽셀을 투명하게 만든 그림.
