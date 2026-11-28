@@ -81,7 +81,13 @@ final class SfxMix {
         cue("cast", -15f, 0.08f, 0.06f, 1);
         cue("slam", "slam", -11f, 0.12f, 0.05f, 1f, 2, 0.2f, 0.15f);
         // ── 큰 사건: 배경음악을 잠깐 내려 길을 내 준다
-        cue("roar", "roar", -11f, 0.5f, 0.03f, 1f, 3, 0.45f, 0.7f);
+        // 포효 때는 배경음악을 줄이지 않는다 (지용 2026-11-28). 작은 효과음만 잠깐 줄인다 (duckHold 0.7초)
+        cue("roar", "roar", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);
+        // 보스별 포효 (지용 2026-11-28, SfxNames.bossRoar, roar_<보스>.wav, 전부 OGA CC0 녹음 -11dB 로 구움). 마왕은 괴물 '그르륵'
+        cue("roar_demonlord", "roar_demonlord", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);
+        cue("roar_golem", "roar_golem", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);     // 골렘: 낮은 포효 + 돌 무너짐
+        cue("roar_knight", "roar_knight", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);   // 혈월의 기사: 짧은 '으릉'
+        cue("roar_warden", "roar_warden", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);   // 탑의 수문장: 포효 + 전기 '지직'
         for (String boss : new String[]{"golem", "knight", "warden", "demonlord"}) {
             var intro = SfxNames.bossIntro(boss);
             cue(intro.arrival(), intro.arrival(), -10f, .4f, .015f, 1f, 3, .34f, .5f);
@@ -152,7 +158,9 @@ final class SfxMix {
         cue("hz_bolt", "bs_bolt_strike", -9f, 0.12f, 0.06f, 1f, 2, 0.12f, 0.15f);
         cue("hz_cage", "destroy", -12f, 0.1f, 0.08f, 1.3f, 1, 0f, 0f);
         cue("hz_bone", "kill", -12f, 0.08f, 0.08f, 1.2f, 1, 0f, 0f);           // 뼈 가시
-        cue("hz_tentacle", "slam", -12f, 0.1f, 0.06f, 0.65f, 1, 0f, 0f);
+        // 마왕 촉수가 터질 때 (지용 2026-11-28): 질척한 살덩이 '철퍽' 녹음.
+        // 파일이 -7dB 보다 작게 구워져서(꼭대기 제한) 목표를 올려 둠: 실제로 예전처럼 -12dB 정도로 들림
+        cue("hz_tentacle", "hz_tentacle", -10f, 0.1f, 0.06f, 1f, 1, 0f, 0f);
         cue("hz_brand", "destroy", -10f, 0.15f, 0.04f, 0.8f, 2, 0.2f, 0.2f);   // 마왕의 낙인 폭발
         for (String d : new String[]{"LEFT", "RIGHT", "TOP"}) {
             cue("gateClose_" + d, -15f, 0.2f, 0.03f, 1);

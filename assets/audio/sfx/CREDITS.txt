@@ -46,3 +46,8 @@ hero_swing.wav (용사 기본 공격 휘두르기) <- "Swishes Sound Pack" by ar
 bs_victory.wav (보스·마왕 승리 팡파레) <- "Lively Meadow Victory Fanfare" by Matthew Pablo (http://www.matthewpablo.com), OpenGameArt, CC-BY 3.0
   https://opengameart.org/content/lively-meadow-victory-fanfare-and-song  (모노로 바꾸고 앞뒤 무음 자르고 끝 0.5초 페이드, 크기 맞춤)
 hero_defeat.wav (용사 패배, 2026-11-28) <- tools/make_defeat_sfx.py 로 만든 소리. 재료: impact_punch_heavy_002·metal_02 (Kenney Impact Sounds / Kenney, CC0), chainmail1·metal-ringing ("RPG Sound Pack" by artisticdude, OpenGameArt CC0) + 합성 현악. 44.1kHz 모노·-12dB.
+hz_tentacle.wav (마왕 촉수가 터질 때) <- "8 wet squish, slurp impacts" impactsplat03 by qubodup (OpenGameArt CC0, https://opengameart.org/content/8-wet-squish-slurp-impacts), 0.85배로 낮추고 0.8초로 자름.
+roar_demonlord.wav (마왕 포효, 예전 합성 '부웅' 대신, 지용 2026-11-28) <- "80 CC0 creature SFX #2" weird_06 by rubberduck (OpenGameArt CC0, https://opengameart.org/content/80-cc0-creture-sfx-2), 0.85배로 낮춤.
+roar_golem.wav (골렘 포효) <- rubberduck "80 CC0 RPG SFX" creature_roar_02(0.85배) + stones_02(0.75배) (OpenGameArt CC0, https://opengameart.org/content/80-cc0-rpg-sfx)
+roar_knight.wav (혈월의 기사 포효) <- rubberduck "80 CC0 creature SFX #2" grunt_06(0.9배) (OpenGameArt CC0, https://opengameart.org/content/80-cc0-creture-sfx-2)
+roar_warden.wav (탑의 수문장 포효) <- rubberduck "80 CC0 creature SFX #2" roar_05(0.9배) + "Misc SFX Pack" ElectricSpark by timopy (OpenGameArt CC0, https://opengameart.org/content/misc-sfx-pack)

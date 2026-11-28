@@ -664,7 +664,7 @@ public class GameSession {
             e.x = m.x;
             e.y = m.centerY();
             events.add(e);
-            events.add(GameEvent.sound("roar"));
+            events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
         }
         if (m.finalBoss && m.phase2 && !m.lastStand && m.hp > 0 && m.hp <= m.maxHp * balance.monster.lastStandHpRatio) {
             // 최후의 발악: 화면이 어두워지고 패턴 간격이 줄어든다
@@ -672,7 +672,7 @@ public class GameSession {
             m.patternCd = Math.min(m.patternCd, 0.6f);
             bosses.speech(m, "아직... 끝나지 않았다!");
             events.add(GameEvent.toast("마왕이 최후의 발악을 한다! 공격이 더 빨라진다"));
-            events.add(GameEvent.sound("roar"));
+            events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
         }
         events.add(GameEvent.floatText(m.x, m.y + m.hurtRadius * 2f, String.valueOf(dmg), guarded ? GameEvent.Tone.SHIELD : GameEvent.Tone.MONSTER_HIT));
         if (!quietHit) events.add(GameEvent.sound(guarded ? "block" : m.boss ? "hitBoss" : "hit"));

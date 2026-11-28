@@ -40,6 +40,14 @@ public final class SfxNames {
         return boss("orbBurst_", sprite, fallback);
     }
 
+    /**
+     * 보스 포효 (지용 2026-11-28): roar_golem, roar_knight, roar_warden, roar_demonlord 녹음.
+     * 규칙이 없는 보스와 몹은 예전 합성 포효(roar).
+     */
+    public static String bossRoar(String sprite) {
+        return boss("roar_", sprite, "roar");
+    }
+
     private static String boss(String prefix, String sprite, String fallback) {
         String n = prefix + sprite;
         return sprite != null && SfxMix.CUES.containsKey(n) ? n : fallback;

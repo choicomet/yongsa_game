@@ -69,7 +69,8 @@ class SfxMixTest {
         SfxMix mix = baked();
         float before = mix.decide("swing", 1.0).gain;
         SfxMix.Play roar = mix.decide("roar", 2.0);
-        assertTrue(roar.duck > 0.3f && roar.duckHold > 0.5f);
+        assertEquals(0f, roar.duck, "포효 때 배경음악은 줄이지 않는다 (지용 11/28)");
+        assertEquals(0f, mix.decide("roar_demonlord", 5.0).duck);
         float during = mix.decide("swing", 2.2).gain;
         assertEquals(before * SfxMix.UNDER_BIG_GAIN, during, 1e-4);
         float hurt = mix.decide("hurt", 2.3).gain;
@@ -116,6 +117,10 @@ class SfxMixTest {
         assertTrue(SfxMix.CUES.containsKey("sk_strikeHit"));
         assertEquals("hz_boulder", SfxNames.hazard("boulder"));
         assertEquals("slam", SfxNames.hazard("somethingNew"), "규칙 없는 패턴은 쿵 소리로");
+        assertEquals("roar_demonlord", SfxNames.bossRoar("demonlord"));
+        assertEquals("roar_golem", SfxNames.bossRoar("golem"));
+        assertEquals("roar", SfxNames.bossRoar("skeleton"), "규칙 없는 몹은 예전 포효로");
+        assertEquals("roar", SfxNames.bossRoar(null));
         SfxMix mix = baked();
         for (String name : SfxMix.CUES.keySet()) {
             assertNotNull(mix.decide(name, 1000 + name.hashCode() % 100), name + " 이 원본 파형을 못 찾는다");
