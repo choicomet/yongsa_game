@@ -330,7 +330,8 @@ if __name__ == "__main__":
     for fn, name in ((cleave, "sk_cleave"), (cleave_hit, "sk_cleaveHit"),
                      (crescent, "sk_crescent"), (crescent_hit, "sk_crescentHit"),
                      (strike, "sk_strike"), (strike_hit, "sk_strikeHit"),
-                     (beam, "sk_beam"), (beam_hit, "sk_beamHit")):
+                     (beam_hit, "sk_beamHit")):
+        # sk_beam 은 2026-11-27 부터 tools/make_beam_sfx.py (CC0 녹음 층 쌓기) 로 만든다. beam() 은 예전 소리
         # 이름을 주면 그 소리만 다시 만든다: python tools/make_skill_sfx.py sk_cleave sk_beam
         if len(sys.argv) > 1 and name not in sys.argv[1:]:
             continue
