@@ -69,7 +69,8 @@ class SfxMixTest {
         SfxMix mix = baked();
         float before = mix.decide("swing", 1.0).gain;
         SfxMix.Play roar = mix.decide("roar", 2.0);
-        assertTrue(roar.duck > 0.3f && roar.duckHold > 0.5f);
+        assertEquals(0f, roar.duck, "포효 때 배경음악은 줄이지 않는다 (지용 11/28)");
+        assertEquals(0f, mix.decide("roar_demonlord", 5.0).duck);
         float during = mix.decide("swing", 2.2).gain;
         assertEquals(before * SfxMix.UNDER_BIG_GAIN, during, 1e-4);
         float hurt = mix.decide("hurt", 2.3).gain;
