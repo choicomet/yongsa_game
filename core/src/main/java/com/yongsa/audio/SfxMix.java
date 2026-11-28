@@ -128,8 +128,8 @@ final class SfxMix {
         // 파일: assets/audio/sfx/sk_*.wav (tools/make_skill_sfx.py 로 만든 것, 크게 구움 -7dB)
         cue("sk_cleave", "sk_cleave", -12f, 0.1f, 0.03f, 1f, 3, 0.15f, 0.35f);       // 흑철 대지 가르기: 바위가 갈라지는 내려찍기 (지용 11/28: -7dB 는 너무 컸다)
         cue("sk_cleaveHit", "sk_cleaveHit", -13f, 0.08f, 0.06f, 1f, 2, 0f, 0f);
-        cue("sk_crescent", "sk_crescent", -7f, 0.1f, 0.03f, 1f, 3, 0.25f, 0.3f);     // 혈월참: 휘어지는 바람 + 어두운 단조 울림
-        cue("sk_crescentHit", "sk_crescentHit", -9f, 0.06f, 0.06f, 1f, 2, 0f, 0f);
+        cue("sk_crescent", "sk_crescent", -10f, 0.1f, 0.03f, 1f, 3, 0.2f, 0.3f);     // 혈월참: 휘어지는 바람 + 어두운 단조 울림 (지용 11/28: -7dB 에서 조금 줄임)
+        cue("sk_crescentHit", "sk_crescentHit", -11f, 0.06f, 0.06f, 1f, 2, 0f, 0f);
         cue("sk_strike", "sk_strike", -8f, 0.1f, 0.02f, 1f, 2, 0.15f, 0.3f);         // 천공 낙뢰: 전기가 모이는 소리
         cue("sk_strikeHit", "sk_strikeHit", -7f, 0.07f, 0.06f, 1f, 3, 0.35f, 0.4f);  // 번개 '딱' + 천둥
         cue("sk_beam", "sk_beam", -11f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);               // 성광 검기: 종 + 치유 빛 녹음 (지용 2026-11-27: 예전 -7dB 는 너무 컸다, tools/make_beam_sfx.py)
