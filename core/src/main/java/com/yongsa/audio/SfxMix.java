@@ -94,7 +94,7 @@ final class SfxMix {
         cue("bs_orb_shot", "bs_orb_shot", -13f, .2f, .05f, 1f, 1, 0f, 0f);
         cue("bs_orb_volley", "bs_orb_shot", -9f, .1f, .03f, 1f, 2, 0f, 0f);
         cue("shot_warden", "bs_orb_shot", -9f, .1f, .03f, 1f, 2, 0f, 0f);  // 그냥 쏠 때 (SfxNames.bossShot)
-        // 마왕 변신: 1페이즈 곡이 끊긴 사이 '콰아앙' + 낮은 웃음 (GameScreen 이 2페이즈 곡도 잠깐 줄인다)
+        // 마왕 변신: 1페이즈 곡이 끊긴 사이 '콰아앙' + 낮은 웃음. 2페이즈 곡은 줄이지 않고 (지용 11/28) 파일을 +9dB 리미터로 키웠다 (tools/loud_sfx.py)
         cue("bs_demonlord_phase2", "bs_demonlord_phase2", -7f, 1f, 0f, 1f, 3, 0f, 0f);
         cue("intro_hit_pound", "hz_pound", -7.5f, .12f, .04f, 1f, 2, .25f, .2f);
         cue("intro_hit_spin", "hz_spin", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
@@ -126,10 +126,10 @@ final class SfxMix {
         cue("select", -20f, 0.03f, 0f, 0);
         // ── 용사 스킬 (해성 2026-11-26: 효과음은 기본 공격·구르기 대신 스킬·보스 패턴에 쓴다)
         // 파일: assets/audio/sfx/sk_*.wav (tools/make_skill_sfx.py 로 만든 것, 크게 구움 -7dB)
-        cue("sk_cleave", "sk_cleave", -7f, 0.1f, 0.03f, 1f, 3, 0.3f, 0.35f);         // 흑철 대지 가르기: 바위가 갈라지는 내려찍기
-        cue("sk_cleaveHit", "sk_cleaveHit", -9f, 0.08f, 0.06f, 1f, 2, 0f, 0f);
-        cue("sk_crescent", "sk_crescent", -7f, 0.1f, 0.03f, 1f, 3, 0.25f, 0.3f);     // 혈월참: 휘어지는 바람 + 어두운 단조 울림
-        cue("sk_crescentHit", "sk_crescentHit", -9f, 0.06f, 0.06f, 1f, 2, 0f, 0f);
+        cue("sk_cleave", "sk_cleave", -12f, 0.1f, 0.03f, 1f, 3, 0.15f, 0.35f);       // 흑철 대지 가르기: 바위가 갈라지는 내려찍기 (지용 11/28: -7dB 는 너무 컸다)
+        cue("sk_cleaveHit", "sk_cleaveHit", -13f, 0.08f, 0.06f, 1f, 2, 0f, 0f);
+        cue("sk_crescent", "sk_crescent", -10f, 0.1f, 0.03f, 1f, 3, 0.2f, 0.3f);     // 혈월참: 휘어지는 바람 + 어두운 단조 울림 (지용 11/28: -7dB 에서 조금 줄임)
+        cue("sk_crescentHit", "sk_crescentHit", -11f, 0.06f, 0.06f, 1f, 2, 0f, 0f);
         cue("sk_strike", "sk_strike", -8f, 0.1f, 0.02f, 1f, 2, 0.15f, 0.3f);         // 천공 낙뢰: 전기가 모이는 소리
         cue("sk_strikeHit", "sk_strikeHit", -7f, 0.07f, 0.06f, 1f, 3, 0.35f, 0.4f);  // 번개 '딱' + 천둥
         cue("sk_beam", "sk_beam", -11f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);               // 성광 검기: 종 + 치유 빛 녹음 (지용 2026-11-27: 예전 -7dB 는 너무 컸다, tools/make_beam_sfx.py)
