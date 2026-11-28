@@ -813,16 +813,7 @@ public class WorldRenderer implements Disposable {
     }
 
     private TextureRegion heroRegion(HeroActor h) {
-        TextureRegion animated = null;
-        if (h.swingT > 0 || h.mineSwingT > 0) {
-            float remaining = h.mineSwingT > 0 ? h.mineSwingT / .22f
-                    : h.swingT / (h.swingKind == 0 ? .18f : .25f);
-            int frame = Math.min(5, (int) (6 * HeroMotion.clamp(1 - remaining)));
-            animated = art.heroMotion("swing", h.facing, frame);
-        } else if (!h.moving) {
-            animated = art.heroMotion("idle", h.facing, (int) (time * 3.5f));
-        }
-        if (animated == null) animated = motionFrame("walk", h.facing,
+        TextureRegion animated = motionFrame("walk", h.facing,
                 h.moving ? HeroMotion.walkFrame(h.walkTime, art.heroWalkCycle(h.facing)) : 2);
         if (animated != null) return animated;
         boolean walk = h.moving && ((int) (h.walkTime * 8)) % 2 == 1;

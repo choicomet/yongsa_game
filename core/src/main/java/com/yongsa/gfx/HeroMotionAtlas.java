@@ -29,8 +29,8 @@ public final class HeroMotionAtlas implements Disposable {
                 texture.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.Linear);
             }
             for (var entry : data.clips.entrySet()) {
-                HeroPose[][] frames = new HeroPose[5][entry.getValue()[0].length];
-                for (int r=0; r<5; r++) for (int c=0; c<frames[r].length; c++) {
+                HeroPose[][] frames = new HeroPose[5][6];
+                for (int r=0; r<5; r++) for (int c=0; c<6; c++) {
                     var frame = entry.getValue()[r][c];
                     frames[r][c] = new HeroPose(textures.get(frame.source()), frame);
                 }
@@ -55,7 +55,7 @@ public final class HeroMotionAtlas implements Disposable {
     public HeroPose frame(String action, Facing facing, int frame) {
         HeroPose[][] clip = clips.get(action);
         if (clip == null) throw new IllegalArgumentException("Unknown hero motion: " + action);
-        return clip[HeroAtlasData.row(facing)][Math.floorMod(frame, clip[0].length)];
+        return clip[HeroAtlasData.row(facing)][Math.floorMod(frame, 6)];
     }
 
     @Override public void dispose() { textures.values().forEach(Texture::dispose); textures.clear(); }

@@ -57,14 +57,13 @@ public final class HeroAtlasData {
             require(source.width > 0 && source.height > 0, "Invalid source dimensions");
             sources.put(s.name, source);
         }
-        for (String action : new String[]{"walk", "roll", "idle", "swing"}) {
+        for (String action : new String[]{"walk", "roll"}) {
             JsonValue rows = root.get(action);
             require(rows != null && rows.size == 5, "Five directions required for " + action);
-            int count = action.equals("idle") ? 4 : 6;
-            Frame[][] clip = new Frame[5][count];
+            Frame[][] clip = new Frame[5][6];
             for (int r=0; r<5; r++) {
-                require(rows.get(r).size == count, "Incorrect pose count for " + action + " row " + r);
-                for (int c=0; c<count; c++) {
+                require(rows.get(r).size == 6, "Six poses required for " + action + " row " + r);
+                for (int c=0; c<6; c++) {
                     JsonValue f = rows.get(r).get(c);
                     int[] rect = f.get("rect").asIntArray();
                     float[] foot = f.get("foot").asFloatArray();
