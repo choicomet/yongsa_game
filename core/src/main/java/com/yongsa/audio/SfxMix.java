@@ -81,8 +81,9 @@ final class SfxMix {
         cue("cast", -15f, 0.08f, 0.06f, 1);
         cue("slam", "slam", -11f, 0.12f, 0.05f, 1f, 2, 0.2f, 0.15f);
         // ── 큰 사건: 배경음악을 잠깐 내려 길을 내 준다
-        // 포효: 예전엔 코드로 만든 '부웅', 지용 2026-11-28 부터 roar.wav (괴물 '그르륵' 녹음, -11dB 로 구움)
         cue("roar", "roar", -11f, 0.5f, 0.03f, 1f, 3, 0.45f, 0.7f);
+        // 보스별 포효 (지용 2026-11-28, SfxNames.bossRoar): 마왕은 괴물 '그르륵' 녹음 (roar_demonlord.wav, -11dB 로 구움)
+        cue("roar_demonlord", "roar_demonlord", -11f, 0.5f, 0.03f, 1f, 3, 0.45f, 0.7f);
         for (String boss : new String[]{"golem", "knight", "warden", "demonlord"}) {
             var intro = SfxNames.bossIntro(boss);
             cue(intro.arrival(), intro.arrival(), -10f, .4f, .015f, 1f, 3, .34f, .5f);

@@ -133,13 +133,13 @@ public class BossBrain extends EnemyContext {
                 m.rushLeft = 0;
                 mobs.aimAtHero(m);
                 m.enter(Monster.State.CHARGE_TELEGRAPH, mc.chargeTelegraph);
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             case "rush":
                 m.rushLeft = mc.rushCount;
                 mobs.aimAtHero(m);
                 m.enter(Monster.State.CHARGE_TELEGRAPH, mc.rushTelegraph * 1.4f);
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             case "combo":
                 m.comboLeft = mc.comboHits;
@@ -152,12 +152,12 @@ public class BossBrain extends EnemyContext {
                 return true;
             case "rockfall":
                 startChannel(m, p, mc.rockCount, 0.2f);
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 events.add(GameEvent.toast("천장이 무너진다! 계속 움직이자"));
                 return true;
             case "lightning":
                 startChannel(m, p, mc.strikeCount, 0.25f);
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             case "firespin":
                 startChannel(m, p, 0, 0f);
@@ -197,7 +197,7 @@ public class BossBrain extends EnemyContext {
                     circleHazard("tentacle", tx, ty, mc.tentacleRadiusTiles * T, mc.tentacleWarning + 0.15f, m.attack(), mc.tentacleMultiplier);
                 }
                 m.enter(Monster.State.RECOVER, mc.tentacleWarning + 0.5f);
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             }
             case "summon": {
@@ -214,7 +214,7 @@ public class BossBrain extends EnemyContext {
                     if (s != null) summoned.add(s);
                 }
                 events.add(GameEvent.toast(m.def.name + "이(가) 부하를 불렀다!"));
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 m.enter(Monster.State.RECOVER, 0.8f);
                 blind(m);
                 return true;
@@ -264,7 +264,7 @@ public class BossBrain extends EnemyContext {
                 m.slamX = m.x;
                 m.slamY = m.y;
                 m.slamRadius = 0;
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             }
             case "boulder": {
@@ -272,7 +272,7 @@ public class BossBrain extends EnemyContext {
                 mobs.aimAtHero(m);
                 circleHazard("boulder", hero.x, hero.y, mc.boulderRadiusTiles * T, mc.boulderWarning, m.attack(), mc.boulderMultiplier);
                 m.enter(Monster.State.RECOVER, 0.9f);
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             }
             case "pound": {
@@ -290,7 +290,7 @@ public class BossBrain extends EnemyContext {
                 if (last < 0) return false; // 바로 앞이 벽이면 다른 패턴
                 m.enter(Monster.State.RECOVER, last + mc.quakeGap * mc.quakeWaves + mc.poundRecover);
                 events.add(GameEvent.toast(m.def.name + "이(가) 주먹을 높이 든다! 옆으로 비키자"));
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             }
             case "punch": {
@@ -319,7 +319,7 @@ public class BossBrain extends EnemyContext {
                 if (made == 0) return false; // 바로 앞이 벽이면 다른 패턴
                 m.enter(Monster.State.PUNCH_TELEGRAPH, mc.punchWindup);
                 events.add(GameEvent.toast(m.def.name + "이(가) 주먹을 뒤로 당긴다! 옆으로 비키자"));
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             }
             case "counter":
@@ -333,7 +333,7 @@ public class BossBrain extends EnemyContext {
                 // 회전 베기: 보스 둘레 원을 예고 뒤 한 번에 벤다
                 circleHazard("spin", m.x, m.y, mc.spinSlashRadiusTiles * T, mc.spinSlashWarning, m.attack(), mc.spinSlashMultiplier);
                 m.enter(Monster.State.RECOVER, mc.spinSlashWarning + 0.5f);
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             }
             case "crescent":
@@ -413,7 +413,7 @@ public class BossBrain extends EnemyContext {
                 }
                 m.enter(Monster.State.RECOVER, mc.eyeWarning + 0.5f);
                 events.add(GameEvent.toast("눈알이 뜬다! 눈을 돌려라"));
-                events.add(GameEvent.sound("roar"));
+                events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             }
             default:

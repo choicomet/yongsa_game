@@ -116,6 +116,9 @@ class SfxMixTest {
         assertTrue(SfxMix.CUES.containsKey("sk_strikeHit"));
         assertEquals("hz_boulder", SfxNames.hazard("boulder"));
         assertEquals("slam", SfxNames.hazard("somethingNew"), "규칙 없는 패턴은 쿵 소리로");
+        assertEquals("roar_demonlord", SfxNames.bossRoar("demonlord"));
+        assertEquals("roar", SfxNames.bossRoar("golem"), "규칙 없는 보스는 예전 포효로");
+        assertEquals("roar", SfxNames.bossRoar(null));
         SfxMix mix = baked();
         for (String name : SfxMix.CUES.keySet()) {
             assertNotNull(mix.decide(name, 1000 + name.hashCode() % 100), name + " 이 원본 파형을 못 찾는다");
