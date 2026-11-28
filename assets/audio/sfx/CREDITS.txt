@@ -40,3 +40,5 @@ bs_orb_shot.wav (수문장 구슬 쏘기) <- shot_demonlord 와 같은 소리 (t
 
 보스 등장과 시범 동작 (bs_*, hz_*.wav): 위 Kenney CC0 녹음과 합성한 소리를 tools/make_boss_intro_sfx.py로 혼합.
 shot_knight.wav, shot_demonlord.wav, orbBurst_demonlord.wav <- tools/make_boss_charge_sfx.py (브랜치 jiyong/boss_charge_sfx), 재료 OpenGameArt CC0 (80 CC0 RPG SFX·100 CC0 SFX - rubberduck, RPG Sound Pack - artisticdude) + 합성
+
+hero_swing.wav (용사 기본 공격 휘두르기) <- "Swishes Sound Pack" by artisticdude, OpenGameArt CC0 (https://opengameart.org/content/swishes-sound-pack) 의 swish-9.wav, 44.1kHz 모노·-12dB 로 맞춤.
