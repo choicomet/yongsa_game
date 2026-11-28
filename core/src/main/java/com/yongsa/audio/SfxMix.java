@@ -83,8 +83,11 @@ final class SfxMix {
         // ── 큰 사건: 배경음악을 잠깐 내려 길을 내 준다
         // 포효 때는 배경음악을 줄이지 않는다 (지용 2026-11-28). 작은 효과음만 잠깐 줄인다 (duckHold 0.7초)
         cue("roar", "roar", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);
-        // 보스별 포효 (지용 2026-11-28, SfxNames.bossRoar): 마왕은 괴물 '그르륵' 녹음 (roar_demonlord.wav, -11dB 로 구움)
+        // 보스별 포효 (지용 2026-11-28, SfxNames.bossRoar, roar_<보스>.wav, 전부 OGA CC0 녹음 -11dB 로 구움). 마왕은 괴물 '그르륵'
         cue("roar_demonlord", "roar_demonlord", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);
+        cue("roar_golem", "roar_golem", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);     // 골렘: 낮은 포효 + 돌 무너짐
+        cue("roar_knight", "roar_knight", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);   // 혈월의 기사: 짧은 '으릉'
+        cue("roar_warden", "roar_warden", -11f, 0.5f, 0.03f, 1f, 3, 0f, 0.7f);   // 탑의 수문장: 포효 + 전기 '지직'
         for (String boss : new String[]{"golem", "knight", "warden", "demonlord"}) {
             var intro = SfxNames.bossIntro(boss);
             cue(intro.arrival(), intro.arrival(), -10f, .4f, .015f, 1f, 3, .34f, .5f);

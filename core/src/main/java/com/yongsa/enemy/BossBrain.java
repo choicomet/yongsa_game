@@ -412,7 +412,7 @@ public class BossBrain extends EnemyContext {
                     }
                 }
                 m.enter(Monster.State.RECOVER, mc.eyeWarning + 0.5f);
-                events.add(GameEvent.toast("눈알이 뜬다! 눈을 돌려라"));
+                events.add(GameEvent.toast("저주의 눈이다! 눈을 돌려라"));
                 events.add(GameEvent.sound(com.yongsa.audio.SfxNames.bossRoar(m.def.sprite)));
                 return true;
             }

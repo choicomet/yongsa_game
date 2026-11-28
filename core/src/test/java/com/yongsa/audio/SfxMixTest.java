@@ -118,7 +118,8 @@ class SfxMixTest {
         assertEquals("hz_boulder", SfxNames.hazard("boulder"));
         assertEquals("slam", SfxNames.hazard("somethingNew"), "규칙 없는 패턴은 쿵 소리로");
         assertEquals("roar_demonlord", SfxNames.bossRoar("demonlord"));
-        assertEquals("roar", SfxNames.bossRoar("golem"), "규칙 없는 보스는 예전 포효로");
+        assertEquals("roar_golem", SfxNames.bossRoar("golem"));
+        assertEquals("roar", SfxNames.bossRoar("skeleton"), "규칙 없는 몹은 예전 포효로");
         assertEquals("roar", SfxNames.bossRoar(null));
         SfxMix mix = baked();
         for (String name : SfxMix.CUES.keySet()) {
