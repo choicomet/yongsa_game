@@ -66,6 +66,8 @@ final class SfxMix {
     static {
         // ── 전투: 손맛을 주는 소리. 배경음악 위로 또렷해야 한다
         cue("swing", -15f, 0.05f, 0.08f, 1);
+        // 용사 기본 공격 휘두르기 (지용 2026-11-27): 지용이 고른 녹음 assets/audio/sfx/hero_swing.wav (artisticdude swish-9, CC0, -12dB 로 맞춤)
+        cue("hero_swing", "hero_swing", -14f, 0.05f, 0.06f, 1f, 1, 0f, 0f);
         cue("hit", -12f, 0.045f, 0.06f, 2);
         cue("hitBoss", "hit", -10.5f, 0.06f, 0.05f, 0.76f, 2, 0.12f, 0.08f);
         cue("kill", -13f, 0.06f, 0.08f, 2);
@@ -83,8 +85,17 @@ final class SfxMix {
         for (String boss : new String[]{"golem", "knight", "warden", "demonlord"}) {
             var intro = SfxNames.bossIntro(boss);
             cue(intro.arrival(), intro.arrival(), -10f, .4f, .015f, 1f, 3, .34f, .5f);
-            cue(intro.windup(), intro.windup(), -7.5f, .3f, .03f, 1f, 2, .15f, .25f);
+            if (intro.windup() != null) cue(intro.windup(), intro.windup(), -7.5f, .3f, .03f, 1f, 2, .15f, .25f);
         }
+        // 번개 두 번은 길어서(2.6초) 끝날 때까지 곡을 조금 더 줄인다
+        cue("bs_intro_warden_bolts", "bs_intro_warden_bolts", -9f, .4f, 0f, 1f, 3, .45f, 2.8f);  // 실제 벼락 녹음 2.7초 동안 곡을 줄임
+        // 탑의 수문장 마법 구슬 (지용 11/27, 지용이 고른 마왕 쏘기 소리 shot_demonlord 와 같은 녹음):
+        // 회전 구슬은 시작 때 크게 한 번 + 도는 동안 한 발마다 작게, 그냥 쏠 때(부채꼴·유도)도 같은 소리
+        cue("bs_orb_shot", "bs_orb_shot", -13f, .2f, .05f, 1f, 1, 0f, 0f);
+        cue("bs_orb_volley", "bs_orb_shot", -9f, .1f, .03f, 1f, 2, 0f, 0f);
+        cue("shot_warden", "bs_orb_shot", -9f, .1f, .03f, 1f, 2, 0f, 0f);  // 그냥 쏠 때 (SfxNames.bossShot)
+        // 마왕 변신: 1페이즈 곡이 끊긴 사이 '콰아앙' + 낮은 웃음 (GameScreen 이 2페이즈 곡도 잠깐 줄인다)
+        cue("bs_demonlord_phase2", "bs_demonlord_phase2", -7f, 1f, 0f, 1f, 3, 0f, 0f);
         cue("intro_hit_pound", "hz_pound", -7.5f, .12f, .04f, 1f, 2, .25f, .2f);
         cue("intro_hit_spin", "hz_spin", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
         cue("intro_hit_bolt", "hz_bolt", -8.5f, .08f, .06f, 1f, 1, 0f, 0f);
@@ -120,7 +131,7 @@ final class SfxMix {
         cue("sk_crescentHit", "sk_crescentHit", -9f, 0.06f, 0.06f, 1f, 2, 0f, 0f);
         cue("sk_strike", "sk_strike", -8f, 0.1f, 0.02f, 1f, 2, 0.15f, 0.3f);         // 천공 낙뢰: 전기가 모이는 소리
         cue("sk_strikeHit", "sk_strikeHit", -7f, 0.07f, 0.06f, 1f, 3, 0.35f, 0.4f);  // 번개 '딱' + 천둥
-        cue("sk_beam", "sk_beam", -7f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);                // 성광 검기: 종 + 밝은 장조 반짝임
+        cue("sk_beam", "sk_beam", -11f, 0.1f, 0f, 1f, 3, 0.3f, 0.45f);               // 성광 검기: 종 + 치유 빛 녹음 (지용 2026-11-27: 예전 -7dB 는 너무 컸다, tools/make_beam_sfx.py)
         cue("sk_beamHit", "sk_beamHit", -9f, 0.06f, 0.05f, 1f, 2, 0f, 0f);
         // ── 대장간 망치 (fg_hammer): 모루를 치는 "깡". 망치가 내려칠 때만. 강화 결과음은 원래 녹음 그대로
         cue("fg_hammer", "fg_hammer", -7f, 0.05f, 0.05f, 1f, 2, 0f, 0f);
@@ -136,7 +147,8 @@ final class SfxMix {
         cue("hz_spin", "swing", -11f, 0.12f, 0.04f, 0.7f, 2, 0f, 0f);          // 회전 베기
         cue("hz_counter", "swing", -11f, 0.1f, 0.04f, 0.85f, 2, 0f, 0f);       // 혈월의 기사 방패 반격
         cue("hz_whip", "monsterAttack", -11f, 0.08f, 0.06f, 0.7f, 2, 0f, 0f);  // 마왕 채찍
-        cue("hz_bolt", "destroy", -12f, 0.07f, 0.1f, 1.45f, 1, 0f, 0f);        // 번개: 높고 날카롭게 깨지는 소리
+        // 탑의 수문장 번개: 장판이 터지는 순간(내리치는 모션)마다 '콰광' 한 방 (지용 11/27, tools/make_combat_sfx.py)
+        cue("hz_bolt", "bs_bolt_strike", -9f, 0.12f, 0.06f, 1f, 2, 0.12f, 0.15f);
         cue("hz_cage", "destroy", -12f, 0.1f, 0.08f, 1.3f, 1, 0f, 0f);
         cue("hz_bone", "kill", -12f, 0.08f, 0.08f, 1.2f, 1, 0f, 0f);           // 뼈 가시
         cue("hz_tentacle", "slam", -12f, 0.1f, 0.06f, 0.65f, 1, 0f, 0f);

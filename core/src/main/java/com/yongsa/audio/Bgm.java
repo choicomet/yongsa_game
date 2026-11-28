@@ -37,6 +37,8 @@ public class Bgm implements Disposable {
     /** playAfter 로 예약한 다음 곡. */
     private String pendingName;
     private float pendingDelay, pendingFadeIn, pendingStart;
+    /** 예약한 다음 곡이 시작될 때 걸 덕킹 (duckNext). */
+    private float pendingDuck, pendingDuckHold;
 
     /** 이름의 곡을 반복 재생한다. 이미 그 곡이면 처음부터 다시 틀지 않는다. */
     public void play(String name) {
@@ -120,6 +122,12 @@ public class Bgm implements Disposable {
      * 큰 효과음이 나는 동안 음악을 depth 만큼(0.4 면 40%) hold 초 줄였다가 천천히 되돌린다.
      * 겹치면 더 깊고 긴 쪽을 따른다.
      */
+    /** playAfter 로 예약한 다음 곡이 시작되면 그 곡을 depth 만큼 hold 초 줄여 둔다 (그 사이 나는 큰 효과음이 묻히지 않게). */
+    public void duckNext(float depth, float hold) {
+        pendingDuck = depth;
+        pendingDuckHold = hold;
+    }
+
     public void duck(float depth, float hold) {
         if (current == null || depth <= 0) return;
         duckTarget = Math.min(duckTarget, 1f - Math.min(0.9f, depth));
@@ -132,7 +140,14 @@ public class Bgm implements Disposable {
             pendingDelay -= delta;
             if (pendingDelay <= 0) {
                 String n = pendingName;
+                float d = pendingDuck, h = pendingDuckHold;
+                pendingDuck = pendingDuckHold = 0f;
                 play(n, pendingFadeIn, pendingStart);
+                if (d > 0) {
+                    duck(d, h);
+                    duck = duckTarget;
+                    applyVolume();
+                }
                 return;
             }
         }

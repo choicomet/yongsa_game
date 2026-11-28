@@ -367,6 +367,8 @@ public class GameSession {
         hero.swingKind = 0;
         hero.swingT = 0.18f;
         basicAttack = new Attack(Attack.Kind.BASIC, balance.attack.basicMultiplier);
+        // 칼 휘두르는 소리 (지용 2026-11-27, 지용이 고른 녹음 hero_swing.wav = artisticdude swish-9). 맞히는 소리는 여전히 없음 (해성 11/26)
+        events.add(GameEvent.sound("hero_swing"));
         float range = basicRange();
         float half = (float) Math.toRadians(balance.attack.basicArcDegrees / 2f);
         float hx = hero.x, hy = hero.centerY();
@@ -883,7 +885,8 @@ public class GameSession {
             }
             // 특수 공격(동작 시트 4행) 준비 자세: 힘을 모은다
             b.enter(Monster.State.CAST_TELEGRAPH, INTRO_STRIKE_AT - INTRO_WINDUP_AT);
-            events.add(GameEvent.sound(SfxNames.bossIntro(b.def.sprite).windup()));
+            String windup = SfxNames.bossIntro(b.def.sprite).windup();
+            if (windup != null) events.add(GameEvent.sound(windup));
         } else if (introStep == 1 && e >= INTRO_STRIKE_AT && bossIntroT > 0) {
             introStep = 2;
             // 내리친다: 특수 공격 뒷동작 + 충격파 (보여 주기만 하고 용사는 맞지 않는다)
@@ -1056,7 +1059,7 @@ public class GameSession {
             events.add(e);
             events.add(GameEvent.sound(SfxNames.bossIntro(balance.finalBoss.sprite).arrival()));
             // 심연에는 문이 없다: 잠기는 대신 마왕이 말을 건다
-            for (Monster m : monsters) if (m.finalBoss && !m.dead) bosses.speech(m, "봉인을 풀고 여기까지 내려오다니. 어디 한번 놀아 주마.");
+            for (Monster m : monsters) if (m.finalBoss && !m.dead) bosses.speech(m, "마을을 구하려 오다니. 한번 놀아주마.");
             return;
         }
         roomGateEvent(GameEvent.Type.ROOM_LOCKED, r);

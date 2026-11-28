@@ -517,6 +517,7 @@ public class MonsterBrain extends EnemyContext {
         } else {
             shoot(m, m.x, sy, base, speed, dmg, m.def.sprite);
         }
+        // 보스별 쏘는 소리: 기사 shot_knight, 탑의 수문장 shot_warden, 마왕 shot_demonlord (SfxMix). 몹은 예전 그대로
         events.add(GameEvent.sound(m.boss ? com.yongsa.audio.SfxNames.bossShot(m.def.sprite, "cast") : "cast"));
     }
 
