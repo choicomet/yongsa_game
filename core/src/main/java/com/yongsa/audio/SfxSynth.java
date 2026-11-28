@@ -49,7 +49,6 @@ final class SfxSynth {
         add("roar", mix(sweep(140, 70, 0.9f, 0.45f, 1), noise(0.8f, 0.35f, 0.08f)));
         add("cast", mix(sweep(500, 1300, 0.18f, 0.18f, 0), noise(0.12f, 0.15f, 0.5f)));
         add("step", mix(noise(0.22f, 0.16f, 0.12f), sweep(240, 150, 0.22f, 0.08f, 2)));
-        add("death", seq(new float[]{392, 330, 262, 196}, 0.18f, 0.35f, 2));
         // Same short duration as the gate movement; opening has a lighter rising tail.
         // Append after existing cues so their seeded noise stays unchanged.
         add("gateClose_LEFT", mix(sweep(125, 55, .28f, .38f, 2), noise(.28f, .22f, .13f)));
