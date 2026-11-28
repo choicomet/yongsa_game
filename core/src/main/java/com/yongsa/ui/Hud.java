@@ -55,6 +55,7 @@ public class Hud {
     /** 공격 J, 구르기 K, 스킬 칸 넷 (L, U, I, O). 스킬 칸은 열렸을 때만 보인다. */
     private static final int SLOTS = 2 + com.yongsa.model.Rules.SKILL_SLOTS;
     private final float[] readyFlash = new float[SLOTS];
+    private final boolean[] usableLastFrame = new boolean[SLOTS];
     private final boolean[] wasReady = new boolean[SLOTS];
     private Matrix4 projection;
     private float w, h;
@@ -129,7 +130,7 @@ public class Hud {
 
     public void update(float dt) {
         time += dt;
-        if (!achievements.isEmpty()) {
+        if (!g.inBossIntro() && !achievements.isEmpty()) {
             achievementT += dt;
             if (achievementT > ACHIEVEMENT_TIME) {
                 achievements.remove(0);
@@ -137,7 +138,7 @@ public class Hud {
             }
         }
         for (int i = toasts.size() - 1; i >= 0; i--) {
-            toasts.get(i).t += dt;
+            if (!g.inBossIntro()) toasts.get(i).t += dt;
             if (toasts.get(i).t > 3.2f) toasts.remove(i);
         }
         if (banner != null) {
@@ -179,11 +180,17 @@ public class Hud {
         }
 
         float[] left = cooldowns();
+        var available = g.rules.skillSlots(g.state);
         for (int i = 0; i < SLOTS; i++) {
             boolean ready = left[i] <= 0;
             if (ready && !wasReady[i] && i > 1) readyFlash[i] = 0.4f; // 공격·구르기는 빛내지 않는다 (2026-11-22 지용)
+            if (i >= 2) {
+                boolean usable = available[i - 2] != null && available[i - 2].usable;
+                if (usable && !usableLastFrame[i]) readyFlash[i] = .4f;
+                usableLastFrame[i] = usable;
+            }
             wasReady[i] = ready;
-            readyFlash[i] -= dt;
+            if (!g.inBossIntro()) readyFlash[i] -= dt;
         }
     }
 
@@ -218,6 +225,12 @@ public class Hud {
         if (red > 0 && flashEnabled) {
             batch.setColor(0.8f, 0.05f, 0.05f, red);
             batch.draw(art.vignette, 0, 0, w, h);
+        }
+        if (g.inBossIntro() && boss != null) {
+            drawBossStatus(boss);
+            batch.setColor(Color.WHITE);
+            batch.end();
+            return;
         }
         // ───── 왼쪽 위 프로필 (시안: 원형 초상화 + 은테 판 + 칼 칸)
         float pcx = 59, pcy = h - 56; // 초상화 원 가운데
@@ -333,44 +346,34 @@ public class Hud {
             layout.setText(fonts.small, sub);
             shadowed(fonts.small, sub, w / 2 - layout.width / 2, h - 60, Ui.DIM);
         } else {
-            float bh = frames.panelHeight(HudFrames.Panel.BOSS);
-            float bw = BOSS_W, bx0 = w / 2 - bw / 2, by0 = h - 19 - bh;
-            batch.setColor(boss.finalBoss ? AWAKE_TINT : Color.WHITE);
-            frames.panel(batch, HudFrames.Panel.BOSS, bx0, by0, bw);
-            if (introT >= 0) rect(bx0 + 40, by0 + 12, (bw - 80) * Math.min(1, introT / 0.5f), 2, Ui.GOLD);
-            centered(fonts.large, boss.def.name, w / 2, h - 34, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
-            float barX = bx0 + 26, barLen = bw - 52, barY = h - 74;
-            rect(barX - 1, barY - 1, barLen + 2, 12, HP_EDGE);
-            rect(barX, barY, barLen, 10, BOSS_BG);
-            rect(barX, barY, barLen * MathUtils.clamp(bossTrail / boss.maxHp, 0, 1), 10, Ui.GOLD);
-            rect(barX, barY, barLen * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 10, boss.finalBoss ? Ui.PURPLE : BOSS_FILL);
-            rect(barX, barY + 7, barLen * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 2, HP_SHINE);
-            if (boss.shield > 0 && boss.shieldMax > 0) {
-                // 방패: 체력바 위 밝은 막대. 다 깎기 전에는 체력이 닳지 않는다
-                rect(barX, barY + 13, barLen, 4, SHIELD_BG);
-                rect(barX, barY + 13, barLen * MathUtils.clamp((float) boss.shield / boss.shieldMax, 0, 1), 4, SHIELD_FILL);
-            }
-            centered(fonts.small, boss.shield > 0 ? "방패 " + boss.shield + "  ·  " + boss.hp + " / " + boss.maxHp
-                    : boss.hp + " / " + boss.maxHp, w / 2, h - 75, Ui.TEXT);
+            drawBossStatus(boss);
         }
 
         // ───── 왼쪽 아래: 다음 여정 (폭 고정, 긴 글은 줄바꿈. 스킬 칸 6개와도 안 겹친다)
         String task = g.nextTask();
-        float taskW = TASK_W;
-        batch.setColor(Color.WHITE);
-        frames.panel(batch, HudFrames.Panel.QUEST, 18, 15, taskW);
-        batch.setColor(0.42f, 0.25f, 0.63f, 1f);
-        batch.draw(frames.headerFade, 44, 76, taskW * 0.72f, 24);
-        batch.setColor(Color.WHITE);
-        batch.draw(frames.keyRound, 23, 61, 50, 50);
-        batch.draw(frames.badgeBook, 26, 64, 44, 44);
-        text(fonts.small, "다음 여정", 82, 94, Ui.GOLD);
-        layout.setText(fonts.normal, task, Ui.TEXT, taskW - 60, com.badlogic.gdx.utils.Align.left, true);
-        fonts.normal.setColor(Ui.TEXT);
-        // 한 줄이면 판 아래쪽 가운데, 두 줄이면 위로 올려 판 안에 담는다
-        float taskY = 60 + Math.max(0, layout.height - fonts.normal.getLineHeight()) / 2f;
-        fonts.normal.draw(batch, task, 40, taskY, taskW - 60, com.badlogic.gdx.utils.Align.left, true);
-        hintBand(18, 140, moveKeys, "이동", g.interactKey, "상호작용");
+        if (g.fighting()) {
+            layout.setText(fonts.small, task);
+            float width = Math.min(TASK_W, layout.width + 32);
+            rect(18, 24, width, 34, HINT_BG);
+            fonts.small.setColor(Ui.TEXT);
+            fonts.small.draw(batch, task, 32, 47, 0, task.length(), width - 24, com.badlogic.gdx.utils.Align.left, false, "…");
+        } else {
+            float taskW = TASK_W;
+            batch.setColor(Color.WHITE);
+            frames.panel(batch, HudFrames.Panel.QUEST, 18, 15, taskW);
+            batch.setColor(0.42f, 0.25f, 0.63f, 1f);
+            batch.draw(frames.headerFade, 44, 76, taskW * 0.72f, 24);
+            batch.setColor(Color.WHITE);
+            batch.draw(frames.keyRound, 23, 61, 50, 50);
+            batch.draw(frames.badgeBook, 26, 64, 44, 44);
+            text(fonts.small, "다음 여정", 82, 94, Ui.GOLD);
+            layout.setText(fonts.normal, task, Ui.TEXT, taskW - 60, com.badlogic.gdx.utils.Align.left, true);
+            fonts.normal.setColor(Ui.TEXT);
+            // 한 줄이면 판 아래쪽 가운데, 두 줄이면 위로 올려 판 안에 담는다
+            float taskY = 60 + Math.max(0, layout.height - fonts.normal.getLineHeight()) / 2f;
+            fonts.normal.draw(batch, task, 40, taskY, taskW - 60, com.badlogic.gdx.utils.Align.left, true);
+            hintBand(18, 140, moveKeys, "이동", g.interactKey, "상호작용");
+        }
 
         // ───── 오른쪽 아래: 공격·구르기·스킬 칸 (시안 칸 그림 104×103, 왼쪽 위 원에 키)
         float[] left = cooldowns();
@@ -474,6 +477,28 @@ public class Hud {
         if (mapAnim > 0.01f) drawMap();
         fonts.normal.setColor(Color.WHITE);
         fonts.small.setColor(Color.WHITE);
+    }
+
+    private void drawBossStatus(Monster boss) {
+        float bh = frames.panelHeight(HudFrames.Panel.BOSS);
+        float bw = BOSS_W, bx0 = w / 2 - bw / 2, by0 = h - 19 - bh;
+        batch.setColor(boss.finalBoss ? AWAKE_TINT : Color.WHITE);
+        frames.panel(batch, HudFrames.Panel.BOSS, bx0, by0, bw);
+        if (introT >= 0) rect(bx0 + 40, by0 + 12, (bw - 80) * Math.min(1, introT / 0.5f), 2, Ui.GOLD);
+        centered(fonts.large, boss.def.name, w / 2, h - 34, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
+        float barX = bx0 + 26, barLen = bw - 52, barY = h - 74;
+        rect(barX - 1, barY - 1, barLen + 2, 12, HP_EDGE);
+        rect(barX, barY, barLen, 10, BOSS_BG);
+        rect(barX, barY, barLen * MathUtils.clamp(bossTrail / boss.maxHp, 0, 1), 10, Ui.GOLD);
+        rect(barX, barY, barLen * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 10, boss.finalBoss ? Ui.PURPLE : BOSS_FILL);
+        rect(barX, barY + 7, barLen * MathUtils.clamp(bossShown / boss.maxHp, 0, 1), 2, HP_SHINE);
+        if (boss.shield > 0 && boss.shieldMax > 0) {
+            // 방패: 체력바 위 밝은 막대. 다 깎기 전에는 체력이 닳지 않는다
+            rect(barX, barY + 13, barLen, 4, SHIELD_BG);
+            rect(barX, barY + 13, barLen * MathUtils.clamp((float) boss.shield / boss.shieldMax, 0, 1), 4, SHIELD_FILL);
+        }
+        centered(fonts.small, boss.shield > 0 ? "방패 " + boss.shield + "  ·  " + boss.hp + " / " + boss.maxHp
+                : boss.hp + " / " + boss.maxHp, w / 2, h - 75, Ui.TEXT);
     }
 
     /** 업적 달성: 화면 위쪽 가운데, 지역 이름 아래. 업적 그림 + “업적 달성” + 이름 + 조건과 효과. */
@@ -677,12 +702,14 @@ public class Hud {
 
     // ───────────────────────── 지도 (M)
 
+    private static final Color HINT_BG = new Color(.05f, .04f, .08f, .84f);
+
     private void drawMap() {
         float a = mapAnim;
         int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
         boolean inVillage = g.inVillage();
         for (Room r : g.map.rooms) {
-            if (hiddenOnMap(r, inVillage)) continue;
+            if (hiddenOnMap(r, inVillage) || (!known(r) && r != g.heroRoom())) continue;
             minX = Math.min(minX, r.x0);
             maxX = Math.max(maxX, r.x1);
             minY = Math.min(minY, r.y0);
@@ -690,6 +717,7 @@ public class Hud {
         }
         for (Corridor c : g.map.corridors) {
             if (hiddenOnMap(c.link.a, inVillage) || hiddenOnMap(c.link.b, inVillage)) continue;
+            if (!g.state.seenCorridors.contains(c.key())) continue;
             for (int[] t : c.tiles) {
                 minX = Math.min(minX, t[0]);
                 maxX = Math.max(maxX, t[0]);
@@ -697,6 +725,12 @@ public class Hud {
                 maxY = Math.max(maxY, t[1]);
             }
         }
+        int heroTileX = (int)Math.floor(g.hero.x / g.balance.tileSize);
+        int heroTileY = (int)Math.floor(g.hero.y / g.balance.tileSize);
+        minX = Math.min(minX, heroTileX) - 6;
+        maxX = Math.max(maxX, heroTileX) + 6;
+        minY = Math.min(minY, heroTileY) - 4;
+        maxY = Math.max(maxY, heroTileY) + 4;
         float pw = 900, ph = 560;
         float px = (w - pw) / 2f, py = (h - ph) / 2f - 10 + (1f - a) * 20f;
         float k = Math.min((pw - 80) / (maxX - minX + 1), (ph - 130) / (maxY - minY + 1));
@@ -793,6 +827,19 @@ public class Hud {
                 shapes.rect(cx - 4, cy - 7, 8, 13);
             }
         }
+        Room camp = g.map.room("CAMP");
+        boolean showExits = g.inCamp() && !g.state.room("L1").visited && !g.state.bossDefeated("LEFT");
+        if (showExits) {
+            for (Door door : camp.doors) {
+                if (door.dead() || door.link.other(camp).type != RoomType.TUNNEL) continue;
+                boolean mine = "LEFT".equals(door.link.other(camp).dungeonId);
+                shapes.setColor(mine ? Ui.GOLD : Ui.DIM);
+                float dx = ox + door.footX / g.balance.tileSize * k;
+                float dy = oy + door.footY / g.balance.tileSize * k;
+                shapes.triangle(dx + door.dirX * 9, dy + door.dirY * 9,
+                        dx - door.dirY * 5, dy + door.dirX * 5, dx + door.dirY * 5, dy - door.dirX * 5);
+            }
+        }
         // 용사 위치
         float hx = ox + g.hero.x / g.balance.tileSize * k, hy = oy + g.hero.y / g.balance.tileSize * k;
         float pulse = 0.5f + 0.5f * MathUtils.sin(time * 8f);
@@ -822,13 +869,25 @@ public class Hud {
         fonts.small.setColor(Ui.DIM.r, Ui.DIM.g, Ui.DIM.b, a);
         layout.setText(fonts.small, mapKey + "  닫기");
         fonts.small.draw(batch, mapKey + "  닫기", px + pw - 30 - layout.width, py + ph - 26);
+        if (showExits) {
+            for (Door door : camp.doors) {
+                if (door.dead() || door.link.other(camp).type != RoomType.TUNNEL) continue;
+                String dungeon = door.link.other(camp).dungeonId;
+                String label = switch (dungeon) { case "LEFT" -> "갱도 입구"; case "RIGHT" -> "성채 입구"; default -> "탑 입구"; };
+                float dx = ox + door.footX / g.balance.tileSize * k;
+                float dy = oy + door.footY / g.balance.tileSize * k;
+                layout.setText(fonts.small, label);
+                rect(dx - layout.width / 2 - 6, dy + 14, layout.width + 12, 24, HINT_BG);
+                centered(fonts.small, label, dx, dy + 32, "LEFT".equals(dungeon) ? Ui.GOLD : Ui.DIM);
+            }
+        }
         // 던전 이름
         String[] ids = {"LEFT", "RIGHT", "TOP"};
         for (String id : ids) {
             float sx = 0, sy = 0;
             int n = 0;
             for (Room r : g.map.rooms) {
-                if (!id.equals(r.dungeonId) || r.type == RoomType.FINAL || hiddenOnMap(r, inVillage)) continue;
+                if (!known(r) || !id.equals(r.dungeonId) || r.type == RoomType.FINAL || hiddenOnMap(r, inVillage)) continue;
                 sx += ox + (r.x0 + r.x1) / 2f * k;
                 sy += oy + r.y1 * k;
                 n++;

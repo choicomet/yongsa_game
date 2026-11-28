@@ -94,7 +94,7 @@ class HeroAtlasTest {
     @Test void rejectBadScaleAndSourceBoundsInsteadOfSilentlyClipping() throws Exception {
         String json = manifest();
         assertThrows(IllegalArgumentException.class,()->new HeroAtlasData(json.replaceFirst("\"pixelsPerWorld\": [0-9.]+","\"pixelsPerWorld\": 0")));
-        assertThrows(IllegalArgumentException.class,()->new HeroAtlasData(json.replaceFirst("\"width\": 1672","\"width\": 100")));
+        assertThrows(IllegalArgumentException.class,()->new HeroAtlasData(json.replaceFirst("\"width\": [0-9]+","\"width\": 1")));
     }
 
     @Test void walkInterpolationReachesAdjacentPoseWithoutChangingFootAnchor() {
@@ -106,10 +106,9 @@ class HeroAtlasTest {
         assertEquals(0,HeroMotion.walkFrame(.5f));
     }
 
-    @Test void walkCycleSkipsTheIdlePoseAndKeepsTwoCyclesPerWalkTime() throws Exception {
+    @Test void dedicatedWalkKeepsTwoCyclesPerWalkTime() throws Exception {
         HeroAtlasData data = new HeroAtlasData(manifest());
         for (int[] cycle : data.walkCycle) {
-            for (int pose : cycle) assertNotEquals(2, pose, "Idle pose inside the walk makes the feet snap together");
             for (int i=0; i<cycle.length; i++)
                 assertEquals(cycle[i], HeroMotion.walkFrame(i/(HeroMotion.WALK_CYCLES*cycle.length) + .001f, cycle));
             assertEquals(cycle[0], HeroMotion.walkFrame(1/HeroMotion.WALK_CYCLES + .001f, cycle));
@@ -120,11 +119,11 @@ class HeroAtlasTest {
                 invalid.toJson(com.badlogic.gdx.utils.JsonWriter.OutputType.json)));
     }
 
-    @Test void newWalkUsesFourDistinctNativePosesOfOneStyleAtStableHeight() throws Exception {
+    @Test void sixWalkPosesHaveDistinctFootworkAndStableHeight() throws Exception {
         var data=new HeroAtlasData(manifest());
         var frames=data.clips.get("walk");
         for(int row=0;row<5;row++) {
-            assertArrayEquals(new int[]{0,1,3,4},data.walkCycle[row]);
+            assertArrayEquals(new int[]{0,1,2,3,4,5},data.walkCycle[row]);
             String source=frames[row][0].source();
             var image=ImageIO.read(Path.of("assets",data.sources.get(source).path()).toFile());
             var hashes=new java.util.HashSet<String>();
@@ -143,27 +142,31 @@ class HeroAtlasTest {
                 assertEquals(58.1f,(bottom+1-top)/frame.pixelsPerWorld(),.4f,"Direction/phase must not shrink");
                 hashes.add(HexFormat.of().formatHex(digest.digest()));
             }
-            assertEquals(4,hashes.size(),"Four different lower-body poses required");
+            assertEquals(6,hashes.size(),"Six different lower-body poses required");
         }
     }
 
-    @Test void standingPixelsRemainExactlyTheApprovedFivePoses() throws Exception {
-        var data=new HeroAtlasData(manifest());
-        String[] hashes={
-                "2c8ae1e9895aed16c622a53f6da887276b2c60fa82ce6e8e741bccd6cf1b8b1e",
-                "adf898ad5f11ce3dcca3134481fbc222f437b2217d3fc7d8752040648fb3b657",
-                "4fcf354eb1b807cf6d461d1ba91415eff69b7009a9a80b31af7c6e3eb9d09026",
-                "b88e2b74599c2660288d937f19019391eaf77b60765e19120892d0303f54a824",
-                "7f28d530979f4a676a2d95257c0d3e965be292f0bf427c5ffaee80fc346e2e70"};
-        for(int row=0;row<5;row++) {
-            var f=data.clips.get("walk")[row][2];
-            var image=ImageIO.read(Path.of("assets",data.sources.get(f.source()).path()).toFile());
-            var digest=MessageDigest.getInstance("SHA-256");
-            for(int y=f.y();y<f.y()+f.height();y++)for(int x=f.x();x<f.x()+f.width();x++) {
-                int p=image.getRGB(x,y);
-                for(int shift:new int[]{16,8,0,24})digest.update((byte)(p>>>shift));
+    @Test void frontIdleRetainsAllFourApprovedFrames() throws Exception {
+        var data = new HeroAtlasData(manifest());
+        String[] approved = {
+                "a3a9573cbd75d5c34a201ac9d4735446fb6c131b8b61851d2a34bf585201ac62",
+                "7f8c1e10dca7979bcc2cf078c8f63054141c0637e1c366e02449ea8a42405a01",
+                "092634b11701767701ab70488b08f5c22b3713728fa70bf2263e4b249fe582ba",
+                "16967edcf4d237a701cc64dc1547593b62ea2737207f3bd74a15f0115bcd62d1"};
+        var idle = data.clips.get("idle")[0];
+        assertEquals(approved.length, idle.length);
+        var image = ImageIO.read(Path.of("assets", data.sources.get("idle").path()).toFile());
+        for (int col = 0; col < idle.length; col++) {
+            var f = idle[col];
+            var digest = MessageDigest.getInstance("SHA-256");
+            // The cell has one transparent pixel of packing padding on every side.
+            for (int y = f.y() + 1; y < f.y() + f.height() - 1; y++) {
+                for (int x = f.x() + 1; x < f.x() + f.width() - 1; x++) {
+                    int argb = image.getRGB(x,y);
+                    for (int shift : new int[]{16,8,0,24}) digest.update((byte)(argb >>> shift));
+                }
             }
-            assertEquals(hashes[row],HexFormat.of().formatHex(digest.digest()),"Idle row "+row);
+            assertEquals(approved[col], HexFormat.of().formatHex(digest.digest()));
         }
     }
 }
