@@ -492,8 +492,10 @@ public class GameSession {
         int before = state.skillOrder.size();
         if (!rules.noteOpenedSkills(state)) return;
         for (int i = before; i < state.skillOrder.size(); i++) {
-            Balance.SkillDef sk = balance.weapon(state.skillOrder.get(i)).skill;
-            events.add(GameEvent.toast("새 스킬 「" + sk.name + "」 열림: " + skillKeys[i] + " 키"));
+            Balance.WeaponDef weapon = balance.weapon(state.skillOrder.get(i));
+            String usage = rules.skillSlots(state)[i].usable ? skillKeys[i] + " 키로 사용"
+                    : weapon.name + " 장착 시 사용";
+            events.add(GameEvent.toast("스킬 「" + weapon.skill.name + "」 해금 · " + usage));
         }
         events.add(GameEvent.sound("awaken"));
     }
@@ -810,9 +812,6 @@ public class GameSession {
                     if (giveUpPending) heroSpeech(balance.village.giveUpLine);
                     else if (!villagersFree()) heroSpeech(balance.village.arriveTrappedLine);
                     giveUpPending = false;
-                }
-                if (r.type == RoomType.BOSS && !state.bossDefeated(r.dungeonId)) {
-                    events.add(GameEvent.toast("보스방이다. 권장 무기: " + balance.dungeon(r.dungeonId).recommended));
                 }
             }
         }
@@ -1365,6 +1364,20 @@ public class GameSession {
                 prompt = interactKey + "  채굴 (" + targetVein.hitsLeft + "번 남음)";
                 promptX = center(targetVein.tileX);
                 promptY = (targetVein.tileY + 1) * T + 14;
+                return;
+            }
+        }
+        if (!fighting()) {
+            for (com.yongsa.map.Link link : map.links) {
+                Room bossRoom = link.a.type == RoomType.BOSS ? link.a : link.b;
+                if (bossRoom.type != RoomType.BOSS || heroRoom == bossRoom || state.bossDefeated(bossRoom.dungeonId)) continue;
+                Door approach = link.corridor != null ? (bossRoom == link.a ? link.doorA : link.doorB)
+                        : (bossRoom == link.a ? link.doorB : link.doorA);
+                if (approach == null || approach.isClosed()
+                        || Math.hypot(approach.footX - hero.x, approach.footY - hero.y) > 3.5f * T) continue;
+                prompt = "보스방 · 권장 무기 " + balance.dungeon(bossRoom.dungeonId).recommended;
+                promptX = approach.footX;
+                promptY = approach.footY + T;
                 return;
             }
         }
