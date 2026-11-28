@@ -405,7 +405,7 @@ public class GameScreen extends ScreenAdapter {
                     game.sfx.play(e.text);
                     break;
                 case ROOM_LOCKED:
-                    hud.toast("문이 잠겼다! 몬스터를 모두 쓰러뜨리자");
+                    if (session.activeBoss() == null) hud.toast("문이 잠겼다! 몬스터를 모두 쓰러뜨리자");
                     break;
                 case ROOM_CLEARED:
                     // 안내 글은 GameSession 이 “방을 비웠다! 문이 열렸다/보물상자가 나타났다”로 따로 띄운다.
