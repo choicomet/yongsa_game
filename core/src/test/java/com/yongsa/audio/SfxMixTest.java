@@ -131,6 +131,8 @@ class SfxMixTest {
             assertTrue(SfxMix.CUES.containsKey("sk_" + kind + "Hit"), kind + " 맞는 소리");
         }
         SfxMix mix = baked();
-        assertTrue(mix.decide("sk_beam", 1).gain > 0.99f, "스킬 소리는 줄이지 않고 그대로 크게");
+        assertTrue(mix.decide("sk_strike", 1).gain > 0.85f, "스킬 소리는 크게");
+        float beam = mix.decide("sk_beam", 2).gain;
+        assertTrue(beam > 0.55f && beam < 0.75f, "성광 검기는 너무 크지 않게 (-11dB, 파일보다 4dB 작게): " + beam);
     }
 }
