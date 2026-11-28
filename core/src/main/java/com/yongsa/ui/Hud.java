@@ -51,7 +51,6 @@ public class Hud {
     private float time;
     private boolean mapOpen;
     private float mapAnim;
-    private float introT = -1;
     /** 공격 J, 구르기 K, 스킬 칸 넷 (L, U, I, O). 스킬 칸은 열렸을 때만 보인다. */
     private static final int SLOTS = 2 + com.yongsa.model.Rules.SKILL_SLOTS;
     private final float[] readyFlash = new float[SLOTS];
@@ -121,9 +120,8 @@ public class Hud {
         hurtT = 0.35f;
     }
 
-    /** 보스가 나타날 때 체력 패널을 강조한다. */
+    /** 보스가 나타날 때 띠 글을 지운다. (체력바 밑 노란 줄이 차오르던 강조는 지용 요청으로 뺐다, 2026-11-28) */
     public void bossIntro(String name, boolean finalBoss) {
-        introT = 0;
         banner = null;
     }
 
@@ -143,10 +141,6 @@ public class Hud {
         if (banner != null) {
             bannerT += dt;
             if (bannerT > 2.6f) banner = null;
-        }
-        if (introT >= 0) {
-            introT += dt;
-            if (introT > 2.6f) introT = -1;
         }
         hurtT -= dt;
         mapAnim += ((mapOpen ? 1f : 0f) - mapAnim) * Math.min(1f, dt * 14f);
@@ -337,7 +331,6 @@ public class Hud {
             float bw = BOSS_W, bx0 = w / 2 - bw / 2, by0 = h - 19 - bh;
             batch.setColor(boss.finalBoss ? AWAKE_TINT : Color.WHITE);
             frames.panel(batch, HudFrames.Panel.BOSS, bx0, by0, bw);
-            if (introT >= 0) rect(bx0 + 40, by0 + 12, (bw - 80) * Math.min(1, introT / 0.5f), 2, Ui.GOLD);
             centered(fonts.large, boss.def.name, w / 2, h - 34, boss.finalBoss ? Ui.PURPLE : Ui.GOLD);
             float barX = bx0 + 26, barLen = bw - 52, barY = h - 74;
             rect(barX - 1, barY - 1, barLen + 2, 12, HP_EDGE);
